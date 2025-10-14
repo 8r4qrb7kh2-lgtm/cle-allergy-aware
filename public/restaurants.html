@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restaurants - CLE Allergy Aware</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .restaurant-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      margin: 40px 0;
+    }
+    
+    .restaurant-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: transform 0.2s;
+    }
+    
+    .restaurant-card:hover {
+      transform: translateY(-5px);
+      border-color: var(--hover);
+    }
+    
+    .restaurant-card img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+    
+    .restaurant-card-content {
+      padding: 20px;
+    }
+    
+    .restaurant-card h3 {
+      margin-bottom: 10px;
+    }
+    
+    .restaurant-card .meta {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a href="index.html">
+        <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt="CLE Allergy Aware" class="logo">
+      </a>
+      <h1>Restaurants</h1>
+    </header>
+    
+    <nav>
+      <a href="index.html">Home</a>
+      <a href="account.html">My Account</a>
+    </nav>
+    
+    <main>
+      <div id="restaurant-grid" class="restaurant-grid">
+        <p style="color: var(--muted); text-align: center; grid-column: 1/-1;">Loading restaurants...</p>
+      </div>
+    </main>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module">
+    import supabaseClient from './js/supabase-client.js';
+    
+    async function loadRestaurants() {
+      const { data, error } = await supabaseClient
+        .from('restaurants')
+        .select('*')
+        .order('name');
+      
+      const grid = document.getElementById('restaurant-grid');
+      
+      if (error) {
+        grid.innerHTML = '<p style="color: var(--bad);">Error loading restaurants</p>';
+        console.error(error);
+        return;
+      }
+      
+      if (data.length === 0) {
+        grid.innerHTML = '<p style="color: var(--muted);">No restaurants yet. Add some in Supabase!</p>';
+        return;
+      }
+      
+      grid.innerHTML = data.map(r => `
+        <div class="restaurant-card">
+          <img src="${r.menu_image || 'https://via.placeholder.com/400x300'}" alt="${r.name}">
+          <div class="restaurant-card-content">
+            <h3>${r.name}</h3>
+            <p class="meta">Last updated: ${r.last_confirmed ? new Date(r.last_confirmed).toLocaleDateString() : 'Never'}</p>
+            <a href="restaurant.html?slug=${r.slug}" class="cta-button" style="margin-top: 15px; padding: 10px 20px; font-size: 0.9rem;">View Menu</a>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    loadRestaurants();
+  </script>
+</body>
+</html>
