@@ -1,0 +1,1255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=yes, maximum-scale=10">
+
+<title>CLE Allergy Aware</title>
+<style>
+  :root{
+    --bg:#0b1020; --panel:#111630; --ink:#e9ecff; --muted:#a8b2d6;
+    --brand:#7c9cff; --ok:#22c55e; --warn:#facc15; --bad:#ef4444;
+    --border:#2a3261; --hover:#4c5ad4; --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  html{
+    margin:0;padding:0;height:100%;width:100%;
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  body{
+    margin:0;padding:0;min-height:100%;width:100%;background:var(--bg);color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial;
+    overflow-x:hidden;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    box-sizing:border-box;
+  }
+  *{box-sizing:border-box}
+  .menuWrap, .menuInner, .overlayLayer, .overlay, .tip {
+    touch-action: pan-y pinch-zoom;
+  }
+  .wrap{min-height:100%;display:flex;flex-direction:column;width:100%}
+  .content{flex:1;max-width:1100px;margin:0 auto;padding:16px;padding-bottom:100px;width:100%;box-sizing:border-box}
+  a{color:inherit;text-decoration:none}
+
+  .topbar{position:sticky;top:0;z-index:50;background:linear-gradient(180deg,#0f1530,#0b1020);border-bottom:1px solid #1c2347;box-shadow:var(--shadow);width:100%}
+  .topin{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;padding:10px 16px;flex-wrap:wrap;justify-content:center;box-sizing:border-box}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:800;flex-shrink:0;width:100%;justify-content:center}
+  .brand img{width:28px;height:28px;border-radius:6px}
+
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  .tab{padding:8px 12px;border:1px solid var(--border);background:#12183a;border-radius:999px;cursor:pointer;white-space:nowrap}
+  .acctBtn{padding:8px 12px;border:1px solid var(--border);background:#12183a;border-radius:999px;cursor:pointer;white-space:nowrap}
+
+  .tab:hover,.btn:hover,.acctBtn:hover,.chip.clickable:hover,.ackBtn:hover,.brand:hover,.pill:hover,.algBtn:hover{
+    border-color:var(--hover); box-shadow:0 0 0 3px #7c9cff33 inset,0 2px 10px #0b1b60aa;
+  }
+
+  h1{font-size:clamp(1.4rem,1.1rem + 1.5vw,2rem);margin:6px 0 12px}
+  .note{color:var(--muted)}
+
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{padding:8px 10px;border:1px solid var(--border);background:#12183a;border-radius:999px;font-size:14px}
+  .chip.active{border-color:#4c5ad4;box-shadow:0 0 0 3px #7c9cff33 inset,0 0 10px #24307a66}
+  .chip.clickable{cursor:pointer}
+  .pill{padding:10px 14px;border:1px dashed #33408c;border-radius:12px}
+
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:#1a2351;cursor:pointer;color:#fff}
+  .btnPrimary{background:#3651ff;border-color:#4e65ff}
+  .btnDanger{background:#8b1d1d;border-color:#a12525}
+  .btnSuccess{background:#17663a;border-color:#1a7b46}
+  .mgrRow{display:flex;justify-content:flex-end;margin:12px 0;gap:10px;flex-wrap:wrap}
+
+  .cards{display:flex;flex-wrap:wrap;gap:16px;justify-content:center}
+  .card{background:var(--panel);border:1px solid #1a2042;border-radius:16px;box-shadow:var(--shadow);width:330px;overflow:hidden}
+  .card img{display:block;width:100%;height:160px;object-fit:cover}
+  .card .pad{padding:12px}
+
+  .banner{display:flex;align-items:center;gap:10px;background:#351b1b;border:1px solid #5b2c2c;border-radius:12px;padding:10px 12px;margin:10px 0}
+  .legend{display:flex;gap:16px;align-items:center;flex-wrap:wrap;color:var(--muted);margin:10px 0 16px}
+  .key{display:inline-block;width:14px;height:14px;border-radius:4px;border:2px solid currentColor}
+  .key.ok{color:var(--ok)} .key.warn{color:var(--warn)} .key.bad{color:var(--bad)}
+
+  .ackBtn{padding:8px 12px;border-radius:10px;cursor:pointer;border:1px solid}
+  .ackBtn.off{background:#8b1d1d;border-color:#a12525}
+  .ackBtn.on{background:#17663a;border-color:#1a7b46}
+
+  /* Viewer: simple image that scales with page zoom */
+  .menuWrap{display:none;background:#0d132a;border-radius:14px;position:relative;overflow:visible;min-height:140px}
+  .menuWrap.show{display:block}
+  .menuInner{position:relative;display:inline-block;user-select:none;line-height:0}
+  .menuImg{display:block;max-width:100%;height:auto;width:100%;vertical-align:top}
+  .overlayLayer{position:absolute;left:0;top:0;pointer-events:none;line-height:normal}
+  .overlay{position:absolute;border:1.5px solid;border-radius:4px;background:transparent;pointer-events:auto;box-sizing:border-box}
+  .overlay:hover{box-shadow:0 0 0 3px #ffffff22,0 6px 16px rgba(0,0,0,.35)}
+  .ovBadge{position:absolute;top:3px;right:3px;width:18px;height:18px;background:#3651ff;border:1.5px solid #dbe2ff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;cursor:pointer;z-index:10;pointer-events:auto;line-height:1}
+  .ovBadge:hover{background:#4e65ff;box-shadow:0 0 6px #3651ff}
+  .ovWarning{position:absolute;top:3px;left:3px;width:18px;height:18px;background:#facc15;border:1.5px solid #fef08a;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;cursor:pointer;z-index:10;pointer-events:auto;line-height:1;color:#000;}
+  .ovWarning:hover{background:#fbbf24;box-shadow:0 0 6px #facc15}
+
+  /* Tooltip (with mobile X). We'll shrink it based on visual viewport scale. */
+  .tip{position:fixed;z-index:2000;pointer-events:auto;background:#0f1534;border:1px solid #2a3466;border-radius:10px;padding:10px;box-shadow:var(--shadow);display:none;max-width:280px;transform-origin:top left}
+  .tipHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+  .tTitle{font-weight:800}
+  .tClose{border:1px solid #2a3466;background:#16205a;color:#fff;border-radius:8px;padding:4px 8px;cursor:pointer;line-height:1}
+  .tClose:hover{border-color:var(--hover)}
+
+  /* Modal (editor) */
+  .modalBack{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:3000;overflow:auto;padding:20px}
+  .modal{background:#0f1534;border:1px solid #2a3466;border-radius:14px;width:min(980px,96vw);max-height:82vh;overflow:auto;box-shadow:var(--shadow);position:relative}
+  .modal .head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid #2a3466}
+  .modal .body{padding:14px}
+  .modalCloseBtn{position:absolute;top:12px;right:12px;width:32px;height:32px;background:#16205a;border:2px solid #2a3466;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;font-weight:bold;z-index:10}
+  .modalCloseBtn:hover{background:#1a2660;border-color:var(--hover)}
+  
+  .photoCapture{display:flex;flex-direction:column;gap:12px;align-items:center;padding:20px;background:#12183a;border-radius:12px;border:1px solid #2a3466}
+  .photoPreview{max-width:100%;max-height:400px;border-radius:8px;border:1px solid #2a3466}
+  .videoPreview{max-width:100%;max-height:400px;border-radius:8px;border:1px solid #2a3466;background:#000}
+  
+  .logEntry{background:#12183a;border:1px solid #2a3466;border-radius:12px;padding:12px;margin:8px 0}
+  .logEntry .logHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px}
+  .logEntry .logTimestamp{color:var(--muted);font-size:13px}
+  .logEntry .logType{padding:4px 8px;border-radius:6px;font-size:12px;font-weight:600}
+  .logType.confirm{background:#17663a;color:#fff}
+  .logType.update{background:#3651ff;color:#fff}
+  .logEntry .logImage{max-width:100%;border-radius:8px;margin-top:8px;cursor:pointer}
+  .logEntry .logImage:hover{opacity:0.8}
+  .logEntry .logThumbnail{max-width:120px;max-height:80px;object-fit:cover;border-radius:6px;margin-top:6px;cursor:pointer;border:1px solid #2a3466}
+  .logEntry .logThumbnail:hover{opacity:0.85;box-shadow:0 0 8px #3651ff}
+  
+  /* Photo preview modal */
+  .photoModal{position:fixed;inset:0;background:#000c;display:none;align-items:center;justify-content:center;z-index:4000;padding:20px}
+  .photoModal img{max-width:90%;max-height:90%;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+  .photoModalClose{position:absolute;top:20px;right:20px;width:40px;height:40px;background:#16205a;border:2px solid #2a3466;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;font-weight:bold}
+  .photoModalClose:hover{background:#1a2660;border-color:var(--hover)}
+
+  .algRow{display:grid;grid-template-columns:180px minmax(180px,300px) max-content max-content;column-gap:12px;row-gap:6px;align-items:center;margin:6px 0}
+  .algBtn{padding:8px 12px;border-radius:999px;border:1px solid #2a3261;background:#12183a;cursor:pointer;text-align:center}
+  .algBtn.active{background:#1a2351;box-shadow:0 0 0 3px #7c9cff33 inset;border-color:#4c5ad4}
+  .algInput{background:#0c1230;color:var(--ink);border:1px solid #31407f;border-radius:8px;padding:8px 10px;width:100%}
+  .algChk{display:flex;align-items:center;gap:8px;white-space:nowrap;justify-self:end}
+  .saveRow{display:none}
+
+  .editBox{position:absolute;border:2px solid var(--warn);border-radius:6px;background:transparent;cursor:move}
+  .editBadge{position:absolute;top:2px;right:2px;width:18px;height:18px;background:#3651ff;border:1.5px solid #dbe2ff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;z-index:10;line-height:1}
+  .editBadge:hover{background:#4e65ff;box-shadow:0 0 6px #3651ff}
+  .handle{position:absolute;width:14px;height:14px;background:#3651ff;border:2px solid #dbe2ff;border-radius:4px}
+  .handle.se{right:-7px;bottom:-7px;cursor:nwse-resize}
+  .handle.ne{right:-7px;top:-7px;cursor:nesw-resize}
+  .handle.nw{left:-7px;top:-7px;cursor:nwse-resize}
+  .handle.sw{left:-7px;bottom:-7px;cursor:nesw-resize}
+
+  /* Report inputs */
+  input[type="text"], input[type="email"], textarea{
+    color:var(--ink) !important; caret-color:var(--ink);
+    background:#12183a; border:1px solid #2a3261; border-radius:14px; padding:12px;
+  }
+  input::placeholder, textarea::placeholder{color:#cfd5ff88}
+
+  /* QR banner */
+  .qrBanner{
+    position:fixed; left:0; right:0; bottom:0; z-index:2000;
+    background:linear-gradient(180deg,#0f1534,#0b1020);
+    border-top:1px solid #2a3466; padding:12px 14px;
+    display:flex; gap:12px; align-items:center; justify-content:center; flex-wrap:wrap;
+    box-shadow:0 -4px 20px rgba(0,0,0,.4);
+  }
+  .qrBannerClose{
+    position:absolute; top:8px; right:8px;
+    width:24px; height:24px;
+    border:1px solid #2a3466; background:#16205a;
+    border-radius:6px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    font-size:16px; color:#fff; line-height:1;
+  }
+  .qrBannerClose:hover{border-color:var(--hover); box-shadow:0 0 6px #3651ff}
+  .qrFixedBtn{
+    position:fixed; left:50%; bottom:20px; transform:translateX(-50%);
+    z-index:1999; display:none;
+  }
+
+  /* Hide script and style content if it leaks */
+  script, style {display: none !important;}
+
+  @media (max-width:640px){
+    .topin{gap:4px;padding:6px 10px}
+    .brand{gap:6px;font-size:14px}
+    .brand img{width:20px;height:20px}
+    .tabs{gap:3px}
+    .tab{padding:5px 7px;font-size:12px}
+    .acctBtn{padding:5px 7px;font-size:12px}
+    .content{padding:10px;padding-bottom:100px}
+    .legend{gap:10px}
+    h1{font-size:1.3rem;margin:4px 0 10px}
+    .cards{gap:12px}
+    .card{width:calc(100% - 20px);max-width:400px}
+    .card img{height:140px}
+    .card .pad{padding:10px}
+    .card .pad > div:first-child{font-size:16px;margin-bottom:4px}
+    .note{font-size:12px}
+    .btn{padding:8px 12px;font-size:13px}
+    .ovBadge,.ovWarning{top:1px;width:6px;height:6px;border:0.5px solid;font-size:5px}
+    .ovBadge{right:1px;border-color:#dbe2ff}
+    .ovWarning{left:1px;border-color:#fef08a}
+    .ovBadge:hover{box-shadow:0 0 4px #3651ff}
+    .ovWarning:hover{box-shadow:0 0 4px #facc15}
+    .banner{flex-direction:column;align-items:stretch}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar"><div class="topin" id="topbar"></div></div>
+  <div class="content" id="root"></div>
+</div>
+
+<div class="tip" id="tip"></div>
+
+<div class="modalBack" id="modalBack">
+  <div class="modal">
+    <button class="modalCloseBtn" id="modalCloseBtn" type="button">×</button>
+    <div class="head"><div id="modalTitle">Edit item</div></div>
+    <div class="body" id="modalBody"></div>
+  </div>
+</div>
+
+<div class="photoModal" id="photoModal">
+  <div class="photoModalClose" id="photoModalClose">×</div>
+  <img id="photoModalImage" src="" alt="Confirmation photo">
+</div>
+
+<script>
+// Ensure zoom is always allowed on mobile Safari
+(function () {
+  var m = document.querySelector('meta[name="viewport"]');
+  if (m && !/maximum-scale/i.test(m.content)) {
+    m.content += ', user-scalable=yes, maximum-scale=10';
+  }
+  ['touchstart','touchmove'].forEach(function (t) {
+    document.addEventListener(t, function () {}, {passive:true});
+  });
+})();
+document.body.style.display='none';
+
+const ALLERGENS=["dairy","egg","peanut","tree nut","shellfish","fish","gluten","soy","sesame","wheat"];
+const state={page:null,restaurants:[],restaurant:null,allergies:[],ack:false,user:{loggedIn:false},canEdit:false,qr:false,_hydrated:false};
+
+const send=(p)=>parent.postMessage(p,"*");
+const norm=s=>(s||'').toString().trim().toLowerCase();
+const esc=s=>(s??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const cap=s=>(s||'').split(' ').map(w=>w? w[0].toUpperCase()+w.slice(1):'').join(' ');
+const fmtDate=d=>{try{const x=new Date(d);return isNaN(x)?'':x.toLocaleDateString();}catch(_){return '';}};
+const fmtDateTime=d=>{try{const x=new Date(d);return isNaN(x)?'':x.toLocaleDateString()+' at '+x.toLocaleTimeString();}catch(_){return '';}};
+const daysAgo=d=>{
+  try{
+    const x=new Date(d);
+    if(isNaN(x)) return '—';
+    const now=new Date();
+    
+    // Reset both dates to midnight for accurate day comparison
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const compareDate = new Date(x.getFullYear(), x.getMonth(), x.getDate());
+    
+    const diff=Math.floor((today-compareDate)/(1000*60*60*24));
+    
+    if(diff===0) return 'today';
+    if(diff===1) return '1 day ago';
+    if(diff<0) return 'today'; // Future date edge case
+    return diff+' days ago';
+  }catch(_){return '—';}
+};
+function div(html,cls){const d=document.createElement('div'); if(cls)d.className=cls; d.innerHTML=html; return d;}
+const urlQR=(()=>{const v=new URLSearchParams(location.search).get('qr'); return v && /^(1|true|yes)$/i.test(v);})();
+
+/* risk + tooltip */
+function computeStatus(item,sel){
+  if(!sel||!sel.length) return 'neutral';
+  const hits=(item.allergens||[]).filter(a=>sel.includes(a));
+  if(!hits.length) return 'safe';
+  const removableAll=hits.every(a=>(item.removable||[]).some(r=>r.allergen===a));
+  return removableAll?'removable':'unsafe';
+}
+
+function hasCrossContamination(item,sel){
+  if(!sel||!sel.length) return false;
+  const crossContam=(item.crossContamination||[]);
+  return crossContam.some(a=>sel.includes(a));
+}
+
+/* scale-aware tooltip */
+function currentScale(){
+  try{ return (window.visualViewport && window.visualViewport.scale) ? window.visualViewport.scale : 1; }
+  catch(_){ return 1; }
+}
+function tooltipBodyHTML(item,sel){
+  const status=computeStatus(item,sel);
+  const details=item.details||{};
+  const hasCross=hasCrossContamination(item,sel);
+  
+  if(!sel.length) return `<div class="note">No saved allergens selected.</div>`;
+  
+  let html='';
+  
+  if(status!=='safe'){
+    const hits=(item.allergens||[]).filter(a=>sel.includes(a));
+    const list=hits.map(a=>{
+      const rem=(item.removable||[]).find(r=>r.allergen===a);
+      const why=details[a]?` — ${esc(details[a])}`:'';
+      return `<li style="margin:4px 0">${esc(cap(a))}${why}${rem?' (can be accommodated)':''}</li>`;
+    }).join('');
+    html+=`<div class="note">Contains:<ul style="margin:6px 0;padding-left:20px">${list}</ul></div>`;
+  } else {
+    html+=`<div class="note">No selected allergens found.</div>`;
+  }
+  
+  if(hasCross){
+    const crossHits=(item.crossContamination||[]).filter(a=>sel.includes(a));
+    const crossList=crossHits.map(a=>`<li style="margin:4px 0">${esc(cap(a))}</li>`).join('');
+    html+=`<div class="note" style="margin-top:8px;color:var(--warn)">⚠️ Cross-contamination risk:<ul style="margin:6px 0;padding-left:20px">${crossList}</ul></div>`;
+  }
+  
+  return html;
+}
+
+function renderTopbar(){
+  const el=document.getElementById('topbar'); el.innerHTML='';
+  el.appendChild(div(`<img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt=""><span>CLE Allergy Aware</span>`,'brand'));
+  const tabs=div('','tabs');
+  [{t:'Restaurants',to:'/restaurants'},{t:'Report an issue',to:'/report-issue'}].forEach(n=>{
+    const b=div(n.t,'tab'); b.onclick=()=>send({type:'navigate',to:n.to}); tabs.appendChild(b);
+  });
+  el.appendChild(tabs);
+  const acct=div(state.user?.loggedIn?'My Account':'Sign in','acctBtn');
+  acct.onclick=()=>state.user?.loggedIn?send({type:'navigate',to:'/accounts'}):send({type:'signIn'});
+  el.appendChild(acct);
+}
+
+/* tooltips */
+const pageTip=document.getElementById('tip');
+function showTipIn(el, x, y, title, bodyHTML){
+  const zoom = (window.visualViewport && window.visualViewport.scale) ? window.visualViewport.scale : 1;
+  const k = 1 / zoom;
+
+  el.innerHTML = `
+    <div class="tipHead">
+      <div class="tTitle">${esc(title||'Item')}</div>
+      <button class="tClose" type="button">✕</button>
+    </div>
+    ${bodyHTML}
+  `;
+  el.style.display = 'block';
+
+  el.style.transform = `scale(${k})`;
+  el.style.transformOrigin = 'top left';
+  
+  const isMobile = window.innerWidth <= 640;
+  const vw = (window.visualViewport && window.visualViewport.width) ? window.visualViewport.width : window.innerWidth;
+  const baseMaxWidth = isMobile ? Math.min(220, vw - 30) : Math.min(280, vw - 40);
+  el.style.maxWidth = baseMaxWidth + 'px';
+  el.style.padding = isMobile ? '8px' : '10px';
+  el.style.borderRadius = isMobile ? '8px' : '10px';
+  el.style.fontSize = isMobile ? '12px' : '14px';
+  
+  const titleEl = el.querySelector('.tTitle');
+  if(titleEl) titleEl.style.fontSize = isMobile ? '14px' : '16px';
+  
+  const closeEl = el.querySelector('.tClose');
+  if(closeEl) {
+    closeEl.style.padding = isMobile ? '3px 6px' : '4px 8px';
+    closeEl.style.fontSize = isMobile ? '12px' : '14px';
+    closeEl.style.borderRadius = isMobile ? '5px' : '6px';
+  }
+
+  const noteEls = el.querySelectorAll('.note');
+  noteEls.forEach(n => n.style.fontSize = isMobile ? '11px' : '13px');
+
+  requestAnimationFrame(() => {
+    const vh = (window.visualViewport && window.visualViewport.height) ? window.visualViewport.height : window.innerHeight;
+    const vw = (window.visualViewport && window.visualViewport.width) ? window.visualViewport.width : window.innerWidth;
+    
+    const r = el.getBoundingClientRect();
+    const pad = isMobile ? 8 : 12;
+    
+    let left = x + (isMobile ? 8 : 12);
+    let top = y + (isMobile ? 8 : 12);
+    
+    if (left + r.width + pad > vw) {
+      left = Math.max(pad, vw - r.width - pad);
+    }
+    if (top + r.height + pad > vh) {
+      top = Math.max(pad, vh - r.height - pad);
+    }
+    
+    left = Math.max(pad, left);
+    top = Math.max(pad, top);
+    
+    el.style.left = left + 'px';
+    el.style.top  = top + 'px';
+  });
+
+  if(el.querySelector('.tClose')) {
+    el.querySelector('.tClose').onclick = () => { el.style.display='none'; };
+  }
+}
+
+function hideTip(){ pageTip.style.display='none'; }
+
+/* list */
+function renderCardsPage(){
+  renderTopbar();
+  const r=document.getElementById('root');
+  r.innerHTML=`<h1 style="text-align:center">Restaurants</h1><div class="cards" id="grid"></div>`;
+  const grid=document.getElementById('grid');
+  (state.restaurants||[]).forEach(rs=>{
+    const c=div(`<div class="card">
+        <img src="${esc(rs.menuImage||'')}" alt="">
+        <div class="pad">
+          <div style="font-weight:800;margin-bottom:6px">${esc(rs.name||'Restaurant')}</div>
+          <div class="note">Confirmed by management: ${rs.lastConfirmed?esc(daysAgo(rs.lastConfirmed)):'—'}</div>
+          <div style="margin-top:10px"><button class="btn btnPrimary">View menu & allergens</button></div>
+        </div></div>`);
+    c.querySelector('.btn').onclick=()=>send({type:'openRestaurant',slug:rs.slug});
+    grid.appendChild(c);
+  });
+}
+
+/* chips */
+function renderSavedChips(el){
+  el.innerHTML='';
+  const saved=(state.allergies||[]).map(norm);
+  if(!saved.length){ el.appendChild(div('<div class="note">No saved allergens. Use "Edit saved allergens".</div>')); return; }
+  const row=div('','chips'); saved.forEach(a=>row.appendChild(div(esc(cap(a)),'chip active'))); el.appendChild(row);
+}
+
+/* selector for QR guests */
+function renderSelector(el){
+  el.innerHTML='';
+  const row=div('','chips');
+  const sel=new Set((state.allergies||[]).map(norm));
+  ALLERGENS.forEach(a=>{
+    const c=div(esc(cap(a)),'chip clickable'+(sel.has(a)?' active':''));
+    c.onclick=()=>{
+      sel.has(a)?sel.delete(a):sel.add(a);
+      state.allergies=[...sel];
+      try{sessionStorage.setItem('qrAllergies',JSON.stringify(state.allergies));}catch(_){}
+      renderSelector(el); if (window.__rerenderLayer__) window.__rerenderLayer__();
+      send({type:'qrAllergies',allergies:state.allergies});
+    };
+    row.appendChild(c);
+  });
+  el.appendChild(row);
+  const controls=div(`<div class="note" style="margin-top:6px;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn" id="selAll">Select all</button>
+      <button class="btn" id="clrAll">Clear</button></div>`);
+  el.appendChild(controls);
+  controls.querySelector('#selAll').onclick=()=>{state.allergies=ALLERGENS.slice();try{sessionStorage.setItem('qrAllergies',JSON.stringify(state.allergies));}catch(_){}
+    renderSelector(el); if(window.__rerenderLayer__)window.__rerenderLayer__(); send({type:'qrAllergies',allergies:state.allergies});};
+  controls.querySelector('#clrAll').onclick=()=>{state.allergies=[];try{sessionStorage.setItem('qrAllergies','[]');}catch(_){}
+    renderSelector(el); if(window.__rerenderLayer__)window.__rerenderLayer__(); send({type:'qrAllergies',allergies:state.allergies});};
+}
+
+/* draw (simple image that follows page zoom) */
+function drawMenu(container,imageURL){
+  container.innerHTML='';
+  const inner=div('','menuInner'); container.appendChild(inner);
+  if(!imageURL){ inner.innerHTML=`<div class="note" style="padding:16px">No menu image configured for this restaurant.</div>`; return; }
+
+  const img=new Image(); img.src=imageURL; img.className='menuImg'; inner.appendChild(img);
+  const layer=div('','overlayLayer'); inner.appendChild(layer);
+
+  function renderLayer(){
+    [...layer.querySelectorAll('.overlay')].forEach(n=>n.remove());
+    const colors={ safe:'var(--ok)', removable:'var(--warn)', unsafe:'var(--bad)', neutral:'#ffffff1a'};
+    
+    if(!img.complete || !img.naturalWidth || !img.clientWidth || !img.clientHeight) {
+      console.log('Image not ready yet');
+      return;
+    }
+    
+    layer.style.width = img.clientWidth + 'px';
+    layer.style.height = img.clientHeight + 'px';
+    
+    console.log('Rendering overlays:', state.restaurant?.overlays?.length || 0);
+    console.log('Image dimensions:', img.clientWidth, 'x', img.clientHeight);
+    
+    (Array.isArray(state.restaurant?.overlays)?state.restaurant.overlays:[]).forEach(it=>{
+      console.log('Overlay:', it.id, 'at', it.x, it.y, it.w, it.h);
+      
+      const box=document.createElement('div');
+      box.className='overlay';
+      const st=computeStatus(it,state.allergies||[]);
+      box.style.borderColor=colors[st]||colors.neutral;
+      box.style.left=(+it.x||0)+'%'; 
+      box.style.top=(+it.y||0)+'%'; 
+      box.style.width=(+it.w||0)+'%'; 
+      box.style.height=(+it.h||0)+'%';
+
+      const hasCross=hasCrossContamination(it,state.allergies||[]);
+      if(hasCross){
+        const warning=document.createElement('div');
+        warning.className='ovWarning';
+        warning.title='Cross-contamination warning';
+        warning.textContent='⚠';
+        warning.addEventListener('click',(e)=>{e.stopPropagation();showTipIn(pageTip,e.clientX,e.clientY,it.id||'Item',tooltipBodyHTML(it,state.allergies||[]));});
+        warning.addEventListener('touchend',(e)=>{e.preventDefault();e.stopPropagation();showTipIn(pageTip,e.changedTouches[0].clientX,e.changedTouches[0].clientY,it.id||'Item',tooltipBodyHTML(it,state.allergies||[]));});
+        box.appendChild(warning);
+      }
+
+      const badge=document.createElement('div'); 
+      badge.className='ovBadge'; 
+      badge.title='Details'; 
+      badge.textContent='i';
+      badge.addEventListener('click',(e)=>{e.stopPropagation(); showTipIn(pageTip, e.clientX, e.clientY, it.id||'Item', tooltipBodyHTML(it,state.allergies||[]));});
+      badge.addEventListener('touchend',(e)=>{e.preventDefault(); e.stopPropagation(); showTipIn(pageTip, e.changedTouches[0].clientX, e.changedTouches[0].clientY, it.id||'Item', tooltipBodyHTML(it,state.allergies||[]));});
+      box.appendChild(badge);
+
+      box.addEventListener('mousemove',(e)=>{ showTipIn(pageTip, e.clientX, e.clientY, it.id||'Item', tooltipBodyHTML(it,state.allergies||[])); });
+      box.addEventListener('mouseleave',hideTip);
+      box.addEventListener('click',(e)=>{ showTipIn(pageTip, e.clientX, e.clientY, it.id||'Item', tooltipBodyHTML(it,state.allergies||[])); });
+
+      layer.appendChild(box);
+    });
+  }
+
+  window.__rerenderLayer__=renderLayer;
+
+  if(img.complete && img.naturalWidth) {
+    renderLayer();
+  } else {
+    img.onload=()=>{
+      setTimeout(renderLayer, 50);
+    };
+  }
+
+  addEventListener('resize', ()=>{
+    requestAnimationFrame(renderLayer);
+  }, {passive:true});
+  
+  if (window.visualViewport){
+    visualViewport.addEventListener('resize', ()=>{
+      if (pageTip.style.display==='block'){
+        const currentLeft = parseFloat(pageTip.style.left || 0);
+        const currentTop = parseFloat(pageTip.style.top || 0);
+        
+        const zoom = visualViewport.scale || 1;
+        const k = 1 / zoom;
+        
+        const isMobile = window.innerWidth <= 640;
+        const vw = visualViewport.width;
+        const vh = visualViewport.height;
+        
+        pageTip.style.transform = `scale(${k})`;
+        pageTip.style.transformOrigin = 'top left';
+        
+        const vw2 = visualViewport.width;
+        const vh2 = visualViewport.height;
+        const baseMaxWidth = isMobile ? Math.min(220, vw2 - 30) : Math.min(280, vw2 - 40);
+        pageTip.style.maxWidth = baseMaxWidth + 'px';
+        
+        requestAnimationFrame(() => {
+          const pad = isMobile ? 8 : 12;
+          const r = pageTip.getBoundingClientRect();
+          
+          let left = Math.min(currentLeft, vw2 - r.width - pad);
+          let top = Math.min(currentTop, vh2 - r.height - pad);
+          left = Math.max(pad, left);
+          top = Math.max(pad, top);
+          
+          pageTip.style.left = left + 'px';
+          pageTip.style.top = top + 'px';
+        });
+      }
+    }, {passive:true});
+  }
+}
+
+/* restaurant page */
+function renderRestaurant(){
+  renderTopbar();
+  const root=document.getElementById('root');
+  const rs=state.restaurant||{}; state.ack=false;
+
+  root.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+      <h1 style="margin:0">${esc(rs.name||'Restaurant')}</h1>
+      ${state.canEdit?`<button class="btn btnPrimary" id="mgrEdit">Manager Edit</button>`:''}
+    </div>
+    <div class="pill">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:8px">
+        <div style="font-weight:600">${(state.qr||!state.user?.loggedIn)?'Select your allergies':'Your saved allergies'}</div>
+        ${(!state.qr && state.user?.loggedIn)?`<button class="btn clickable" id="editSavedBtn">Edit saved allergens</button>`:''}
+      </div>
+      <div id="savedChips"></div>
+    </div>
+    <div class="banner">
+      <span>Reference only. Ingredients & practices can change. Always inform staff about your allergies.</span>
+      <button class="ackBtn off" id="ackBtn">I understand</button>
+    </div>
+    <div id="legendRow" style="display:none" class="legend">
+      <span><span class="key ok"></span> Free of selected allergen(s)</span>
+      <span><span class="key warn"></span> Allergen(s) can be accommodated</span>
+      <span><span class="key bad"></span> Allergen(s) not accommodated</span>
+      <span><span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;background:#facc15;border:2px solid #facc15;border-radius:50%;font-size:9px;vertical-align:middle;color:#000;font-weight:bold;margin-right:4px;">⚠</span>Cross-contamination risk</span>
+      <span class="note">👆 Hover or tap a box for details</span>
+    </div>
+    <div id="confirmedRow" style="display:none" class="note">Confirmed by management: ${rs.lastConfirmed?esc(fmtDate(rs.lastConfirmed)):'—'}</div>
+    <div class="menuWrap" id="menu"></div>
+  `;
+
+  const chipsHost=document.getElementById('savedChips');
+  if(state.qr||!state.user?.loggedIn) renderSelector(chipsHost); else renderSavedChips(chipsHost);
+
+  const menu=document.getElementById('menu');
+  document.getElementById('ackBtn').onclick=()=>{
+    if(!state.ack){send({type:'ack'}); state.ack=true;}
+    const b=document.getElementById('ackBtn'); b.textContent='Acknowledged'; b.classList.remove('off'); b.classList.add('on');
+    menu.classList.add('show');
+    document.getElementById('legendRow').style.display='flex';
+    document.getElementById('confirmedRow').style.display='block';
+    drawMenu(menu, rs.menuImage);
+    
+    // Show QR banner 10 seconds after acknowledging (only for QR users who aren't signed in)
+    if((state.qr || urlQR) && !state.user?.loggedIn){
+      setTimeout(()=>{
+        const existing=document.querySelector('.qrBanner');
+        if(!existing){
+          const bar=document.createElement('div');
+          bar.className='qrBanner';
+          bar.innerHTML=`<button class="qrBannerClose" title="Close">✕</button>
+            <div><strong>Eat worry-free everywhere!</strong> Create a free account to save your allergens and explore safe options at restaurants across Cleveland.</div>
+            <button class="btn btnPrimary" id="qrSignup">Create free account</button>`;
+          document.body.appendChild(bar);
+          
+          const fixedBtn=document.createElement('button');
+          fixedBtn.className='btn btnPrimary qrFixedBtn';
+          fixedBtn.id='qrSignupFixed';
+          fixedBtn.textContent='Create free account';
+          document.body.appendChild(fixedBtn);
+          
+          document.querySelector('.qrBannerClose').onclick=()=>{
+            bar.remove();
+            fixedBtn.style.display='block';
+          };
+          document.getElementById('qrSignup').onclick=()=>send({type:'signIn'});
+          document.getElementById('qrSignupFixed').onclick=()=>send({type:'signIn'});
+        }
+      }, 10000);
+    }
+  };
+
+  if(!state.qr && state.user?.loggedIn){
+    const editBtn=document.getElementById('editSavedBtn');
+    if(editBtn) editBtn.onclick=()=>send({type:'navigate',to:'/accounts'});
+  }
+
+  if(state.canEdit){
+    const mgr=document.getElementById('mgrEdit');
+    if(mgr) mgr.onclick=()=>{state.page='editor'; renderEditor();};
+  }
+}
+
+/* editor */
+function renderEditor(){
+  renderTopbar();
+  const rs=state.restaurant||{};
+  const root=document.getElementById('root');
+  root.innerHTML=`
+    <h1>${esc(rs.name||'Restaurant')} — Menu Editor</h1>
+    <div class="mgrRow" style="justify-content:space-between">
+      <button class="btn" id="backBtn">← Done</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn" id="viewLogBtn">📋 View log of changes</button>
+        <button class="btn btnDanger" id="confirmBtn">Confirm allergen information is up-to-date</button>
+        <button class="btn" id="addBox">Add overlay</button>
+        <div class="saveRow" id="saveRow"><button class="btn btnPrimary" id="saveBtn">Save to site</button></div>
+      </div>
+    </div>
+    <div class="note" id="lastConfirmedText" style="text-align:right;font-size:12px;margin-top:4px">Last confirmed: ${rs.lastConfirmed?esc(fmtDateTime(rs.lastConfirmed)):'Never'}</div>
+    <div class="note" style="margin-bottom:8px">Drag to move. Drag any corner to resize. Click ✏️ to edit details.</div>
+    <div class="menuWrap show" id="menu"></div>
+  `;
+  const menu=document.getElementById('menu');
+  const inner=div('','menuInner'); menu.appendChild(inner);
+  const img=new Image(); img.src=rs.menuImage||''; img.className='menuImg'; inner.appendChild(img);
+
+  const overlays=JSON.parse(JSON.stringify(rs.overlays||[]));
+  let dirty=false; function setDirty(v=true){dirty=v; document.getElementById('saveRow').style.display=dirty?'block':'none';}
+
+  const saveBtn=document.getElementById('saveBtn');
+  function setSaveState(s){
+    if(!saveBtn)return;
+    if(s==='saving'){saveBtn.disabled=true;saveBtn.textContent='Saving…';saveBtn.classList.remove('btnSuccess','btnDanger','btnPrimary');saveBtn.classList.add('btn');}
+    else if(s==='saved'){saveBtn.disabled=true;saveBtn.textContent='Saved';saveBtn.classList.remove('btn','btnDanger','btnPrimary');saveBtn.classList.add('btnSuccess');
+      setTimeout(()=>{saveBtn.disabled=false;saveBtn.textContent='Save to site';saveBtn.classList.remove('btnSuccess','btnDanger');saveBtn.classList.add('btnPrimary');},900);}
+    else if(s==='error'){saveBtn.disabled=false;saveBtn.textContent='Retry save';saveBtn.classList.remove('btnSuccess','btnPrimary');saveBtn.classList.add('btnDanger');}
+  }
+  if(saveBtn){
+    const originalOverlays=JSON.stringify(rs.overlays||[]);
+    saveBtn.onclick=()=>{
+      setSaveState('saving');
+      const changes=describeOverlayChanges(JSON.parse(originalOverlays),overlays);
+      send({type:'saveOverlays',overlays,menuImage:rs.menuImage||'',changes});
+    };
+  }
+  
+  function describeOverlayChanges(oldOverlays,newOverlays){
+    const changes=[];
+    if(newOverlays.length>oldOverlays.length){
+      changes.push(`Added ${newOverlays.length-oldOverlays.length} new item(s)`);
+    }
+    if(newOverlays.length<oldOverlays.length){
+      changes.push(`Removed ${oldOverlays.length-newOverlays.length} item(s)`);
+    }
+    newOverlays.forEach((item,idx)=>{
+      const old=oldOverlays[idx];
+      if(old&&old.id!==item.id){
+        changes.push(`Renamed "${old.id}" to "${item.id}"`);
+      }
+      if(old){
+        const oldAllergens=new Set(old.allergens||[]);
+        const newAllergens=new Set(item.allergens||[]);
+        const added=[...newAllergens].filter(a=>!oldAllergens.has(a));
+        const removed=[...oldAllergens].filter(a=>!newAllergens.has(a));
+        if(added.length)changes.push(`${item.id}: Added allergen(s) ${added.join(', ')}`);
+        if(removed.length)changes.push(`${item.id}: Removed allergen(s) ${removed.join(', ')}`);
+      }
+    });
+    return changes.length?changes.join('; '):'Minor adjustments to overlay positions';
+  }
+
+  const confirmBtn=document.getElementById('confirmBtn');
+  if(confirmBtn){confirmBtn.onclick=()=>{openPhotoCapture();};}
+  
+  const viewLogBtn=document.getElementById('viewLogBtn');
+  if(viewLogBtn){viewLogBtn.onclick=()=>{openChangeLog();};}
+  
+  function updateLastConfirmedText(){
+    const lastConfirmedText=document.getElementById('lastConfirmedText');
+    if(lastConfirmedText){
+      const now=new Date();
+      lastConfirmedText.textContent='Last confirmed: '+fmtDateTime(now);
+    }
+  }
+  
+  function openPhotoCapture(){
+    const mb=document.getElementById('modalBack');
+    const body=document.getElementById('modalBody');
+    document.getElementById('modalTitle').textContent='Confirm Allergen Information';
+    
+    body.innerHTML=`
+      <div class="photoCapture">
+        <div class="note" style="text-align:center;margin-bottom:8px">Take a photo of your current menu to confirm that it aligns with the menu on CLE Allergy Aware</div>
+        <video id="videoStream" class="videoPreview" autoplay playsinline style="display:none"></video>
+        <canvas id="photoCanvas" style="display:none"></canvas>
+        <img id="photoPreview" class="photoPreview" style="display:none">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+          <button class="btn btnPrimary" id="startCameraBtn">📷 Start Camera</button>
+          <button class="btn btnPrimary" id="takePictureBtn" style="display:none">📸 Take Picture</button>
+          <button class="btn" id="retakeBtn" style="display:none">🔄 Retake</button>
+          <input type="file" id="fileInput" accept="image/*" capture="environment" style="display:none">
+          <button class="btn" id="uploadBtn">📁 Upload Photo</button>
+        </div>
+        <div id="confirmSection" style="display:none;width:100%;text-align:center">
+          <div class="note" style="margin:12px 0">Is every dish clearly visible in this photo?</div>
+          <div style="display:flex;gap:8px;justify-content:center">
+            <button class="btn btnSuccess" id="confirmPhotoBtn">✓ Yes, confirm</button>
+            <button class="btn btnDanger" id="cancelPhotoBtn">✗ Cancel</button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    mb.style.display='flex';
+    
+    // Add close button handler
+    const closeBtn = document.getElementById('modalCloseBtn');
+    if (closeBtn) {
+      closeBtn.onclick = () => {
+        mb.style.display = 'none';
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+          stream = null;
+        }
+      };
+    }
+    
+    let stream=null;
+    let photoData=null;
+    
+    document.getElementById('startCameraBtn').onclick=async()=>{
+      try{
+        stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+        const video=document.getElementById('videoStream');
+        video.srcObject=stream;
+        video.style.display='block';
+        document.getElementById('startCameraBtn').style.display='none';
+        document.getElementById('takePictureBtn').style.display='inline-flex';
+      }catch(err){
+        alert('Camera access denied or not available. Please use the upload option.');
+      }
+    };
+    
+    document.getElementById('takePictureBtn').onclick=()=>{
+      const video=document.getElementById('videoStream');
+      const canvas=document.getElementById('photoCanvas');
+      const ctx=canvas.getContext('2d');
+      
+      // Set canvas to a smaller size (max 600px width for better compression)
+      const maxWidth = 600;
+      const scale = Math.min(1, maxWidth / video.videoWidth);
+      canvas.width = video.videoWidth * scale;
+      canvas.height = video.videoHeight * scale;
+      
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      photoData = canvas.toDataURL('image/jpeg', 0.6); // Lower quality to 0.6
+      
+      console.log('Photo captured, size:', photoData.length, 'bytes');
+      
+      document.getElementById('photoPreview').src=photoData;
+      document.getElementById('photoPreview').style.display='block';
+      video.style.display='none';
+      document.getElementById('takePictureBtn').style.display='none';
+      document.getElementById('retakeBtn').style.display='inline-flex';
+      document.getElementById('confirmSection').style.display='block';
+      
+      if(stream){
+        stream.getTracks().forEach(track=>track.stop());
+        stream=null;
+      }
+    };
+    
+    document.getElementById('retakeBtn').onclick=()=>{
+      document.getElementById('photoPreview').style.display='none';
+      document.getElementById('startCameraBtn').style.display='inline-flex';
+      document.getElementById('retakeBtn').style.display='none';
+      document.getElementById('confirmSection').style.display='none';
+      photoData=null;
+    };
+    
+    document.getElementById('uploadBtn').onclick=()=>{
+      document.getElementById('fileInput').click();
+    };
+    
+    document.getElementById('fileInput').onchange=(e)=>{
+      const file=e.target.files[0];
+      if(file){
+        const reader=new FileReader();
+        reader.onload=(ev)=>{
+          // Create an image to resize
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.getElementById('photoCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Resize to max 600px width (smaller for better compression)
+            const maxWidth = 600;
+            const scale = Math.min(1, maxWidth / img.width);
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+            
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            photoData = canvas.toDataURL('image/jpeg', 0.6); // Lower quality to 0.6
+            
+            console.log('Photo uploaded, size:', photoData.length, 'bytes');
+            
+            document.getElementById('photoPreview').src=photoData;
+            document.getElementById('photoPreview').style.display='block';
+            document.getElementById('videoStream').style.display='none';
+            document.getElementById('startCameraBtn').style.display='none';
+            document.getElementById('takePictureBtn').style.display='none';
+            document.getElementById('retakeBtn').style.display='inline-flex';
+            document.getElementById('confirmSection').style.display='block';
+          };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    
+    document.getElementById('confirmPhotoBtn').onclick=()=>{
+      if(photoData){
+        send({type:'confirmAllergens',photo:photoData,timestamp:new Date().toISOString()});
+        const confirmBtn=document.querySelectorAll('.btn.btnDanger')[0];
+        if(confirmBtn){
+          confirmBtn.textContent='Allergy information confirmed';
+          confirmBtn.classList.remove('btnDanger');
+          confirmBtn.classList.add('btnSuccess');
+        }
+        updateLastConfirmedText();
+        mb.style.display='none';
+        if(stream){
+          stream.getTracks().forEach(track=>track.stop());
+        }
+      }
+    };
+    
+    document.getElementById('cancelPhotoBtn').onclick=()=>{
+      mb.style.display='none';
+      if(stream){
+        stream.getTracks().forEach(track=>track.stop());
+      }
+    };
+  }
+  
+  function openChangeLog(){
+    const mb=document.getElementById('modalBack');
+    const body=document.getElementById('modalBody');
+    document.getElementById('modalTitle').textContent='Change Log - '+esc(rs.name||'Restaurant');
+    
+    send({type:'getChangeLog',restaurantId:rs._id||rs.slug});
+    
+    body.innerHTML=`
+      <div class="note" style="margin-bottom:12px">Loading change log...</div>
+    `;
+    
+    mb.style.display='flex';
+    
+    // Add click handler to close modal when clicking outside
+    mb.onclick=(e)=>{
+      if(e.target===mb){
+        mb.style.display='none';
+      }
+    };
+  }
+  
+  window.displayChangeLog=(logs)=>{
+    const body=document.getElementById('modalBody');
+    if(!logs||!logs.length){
+      body.innerHTML=`
+        <div class="note">No changes recorded yet.</div>
+        <div style="margin-top:12px;text-align:center">
+          <button class="btn" onclick="document.getElementById('modalBack').style.display='none'">Close</button>
+        </div>`;
+      return;
+    }
+    
+    let html='';
+    logs.forEach(log=>{
+      const typeLabel=log.type==='confirm'?'Allergen Confirmation':'Allergen Update';
+      const typeClass=log.type==='confirm'?'confirm':'update';
+      const userInfo=log.userEmail?' by '+esc(log.userEmail):'';
+      
+      html+=`<div class="logEntry">
+        <div class="logHeader">
+          <span class="logType ${typeClass}">${esc(typeLabel)}</span>
+          <span class="logTimestamp">${esc(fmtDateTime(log.timestamp))}</span>
+        </div>`;
+      if(log.description){
+        html+=`<div class="note">${esc(log.description)}${userInfo}</div>`;
+      }
+      if(log.changes){
+        html+=`<div class="note" style="margin-top:4px;font-size:12px">${esc(log.changes)}</div>`;
+      }
+      if(log.photo){
+        const photoEsc=esc(log.photo).replace(/'/g,'&#39;');
+        html+=`<img src="${esc(log.photo)}" class="logThumbnail" onclick="window.showPhotoPreview('${photoEsc}')">`;
+      }
+      html+=`</div>`;
+    });
+    
+    html+=`<div style="margin-top:12px;text-align:center">
+      <button class="btn" onclick="document.getElementById('modalBack').style.display='none'">Close</button>
+    </div>`;
+    
+    body.innerHTML=html;
+  };
+  
+  window.showPhotoPreview=(photoUrl)=>{
+    const modal=document.getElementById('photoModal');
+    const img=document.getElementById('photoModalImage');
+    img.src=photoUrl;
+    modal.style.display='flex';
+  };
+  
+  document.getElementById('photoModalClose').onclick=()=>{
+    document.getElementById('photoModal').style.display='none';
+  };
+  
+  document.getElementById('photoModal').onclick=(e)=>{
+    if(e.target.id==='photoModal'){
+      document.getElementById('photoModal').style.display='none';
+    }
+  };
+
+  function drawAll(){
+    [...inner.querySelectorAll('.editBox')].forEach(n=>n.remove());
+    const iw=img.clientWidth, ih=img.clientHeight;
+
+    overlays.forEach((it,idx)=>{
+      const box=document.createElement('div'); box.className='editBox';
+      Object.assign(box.style,{left:(+it.x)+'%',top:(+it.y)+'%',width:(+it.w)+'%',height:(+it.h)+'%'});
+
+      ['nw','ne','sw','se'].forEach(c=>{const h=document.createElement('div'); h.className='handle '+c; box.appendChild(h); h.addEventListener('pointerdown',(e)=>startResize(e,c));});
+
+      const eb=document.createElement('div'); eb.className='editBadge'; eb.title='Edit this item'; eb.innerHTML='✏️';
+      eb.addEventListener('click',(e)=>{e.stopPropagation();openItemEditor(it,idx);}); box.appendChild(eb);
+
+      let dragging=false,start={};
+      box.addEventListener('pointerdown',(e)=>{ if(e.target.classList.contains('handle')||e.target===eb) return;
+        dragging=true; box.setPointerCapture(e.pointerId);
+        start={x:e.clientX,y:e.clientY,l:box.offsetLeft,t:box.offsetTop,w:box.offsetWidth,h:box.offsetHeight};});
+      box.addEventListener('pointermove',(e)=>{ if(!dragging) return;
+        const nx=Math.max(0,Math.min(iw-start.w,start.l+(e.clientX-start.x)));
+        const ny=Math.max(0,Math.min(ih-start.h,start.t+(e.clientY-start.y)));
+        const xPct=nx/iw*100,yPct=ny/ih*100; it.x=xPct; it.y=yPct; box.style.left=xPct+'%'; box.style.top=yPct+'%';});
+      box.addEventListener('pointerup',()=>{ if(dragging){dragging=false; setDirty(true);} });
+
+      function startResize(e,corner){
+        e.stopPropagation(); e.preventDefault(); box.setPointerCapture(e.pointerId);
+        const rect=inner.getBoundingClientRect(); const st={x:e.clientX,y:e.clientY,left:+it.x,top:+it.y,w:+it.w,h:+it.h};
+        const snapThreshold=0.8;
+        
+        function getSnapTargets(){
+          const targets={xEdges:[],yEdges:[]};
+          overlays.forEach((other,otherIdx)=>{
+            if(otherIdx===idx) return;
+            targets.xEdges.push(+other.x);
+            targets.xEdges.push(+other.x + +other.w);
+            targets.yEdges.push(+other.y);
+            targets.yEdges.push(+other.y + +other.h);
+          });
+          return targets;
+        }
+        
+        function snapValue(val,edges,threshold){
+          for(const edge of edges){
+            if(Math.abs(val-edge)<threshold) return edge;
+          }
+          return val;
+        }
+        
+        function onMove(ev){
+          const dx=(ev.clientX-st.x)/rect.width*100, dy=(ev.clientY-st.y)/rect.height*100;
+          let x=st.left,y=st.top,w=st.w,h=st.h;
+          
+          if(corner==='se'){w=st.w+dx;h=st.h+dy;}
+          if(corner==='ne'){w=st.w+dx;h=st.h-dy;y=st.top+dy;}
+          if(corner==='sw'){w=st.w-dx;h=st.h+dy;x=st.left+dx;}
+          if(corner==='nw'){w=st.w-dx;h=st.h-dy;x=st.left+dx;y=st.top+dy;}
+          
+          w=Math.max(3,Math.min(100,w)); 
+          h=Math.max(2,Math.min(100,h));
+          x=Math.max(0,Math.min(100-w,x)); 
+          y=Math.max(0,Math.min(100-h,y));
+          
+          const snapTargets=getSnapTargets();
+          const right=x+w;
+          const bottom=y+h;
+          
+          if(corner==='se'){
+            const snappedRight=snapValue(right,snapTargets.xEdges,snapThreshold);
+            const snappedBottom=snapValue(bottom,snapTargets.yEdges,snapThreshold);
+            if(snappedRight!==right) w=Math.max(3,snappedRight-x);
+            if(snappedBottom!==bottom) h=Math.max(2,snappedBottom-y);
+          }
+          else if(corner==='ne'){
+            const snappedRight=snapValue(right,snapTargets.xEdges,snapThreshold);
+            const snappedTop=snapValue(y,snapTargets.yEdges,snapThreshold);
+            if(snappedRight!==right) w=Math.max(3,snappedRight-x);
+            if(snappedTop!==y){
+              const oldBottom=y+h;
+              y=snappedTop;
+              h=Math.max(2,oldBottom-y);
+            }
+          }
+          else if(corner==='sw'){
+            const snappedLeft=snapValue(x,snapTargets.xEdges,snapThreshold);
+            const snappedBottom=snapValue(bottom,snapTargets.yEdges,snapThreshold);
+            if(snappedLeft!==x){
+              const oldRight=x+w;
+              x=snappedLeft;
+              w=Math.max(3,oldRight-x);
+            }
+            if(snappedBottom!==bottom) h=Math.max(2,snappedBottom-y);
+          }
+          else if(corner==='nw'){
+            const snappedLeft=snapValue(x,snapTargets.xEdges,snapThreshold);
+            const snappedTop=snapValue(y,snapTargets.yEdges,snapThreshold);
+            if(snappedLeft!==x){
+              const oldRight=x+w;
+              x=snappedLeft;
+              w=Math.max(3,oldRight-x);
+            }
+            if(snappedTop!==y){
+              const oldBottom=y+h;
+              y=snappedTop;
+              h=Math.max(2,oldBottom-y);
+            }
+          }
+          
+          w=Math.max(3,Math.min(100,w)); 
+          h=Math.max(2,Math.min(100,h));
+          x=Math.max(0,Math.min(100-w,x)); 
+          y=Math.max(0,Math.min(100-h,y));
+          
+          it.x=x; it.y=y; it.w=w; it.h=h;
+          box.style.left=x+'%'; box.style.top=y+'%'; box.style.width=w+'%'; box.style.height=h+'%';
+        }
+        function onUp(ev){ box.releasePointerCapture(ev.pointerId); document.removeEventListener('pointermove',onMove); document.removeEventListener('pointerup',onUp); setDirty(true); }
+        document.addEventListener('pointermove',onMove); document.addEventListener('pointerup',onUp);
+      }
+
+      box.addEventListener('click',(e)=>{e.preventDefault(); e.stopPropagation();});
+      inner.appendChild(box);
+    });
+  }
+
+  img.onload=drawAll; if(img.complete) drawAll();
+  document.getElementById('addBox').onclick=()=>{overlays.push({id:'New item',x:10,y:10,w:20,h:8,allergens:[],removable:[],crossContamination:[],details:{}}); drawAll(); setDirty(true);};
+  document.getElementById('backBtn').onclick=()=>{
+    if(dirty){
+      const oldTitle=document.title;
+      document.title='CLE Allergy Aware';
+      const result=confirm('You have unsaved changes. Do you want to save before exiting?');
+      document.title=oldTitle;
+      if(result){
+        setSaveState('saving'); 
+        send({type:'saveOverlays',overlays,menuImage:rs.menuImage||''});
+        setTimeout(()=>{state.page='restaurant'; renderRestaurant();},500);
+      } else {
+        state.page='restaurant'; renderRestaurant();
+      }
+    } else {
+      state.page='restaurant'; renderRestaurant();
+    }
+  };
+
+  const mb=document.getElementById('modalBack');
+  function openItemEditor(it,idx){
+    const body=document.getElementById('modalBody'); document.getElementById('modalTitle').textContent='Edit item';
+    body.innerHTML=`<div class="algRow" style="grid-template-columns:1fr">
+        <input id="itemName" class="algInput" style="font-weight:700" placeholder="Item name" value="${esc(it.id||'')}">
+      </div><div id="algList"></div>
+      <div class="note" style="margin:8px 0 4px">Live preview (assumes the user is allergic to everything)</div>
+      <div id="previewBox" style="border:1px solid #2a3466;border-radius:10px;padding:10px"></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn btnPrimary" id="doneBtn">Done</button>
+        <button class="btn btnDanger" id="delBtn">Delete overlay</button></div>`;
+    const list=document.getElementById('algList');
+    const sel=new Set(it.allergens||[]); 
+    const details=it.details||{}; 
+    const rem=new Map((it.removable||[]).map(r=>[r.allergen,r.component]));
+    const cross=new Set(it.crossContamination||[]);
+    
+    ALLERGENS.forEach(a=>{
+      const row=document.createElement('div'); row.className='algRow';
+      const b=document.createElement('div'); b.className='algBtn'; b.textContent=cap(a); b.dataset.a=a; if(sel.has(a)) b.classList.add('active');
+      const inp=document.createElement('input'); inp.className='algInput'; inp.placeholder='Which part of the dish contains the allergen?'; inp.value=details[a]||'';
+      const lab=document.createElement('label'); lab.className='algChk'; const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=rem.has(a); lab.appendChild(cb); lab.appendChild(document.createTextNode('can be accommodated'));
+      const labCross=document.createElement('label'); labCross.className='algChk'; const cbCross=document.createElement('input'); cbCross.type='checkbox'; cbCross.checked=cross.has(a); labCross.appendChild(cbCross); labCross.appendChild(document.createTextNode('cross-contamination risk'));
+      
+      function reflect(){
+        const on=b.classList.contains('active'); 
+        inp.style.display=on?'block':'none'; 
+        lab.style.display=on?'flex':'none'; 
+        labCross.style.display='flex';
+        updatePreview();
+      }
+      b.onclick=()=>{b.classList.toggle('active'); reflect();}; 
+      cb.onchange=updatePreview; 
+      cbCross.onchange=updatePreview;
+      inp.oninput=updatePreview;
+      row.appendChild(b); row.appendChild(inp); row.appendChild(lab); row.appendChild(labCross); list.appendChild(row); reflect();
+    });
+    
+    function updatePreview(){
+      const tmp={id:(document.getElementById('itemName').value||it.id||'Item'),allergens:[],removable:[],crossContamination:[],details:{}};
+      list.querySelectorAll('.algRow').forEach(row=>{
+        const a=row.querySelector('.algBtn').dataset.a;
+        const on=row.querySelector('.algBtn').classList.contains('active');
+        const txt=row.querySelector('.algInput').value.trim();
+        const checkboxes=row.querySelectorAll('input[type="checkbox"]');
+        const isRem=checkboxes[0].checked;
+        const isCross=checkboxes[1].checked;
+        if(on){tmp.allergens.push(a); if(txt) tmp.details[a]=txt; if(isRem) tmp.removable.push({allergen:a,component:txt||a});}
+        if(isCross){tmp.crossContamination.push(a);}
+      });
+      document.getElementById('previewBox').innerHTML=tooltipBodyHTML(tmp,ALLERGENS.slice());
+    }
+    updatePreview();
+    
+    document.getElementById('doneBtn').onclick=()=>{
+      const final={allergens:[],removable:[],crossContamination:[],details:{}}; 
+      list.querySelectorAll('.algRow').forEach(row=>{
+        const a=row.querySelector('.algBtn').dataset.a; 
+        const on=row.querySelector('.algBtn').classList.contains('active');
+        const txt=row.querySelector('.algInput').value.trim(); 
+        const checkboxes=row.querySelectorAll('input[type="checkbox"]');
+        const isRem=checkboxes[0].checked;
+        const isCross=checkboxes[1].checked;
+        if(on){final.allergens.push(a); if(txt) final.details[a]=txt; if(isRem) final.removable.push({allergen:a,component:txt||a}); }
+        if(isCross){final.crossContamination.push(a);}
+      });
+      it.id=(document.getElementById('itemName').value||it.id||'Item'); 
+      it.allergens=final.allergens; 
+      it.details=final.details; 
+      it.removable=final.removable;
+      it.crossContamination=final.crossContamination;
+      mb.style.display='none'; drawAll(); setDirty(true);
+    };
+    document.getElementById('delBtn').onclick=()=>{ if(confirm('Delete this overlay?')){overlays.splice(idx,1); mb.style.display='none'; drawAll(); setDirty(true);} };
+    mb.style.display='flex';
+  }
+}
+
+/* report */
+function renderReport(){
+  renderTopbar();
+  const root=document.getElementById('root');
+  root.innerHTML=`<h1>Report an issue</h1>
+    <div style="max-width:640px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin:8px 0">
+        <input id="rName" type="text" placeholder="Your name" style="flex:1">
+        <input id="rEmail" type="email" placeholder="Email (required)" style="flex:1">
+      </div>
+      <textarea id="rMsg" rows="6" style="width:100%;border-radius:16px" placeholder="Describe the issue"></textarea>
+      <div class="mgrRow" style="justify-content:flex-start"><button class="btn btnPrimary" id="rSend">Send</button></div>
+      <div class="note">We require an email so we can follow up if needed.</div>
+    </div>`;
+  document.getElementById('rSend').onclick=()=>{ 
+    const name=(document.getElementById('rName').value||'').trim();
+    const email=(document.getElementById('rEmail').value||'').trim();
+    const message=(document.getElementById('rMsg').value||'').trim();
+    if(!email){alert('Please enter your email.');return;}
+    send({type:'sendReport',name,email,message});
+  };
+}
+
+/* router */
+function render(){
+  switch(state.page){
+    case 'restaurants': return renderCardsPage();
+    case 'editor':      return renderEditor();
+    case 'report':      return renderReport();
+    case 'restaurant':  return renderRestaurant();
+    default:            return;
+  }
+}
+
+/* hydrate */
+window.addEventListener('message',(ev)=>{
+  const m=ev.data||{};
+  if(!state._hydrated){state._hydrated=true; document.body.style.display='';}
+
+  if(m.page){state.page=m.page;}
+  if(m.user){state.user=m.user;}
+  if(m.allergies){state.allergies=m.allergies;}
+  if(m.restaurant){state.restaurant=m.restaurant;}
+  if(m.restaurants){state.restaurants=m.restaurants;}
+  if(typeof m.canEdit==='boolean'){state.canEdit=m.canEdit;}
+  if(typeof m.qr==='boolean'){state.qr=m.qr;} else if(urlQR){state.qr=true;}
+  if((state.qr||urlQR) && (!state.allergies||!state.allergies.length)){
+    try{const s=sessionStorage.getItem('qrAllergies'); if(s) state.allergies=JSON.parse(s)||[];}catch(_){}
+  }
+  if(m.page==='restaurant'||m.restaurant){state.ack=false;}
+  if(m.type==='allergiesSaved'){state.allergies=m.allergies||[];}
+
+  if(m.type==='overlaysSaved'){try{setSaveState('saved');}catch(_){ } if(m.restaurant) state.restaurant=m.restaurant;}
+  if(m.type==='saveFailed'){try{setSaveState('error');}catch(_){ }}
+  if(m.type==='changeLog'){try{if(window.displayChangeLog)window.displayChangeLog(m.logs);}catch(_){ }}
+
+  renderTopbar(); render();
+});
+</script>
+</body>
+</html>
