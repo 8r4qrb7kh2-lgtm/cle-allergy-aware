@@ -33,15 +33,17 @@
   a{color:inherit;text-decoration:none}
 
   .topbar{position:sticky;top:0;z-index:50;background:linear-gradient(180deg,#0f1530,#0b1020);border-bottom:1px solid #1c2347;box-shadow:var(--shadow);width:100%}
-  .topin{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;padding:10px 16px;flex-wrap:wrap;justify-content:center;box-sizing:border-box}
-  .brand{display:flex;align-items:center;gap:12px;font-weight:800;flex-shrink:0;width:100%;justify-content:center}
-  .brand img{width:28px;height:28px;border-radius:6px}
+  .topin{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:12px;padding:12px 22px 10px;flex-wrap:wrap;justify-content:center;box-sizing:border-box}
+  .brand{display:flex;align-items:center;gap:16px;font-weight:800;flex-shrink:0;cursor:pointer}
+  .brand img{width:52px;height:52px;border-radius:6px}
+  .brand span{font-size:clamp(1.5rem,1.3rem + 1vw,2.1rem);}
 
+  .topNav{display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:center}
   .tabs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
   .tab{padding:8px 12px;border:1px solid var(--border);background:#12183a;border-radius:999px;cursor:pointer;white-space:nowrap}
   .acctBtn{padding:8px 12px;border:1px solid var(--border);background:#12183a;border-radius:999px;cursor:pointer;white-space:nowrap}
 
-  .tab:hover,.btn:hover,.acctBtn:hover,.chip.clickable:hover,.ackBtn:hover,.brand:hover,.pill:hover,.algBtn:hover{
+  .tab:hover,.btn:hover,.acctBtn:hover,.chip.clickable:hover,.ackBtn:hover,.pill:hover,.algBtn:hover{
     border-color:var(--hover); box-shadow:0 0 0 3px #7c9cff33 inset,0 2px 10px #0b1b60aa;
   }
 
@@ -54,7 +56,7 @@
   .chip.clickable{cursor:pointer}
   .pill{padding:10px 14px;border:1px dashed #33408c;border-radius:12px}
 
-  .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:#1a2351;cursor:pointer;color:#fff}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:#1a2351;cursor:pointer;color:#fff}
   .btnPrimary{background:#3651ff;border-color:#4e65ff}
   .btnDanger{background:#8b1d1d;border-color:#a12525}
   .btnSuccess{background:#17663a;border-color:#1a7b46}
@@ -78,7 +80,7 @@
   .menuWrap{display:none;background:#0d132a;border-radius:14px;position:relative;overflow:visible;min-height:140px}
   .menuWrap.show{display:block}
   .menuInner{position:relative;display:inline-block;user-select:none;line-height:0}
-  .menuImg{display:block;max-width:100%;height:auto;width:100%;vertical-align:top}
+  .menuImg{display:block;max-width:100%;height:auto;width:100%}
   .overlayLayer{position:absolute;left:0;top:0;pointer-events:none;line-height:normal}
   .overlay{position:absolute;border:1.5px solid;border-radius:4px;background:transparent;pointer-events:auto;box-sizing:border-box}
   .overlay:hover{box-shadow:0 0 0 3px #ffffff22,0 6px 16px rgba(0,0,0,.35)}
@@ -146,38 +148,53 @@
   }
   input::placeholder, textarea::placeholder{color:#cfd5ff88}
 
-  /* QR banner */
-  .qrBanner{
-    position:fixed; left:0; right:0; bottom:0; z-index:2000;
-    background:linear-gradient(180deg,#0f1534,#0b1020);
-    border-top:1px solid #2a3466; padding:12px 14px;
-    display:flex; gap:12px; align-items:center; justify-content:center; flex-wrap:wrap;
-    box-shadow:0 -4px 20px rgba(0,0,0,.4);
+  /* QR guest promo */
+  .qrPromoBackdrop{
+    position:fixed; inset:0; display:none;
+    align-items:center; justify-content:center;
+    padding:20px; background:rgba(8,12,32,.85); z-index:2500;
   }
-  .qrBannerClose{
-    position:absolute; top:8px; right:8px;
-    width:24px; height:24px;
+  .qrPromoBackdrop.show{display:flex;}
+  .qrPromo{
+    width:min(420px,calc(100% - 40px));
+    background:linear-gradient(180deg,#121a3f,#0d132a);
+    border:1px solid #2a3466; border-radius:20px;
+    box-shadow:0 18px 50px rgba(0,0,0,.45);
+    padding:34px 34px 30px; position:relative;
+    display:flex; flex-direction:column; gap:14px; text-align:center;
+  }
+  .qrPromo h2{margin:0 0 6px;font-size:clamp(1.1rem,1rem + 1vw,1.6rem);}
+  .qrPromo p{margin:0;color:var(--muted);font-size:0.95rem;line-height:1.5;}
+  .qrPromoClose{
+    position:absolute; top:18px; right:18px;
+    width:28px; height:28px;
     border:1px solid #2a3466; background:#16205a;
-    border-radius:6px; cursor:pointer;
+    border-radius:8px; cursor:pointer;
     display:flex; align-items:center; justify-content:center;
-    font-size:16px; color:#fff; line-height:1;
+    font-size:18px; color:#fff; line-height:1;
   }
-  .qrBannerClose:hover{border-color:var(--hover); box-shadow:0 0 6px #3651ff}
-  .qrFixedBtn{
-    position:fixed; left:50%; bottom:20px; transform:translateX(-50%);
-    z-index:1999; display:none;
+  .qrPromoClose:hover{border-color:var(--hover); box-shadow:0 0 8px #3651ff;}
+  .qrBanner{
+    position:fixed; left:0; right:0; bottom:0; z-index:2200;
+    background:linear-gradient(180deg,#0f1534,#0b1020);
+    border-top:1px solid #2a3466; padding:16px 20px;
+    display:none; gap:16px; align-items:center; justify-content:center; flex-wrap:wrap;
+    box-shadow:0 -4px 20px rgba(0,0,0,.4);
+    text-align:center;
   }
-
+  .qrBanner.show{display:flex;}
+  body.qrMode .topbar{border-bottom:none; box-shadow:none;}
+  body.qrMode .topin{padding:32px 18px;gap:24px;}
   /* Hide script and style content if it leaks */
   script, style {display: none !important;}
 
   @media (max-width:640px){
-    .topin{gap:4px;padding:6px 10px}
-    .brand{gap:6px;font-size:14px}
-    .brand img{width:20px;height:20px}
-    .tabs{gap:3px}
-    .tab{padding:5px 7px;font-size:12px}
-    .acctBtn{padding:5px 7px;font-size:12px}
+    .topin{gap:12px;padding:16px 14px 12px}
+    .brand{gap:12px}
+    .brand img{width:40px;height:40px}
+    .tabs{gap:6px}
+    .tab{padding:6px 10px;font-size:13px}
+    .acctBtn{padding:6px 10px;font-size:13px}
     .content{padding:10px;padding-bottom:100px}
     .legend{gap:10px}
     h1{font-size:1.3rem;margin:4px 0 10px}
@@ -218,6 +235,104 @@
   <img id="photoModalImage" src="" alt="Confirmation photo">
 </div>
 
+<div class="qrPromoBackdrop" id="qrPromoBackdrop" aria-hidden="true">
+  <div class="qrPromo" role="dialog" aria-labelledby="qrPromoTitle" aria-modal="true">
+    <button class="qrPromoClose" id="qrPromoClose" type="button" aria-label="Close promotion">×</button>
+    <h2 id="qrPromoTitle">See allergy-safe spots all over CLE</h2>
+    <p>Save your allergens once and unlock curated menus at restaurants across the city.</p>
+    <p>Creating an account takes less than a minute and is completely free.</p>
+    <button class="btn btnPrimary" id="qrPromoSignup" type="button">Create free account</button>
+  </div>
+</div>
+<div class="qrBanner" id="qrBanner" aria-hidden="true">
+  <div><strong>Keep exploring safely.</strong> Create a free account to save your allergens and see compatible dishes everywhere.</div>
+  <button class="btn btnPrimary" id="qrBannerSignup" type="button">Create free account</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module">
+// Initialize Supabase
+const SUPABASE_URL = 'https://fgoiyycctnwnghrvsilt.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnb2l5eWNjdG53bmdocnZzaWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0MzY1MjYsImV4cCI6MjA3NjAxMjUyNn0.xlSSXr0Gl7j-vsckrj-2anpPmp4BG2SUIdN-_dquSA8';
+const { createClient } = supabase;
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+window.supabaseClient = supabaseClient;
+
+// Get slug from URL
+const urlParams = new URLSearchParams(window.location.search);
+const slug = urlParams.get('slug');
+const qrParam = urlParams.get('qr');
+const isQrVisit = qrParam ? /^(1|true|yes)$/i.test(qrParam) : false;
+window.__qrVisit = isQrVisit;
+
+if (!slug) {
+  document.body.innerHTML = '<div style="color: #ef4444; text-align: center; padding: 40px;">Error: No restaurant specified</div>';
+} else {
+  // Fetch restaurant data
+  async function loadRestaurant() {
+    const { data: restaurant, error } = await supabaseClient
+      .from('restaurants')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    if (error) {
+      console.error('Error loading restaurant:', error);
+      document.body.innerHTML = '<div style="color: #ef4444; text-align: center; padding: 40px;">Error loading restaurant</div>';
+      return;
+    }
+
+    if (!restaurant) {
+      document.body.innerHTML = '<div style="color: #ef4444; text-align: center; padding: 40px;">Restaurant not found</div>';
+      return;
+    }
+
+    // Get current user
+    const { data: { user } } = await supabaseClient.auth.getUser();
+
+    // Get user allergies if logged in
+    let allergies = [];
+    let canEdit = false;
+    if (user) {
+      const { data: record } = await supabaseClient
+        .from('user_allergies')
+        .select('allergens')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      allergies = record?.allergens || [];
+
+      const { data: managerRecord, error: managerError } = await supabaseClient
+        .from('restaurant_managers')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('restaurant_id', restaurant.id)
+        .maybeSingle();
+      if(managerError){
+        console.error('Manager lookup failed', managerError);
+      }
+      console.log('Manager row:', managerRecord, 'error:', managerError);
+      canEdit = !!managerRecord;
+    }
+
+    // Transform restaurant data to match expected format
+    const restaurantData = normalizeRestaurant(restaurant);
+
+    // Send data to the embedded page script
+    window.postMessage({
+      page: 'restaurant',
+      restaurant: restaurantData,
+      user: user ? { loggedIn: true, email: user.email, id: user.id, name: user.user_metadata?.first_name || null } : { loggedIn: false },
+      allergies: allergies,
+      canEdit: canEdit,
+      canEditSource: canEdit ? 'manager-row' : 'none',
+      qr: isQrVisit
+    }, '*');
+  }
+
+  loadRestaurant();
+}
+</script>
+
 <script>
 // Ensure zoom is always allowed on mobile Safari
 (function () {
@@ -234,7 +349,234 @@ document.body.style.display='none';
 const ALLERGENS=["dairy","egg","peanut","tree nut","shellfish","fish","gluten","soy","sesame","wheat"];
 const state={page:null,restaurants:[],restaurant:null,allergies:[],ack:false,user:{loggedIn:false},canEdit:false,qr:false,_hydrated:false};
 
-const send=(p)=>parent.postMessage(p,"*");
+const urlQR=typeof window.__qrVisit==='boolean'
+  ? window.__qrVisit
+  : (()=>{const v=new URLSearchParams(location.search).get('qr'); return v && /^(1|true|yes)$/i.test(v);})();
+
+const QR_PROMO_STORAGE_KEY='qrPromoDismissed';
+function shouldShowQrPromo(){
+  try{return !sessionStorage.getItem(QR_PROMO_STORAGE_KEY);}catch(_){return true;}
+}
+function dismissQrPromo(){
+  try{sessionStorage.setItem(QR_PROMO_STORAGE_KEY,'1');}catch(_){}
+}
+function shouldShowQrBanner(){
+  return !state.user?.loggedIn;
+}
+function showQrBanner(){
+  const banner=document.getElementById('qrBanner');
+  if(!banner) return;
+  if(!shouldShowQrBanner()) return;
+  banner.classList.add('show');
+  banner.setAttribute('aria-hidden','false');
+}
+function hideQrBanner(){
+  const banner=document.getElementById('qrBanner');
+  if(!banner) return;
+  banner.classList.remove('show');
+  banner.setAttribute('aria-hidden','true');
+}
+let qrPromoTimerId=null;
+function cancelQrPromoTimer(){
+  if(qrPromoTimerId){clearTimeout(qrPromoTimerId);qrPromoTimerId=null;}
+}
+function queueQrPromoTimer(){
+  cancelQrPromoTimer();
+  qrPromoTimerId=setTimeout(()=>{
+    qrPromoTimerId=null;
+    if(!state.user?.loggedIn && shouldShowQrPromo()){
+      openQrPromo();
+    }
+  },10000);
+}
+function openQrPromo(){
+  const backdrop=document.getElementById('qrPromoBackdrop');
+  if(!backdrop || backdrop.classList.contains('show')) return;
+  hideQrBanner();
+  backdrop.classList.add('show');
+  backdrop.setAttribute('aria-hidden','false');
+}
+function closeQrPromo(reason='dismiss'){
+  const backdrop=document.getElementById('qrPromoBackdrop');
+  if(backdrop && backdrop.classList.contains('show')){
+    backdrop.classList.remove('show');
+    backdrop.setAttribute('aria-hidden','true');
+  }
+  if(reason!=='login') dismissQrPromo();
+  cancelQrPromoTimer();
+  if(reason==='dismiss' && shouldShowQrBanner()){
+    showQrBanner();
+  }
+  if(reason==='signup' || reason==='login'){
+    hideQrBanner();
+  }
+}
+
+// Handle navigation in standalone mode
+const isStandalone = (window === window.parent);
+const send=(p)=>{
+  if (isStandalone) {
+    // Handle navigation directly in standalone mode
+    if (p.type === 'navigate') {
+      if (p.to === '/restaurants') window.location.href = 'restaurants.html';
+      else if (p.to === '/report-issue') window.location.href = 'report-issue.html';
+      else if (p.to === '/accounts') {
+        const params=new URLSearchParams();
+        if(p.slug) params.set('returnSlug',p.slug);
+        if(p.redirect) params.set('redirect',p.redirect);
+        const url='account.html'+(params.toString()?`?${params.toString()}`:'');
+        window.location.href=url;
+      }
+      else window.location.href = p.to;
+    } else if (p.type === 'signIn') {
+      const params=new URLSearchParams();
+      if(p.slug) params.set('returnSlug',p.slug);
+      if(p.redirect) params.set('redirect',p.redirect);
+      const url='account.html'+(params.toString()?`?${params.toString()}`:'');
+      window.location.href = url;
+    } else if (p.type === 'openRestaurant') {
+      window.location.href = `restaurant.html?slug=${p.slug}`;
+    } else if (p.type === 'saveOverlays') {
+      (async ()=>{
+        try{
+          const client = window.supabaseClient;
+          if(!client) throw new Error('Supabase client not ready.');
+          const restaurantId = state.restaurant?._id || state.restaurant?.id || null;
+          if(!restaurantId) throw new Error('Restaurant not loaded yet.');
+          const payload = { overlays: p.overlays || [] };
+          if (p.menuImage) payload.menu_image = p.menuImage;
+          const { data, error } = await client
+            .from('restaurants')
+            .update(payload)
+            .eq('id', restaurantId)
+            .select()
+            .single();
+          if(error) throw error;
+          const updatedRestaurant = normalizeRestaurant(data);
+          window.postMessage({type:'overlaysSaved', restaurant: updatedRestaurant}, '*');
+
+          const changeDescription = p.changes && p.changes.length ? p.changes : 'Menu overlays updated.';
+          try{
+            let userName = 'Manager';
+            if(state.user?.name) {
+              userName = state.user.name;
+            } else if(state.user?.user_metadata?.first_name || state.user?.user_metadata?.last_name) {
+              const first = state.user.user_metadata.first_name || '';
+              const last = state.user.user_metadata.last_name || '';
+              userName = `${first} ${last}`.trim();
+            } else if(state.user?.email) {
+              userName = state.user.email.split('@')[0];
+            }
+            await insertChangeLogEntry({
+              restaurantId,
+              timestamp: new Date().toISOString(),
+              type: 'update',
+              description: `${userName}: ${changeDescription}`,
+              changes: changeDescription,
+              userEmail: state.user?.email || null
+            });
+          }catch(logError){
+            console.error('Change log insert failed', logError);
+          }
+        }catch(err){
+          console.error('Saving overlays failed', err);
+          window.postMessage({type:'saveFailed', message: err.message}, '*');
+        }
+      })();
+      return;
+    } else if (p.type === 'confirmAllergens') {
+      (async ()=>{
+        try{
+          const client = window.supabaseClient;
+          if(!client) throw new Error('Supabase client not ready.');
+          const restaurantId = state.restaurant?._id || state.restaurant?.id || null;
+          if(!restaurantId) throw new Error('Restaurant not loaded yet.');
+          const timestamp = p.timestamp || new Date().toISOString();
+
+          const { data: updated, error } = await client
+            .from('restaurants')
+            .update({ last_confirmed: timestamp })
+            .eq('id', restaurantId)
+            .select()
+            .single();
+          if(error) throw error;
+
+      try{
+        let userName = 'Manager';
+        if(state.user?.name) {
+          userName = state.user.name;
+        } else if(state.user?.user_metadata?.first_name || state.user?.user_metadata?.last_name) {
+          const first = state.user.user_metadata.first_name || '';
+          const last = state.user.user_metadata.last_name || '';
+          userName = `${first} ${last}`.trim();
+        } else if(state.user?.email) {
+          userName = state.user.email.split('@')[0];
+        }
+        await insertChangeLogEntry({
+          restaurantId,
+          timestamp,
+          type: 'confirm',
+          description: `${userName} confirmed allergen information is up-to-date`,
+          changes: 'Allergen information confirmed',
+          userEmail: state.user?.email || null,
+          photos: p.photos || (p.photo ? [p.photo] : [])
+        });
+      }catch(logError){
+        console.error('Change log insert failed', logError);
+      }
+
+          window.postMessage({type:'confirmationSaved', restaurant: normalizeRestaurant(updated), timestamp}, '*');
+        }catch(err){
+          console.error('Confirmation failed', err);
+          window.postMessage({type:'confirmationFailed', message: err.message}, '*');
+        }
+      })();
+      return;
+    } else if (p.type === 'getChangeLog') {
+      (async ()=>{
+        try{
+          const logs = await fetchChangeLogEntries(p.restaurantId || state.restaurant?._id || state.restaurant?.id || null);
+          window.postMessage({type:'changeLog', logs:logs || []}, '*');
+        }catch(err){
+          console.error('Loading change log failed', err);
+          window.postMessage({type:'changeLog', logs:[], error: err.message}, '*');
+        }
+      })();
+      return;
+    }
+    // For other message types, just log them in standalone mode
+    console.log('Message sent:', p);
+  } else {
+    // In iframe mode, use postMessage
+    parent.postMessage(p,"*");
+  }
+};
+function requestSignIn(origin){
+  const slugParam=(state.restaurant && state.restaurant.slug) || slug || '';
+  const payload={type:'signIn'};
+  if(slugParam) payload.slug=slugParam;
+  if(origin==='restaurants') payload.redirect='restaurants';
+  if(origin==='qr') payload.from='qr';
+  send(payload);
+}
+const qrPromoBackdrop=document.getElementById('qrPromoBackdrop');
+const qrPromoCloseBtn=document.getElementById('qrPromoClose');
+const qrPromoSignupBtn=document.getElementById('qrPromoSignup');
+const qrBanner=document.getElementById('qrBanner');
+const qrBannerSignupBtn=document.getElementById('qrBannerSignup');
+
+if(qrPromoBackdrop){
+  qrPromoBackdrop.addEventListener('click',(e)=>{if(e.target===qrPromoBackdrop) closeQrPromo('dismiss');});
+}
+if(qrPromoCloseBtn){
+  qrPromoCloseBtn.onclick=()=>closeQrPromo('dismiss');
+}
+if(qrPromoSignupBtn){
+  qrPromoSignupBtn.onclick=()=>{closeQrPromo('signup'); requestSignIn('qr');};
+}
+if(qrBannerSignupBtn){
+  qrBannerSignupBtn.onclick=()=>{hideQrBanner(); requestSignIn('qr');};
+}
 const norm=s=>(s||'').toString().trim().toLowerCase();
 const esc=s=>(s??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 const cap=s=>(s||'').split(' ').map(w=>w? w[0].toUpperCase()+w.slice(1):'').join(' ');
@@ -259,8 +601,60 @@ const daysAgo=d=>{
   }catch(_){return '—';}
 };
 function div(html,cls){const d=document.createElement('div'); if(cls)d.className=cls; d.innerHTML=html; return d;}
-const urlQR=(()=>{const v=new URLSearchParams(location.search).get('qr'); return v && /^(1|true|yes)$/i.test(v);})();
 
+function normalizeRestaurant(row){
+  if(!row) return null;
+  const id = row._id ?? row.id;
+  const menuImage = row.menuImage ?? row.menu_image;
+  const lastConfirmed = row.lastConfirmed ?? row.last_confirmed;
+  const overlays = Array.isArray(row.overlays) ? row.overlays : [];
+  return {
+    _id: id,
+    name: row.name,
+    slug: row.slug,
+    menuImage,
+    lastConfirmed,
+    overlays
+  };
+}
+
+function configureModalClose({visible=true,onClick=null}={}){
+  const closeBtn=document.getElementById('modalCloseBtn');
+  if(closeBtn){
+    closeBtn.style.display=visible?'inline-flex':'none';
+    closeBtn.onclick=onClick || null;
+  }
+}
+
+async function insertChangeLogEntry(base){
+  const client=window.supabaseClient;
+  if(!client) throw new Error('Supabase client not ready.');
+  const payload={
+    restaurant_id: base.restaurantId,
+    type: base.type,
+    description: base.description,
+    changes: base.changes,
+    user_email: base.userEmail || null,
+    photos: Array.isArray(base.photos) ? base.photos : (base.photos ? [base.photos] : []),
+    timestamp: base.timestamp || new Date().toISOString()
+  };
+  Object.keys(payload).forEach(k=>payload[k]==null&&delete payload[k]);
+  const { error } = await client.from('change_logs').insert([payload]);
+  if(error) throw error;
+  return true;
+}
+
+async function fetchChangeLogEntries(restaurantId){
+  const client=window.supabaseClient;
+  if(!client) throw new Error('Supabase client not ready.');
+  let query=client.from('change_logs').select('*').order('timestamp',{ascending:false}).limit(50);
+  if(restaurantId){
+    query=query.eq('restaurant_id',restaurantId);
+  }
+  const {data,error}=await query;
+  if(error) throw error;
+  return data||[];
+}
 /* risk + tooltip */
 function computeStatus(item,sel){
   if(!sel||!sel.length) return 'neutral';
@@ -313,15 +707,30 @@ function tooltipBodyHTML(item,sel){
 
 function renderTopbar(){
   const el=document.getElementById('topbar'); el.innerHTML='';
-  el.appendChild(div(`<img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt=""><span>CLE Allergy Aware</span>`,'brand'));
-  const tabs=div('','tabs');
-  [{t:'Restaurants',to:'/restaurants'},{t:'Report an issue',to:'/report-issue'}].forEach(n=>{
-    const b=div(n.t,'tab'); b.onclick=()=>send({type:'navigate',to:n.to}); tabs.appendChild(b);
-  });
-  el.appendChild(tabs);
-  const acct=div(state.user?.loggedIn?'My Account':'Sign in','acctBtn');
-  acct.onclick=()=>state.user?.loggedIn?send({type:'navigate',to:'/accounts'}):send({type:'signIn'});
-  el.appendChild(acct);
+  const isQrExperience=!!(state.qr||urlQR);
+  document.body.classList.toggle('qrMode',isQrExperience);
+  const brand=div(`<img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt=""><span>CLE Allergy Aware</span>`,'brand');
+  brand.onclick=()=>window.location.href='account.html';
+  brand.style.cursor='pointer';
+  el.appendChild(brand);
+  if(!isQrExperience){
+    const navWrap=div('','topNav');
+    const tabs=div('','tabs');
+    [{t:'Restaurants',to:'/restaurants'}].forEach(n=>{
+      const b=div(n.t,'tab'); b.onclick=()=>send({type:'navigate',to:n.to}); tabs.appendChild(b);
+    });
+    navWrap.appendChild(tabs);
+    const acct=div(state.user?.loggedIn?'My Account':'Sign in','acctBtn');
+    acct.onclick=()=>{
+      if(state.user?.loggedIn){
+        send({type:'navigate',to:'/accounts'});
+      } else {
+        requestSignIn();
+      }
+    };
+    navWrap.appendChild(acct);
+    el.appendChild(navWrap);
+  }
 }
 
 /* tooltips */
@@ -405,7 +814,7 @@ function renderCardsPage(){
         <img src="${esc(rs.menuImage||'')}" alt="">
         <div class="pad">
           <div style="font-weight:800;margin-bottom:6px">${esc(rs.name||'Restaurant')}</div>
-          <div class="note">Confirmed by management: ${rs.lastConfirmed?esc(daysAgo(rs.lastConfirmed)):'—'}</div>
+          <div class="note">Last confirmed by staff: ${rs.lastConfirmed?esc(daysAgo(rs.lastConfirmed)):'—'}</div>
           <div style="margin-top:10px"><button class="btn btnPrimary">View menu & allergens</button></div>
         </div></div>`);
     c.querySelector('.btn').onclick=()=>send({type:'openRestaurant',slug:rs.slug});
@@ -438,14 +847,6 @@ function renderSelector(el){
     row.appendChild(c);
   });
   el.appendChild(row);
-  const controls=div(`<div class="note" style="margin-top:6px;display:flex;gap:10px;flex-wrap:wrap">
-      <button class="btn" id="selAll">Select all</button>
-      <button class="btn" id="clrAll">Clear</button></div>`);
-  el.appendChild(controls);
-  controls.querySelector('#selAll').onclick=()=>{state.allergies=ALLERGENS.slice();try{sessionStorage.setItem('qrAllergies',JSON.stringify(state.allergies));}catch(_){}
-    renderSelector(el); if(window.__rerenderLayer__)window.__rerenderLayer__(); send({type:'qrAllergies',allergies:state.allergies});};
-  controls.querySelector('#clrAll').onclick=()=>{state.allergies=[];try{sessionStorage.setItem('qrAllergies','[]');}catch(_){}
-    renderSelector(el); if(window.__rerenderLayer__)window.__rerenderLayer__(); send({type:'qrAllergies',allergies:state.allergies});};
 }
 
 /* draw (simple image that follows page zoom) */
@@ -592,7 +993,7 @@ function renderRestaurant(){
       <span><span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;background:#facc15;border:2px solid #facc15;border-radius:50%;font-size:9px;vertical-align:middle;color:#000;font-weight:bold;margin-right:4px;">⚠</span>Cross-contamination risk</span>
       <span class="note">👆 Hover or tap a box for details</span>
     </div>
-    <div id="confirmedRow" style="display:none" class="note">Confirmed by management: ${rs.lastConfirmed?esc(fmtDate(rs.lastConfirmed)):'—'}</div>
+    <div id="confirmedRow" style="display:none" class="note">Last confirmed by staff: ${rs.lastConfirmed?esc(fmtDate(rs.lastConfirmed)):'—'}</div>
     <div class="menuWrap" id="menu"></div>
   `;
 
@@ -607,39 +1008,26 @@ function renderRestaurant(){
     document.getElementById('legendRow').style.display='flex';
     document.getElementById('confirmedRow').style.display='block';
     drawMenu(menu, rs.menuImage);
-    
-    // Show QR banner 10 seconds after acknowledging (only for QR users who aren't signed in)
-    if((state.qr || urlQR) && !state.user?.loggedIn){
-      setTimeout(()=>{
-        const existing=document.querySelector('.qrBanner');
-        if(!existing){
-          const bar=document.createElement('div');
-          bar.className='qrBanner';
-          bar.innerHTML=`<button class="qrBannerClose" title="Close">✕</button>
-            <div><strong>Eat worry-free everywhere!</strong> Create a free account to save your allergens and explore safe options at restaurants across Cleveland.</div>
-            <button class="btn btnPrimary" id="qrSignup">Create free account</button>`;
-          document.body.appendChild(bar);
-          
-          const fixedBtn=document.createElement('button');
-          fixedBtn.className='btn btnPrimary qrFixedBtn';
-          fixedBtn.id='qrSignupFixed';
-          fixedBtn.textContent='Create free account';
-          document.body.appendChild(fixedBtn);
-          
-          document.querySelector('.qrBannerClose').onclick=()=>{
-            bar.remove();
-            fixedBtn.style.display='block';
-          };
-          document.getElementById('qrSignup').onclick=()=>send({type:'signIn'});
-          document.getElementById('qrSignupFixed').onclick=()=>send({type:'signIn'});
-        }
-      }, 10000);
+    if((state.qr || urlQR) && !state.user?.loggedIn && shouldShowQrPromo()){
+      queueQrPromoTimer();
+    } else {
+      cancelQrPromoTimer();
     }
   };
 
+  if((state.qr || urlQR) && !state.user?.loggedIn){
+    if(!shouldShowQrPromo() && shouldShowQrBanner()){
+      showQrBanner();
+    } else if(!shouldShowQrBanner()){
+      hideQrBanner();
+    }
+  } else {
+    hideQrBanner();
+  }
+
   if(!state.qr && state.user?.loggedIn){
     const editBtn=document.getElementById('editSavedBtn');
-    if(editBtn) editBtn.onclick=()=>send({type:'navigate',to:'/accounts'});
+    if(editBtn) editBtn.onclick=()=>send({type:'navigate',to:'/accounts',slug:rs.slug});
   }
 
   if(state.canEdit){
@@ -675,30 +1063,83 @@ function renderEditor(){
   const overlays=JSON.parse(JSON.stringify(rs.overlays||[]));
   let dirty=false; function setDirty(v=true){dirty=v; document.getElementById('saveRow').style.display=dirty?'block':'none';}
 
+  // Track all changes as they happen
+  let pendingChanges=[];
+
   const saveBtn=document.getElementById('saveBtn');
   function setSaveState(s){
     if(!saveBtn)return;
     if(s==='saving'){saveBtn.disabled=true;saveBtn.textContent='Saving…';saveBtn.classList.remove('btnSuccess','btnDanger','btnPrimary');saveBtn.classList.add('btn');}
     else if(s==='saved'){saveBtn.disabled=true;saveBtn.textContent='Saved';saveBtn.classList.remove('btn','btnDanger','btnPrimary');saveBtn.classList.add('btnSuccess');
-      setTimeout(()=>{saveBtn.disabled=false;saveBtn.textContent='Save to site';saveBtn.classList.remove('btnSuccess','btnDanger');saveBtn.classList.add('btnPrimary');},900);}
+      setTimeout(()=>{saveBtn.disabled=false;saveBtn.textContent='Save to site';saveBtn.classList.remove('btnSuccess','btnDanger');saveBtn.classList.add('btnPrimary');pendingChanges=[];},900);}
     else if(s==='error'){saveBtn.disabled=false;saveBtn.textContent='Retry save';saveBtn.classList.remove('btnSuccess','btnPrimary');saveBtn.classList.add('btnDanger');}
   }
+  function formatChangesForLog(changesList){
+    // Group changes by item
+    const firstName=state.user?.user_metadata?.first_name||'';
+    const lastName=state.user?.user_metadata?.last_name||'';
+    const fullName=`${firstName} ${lastName}`.trim()||'User';
+
+    const grouped={};
+    const generalChanges=[];
+
+    changesList.forEach(change=>{
+      // Check if change is specific to an item (contains ":")
+      const colonIndex=change.indexOf(':');
+      if(colonIndex>0){
+        const itemName=change.substring(0,colonIndex).trim();
+        const itemChange=change.substring(colonIndex+1).trim();
+        if(!grouped[itemName])grouped[itemName]=[];
+        grouped[itemName].push(itemChange);
+      } else {
+        generalChanges.push(change);
+      }
+    });
+
+    // Format: Name on first line, then grouped changes
+    let formatted=`**${fullName}**\n\n`;
+
+    // Add general changes first (Added/Removed items, renames)
+    if(generalChanges.length>0){
+      formatted+=generalChanges.map(c=>`• ${c}`).join('\n')+'\n\n';
+    }
+
+    // Add item-specific changes
+    Object.keys(grouped).forEach(itemName=>{
+      formatted+=`${itemName}:\n`;
+      formatted+=grouped[itemName].map(c=>`• ${c}`).join('\n')+'\n\n';
+    });
+
+    return formatted.trim();
+  }
+
   if(saveBtn){
     const originalOverlays=JSON.stringify(rs.overlays||[]);
     saveBtn.onclick=()=>{
       setSaveState('saving');
-      const changes=describeOverlayChanges(JSON.parse(originalOverlays),overlays);
-      send({type:'saveOverlays',overlays,menuImage:rs.menuImage||'',changes});
+      // Use pendingChanges if available, otherwise fall back to comparison
+      let changesList;
+      if(pendingChanges.length>0){
+        changesList=pendingChanges;
+      } else {
+        const oldChanges=describeOverlayChanges(JSON.parse(originalOverlays),overlays);
+        changesList=oldChanges.split('; ');
+      }
+      const formattedChanges=formatChangesForLog(changesList);
+      send({type:'saveOverlays',overlays,menuImage:rs.menuImage||'',changes:formattedChanges});
     };
   }
   
   function describeOverlayChanges(oldOverlays,newOverlays){
     const changes=[];
-    if(newOverlays.length>oldOverlays.length){
-      changes.push(`Added ${newOverlays.length-oldOverlays.length} new item(s)`);
+    const diff=newOverlays.length-oldOverlays.length;
+    if(diff>0){
+      const itemWord=diff===1?'item':'items';
+      changes.push(`Added ${diff} new ${itemWord}`);
     }
-    if(newOverlays.length<oldOverlays.length){
-      changes.push(`Removed ${oldOverlays.length-newOverlays.length} item(s)`);
+    if(diff<0){
+      const itemWord=Math.abs(diff)===1?'item':'items';
+      changes.push(`Removed ${Math.abs(diff)} ${itemWord}`);
     }
     newOverlays.forEach((item,idx)=>{
       const old=oldOverlays[idx];
@@ -710,8 +1151,14 @@ function renderEditor(){
         const newAllergens=new Set(item.allergens||[]);
         const added=[...newAllergens].filter(a=>!oldAllergens.has(a));
         const removed=[...oldAllergens].filter(a=>!newAllergens.has(a));
-        if(added.length)changes.push(`${item.id}: Added allergen(s) ${added.join(', ')}`);
-        if(removed.length)changes.push(`${item.id}: Removed allergen(s) ${removed.join(', ')}`);
+        if(added.length){
+          const allergenWord=added.length===1?'allergen':'allergens';
+          changes.push(`${item.id}: Added ${allergenWord} ${added.join(', ')}`);
+        }
+        if(removed.length){
+          const allergenWord=removed.length===1?'allergen':'allergens';
+          changes.push(`${item.id}: Removed ${allergenWord} ${removed.join(', ')}`);
+        }
       }
     });
     return changes.length?changes.join('; '):'Minor adjustments to overlay positions';
@@ -738,19 +1185,26 @@ function renderEditor(){
     
     body.innerHTML=`
       <div class="photoCapture">
-        <div class="note" style="text-align:center;margin-bottom:8px">Take a photo of your current menu to confirm that it aligns with the menu on CLE Allergy Aware</div>
+        <div class="note" style="text-align:center;margin-bottom:8px">Take photos of your current menu to confirm that it aligns with the menu on CLE Allergy Aware</div>
         <video id="videoStream" class="videoPreview" autoplay playsinline style="display:none"></video>
         <canvas id="photoCanvas" style="display:none"></canvas>
-        <img id="photoPreview" class="photoPreview" style="display:none">
+        <div id="photosContainer" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:12px"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
-          <button class="btn btnPrimary" id="startCameraBtn">📷 Start Camera</button>
-          <button class="btn btnPrimary" id="takePictureBtn" style="display:none">📸 Take Picture</button>
-          <button class="btn" id="retakeBtn" style="display:none">🔄 Retake</button>
-          <input type="file" id="fileInput" accept="image/*" capture="environment" style="display:none">
-          <button class="btn" id="uploadBtn">📁 Upload Photo</button>
+          <button class="btn btnPrimary" id="startCameraBtn">📷 Take Photo</button>
+          <button class="btn btnPrimary" id="takePictureBtn" style="display:none">📸 Capture</button>
+          <input type="file" id="fileInput" accept="image/*" capture="environment" style="display:none" multiple>
+          <button class="btn" id="uploadBtn">📁 Upload Photos</button>
+          <button class="btn btnSuccess" id="doneAddingBtn" style="display:none">Done adding photos</button>
         </div>
         <div id="confirmSection" style="display:none;width:100%;text-align:center">
-          <div class="note" style="margin:12px 0">Is every dish clearly visible in this photo?</div>
+          <div class="note" style="margin:12px 0 8px">Are all dishes clearly visible in these photos?</div>
+          <div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px">
+            <button class="btn btnSuccess" id="yesVisibleBtn">✓ Yes</button>
+            <button class="btn btnDanger" id="noVisibleBtn">✗ No</button>
+          </div>
+        </div>
+        <div id="menuConfirmSection" style="display:none;width:100%;text-align:center">
+          <div class="note" style="margin:12px 0 8px">Are these photos of your most current menu?</div>
           <div style="display:flex;gap:8px;justify-content:center">
             <button class="btn btnSuccess" id="confirmPhotoBtn">✓ Yes, confirm</button>
             <button class="btn btnDanger" id="cancelPhotoBtn">✗ Cancel</button>
@@ -760,29 +1214,59 @@ function renderEditor(){
     `;
     
     mb.style.display='flex';
-    
-    // Add close button handler
-    const closeBtn = document.getElementById('modalCloseBtn');
-    if (closeBtn) {
-      closeBtn.onclick = () => {
-        mb.style.display = 'none';
-        if (stream) {
-          stream.getTracks().forEach(track => track.stop());
-          stream = null;
-        }
-      };
-    }
+    configureModalClose({visible:true,onClick:()=>{
+      mb.style.display='none';
+      if(stream){
+        stream.getTracks().forEach(track=>track.stop());
+        stream=null;
+      }
+    }});
     
     let stream=null;
-    let photoData=null;
+    let photoDataArray=[];
+
+    function renderPhotos(){
+      const container=document.getElementById('photosContainer');
+      container.innerHTML='';
+      photoDataArray.forEach((photoData,idx)=>{
+        const wrapper=document.createElement('div');
+        wrapper.style.cssText='position:relative;display:inline-block';
+        const img=document.createElement('img');
+        img.src=photoData;
+        img.style.cssText='max-width:120px;max-height:80px;object-fit:cover;border-radius:6px;border:1px solid #2a3466;cursor:pointer';
+        img.onclick=()=>window.showPhotoPreview(photoData);
+        const removeBtn=document.createElement('button');
+        removeBtn.textContent='×';
+        removeBtn.className='btn btnDanger';
+        removeBtn.style.cssText='position:absolute;top:-8px;right:-8px;width:24px;height:24px;padding:0;min-width:24px;border-radius:50%;font-size:16px;line-height:1';
+        removeBtn.onclick=(e)=>{e.stopPropagation();photoDataArray.splice(idx,1);renderPhotos();updateButtonStates();};
+        wrapper.appendChild(img);
+        wrapper.appendChild(removeBtn);
+        container.appendChild(wrapper);
+      });
+    }
+
+    function updateButtonStates(){
+      const doneBtn=document.getElementById('doneAddingBtn');
+      const confirmSection=document.getElementById('confirmSection');
+      if(photoDataArray.length>0){
+        doneBtn.style.display='inline-flex';
+      }else{
+        doneBtn.style.display='none';
+        confirmSection.style.display='none';
+        document.getElementById('menuConfirmSection').style.display='none';
+      }
+    }
     
     document.getElementById('startCameraBtn').onclick=async()=>{
       try{
-        stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
-        const video=document.getElementById('videoStream');
-        video.srcObject=stream;
-        video.style.display='block';
-        document.getElementById('startCameraBtn').style.display='none';
+        if(!stream){
+          stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+          const video=document.getElementById('videoStream');
+          video.srcObject=stream;
+        }
+        document.getElementById('videoStream').style.display='block';
+        document.getElementById('startCameraBtn').textContent='📷 Take another';
         document.getElementById('takePictureBtn').style.display='inline-flex';
       }catch(err){
         alert('Camera access denied or not available. Please use the upload option.');
@@ -793,37 +1277,39 @@ function renderEditor(){
       const video=document.getElementById('videoStream');
       const canvas=document.getElementById('photoCanvas');
       const ctx=canvas.getContext('2d');
-      
-      // Set canvas to a smaller size (max 600px width for better compression)
+
       const maxWidth = 600;
       const scale = Math.min(1, maxWidth / video.videoWidth);
       canvas.width = video.videoWidth * scale;
       canvas.height = video.videoHeight * scale;
-      
+
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      photoData = canvas.toDataURL('image/jpeg', 0.6); // Lower quality to 0.6
-      
+      const photoData = canvas.toDataURL('image/jpeg', 0.6);
+
       console.log('Photo captured, size:', photoData.length, 'bytes');
-      
-      document.getElementById('photoPreview').src=photoData;
-      document.getElementById('photoPreview').style.display='block';
+
+      photoDataArray.push(photoData);
+      renderPhotos();
+      updateButtonStates();
+
       video.style.display='none';
       document.getElementById('takePictureBtn').style.display='none';
-      document.getElementById('retakeBtn').style.display='inline-flex';
-      document.getElementById('confirmSection').style.display='block';
-      
+      document.getElementById('startCameraBtn').style.display='inline-flex';
+    };
+    
+    document.getElementById('doneAddingBtn').onclick=()=>{
+      if(photoDataArray.length===0){
+        alert('Please add at least one photo.');
+        return;
+      }
       if(stream){
         stream.getTracks().forEach(track=>track.stop());
         stream=null;
       }
-    };
-    
-    document.getElementById('retakeBtn').onclick=()=>{
-      document.getElementById('photoPreview').style.display='none';
+      document.getElementById('videoStream').style.display='none';
       document.getElementById('startCameraBtn').style.display='inline-flex';
-      document.getElementById('retakeBtn').style.display='none';
-      document.getElementById('confirmSection').style.display='none';
-      photoData=null;
+      document.getElementById('takePictureBtn').style.display='none';
+      document.getElementById('confirmSection').style.display='block';
     };
     
     document.getElementById('uploadBtn').onclick=()=>{
@@ -831,44 +1317,60 @@ function renderEditor(){
     };
     
     document.getElementById('fileInput').onchange=(e)=>{
-      const file=e.target.files[0];
-      if(file){
+      const files=Array.from(e.target.files);
+      let processed=0;
+
+      files.forEach(file=>{
         const reader=new FileReader();
         reader.onload=(ev)=>{
-          // Create an image to resize
           const img = new Image();
           img.onload = () => {
             const canvas = document.getElementById('photoCanvas');
             const ctx = canvas.getContext('2d');
-            
-            // Resize to max 600px width (smaller for better compression)
+
             const maxWidth = 600;
             const scale = Math.min(1, maxWidth / img.width);
             canvas.width = img.width * scale;
             canvas.height = img.height * scale;
-            
+
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            photoData = canvas.toDataURL('image/jpeg', 0.6); // Lower quality to 0.6
-            
+            const photoData = canvas.toDataURL('image/jpeg', 0.6);
+
             console.log('Photo uploaded, size:', photoData.length, 'bytes');
-            
-            document.getElementById('photoPreview').src=photoData;
-            document.getElementById('photoPreview').style.display='block';
-            document.getElementById('videoStream').style.display='none';
-            document.getElementById('startCameraBtn').style.display='none';
-            document.getElementById('takePictureBtn').style.display='none';
-            document.getElementById('retakeBtn').style.display='inline-flex';
-            document.getElementById('confirmSection').style.display='block';
+
+            photoDataArray.push(photoData);
+            processed++;
+
+            if(processed===files.length){
+              renderPhotos();
+              updateButtonStates();
+            }
           };
           img.src = ev.target.result;
         };
         reader.readAsDataURL(file);
-      }
+      });
+
+      e.target.value='';
     };
     
+    document.getElementById('yesVisibleBtn').onclick=()=>{
+      document.getElementById('confirmSection').style.display='none';
+      document.getElementById('menuConfirmSection').style.display='block';
+    };
+
+    document.getElementById('noVisibleBtn').onclick=()=>{
+      photoDataArray=[];
+      renderPhotos();
+      updateButtonStates();
+      document.getElementById('confirmSection').style.display='none';
+      document.getElementById('menuConfirmSection').style.display='none';
+      document.getElementById('startCameraBtn').textContent='📷 Take Photo';
+    };
+
     document.getElementById('confirmPhotoBtn').onclick=()=>{
-      if(photoData){
-        send({type:'confirmAllergens',photo:photoData,timestamp:new Date().toISOString()});
+      if(photoDataArray.length>0){
+        send({type:'confirmAllergens',photos:photoDataArray,timestamp:new Date().toISOString()});
         const confirmBtn=document.querySelectorAll('.btn.btnDanger')[0];
         if(confirmBtn){
           confirmBtn.textContent='Allergy information confirmed';
@@ -882,7 +1384,7 @@ function renderEditor(){
         }
       }
     };
-    
+
     document.getElementById('cancelPhotoBtn').onclick=()=>{
       mb.style.display='none';
       if(stream){
@@ -895,8 +1397,9 @@ function renderEditor(){
     const mb=document.getElementById('modalBack');
     const body=document.getElementById('modalBody');
     document.getElementById('modalTitle').textContent='Change Log - '+esc(rs.name||'Restaurant');
+    configureModalClose({visible:true,onClick:()=>{mb.style.display='none'; mb.onclick=null;}});
     
-    send({type:'getChangeLog',restaurantId:rs._id||rs.slug});
+    send({type:'getChangeLog',restaurantId:rs._id||rs.id||null});
     
     body.innerHTML=`
       <div class="note" style="margin-bottom:12px">Loading change log...</div>
@@ -908,12 +1411,25 @@ function renderEditor(){
     mb.onclick=(e)=>{
       if(e.target===mb){
         mb.style.display='none';
+        mb.onclick=null;
       }
     };
   }
   
-  window.displayChangeLog=(logs)=>{
+  window.displayChangeLog=(logs,errorMsg)=>{
     const body=document.getElementById('modalBody');
+    if(errorMsg){
+      body.innerHTML=`
+        <div class="note" style="color:var(--bad);">${esc(errorMsg)}</div>
+        <div style="margin-top:12px;text-align:center">
+          <button class="btn" onclick="document.getElementById('modalBack').style.display='none'">Close</button>
+        </div>`;
+      return;
+    }
+    const restaurantId = state.restaurant?._id || state.restaurant?.id || null;
+    if(Array.isArray(logs) && restaurantId){
+      logs = logs.filter(log=>log.restaurantId===restaurantId || log.restaurant_id===restaurantId);
+    }
     if(!logs||!logs.length){
       body.innerHTML=`
         <div class="note">No changes recorded yet.</div>
@@ -927,22 +1443,31 @@ function renderEditor(){
     logs.forEach(log=>{
       const typeLabel=log.type==='confirm'?'Allergen Confirmation':'Allergen Update';
       const typeClass=log.type==='confirm'?'confirm':'update';
-      const userInfo=log.userEmail?' by '+esc(log.userEmail):'';
-      
+
       html+=`<div class="logEntry">
         <div class="logHeader">
           <span class="logType ${typeClass}">${esc(typeLabel)}</span>
           <span class="logTimestamp">${esc(fmtDateTime(log.timestamp))}</span>
         </div>`;
       if(log.description){
-        html+=`<div class="note">${esc(log.description)}${userInfo}</div>`;
+        html+=`<div class="note">${esc(log.description)}</div>`;
       }
       if(log.changes){
-        html+=`<div class="note" style="margin-top:4px;font-size:12px">${esc(log.changes)}</div>`;
+        // Escape first, then convert markdown to HTML
+        let changesHtml=esc(log.changes);
+        // Convert **text** to <strong>text</strong>
+        changesHtml=changesHtml.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+        // Convert newlines to <br>
+        changesHtml=changesHtml.replace(/\n/g,'<br>');
+        html+=`<div class="note" style="margin-top:8px;font-size:13px;line-height:1.6">${changesHtml}</div>`;
       }
-      if(log.photo){
-        const photoEsc=esc(log.photo).replace(/'/g,'&#39;');
-        html+=`<img src="${esc(log.photo)}" class="logThumbnail" onclick="window.showPhotoPreview('${photoEsc}')">`;
+      // Display photos if present (stored as array in database)
+      const photos = log.photos || [];
+      if(Array.isArray(photos) && photos.length > 0){
+        photos.forEach(photoUrl => {
+          const photoEsc=esc(photoUrl).replace(/'/g,'&#39;');
+          html+=`<img src="${esc(photoUrl)}" class="logThumbnail" onclick="window.showPhotoPreview('${photoEsc}')" alt="Confirmation photo">`;
+        });
       }
       html+=`</div>`;
     });
@@ -1095,7 +1620,12 @@ function renderEditor(){
   }
 
   img.onload=drawAll; if(img.complete) drawAll();
-  document.getElementById('addBox').onclick=()=>{overlays.push({id:'New item',x:10,y:10,w:20,h:8,allergens:[],removable:[],crossContamination:[],details:{}}); drawAll(); setDirty(true);};
+  document.getElementById('addBox').onclick=()=>{
+    overlays.push({id:'New item',x:10,y:10,w:20,h:8,allergens:[],removable:[],crossContamination:[],details:{}});
+    pendingChanges.push('Added 1 new item');
+    drawAll();
+    setDirty(true);
+  };
   document.getElementById('backBtn').onclick=()=>{
     if(dirty){
       const oldTitle=document.title;
@@ -1103,8 +1633,18 @@ function renderEditor(){
       const result=confirm('You have unsaved changes. Do you want to save before exiting?');
       document.title=oldTitle;
       if(result){
-        setSaveState('saving'); 
-        send({type:'saveOverlays',overlays,menuImage:rs.menuImage||''});
+        setSaveState('saving');
+        // Use pendingChanges if available, otherwise fall back to comparison
+        let changesList;
+        if(pendingChanges.length>0){
+          changesList=pendingChanges;
+        } else {
+          const originalOverlays=JSON.stringify(rs.overlays||[]);
+          const oldChanges=describeOverlayChanges(JSON.parse(originalOverlays),overlays);
+          changesList=oldChanges.split('; ');
+        }
+        const formattedChanges=formatChangesForLog(changesList);
+        send({type:'saveOverlays',overlays,menuImage:rs.menuImage||'',changes:formattedChanges});
         setTimeout(()=>{state.page='restaurant'; renderRestaurant();},500);
       } else {
         state.page='restaurant'; renderRestaurant();
@@ -1116,6 +1656,8 @@ function renderEditor(){
 
   const mb=document.getElementById('modalBack');
   function openItemEditor(it,idx){
+    configureModalClose({visible:false});
+    if(mb) mb.onclick=null;
     const body=document.getElementById('modalBody'); document.getElementById('modalTitle').textContent='Edit item';
     body.innerHTML=`<div class="algRow" style="grid-template-columns:1fr">
         <input id="itemName" class="algInput" style="font-weight:700" placeholder="Item name" value="${esc(it.id||'')}">
@@ -1169,25 +1711,56 @@ function renderEditor(){
     updatePreview();
     
     document.getElementById('doneBtn').onclick=()=>{
-      const final={allergens:[],removable:[],crossContamination:[],details:{}}; 
+      const oldName=it.id;
+      const oldAllergens=new Set(it.allergens||[]);
+
+      const final={allergens:[],removable:[],crossContamination:[],details:{}};
       list.querySelectorAll('.algRow').forEach(row=>{
-        const a=row.querySelector('.algBtn').dataset.a; 
+        const a=row.querySelector('.algBtn').dataset.a;
         const on=row.querySelector('.algBtn').classList.contains('active');
-        const txt=row.querySelector('.algInput').value.trim(); 
+        const txt=row.querySelector('.algInput').value.trim();
         const checkboxes=row.querySelectorAll('input[type="checkbox"]');
         const isRem=checkboxes[0].checked;
         const isCross=checkboxes[1].checked;
         if(on){final.allergens.push(a); if(txt) final.details[a]=txt; if(isRem) final.removable.push({allergen:a,component:txt||a}); }
         if(isCross){final.crossContamination.push(a);}
       });
-      it.id=(document.getElementById('itemName').value||it.id||'Item'); 
-      it.allergens=final.allergens; 
-      it.details=final.details; 
+      const newName=(document.getElementById('itemName').value||it.id||'Item');
+
+      // Track rename
+      if(oldName!==newName){
+        pendingChanges.push(`Renamed "${oldName}" to "${newName}"`);
+      }
+
+      // Track allergen changes
+      const newAllergens=new Set(final.allergens);
+      const added=[...newAllergens].filter(a=>!oldAllergens.has(a));
+      const removed=[...oldAllergens].filter(a=>!newAllergens.has(a));
+      if(added.length){
+        const allergenWord=added.length===1?'allergen':'allergens';
+        pendingChanges.push(`${newName}: Added ${allergenWord} ${added.join(', ')}`);
+      }
+      if(removed.length){
+        const allergenWord=removed.length===1?'allergen':'allergens';
+        pendingChanges.push(`${newName}: Removed ${allergenWord} ${removed.join(', ')}`);
+      }
+
+      it.id=newName;
+      it.allergens=final.allergens;
+      it.details=final.details;
       it.removable=final.removable;
       it.crossContamination=final.crossContamination;
       mb.style.display='none'; drawAll(); setDirty(true);
     };
-    document.getElementById('delBtn').onclick=()=>{ if(confirm('Delete this overlay?')){overlays.splice(idx,1); mb.style.display='none'; drawAll(); setDirty(true);} };
+    document.getElementById('delBtn').onclick=()=>{
+      if(confirm('Delete this overlay?')){
+        pendingChanges.push(`Removed 1 item`);
+        overlays.splice(idx,1);
+        mb.style.display='none';
+        drawAll();
+        setDirty(true);
+      }
+    };
     mb.style.display='flex';
   }
 }
@@ -1233,8 +1806,9 @@ window.addEventListener('message',(ev)=>{
 
   if(m.page){state.page=m.page;}
   if(m.user){state.user=m.user;}
+  if(state.user?.loggedIn){closeQrPromo('login'); hideQrBanner();}
   if(m.allergies){state.allergies=m.allergies;}
-  if(m.restaurant){state.restaurant=m.restaurant;}
+  if(m.restaurant){state.restaurant=normalizeRestaurant(m.restaurant);}
   if(m.restaurants){state.restaurants=m.restaurants;}
   if(typeof m.canEdit==='boolean'){state.canEdit=m.canEdit;}
   if(typeof m.qr==='boolean'){state.qr=m.qr;} else if(urlQR){state.qr=true;}
@@ -1244,12 +1818,27 @@ window.addEventListener('message',(ev)=>{
   if(m.page==='restaurant'||m.restaurant){state.ack=false;}
   if(m.type==='allergiesSaved'){state.allergies=m.allergies||[];}
 
-  if(m.type==='overlaysSaved'){try{setSaveState('saved');}catch(_){ } if(m.restaurant) state.restaurant=m.restaurant;}
+  if(m.type==='overlaysSaved'){
+    try{setSaveState('saved');}catch(_){ }
+    if(m.restaurant) state.restaurant=normalizeRestaurant(m.restaurant) || state.restaurant;
+  }
   if(m.type==='saveFailed'){try{setSaveState('error');}catch(_){ }}
-  if(m.type==='changeLog'){try{if(window.displayChangeLog)window.displayChangeLog(m.logs);}catch(_){ }}
+  if(m.type==='confirmationSaved'){
+    if(m.timestamp && state.restaurant) state.restaurant.lastConfirmed=m.timestamp;
+    if(m.restaurant) state.restaurant=normalizeRestaurant(m.restaurant) || state.restaurant;
+    try{updateLastConfirmedText();}catch(_){ }
+  }
+  if(m.type==='confirmationFailed'){
+    alert('Could not confirm allergen information. '+(m.message||''));
+  }
+  if(m.type==='changeLog'){
+    try{if(window.displayChangeLog)window.displayChangeLog(m.logs||[], m.error);}catch(_){ }
+    return;
+  }
 
   renderTopbar(); render();
 });
 </script>
+<script type="module" src="js/report-modal.js"></script>
 </body>
 </html>

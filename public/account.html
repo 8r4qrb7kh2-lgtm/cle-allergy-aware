@@ -6,89 +6,181 @@
   <title>Account Settings - CLE Allergy Aware</title>
   <link rel="stylesheet" href="css/styles.css">
 </head>
-<body>
-  <div class="container">
-    <header>
-      <a href="index.html">
-        <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt="CLE Allergy Aware" class="logo">
+<body class="page-shell">
+  <header class="simple-topbar">
+    <div class="simple-topbar-inner">
+      <a class="simple-brand" href="account.html">
+        <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt="CLE Allergy Aware logo">
+        <span>CLE Allergy Aware</span>
       </a>
-      <h1>Account Settings</h1>
-    </header>
-    
-    <nav>
-      <a href="index.html">Home</a>
-      <a href="restaurants.html">Restaurants</a>
-    </nav>
-    
-    <main>
-      <!-- Login/Signup -->
-      <div id="auth-section" class="panel">
-        <h2>Sign In</h2>
-        <input type="email" id="email" placeholder="Email" style="width: 100%; margin: 10px 0;">
-        <input type="password" id="password" placeholder="Password" style="width: 100%; margin: 10px 0;">
-        <div style="display: flex; gap: 10px; margin-top: 10px;">
-          <button class="cta-button" id="login-btn">Sign In</button>
-          <button class="cta-button" id="signup-btn" style="background: var(--panel);">Sign Up</button>
-        </div>
-        <p id="auth-message" style="margin-top: 10px; color: var(--muted);"></p>
+      <div class="simple-nav">
+        <button id="navRestaurants" type="button" disabled>Restaurants</button>
+        <button id="navReturnMenu" type="button" style="display:none;">Back to menu</button>
+        <button id="navSignOut" type="button" style="display:none;">Sign out</button>
       </div>
-      
-      <!-- Allergen settings (shown when logged in) -->
-      <div id="allergen-section" class="panel" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h2>Your Saved Allergens</h2>
-          <button class="cta-button" id="save-btn">Save</button>
-        </div>
-        <div id="allergen-pills" class="allergen-chips"></div>
-        <button class="cta-button" id="logout-btn" style="background: var(--bad); margin-top: 20px;">Sign Out</button>
+    </div>
+  </header>
+
+  <main class="page-main">
+    <div class="page-content">
+      <div class="account-layout">
+        <!-- Sign-in card -->
+        <section id="auth-section" class="auth-card">
+          <h2>Manage your allergy profile</h2>
+          <p class="muted-text">Sign in to manage your saved allergens and view participating restaurants.</p>
+          <input type="email" id="email" placeholder="Email" autocomplete="email">
+          <input type="password" id="password" placeholder="Password" autocomplete="current-password">
+          <div class="auth-actions">
+            <button class="primary-btn" id="login-btn">Sign in</button>
+            <button class="secondary-btn" id="start-signup-btn" type="button">Create an account</button>
+          </div>
+          <p id="auth-message" class="status-text"></p>
+        </section>
+
+        <!-- Sign-up card -->
+        <section id="signup-view" class="auth-card" style="display:none;">
+          <div class="auth-actions" style="justify-content:space-between;">
+            <h2 style="margin:0;">Create your account</h2>
+            <button class="secondary-btn" id="signup-back-btn" type="button">← Back</button>
+          </div>
+          <div class="form-row">
+            <input type="text" id="signup-first-name" placeholder="First name" autocomplete="given-name">
+            <input type="text" id="signup-last-name" placeholder="Last name" autocomplete="family-name">
+          </div>
+          <input type="email" id="signup-email" placeholder="Email" autocomplete="email">
+          <input type="password" id="signup-password" placeholder="Password" autocomplete="new-password">
+          <div>
+            <p class="muted-text" style="margin-bottom:8px;">Select the allergens you avoid (you can update this later).</p>
+            <div id="signup-allergen-pills" class="allergen-select"></div>
+          </div>
+          <div class="auth-actions">
+            <button class="primary-btn" id="signup-submit-btn" type="button">Create account</button>
+          </div>
+          <p id="signup-message" class="status-text"></p>
+        </section>
+
+        <!-- Personal details -->
+        <section id="details-section" class="auth-card" style="display:none;">
+          <h2 style="margin:0;">Your information</h2>
+          <div class="form-row">
+            <input type="text" id="profile-first-name" placeholder="First name" autocomplete="given-name">
+            <input type="text" id="profile-last-name" placeholder="Last name" autocomplete="family-name">
+          </div>
+          <input type="email" id="profile-email" placeholder="Email" autocomplete="email">
+          <p class="muted-text">Updating your email will send a confirmation message.</p>
+          <div class="auth-actions">
+            <button class="primary-btn" id="details-save-btn" type="button">Save details</button>
+          </div>
+          <p id="details-status" class="status-text"></p>
+        </section>
+
+        <!-- Allergen settings (shown when logged in) -->
+        <section id="allergen-section" class="auth-card" style="display:none;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+            <h2 style="margin:0;">Select your allergies</h2>
+            <button class="primary-btn" id="save-btn" type="button">Save changes</button>
+          </div>
+          <p class="muted-text">Tap to toggle the allergens you want us to highlight.</p>
+          <div id="allergen-pills" class="allergen-select"></div>
+          <p id="allergen-status" class="status-text"></p>
+        </section>
       </div>
-    </main>
-  </div>
-  
+    </div>
+  </main>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module">
     import supabaseClient from './js/supabase-client.js';
-    
+
     const ALLERGENS = ["dairy", "egg", "peanut", "tree nut", "shellfish", "fish", "gluten", "soy", "sesame", "wheat"];
     let selectedAllergies = [];
+    let signupAllergies = [];
     let currentUser = null;
-    
-    // Check auth state
+    const params = new URLSearchParams(window.location.search);
+    const redirectParam = params.get('redirect') || null;
+    const returnSlug = params.get('returnSlug');
+
+    const navRestaurants = document.getElementById('navRestaurants');
+    const navReturnMenu = document.getElementById('navReturnMenu');
+    const navSignOut = document.getElementById('navSignOut');
+    const authSection = document.getElementById('auth-section');
+    const signupView = document.getElementById('signup-view');
+    const detailsSection = document.getElementById('details-section');
+    const allergenSection = document.getElementById('allergen-section');
+    const authMessage = document.getElementById('auth-message');
+    const signupMessage = document.getElementById('signup-message');
+    const allergenStatus = document.getElementById('allergen-status');
+    const detailsStatus = document.getElementById('details-status');
+    const profileFirstName = document.getElementById('profile-first-name');
+    const profileLastName = document.getElementById('profile-last-name');
+    const profileEmail = document.getElementById('profile-email');
+
+    function setNavState(user) {
+      const fromQr = !!returnSlug;
+      const showBackToMenu = fromQr && !user;
+
+      navReturnMenu.style.display = showBackToMenu ? 'inline-flex' : 'none';
+      if (showBackToMenu) {
+        navReturnMenu.onclick = () => {
+          const url = `restaurant.html?slug=${encodeURIComponent(returnSlug)}&qr=1`;
+          window.location.href = url;
+        };
+      }
+
+      navRestaurants.style.display = user ? 'inline-flex' : (showBackToMenu ? 'none' : 'inline-flex');
+      navRestaurants.disabled = !user;
+
+      if (user) {
+        navSignOut.style.display = 'inline-flex';
+        navSignOut.disabled = false;
+      } else {
+        navSignOut.style.display = 'none';
+        navSignOut.disabled = true;
+      }
+    }
+
     async function checkAuth() {
       const { data: { user } } = await supabaseClient.auth.getUser();
       currentUser = user;
-      
+      setNavState(user);
+
       if (user) {
-        document.getElementById('auth-section').style.display = 'none';
-        document.getElementById('allergen-section').style.display = 'block';
-        loadAllergies();
+        authSection.style.display = 'none';
+        signupView.style.display = 'none';
+        detailsSection.style.display = 'flex';
+        allergenSection.style.display = 'flex';
+        populateDetails(user);
+        await loadAllergies();
+        if (!returnSlug && redirectParam === 'restaurants') {
+          window.location.href = 'restaurants.html';
+        }
       } else {
-        document.getElementById('auth-section').style.display = 'block';
-        document.getElementById('allergen-section').style.display = 'none';
+        allergenSection.style.display = 'none';
+        detailsSection.style.display = 'none';
+        signupView.style.display = 'none';
+        authSection.style.display = 'flex';
       }
     }
-    
-    // Load allergies
+
     async function loadAllergies() {
       if (!currentUser) return;
-      
+      allergenStatus.textContent = '';
+      allergenStatus.classList.remove('error','success');
       const { data } = await supabaseClient
         .from('user_allergies')
         .select('allergens')
         .eq('user_id', currentUser.id)
-        .single();
-      
+        .maybeSingle();
       selectedAllergies = data?.allergens || [];
       renderAllergens();
     }
-    
-    // Render allergens
+
     function renderAllergens() {
       const container = document.getElementById('allergen-pills');
       container.innerHTML = '';
-      
       ALLERGENS.forEach(allergen => {
-        const pill = document.createElement('div');
+        const pill = document.createElement('button');
+        pill.type = 'button';
         pill.className = 'chip' + (selectedAllergies.includes(allergen) ? ' active' : '');
         pill.textContent = allergen.charAt(0).toUpperCase() + allergen.slice(1);
         pill.onclick = () => {
@@ -102,62 +194,209 @@
         container.appendChild(pill);
       });
     }
-    
-    // Save allergies
-    document.getElementById('save-btn').onclick = async () => {
+
+    function renderSignupAllergens() {
+      const container = document.getElementById('signup-allergen-pills');
+      container.innerHTML = '';
+      ALLERGENS.forEach(allergen => {
+        const pill = document.createElement('button');
+        pill.type = 'button';
+        pill.className = 'chip' + (signupAllergies.includes(allergen) ? ' active' : '');
+        pill.textContent = allergen.charAt(0).toUpperCase() + allergen.slice(1);
+        pill.onclick = () => {
+          if (signupAllergies.includes(allergen)) {
+            signupAllergies = signupAllergies.filter(a => a !== allergen);
+          } else {
+            signupAllergies.push(allergen);
+          }
+          renderSignupAllergens();
+        };
+        container.appendChild(pill);
+      });
+    }
+
+    async function saveAllergies(allergies) {
       if (!currentUser) return;
-      
       const { error } = await supabaseClient
         .from('user_allergies')
         .upsert({
           user_id: currentUser.id,
-          allergens: selectedAllergies,
-          updated_at: new Date()
-        });
-      
-      if (error) {
-        alert('Error saving: ' + error.message);
-      } else {
-        alert('Saved successfully!');
+          allergens: allergies,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+      if (error) throw error;
+    }
+
+    function populateDetails(user) {
+      profileFirstName.value = user?.user_metadata?.first_name || '';
+      profileLastName.value = user?.user_metadata?.last_name || '';
+      profileEmail.value = user?.email || '';
+      detailsStatus.textContent = '';
+      detailsStatus.classList.remove('error','success');
+    }
+
+    document.getElementById('save-btn').onclick = async () => {
+      if (!currentUser) return;
+      allergenStatus.textContent = '';
+      try {
+        await saveAllergies(selectedAllergies);
+        allergenStatus.textContent = 'Saved!';
+        allergenStatus.classList.remove('error');
+        allergenStatus.classList.add('success');
+      } catch (error) {
+        allergenStatus.textContent = error.message || 'Failed to save.';
+        allergenStatus.classList.remove('success');
+        allergenStatus.classList.add('error');
       }
     };
-    
-    // Login
+
     document.getElementById('login-btn').onclick = async () => {
-      const email = document.getElementById('email').value;
+      const email = document.getElementById('email').value.trim();
       const password = document.getElementById('password').value;
-      
+      authMessage.textContent = '';
+      authMessage.classList.remove('error', 'success');
+
+      if (!email || !password) {
+        authMessage.textContent = 'Please enter your email and password.';
+        authMessage.classList.add('error');
+        return;
+      }
+
       const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-      
       if (error) {
-        document.getElementById('auth-message').textContent = 'Error: ' + error.message;
+        authMessage.textContent = error.message;
+        authMessage.classList.add('error');
       } else {
-        checkAuth();
+        authMessage.textContent = '';
+        await checkAuth();
       }
     };
-    
-    // Signup
-    document.getElementById('signup-btn').onclick = async () => {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      
-      const { error } = await supabaseClient.auth.signUp({ email, password });
-      
+
+    document.getElementById('start-signup-btn').onclick = () => {
+      authMessage.textContent = '';
+      authSection.style.display = 'none';
+      signupView.style.display = 'flex';
+      signupAllergies = [];
+      signupMessage.textContent = '';
+      signupMessage.classList.remove('error','success');
+      renderSignupAllergens();
+    };
+
+    document.getElementById('signup-back-btn').onclick = () => {
+      signupMessage.textContent = '';
+      signupView.style.display = 'none';
+      authSection.style.display = 'flex';
+      signupAllergies = [];
+    };
+
+    document.getElementById('signup-submit-btn').onclick = async () => {
+      const firstName = document.getElementById('signup-first-name').value.trim();
+      const lastName = document.getElementById('signup-last-name').value.trim();
+      const email = document.getElementById('signup-email').value.trim();
+      const password = document.getElementById('signup-password').value;
+      signupMessage.textContent = '';
+      signupMessage.classList.remove('error', 'success');
+
+      if (!firstName || !lastName || !email || !password) {
+        signupMessage.textContent = 'Please fill in all fields.';
+        signupMessage.classList.add('error');
+        return;
+      }
+
+      const { error } = await supabaseClient.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { first_name: firstName, last_name: lastName, allergies: signupAllergies }
+        }
+      });
+
       if (error) {
-        document.getElementById('auth-message').textContent = 'Error: ' + error.message;
+        signupMessage.textContent = error.message;
+        signupMessage.classList.add('error');
+        return;
+      }
+
+      signupMessage.textContent = 'Account created! Check your email to confirm.';
+      signupMessage.classList.add('success');
+
+      // Attempt immediate login if session returned (email confirmations disabled)
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session) {
+        // Save allergens immediately after signup
+        try {
+          const { data: { user } } = await supabaseClient.auth.getUser();
+          if (user && signupAllergies.length > 0) {
+            await supabaseClient
+              .from('user_allergies')
+              .upsert({
+                user_id: user.id,
+                allergens: signupAllergies,
+                updated_at: new Date().toISOString()
+              }, { onConflict: 'user_id' });
+          }
+        } catch (err) {
+          console.error('Failed to save initial allergens', err);
+        }
+        await checkAuth();
+        signupAllergies = [];
       } else {
-        document.getElementById('auth-message').textContent = 'Check your email to confirm!';
+        setTimeout(() => {
+          signupView.style.display = 'none';
+          authSection.style.display = 'flex';
+          signupAllergies = [];
+        }, 1500);
       }
     };
-    
-    // Logout
-    document.getElementById('logout-btn').onclick = async () => {
+
+    document.getElementById('details-save-btn').onclick = async () => {
+      if (!currentUser) return;
+      const firstName = profileFirstName.value.trim();
+      const lastName = profileLastName.value.trim();
+      const email = profileEmail.value.trim();
+      detailsStatus.textContent = '';
+      detailsStatus.classList.remove('error','success');
+
+      if (!firstName || !lastName || !email) {
+        detailsStatus.textContent = 'Please fill in your first name, last name, and email.';
+        detailsStatus.classList.add('error');
+        return;
+      }
+
+      const payload = {
+        data: { first_name: firstName, last_name: lastName }
+      };
+      if (email !== currentUser.email) {
+        payload.email = email;
+      }
+
+      const { data, error } = await supabaseClient.auth.updateUser(payload);
+      if (error) {
+        detailsStatus.textContent = error.message;
+        detailsStatus.classList.add('error');
+        return;
+      }
+
+      currentUser = data.user;
+      detailsStatus.textContent = 'Details saved.';
+      detailsStatus.classList.add('success');
+      setNavState(currentUser);
+    };
+
+    navRestaurants.addEventListener('click', () => {
+      if (navRestaurants.disabled) return;
+      window.location.href = 'restaurants.html';
+    });
+
+    navSignOut.addEventListener('click', async () => {
       await supabaseClient.auth.signOut();
-      checkAuth();
-    };
-    
-    // Initialize
+      selectedAllergies = [];
+      signupAllergies = [];
+      await checkAuth();
+    });
+
     checkAuth();
   </script>
+  <script type="module" src="js/report-modal.js"></script>
 </body>
 </html>
