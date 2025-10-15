@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=yes, maximum-scale=10">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1">
 
 <title>CLE Allergy Aware</title>
 <style>
@@ -15,6 +15,7 @@
     margin:0;padding:0;height:100%;width:100%;
     overflow:auto;
     -webkit-overflow-scrolling:touch;
+    touch-action: pan-x pan-y;
   }
   body{
     margin:0;padding:0;min-height:100%;width:100%;background:var(--bg);color:var(--ink);
@@ -23,10 +24,11 @@
     overflow-y:auto;
     -webkit-overflow-scrolling:touch;
     box-sizing:border-box;
+    touch-action: pan-x pan-y;
   }
-  *{box-sizing:border-box}
+  *{box-sizing:border-box; touch-action: pan-x pan-y;}
   .menuWrap, .menuInner, .overlayLayer, .overlay, .tip {
-    touch-action: pan-y pinch-zoom;
+    touch-action: pan-x pan-y;
   }
   .wrap{min-height:100%;display:flex;flex-direction:column;width:100%}
   .content{flex:1;max-width:1100px;margin:0 auto;padding:16px;padding-bottom:100px;width:100%;box-sizing:border-box}
@@ -53,7 +55,7 @@
   .chips{display:flex;gap:8px;flex-wrap:wrap}
   .chip{padding:8px 10px;border:1px solid var(--border);background:#12183a;border-radius:999px;font-size:14px}
   .chip.active{border-color:#4c5ad4;box-shadow:0 0 0 3px #7c9cff33 inset,0 0 10px #24307a66}
-  .chip.clickable{cursor:pointer}
+  .chip.clickable{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
   .pill{padding:10px 14px;border:1px dashed #33408c;border-radius:12px}
 
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:#1a2351;cursor:pointer;color:#fff}
@@ -77,20 +79,42 @@
   .ackBtn.on{background:#17663a;border-color:#1a7b46}
 
   /* Viewer: simple image that scales with page zoom */
-  .menuWrap{display:none;background:#0d132a;border-radius:14px;position:relative;overflow:visible;min-height:140px}
+  .menuWrap{display:none;background:#0d132a;border-radius:14px;position:relative;overflow-x:auto;overflow-y:visible;min-height:140px;transform-origin:top left;-webkit-overflow-scrolling:touch}
   .menuWrap.show{display:block}
-  .menuInner{position:relative;display:inline-block;user-select:none;line-height:0}
+  .menuInner{position:relative;display:inline-block;user-select:none;line-height:0;transform-origin:top left;min-width:100%}
   .menuImg{display:block;max-width:100%;height:auto;width:100%}
-  .overlayLayer{position:absolute;left:0;top:0;pointer-events:none;line-height:normal}
+  .overlayLayer{position:absolute;left:0;top:0;pointer-events:none;line-height:normal;width:100%;height:100%}
   .overlay{position:absolute;border:1.5px solid;border-radius:4px;background:transparent;pointer-events:auto;box-sizing:border-box}
   .overlay:hover{box-shadow:0 0 0 3px #ffffff22,0 6px 16px rgba(0,0,0,.35)}
+  .mobileMenuNotice{margin:16px 0;padding:14px 16px;border-radius:18px;background:rgba(18,24,58,0.75);border:1px solid rgba(76,90,212,0.4);color:var(--ink);text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;box-shadow:0 14px 32px rgba(0,0,0,0.28)}
+  .mobileMenuNoticeText{font-size:0.95rem;line-height:1.5;color:var(--muted)}
+  .mobileMenuNotice .mobileMenuOpenBtn{min-width:200px}
+  #mobileViewerChrome{position:fixed;inset:0;z-index:3400;display:none;pointer-events:none}
+  body.mobileViewerActive #mobileViewerChrome{display:block}
+  #mobileViewerChrome .chromeTop{position:fixed;top:calc(env(safe-area-inset-top,0) + 18px);left:0;right:0;display:flex;justify-content:flex-end;padding:0 24px;pointer-events:none}
+  #mobileViewerChrome .chromeBottom{position:fixed;bottom:calc(env(safe-area-inset-bottom,0) + 28px);left:0;right:0;display:flex;justify-content:center;pointer-events:none}
+  #mobileViewerChrome button{pointer-events:auto}
+  .mobileViewerControlBtn{background:rgba(18,24,58,0.9);border:1px solid rgba(76,90,212,0.5);color:var(--ink);padding:10px 18px;border-radius:999px;font-weight:600;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,0.35)}
+  .mobileZoomGroup{display:inline-flex;align-items:center;gap:14px;background:rgba(18,24,58,0.9);border:1px solid rgba(76,90,212,0.4);border-radius:999px;padding:10px 18px;box-shadow:0 10px 28px rgba(0,0,0,0.3)}
+  .mobileZoomGroup button{background:transparent;border:none;color:var(--ink);font-size:1.3rem;width:48px;height:48px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .mobileZoomGroup span{font-weight:600;color:var(--ink);min-width:60px;text-align:center;font-size:0.95rem}
+  body.mobileViewerActive{overflow:hidden}
+  body.mobileViewerActive .menuWrap{pointer-events:auto;position:fixed;inset:0;margin:0;border-radius:0;padding:calc(env(safe-area-inset-top,0) + 80px) clamp(14px,4vw,36px) calc(env(safe-area-inset-bottom,0) + 130px);background:rgba(4,7,20,0.96);z-index:3100;overflow:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px}
+  body.mobileViewerActive .menuWrap .menuInner{margin:0 auto}
+  body.mobileViewerActive .mobileMenuNotice{display:none !important}
+  body.mobileViewerActive .topbar,
+  body.mobileViewerActive #root > :not(.menuWrap),
+  body.mobileViewerActive .modalBack,
+  body.mobileViewerActive .photoModal,
+  body.mobileViewerActive .qrPromoBackdrop,
+  body.mobileViewerActive .qrBanner{display:none !important}
   .ovBadge{position:absolute;top:3px;right:3px;width:18px;height:18px;background:#3651ff;border:1.5px solid #dbe2ff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;cursor:pointer;z-index:10;pointer-events:auto;line-height:1}
   .ovBadge:hover{background:#4e65ff;box-shadow:0 0 6px #3651ff}
   .ovWarning{position:absolute;top:3px;left:3px;width:18px;height:18px;background:#facc15;border:1.5px solid #fef08a;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;cursor:pointer;z-index:10;pointer-events:auto;line-height:1;color:#000;}
   .ovWarning:hover{background:#fbbf24;box-shadow:0 0 6px #facc15}
 
   /* Tooltip (with mobile X). We'll shrink it based on visual viewport scale. */
-  .tip{position:fixed;z-index:2000;pointer-events:auto;background:#0f1534;border:1px solid #2a3466;border-radius:10px;padding:10px;box-shadow:var(--shadow);display:none;max-width:280px;transform-origin:top left}
+  .tip{position:absolute;z-index:1800;pointer-events:auto;background:rgba(15,21,52,0.98);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid #2a3466;border-radius:10px;padding:10px;box-shadow:var(--shadow);display:none;max-width:280px;transform-origin:top left}
   .tipHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
   .tTitle{font-weight:800}
   .tClose{border:1px solid #2a3466;background:#16205a;color:#fff;border-radius:8px;padding:4px 8px;cursor:pointer;line-height:1}
@@ -166,28 +190,30 @@
   .qrPromo h2{margin:0 0 6px;font-size:clamp(1.1rem,1rem + 1vw,1.6rem);}
   .qrPromo p{margin:0;color:var(--muted);font-size:0.95rem;line-height:1.5;}
   .qrPromoClose{
-    position:absolute; top:18px; right:18px;
-    width:28px; height:28px;
+    position:absolute; top:12px; right:12px;
+    width:44px; height:44px;
     border:1px solid #2a3466; background:#16205a;
     border-radius:8px; cursor:pointer;
     display:flex; align-items:center; justify-content:center;
-    font-size:18px; color:#fff; line-height:1;
+    font-size:24px; color:#fff; line-height:1;
+    touch-action:manipulation;
+    z-index:10;
   }
   .qrPromoClose:hover{border-color:var(--hover); box-shadow:0 0 8px #3651ff;}
+  .qrPromoClose:active{background:#1e2870;}
   .qrBanner{
-    position:fixed; left:0; right:0; bottom:0; z-index:2200;
+    position:fixed; left:0; right:0; top:0; z-index:2200;
     background:linear-gradient(180deg,#0f1534,#0b1020);
-    border-top:1px solid #2a3466; padding:16px 20px;
+    border-bottom:1px solid #2a3466; padding:16px 20px;
     display:none; gap:16px; align-items:center; justify-content:center; flex-wrap:wrap;
-    box-shadow:0 -4px 20px rgba(0,0,0,.4);
+    box-shadow:0 4px 20px rgba(0,0,0,.4);
     text-align:center;
   }
   .qrBanner.show{display:flex;}
+  body.qrBannerVisible .wrap{padding-top:80px;}
+  body.qrBannerVisible .topbar{top:80px;}
   body.qrMode .topbar{border-bottom:none; box-shadow:none;}
   body.qrMode .topin{padding:32px 18px;gap:24px;}
-  /* Hide script and style content if it leaks */
-  script, style {display: none !important;}
-
   @media (max-width:640px){
     .topin{gap:12px;padding:16px 14px 12px}
     .brand{gap:12px}
@@ -195,7 +221,7 @@
     .tabs{gap:6px}
     .tab{padding:6px 10px;font-size:13px}
     .acctBtn{padding:6px 10px;font-size:13px}
-    .content{padding:10px;padding-bottom:100px}
+    .content{padding:10px;padding-bottom:160px}
     .legend{gap:10px}
     h1{font-size:1.3rem;margin:4px 0 10px}
     .cards{gap:12px}
@@ -348,6 +374,197 @@ document.body.style.display='none';
 
 const ALLERGENS=["dairy","egg","peanut","tree nut","shellfish","fish","gluten","soy","sesame","wheat"];
 const state={page:null,restaurants:[],restaurant:null,allergies:[],ack:false,user:{loggedIn:false},canEdit:false,qr:false,_hydrated:false};
+let mobileInfoPanel=null;
+let currentMobileInfoItem=null;
+let mobileViewerChrome=null;
+let mobileZoomLevel=1;
+let mobileViewerKeyHandler=null;
+
+function ensureMobileInfoPanel(){
+  if(mobileInfoPanel && mobileInfoPanel.isConnected) return mobileInfoPanel;
+  if(!mobileInfoPanel){
+    mobileInfoPanel=document.createElement('div');
+    mobileInfoPanel.id='mobileInfoPanel';
+    mobileInfoPanel.className='mobileInfoPanel';
+    mobileInfoPanel.setAttribute('aria-live','polite');
+    mobileInfoPanel.style.position='fixed';
+    mobileInfoPanel.style.left='0';
+    mobileInfoPanel.style.right='0';
+    mobileInfoPanel.style.bottom='0';
+    mobileInfoPanel.style.width='100%';
+    mobileInfoPanel.style.zIndex='3500';
+    mobileInfoPanel.style.background='rgba(11,16,32,0.94)';
+    mobileInfoPanel.style.backdropFilter='blur(14px)';
+    mobileInfoPanel.style.webkitBackdropFilter='blur(14px)';
+  }
+  mobileInfoPanel.innerHTML='';
+  mobileInfoPanel.classList.remove('show');
+  document.body.appendChild(mobileInfoPanel);
+  adjustMobileInfoPanelForZoom();
+  return mobileInfoPanel;
+}
+
+function adjustMobileInfoPanelForZoom(){
+  // No longer needed since pinch-to-zoom is disabled
+  // Keeping function for compatibility
+}
+
+function getMenuState(){
+  if(!window.__menuState) window.__menuState={};
+  return window.__menuState;
+}
+
+function captureMenuBaseDimensions(force=false){
+  const state=getMenuState();
+  const img=state?.img;
+  if(!img) return;
+  if(force || !state.baseWidth){
+    state.baseWidth = img.clientWidth || img.naturalWidth || img.width || 0;
+    state.baseHeight = img.clientHeight || img.naturalHeight || img.height || 0;
+  }
+}
+
+function ensureMobileViewerChrome(){
+  if(mobileViewerChrome && mobileViewerChrome.isConnected) return mobileViewerChrome;
+  let chrome=document.getElementById('mobileViewerChrome');
+  if(!chrome){
+    chrome=document.createElement('div');
+    chrome.id='mobileViewerChrome';
+    chrome.innerHTML=`
+      <div class="chromeTop">
+        <button type="button" class="mobileViewerControlBtn" id="mobileViewerCloseBtn">Close</button>
+      </div>
+      <div class="chromeBottom">
+        <div class="mobileZoomGroup">
+          <button type="button" id="mobileZoomOutBtn" aria-label="Zoom out">−</button>
+          <span id="mobileZoomValue">100%</span>
+          <button type="button" id="mobileZoomInBtn" aria-label="Zoom in">+</button>
+        </div>
+      </div>`;
+    document.body.appendChild(chrome);
+  }
+  if(!chrome.style.display) chrome.style.display='none';
+  if(!chrome.hasAttribute('aria-hidden')) chrome.setAttribute('aria-hidden','true');
+  mobileViewerChrome=chrome;
+  const closeBtn=chrome.querySelector('#mobileViewerCloseBtn');
+  const zoomOutBtn=chrome.querySelector('#mobileZoomOutBtn');
+  const zoomInBtn=chrome.querySelector('#mobileZoomInBtn');
+  if(closeBtn) closeBtn.onclick=()=>closeMobileViewer();
+  if(zoomOutBtn) zoomOutBtn.onclick=()=>setMobileZoom(mobileZoomLevel-0.25);
+  if(zoomInBtn) zoomInBtn.onclick=()=>setMobileZoom(mobileZoomLevel+0.25);
+  return mobileViewerChrome;
+}
+
+function updateZoomIndicator(){
+  const indicator=document.getElementById('mobileZoomValue');
+  if(indicator) indicator.textContent=`${Math.round(mobileZoomLevel*100)}%`;
+}
+
+function setMobileZoom(level, resetBase=false){
+  const state=getMenuState();
+  const img=state?.img;
+  if(!img) return;
+  if(resetBase){
+    state.baseWidth=null;
+    state.baseHeight=null;
+  }
+  captureMenuBaseDimensions(resetBase);
+  if(!state.baseWidth){
+    updateZoomIndicator();
+    return;
+  }
+  mobileZoomLevel=Math.min(Math.max(level,1),4);
+  const width=state.baseWidth*mobileZoomLevel;
+  const inner=state.inner;
+  const layer=state.layer;
+  img.style.width=width+'px';
+  if(inner) inner.style.width=width+'px';
+  if(layer) layer.style.width=width+'px';
+  requestAnimationFrame(()=>{
+    if(window.__rerenderLayer__) window.__rerenderLayer__();
+    updateZoomIndicator();
+  });
+}
+
+function resetMobileZoom(){
+  const state=getMenuState();
+  mobileZoomLevel=1;
+  const img=state?.img;
+  if(img){
+    img.style.width='';
+    if(state.inner) state.inner.style.width='';
+    if(state.layer) state.layer.style.width='';
+  }
+  requestAnimationFrame(()=>{
+    if(window.__rerenderLayer__) window.__rerenderLayer__();
+    captureMenuBaseDimensions(true);
+    updateZoomIndicator();
+  });
+}
+
+function openMobileViewer(){
+  const chrome=ensureMobileViewerChrome();
+  if(chrome){
+    chrome.style.display='block';
+    chrome.setAttribute('aria-hidden','false');
+  }
+  captureMenuBaseDimensions(true);
+  document.body.classList.add('mobileViewerActive');
+  setMobileZoom(1,true);
+  if(prefersMobileInfo()){
+    if(currentMobileInfoItem){
+      renderMobileInfo(currentMobileInfoItem);
+    } else {
+      renderMobileInfo(null);
+    }
+  }
+  const wrap=document.getElementById('menu');
+  if(wrap){
+    wrap.scrollTop=0;
+  }
+  const closeBtn=document.getElementById('mobileViewerCloseBtn');
+  if(closeBtn){
+    setTimeout(()=>closeBtn.focus(),150);
+  }
+  if(!mobileViewerKeyHandler){
+    mobileViewerKeyHandler=(e)=>{
+      if(e.key==='Escape'){
+        e.preventDefault();
+        closeMobileViewer();
+      }
+    };
+    document.addEventListener('keydown',mobileViewerKeyHandler);
+  }
+}
+
+function closeMobileViewer(){
+  document.body.classList.remove('mobileViewerActive');
+  if(mobileViewerChrome){
+    mobileViewerChrome.style.display='none';
+    mobileViewerChrome.setAttribute('aria-hidden','true');
+  }
+  resetMobileZoom();
+  if(prefersMobileInfo()){
+    if(currentMobileInfoItem){
+      renderMobileInfo(currentMobileInfoItem);
+    } else {
+      renderMobileInfo(null);
+    }
+  }
+  const openBtn=document.querySelector('#mobileMenuNotice .mobileMenuOpenBtn');
+  if(openBtn){
+    setTimeout(()=>openBtn.focus(),150);
+  }
+  const notice=document.getElementById('mobileMenuNotice');
+  if(notice && notice.dataset.enabled==='1'){
+    notice.style.display='flex';
+    notice.setAttribute('aria-hidden','false');
+  }
+  if(mobileViewerKeyHandler){
+    document.removeEventListener('keydown',mobileViewerKeyHandler);
+    mobileViewerKeyHandler=null;
+  }
+}
 
 const urlQR=typeof window.__qrVisit==='boolean'
   ? window.__qrVisit
@@ -369,12 +586,14 @@ function showQrBanner(){
   if(!shouldShowQrBanner()) return;
   banner.classList.add('show');
   banner.setAttribute('aria-hidden','false');
+  document.body.classList.add('qrBannerVisible');
 }
 function hideQrBanner(){
   const banner=document.getElementById('qrBanner');
   if(!banner) return;
   banner.classList.remove('show');
   banner.setAttribute('aria-hidden','true');
+  document.body.classList.remove('qrBannerVisible');
 }
 let qrPromoTimerId=null;
 function cancelQrPromoTimer(){
@@ -419,6 +638,7 @@ const send=(p)=>{
     // Handle navigation directly in standalone mode
     if (p.type === 'navigate') {
       if (p.to === '/restaurants') window.location.href = 'restaurants.html';
+      else if (p.to === '/favorites') window.location.href = 'favorites.html';
       else if (p.to === '/report-issue') window.location.href = 'report-issue.html';
       else if (p.to === '/accounts') {
         const params=new URLSearchParams();
@@ -716,7 +936,11 @@ function renderTopbar(){
   if(!isQrExperience){
     const navWrap=div('','topNav');
     const tabs=div('','tabs');
-    [{t:'Restaurants',to:'/restaurants'}].forEach(n=>{
+    const navItems=[{t:'All restaurants',to:'/restaurants'}];
+    if(state.user?.loggedIn){
+      navItems.push({t:'Favorites',to:'/favorites'});
+    }
+    navItems.forEach(n=>{
       const b=div(n.t,'tab'); b.onclick=()=>send({type:'navigate',to:n.to}); tabs.appendChild(b);
     });
     navWrap.appendChild(tabs);
@@ -735,10 +959,81 @@ function renderTopbar(){
 
 /* tooltips */
 const pageTip=document.getElementById('tip');
-function showTipIn(el, x, y, title, bodyHTML){
-  const zoom = (window.visualViewport && window.visualViewport.scale) ? window.visualViewport.scale : 1;
-  const k = 1 / zoom;
-
+function prefersMobileInfo(){
+  try{
+    const hasCoarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    const hasFine = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
+    if(hasCoarse) return true;
+    if(hasFine) return false;
+    return window.innerWidth <= 640;
+  }catch(_){
+    return window.innerWidth <= 640;
+  }
+}
+function renderMobileInfo(item){
+  ensureMobileInfoPanel();
+  if(!mobileInfoPanel) return;
+  mobileInfoPanel.style.position='fixed';
+  mobileInfoPanel.style.left='0';
+  mobileInfoPanel.style.right='0';
+  mobileInfoPanel.style.bottom='0';
+  mobileInfoPanel.style.zIndex='3500';
+  if(!prefersMobileInfo()){
+    mobileInfoPanel.classList.remove('show');
+    mobileInfoPanel.innerHTML='';
+    currentMobileInfoItem=null;
+    return;
+  }
+  if(!item){
+    currentMobileInfoItem=null;
+    mobileInfoPanel.innerHTML='';
+    mobileInfoPanel.classList.remove('show');
+    return;
+  }
+  currentMobileInfoItem=item;
+  const bodyHTML=tooltipBodyHTML(item,state.allergies||[]);
+  mobileInfoPanel.innerHTML=`
+    <div class="mobileInfoHeader">${esc(item.id||'Item')}</div>
+    ${bodyHTML}
+  `;
+  mobileInfoPanel.style.background='rgba(11,16,32,0.94)';
+  mobileInfoPanel.style.backdropFilter='blur(14px)';
+  mobileInfoPanel.style.webkitBackdropFilter='blur(14px)';
+  adjustMobileInfoPanelForZoom();
+  mobileInfoPanel.classList.add('show');
+}
+function syncMobileInfoPanel(){
+  if(!mobileInfoPanel) return;
+  adjustMobileInfoPanelForZoom();
+  if(prefersMobileInfo()){
+    if(currentMobileInfoItem){
+      renderMobileInfo(currentMobileInfoItem);
+    } else {
+      mobileInfoPanel.innerHTML='';
+      mobileInfoPanel.classList.remove('show');
+    }
+    hideTip();
+  } else {
+    mobileInfoPanel.classList.remove('show');
+    mobileInfoPanel.innerHTML='';
+    currentMobileInfoItem=null;
+  }
+}
+addEventListener('resize', ()=>syncMobileInfoPanel(), {passive:true});
+if(window.visualViewport){
+  visualViewport.addEventListener('resize', ()=>syncMobileInfoPanel(), {passive:true});
+  visualViewport.addEventListener('scroll', ()=>syncMobileInfoPanel(), {passive:true});
+}
+ensureMobileInfoPanel();
+function showTipIn(el, x, y, title, bodyHTML, anchorRect=null){
+  const vv=window.visualViewport;
+  const zoom = vv && vv.scale ? vv.scale : 1;
+  const offsetLeft = vv && typeof vv.offsetLeft === 'number' ? vv.offsetLeft : 0;
+  const offsetTop = vv && typeof vv.offsetTop === 'number' ? vv.offsetTop : 0;
+  const viewportWidth = vv && vv.width ? vv.width : window.innerWidth;
+  const viewportHeight = vv && vv.height ? vv.height : window.innerHeight;
+  const scrollX = window.scrollX || window.pageXOffset || document.documentElement.scrollLeft || 0;
+  const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
   el.innerHTML = `
     <div class="tipHead">
       <div class="tTitle">${esc(title||'Item')}</div>
@@ -748,12 +1043,14 @@ function showTipIn(el, x, y, title, bodyHTML){
   `;
   el.style.display = 'block';
 
-  el.style.transform = `scale(${k})`;
-  el.style.transformOrigin = 'top left';
-  
   const isMobile = window.innerWidth <= 640;
-  const vw = (window.visualViewport && window.visualViewport.width) ? window.visualViewport.width : window.innerWidth;
-  const baseMaxWidth = isMobile ? Math.min(220, vw - 30) : Math.min(280, vw - 40);
+  el.style.transform = '';
+  el.style.transformOrigin = '';
+
+  const layoutWidth = document.documentElement?.clientWidth || window.innerWidth;
+  const baseMaxWidth = isMobile
+    ? Math.min(280, Math.max(220, layoutWidth - 40))
+    : Math.min(320, Math.max(240, layoutWidth - 80));
   el.style.maxWidth = baseMaxWidth + 'px';
   el.style.padding = isMobile ? '8px' : '10px';
   el.style.borderRadius = isMobile ? '8px' : '10px';
@@ -773,24 +1070,55 @@ function showTipIn(el, x, y, title, bodyHTML){
   noteEls.forEach(n => n.style.fontSize = isMobile ? '11px' : '13px');
 
   requestAnimationFrame(() => {
-    const vh = (window.visualViewport && window.visualViewport.height) ? window.visualViewport.height : window.innerHeight;
-    const vw = (window.visualViewport && window.visualViewport.width) ? window.visualViewport.width : window.innerWidth;
-    
     const r = el.getBoundingClientRect();
     const pad = isMobile ? 8 : 12;
-    
-    let left = x + (isMobile ? 8 : 12);
-    let top = y + (isMobile ? 8 : 12);
-    
-    if (left + r.width + pad > vw) {
-      left = Math.max(pad, vw - r.width - pad);
+    const visibleLeft = scrollX + offsetLeft;
+    const visibleTop = scrollY + offsetTop;
+    const visibleRight = visibleLeft + viewportWidth;
+    const visibleBottom = visibleTop + viewportHeight;
+
+    const useAnchor = !!anchorRect;
+
+    const anchorLeft = anchorRect ? anchorRect.left + scrollX + offsetLeft : null;
+    const anchorRight = anchorRect ? anchorRect.right + scrollX + offsetLeft : null;
+    const anchorTop = anchorRect ? anchorRect.top + scrollY + offsetTop : null;
+    const anchorBottom = anchorRect ? anchorRect.bottom + scrollY + offsetTop : null;
+    const anchorCenterX = anchorRect ? (anchorLeft + anchorRight) / 2 : null;
+
+    let left;
+    let top;
+
+    if(useAnchor){
+      const offset = isMobile ? 12 : 16;
+      left = (anchorCenterX || (visibleLeft + pad)) - (r.width/2);
+      top = (anchorTop !== null ? anchorTop : (visibleTop + pad)) - r.height - offset;
+
+      if (top < visibleTop + pad) {
+        top = (anchorBottom !== null ? anchorBottom : (visibleTop + pad)) + offset;
+      }
+      if (top + r.height + pad > visibleBottom) {
+        const anchorMiddle = anchorRect ? anchorTop + (anchorRect.height/2) : (visibleTop + viewportHeight/2);
+        top = anchorMiddle - (r.height/2);
+        if (top + r.height + pad > visibleBottom) {
+          top = visibleBottom - r.height - pad;
+        }
+      }
+    } else {
+      const pointerX = (typeof x === 'number' ? x + scrollX + offsetLeft : (visibleLeft + viewportWidth/2));
+      const pointerY = (typeof y === 'number' ? y + scrollY + offsetTop : (visibleTop + viewportHeight/2));
+      left = pointerX + (isMobile ? 8 : 12);
+      top = pointerY + (isMobile ? 8 : 12);
     }
-    if (top + r.height + pad > vh) {
-      top = Math.max(pad, vh - r.height - pad);
+
+    if (left + r.width + pad > visibleRight) {
+      left = Math.max(visibleLeft + pad, visibleRight - r.width - pad);
+    }
+    if (top + r.height + pad > visibleBottom) {
+      top = Math.max(visibleTop + pad, visibleBottom - r.height - pad);
     }
     
-    left = Math.max(pad, left);
-    top = Math.max(pad, top);
+    left = Math.max(visibleLeft + pad, left);
+    top = Math.max(visibleTop + pad, top);
     
     el.style.left = left + 'px';
     el.style.top  = top + 'px';
@@ -843,6 +1171,7 @@ function renderSelector(el){
       try{sessionStorage.setItem('qrAllergies',JSON.stringify(state.allergies));}catch(_){}
       renderSelector(el); if (window.__rerenderLayer__) window.__rerenderLayer__();
       send({type:'qrAllergies',allergies:state.allergies});
+      if(prefersMobileInfo()) renderMobileInfo(currentMobileInfoItem);
     };
     row.appendChild(c);
   });
@@ -858,6 +1187,53 @@ function drawMenu(container,imageURL){
   const img=new Image(); img.src=imageURL; img.className='menuImg'; inner.appendChild(img);
   const layer=div('','overlayLayer'); inner.appendChild(layer);
 
+  const menuState=getMenuState();
+  menuState.img=img;
+  menuState.layer=layer;
+  menuState.inner=inner;
+
+  ensureMobileViewerChrome();
+  updateZoomIndicator();
+  const showOverlayDetails=(evt,item,target)=>{
+    ensureMobileInfoPanel();
+    let pointerType='mouse';
+    if(evt){
+      if(typeof evt.pointerType==='string'){
+        pointerType=evt.pointerType;
+      } else if(evt.type && evt.type.toLowerCase().includes('touch')){
+        pointerType='touch';
+      } else if(evt.type && evt.type.toLowerCase().includes('pointer')){
+        pointerType='pen';
+      }
+    }
+    const useMobilePanel = (pointerType!=='mouse') && prefersMobileInfo();
+    if(useMobilePanel){
+      if(evt){
+        if(typeof evt.preventDefault==='function') evt.preventDefault();
+        if(typeof evt.stopPropagation==='function') evt.stopPropagation();
+      }
+      if(currentMobileInfoItem===item && mobileInfoPanel?.classList.contains('show')){
+        renderMobileInfo(null);
+      } else {
+        hideTip();
+        renderMobileInfo(item);
+      }
+      return;
+    }
+    if(mobileInfoPanel && mobileInfoPanel.classList.contains('show')){
+      mobileInfoPanel.classList.remove('show');
+      mobileInfoPanel.innerHTML='';
+      currentMobileInfoItem=null;
+    }
+    const client = evt?.changedTouches ? evt.changedTouches[0] : evt;
+    const rect = target?.getBoundingClientRect
+      ? target.getBoundingClientRect()
+      : (evt?.currentTarget?.getBoundingClientRect ? evt.currentTarget.getBoundingClientRect() : null);
+    const clientX = client?.clientX ?? 0;
+    const clientY = client?.clientY ?? 0;
+    showTipIn(pageTip, clientX, clientY, item.id||'Item', tooltipBodyHTML(item,state.allergies||[]), rect);
+  };
+
   function renderLayer(){
     [...layer.querySelectorAll('.overlay')].forEach(n=>n.remove());
     const colors={ safe:'var(--ok)', removable:'var(--warn)', unsafe:'var(--bad)', neutral:'#ffffff1a'};
@@ -870,11 +1246,7 @@ function drawMenu(container,imageURL){
     layer.style.width = img.clientWidth + 'px';
     layer.style.height = img.clientHeight + 'px';
     
-    console.log('Rendering overlays:', state.restaurant?.overlays?.length || 0);
-    console.log('Image dimensions:', img.clientWidth, 'x', img.clientHeight);
-    
     (Array.isArray(state.restaurant?.overlays)?state.restaurant.overlays:[]).forEach(it=>{
-      console.log('Overlay:', it.id, 'at', it.x, it.y, it.w, it.h);
       
       const box=document.createElement('div');
       box.className='overlay';
@@ -891,8 +1263,8 @@ function drawMenu(container,imageURL){
         warning.className='ovWarning';
         warning.title='Cross-contamination warning';
         warning.textContent='⚠';
-        warning.addEventListener('click',(e)=>{e.stopPropagation();showTipIn(pageTip,e.clientX,e.clientY,it.id||'Item',tooltipBodyHTML(it,state.allergies||[]));});
-        warning.addEventListener('touchend',(e)=>{e.preventDefault();e.stopPropagation();showTipIn(pageTip,e.changedTouches[0].clientX,e.changedTouches[0].clientY,it.id||'Item',tooltipBodyHTML(it,state.allergies||[]));});
+        warning.addEventListener('click',(e)=>{showOverlayDetails(e,it,e.currentTarget);});
+        warning.addEventListener('touchend',(e)=>{showOverlayDetails(e,it,e.currentTarget);});
         box.appendChild(warning);
       }
 
@@ -900,25 +1272,38 @@ function drawMenu(container,imageURL){
       badge.className='ovBadge'; 
       badge.title='Details'; 
       badge.textContent='i';
-      badge.addEventListener('click',(e)=>{e.stopPropagation(); showTipIn(pageTip, e.clientX, e.clientY, it.id||'Item', tooltipBodyHTML(it,state.allergies||[]));});
-      badge.addEventListener('touchend',(e)=>{e.preventDefault(); e.stopPropagation(); showTipIn(pageTip, e.changedTouches[0].clientX, e.changedTouches[0].clientY, it.id||'Item', tooltipBodyHTML(it,state.allergies||[]));});
+      badge.addEventListener('click',(e)=>{showOverlayDetails(e,it,e.currentTarget);});
+      badge.addEventListener('touchend',(e)=>{showOverlayDetails(e,it,e.currentTarget);});
       box.appendChild(badge);
 
-      box.addEventListener('mousemove',(e)=>{ showTipIn(pageTip, e.clientX, e.clientY, it.id||'Item', tooltipBodyHTML(it,state.allergies||[])); });
+      box.addEventListener('mousemove',(e)=>{
+        if(prefersMobileInfo()) return;
+        const rect = (e.currentTarget && e.currentTarget.getBoundingClientRect)
+          ? e.currentTarget.getBoundingClientRect()
+          : box.getBoundingClientRect();
+        showTipIn(pageTip, e.clientX, e.clientY, it.id||'Item', tooltipBodyHTML(it,state.allergies||[]), rect);
+      });
       box.addEventListener('mouseleave',hideTip);
-      box.addEventListener('click',(e)=>{ showTipIn(pageTip, e.clientX, e.clientY, it.id||'Item', tooltipBodyHTML(it,state.allergies||[])); });
+      box.addEventListener('click',(e)=>{showOverlayDetails(e,it,e.currentTarget);});
+      box.addEventListener('touchend',(e)=>{showOverlayDetails(e,it,e.currentTarget);});
 
       layer.appendChild(box);
     });
   }
 
   window.__rerenderLayer__=renderLayer;
+  captureMenuBaseDimensions(true);
 
   if(img.complete && img.naturalWidth) {
     renderLayer();
+    captureMenuBaseDimensions(true);
   } else {
     img.onload=()=>{
       setTimeout(renderLayer, 50);
+      captureMenuBaseDimensions(true);
+      if(document.body.classList.contains('mobileViewerActive')){
+        setMobileZoom(mobileZoomLevel,true);
+      }
     };
   }
 
@@ -994,6 +1379,10 @@ function renderRestaurant(){
       <span class="note">👆 Hover or tap a box for details</span>
     </div>
     <div id="confirmedRow" style="display:none" class="note">Last confirmed by staff: ${rs.lastConfirmed?esc(fmtDate(rs.lastConfirmed)):'—'}</div>
+    <div class="mobileMenuNotice" id="mobileMenuNotice" aria-hidden="true" style="display:none">
+      <div class="mobileMenuNoticeText">Open the menu in full screen for zoom controls.</div>
+      <button class="btn btnPrimary mobileMenuOpenBtn" type="button">Open menu full screen</button>
+    </div>
     <div class="menuWrap" id="menu"></div>
   `;
 
@@ -1001,6 +1390,9 @@ function renderRestaurant(){
   if(state.qr||!state.user?.loggedIn) renderSelector(chipsHost); else renderSavedChips(chipsHost);
 
   const menu=document.getElementById('menu');
+  ensureMobileInfoPanel();
+  mobileInfoPanel.classList.remove('show');
+  mobileInfoPanel.innerHTML='';
   document.getElementById('ackBtn').onclick=()=>{
     if(!state.ack){send({type:'ack'}); state.ack=true;}
     const b=document.getElementById('ackBtn'); b.textContent='Acknowledged'; b.classList.remove('off'); b.classList.add('on');
@@ -1008,6 +1400,46 @@ function renderRestaurant(){
     document.getElementById('legendRow').style.display='flex';
     document.getElementById('confirmedRow').style.display='block';
     drawMenu(menu, rs.menuImage);
+    const hasMenuImage=!!rs.menuImage;
+    if(hasMenuImage){
+      ensureMobileViewerChrome();
+      updateZoomIndicator();
+      const notice=document.getElementById('mobileMenuNotice');
+      if(notice){
+        notice.style.display='flex';
+        notice.setAttribute('aria-hidden','false');
+        notice.dataset.enabled='1';
+        const openBtn=notice.querySelector('.mobileMenuOpenBtn');
+        if(openBtn){
+          if(!openBtn.__openHandler){
+            const handler=(e)=>{
+              if(e && typeof e.preventDefault==='function') e.preventDefault();
+              if(e && typeof e.stopPropagation==='function') e.stopPropagation();
+              openMobileViewer();
+            };
+            openBtn.__openHandler=handler;
+            openBtn.addEventListener('click', handler);
+          }
+        }
+      }
+    } else {
+      const notice=document.getElementById('mobileMenuNotice');
+      if(notice){
+        notice.style.display='none';
+        notice.setAttribute('aria-hidden','true');
+        delete notice.dataset.enabled;
+        const openBtn=notice.querySelector('.mobileMenuOpenBtn');
+        if(openBtn && openBtn.__openHandler){
+          openBtn.removeEventListener('click', openBtn.__openHandler);
+          delete openBtn.__openHandler;
+        }
+      }
+    }
+    if(mobileInfoPanel){
+      mobileInfoPanel.classList.remove('show');
+      mobileInfoPanel.innerHTML='';
+      currentMobileInfoItem=null;
+    }
     if((state.qr || urlQR) && !state.user?.loggedIn && shouldShowQrPromo()){
       queueQrPromoTimer();
     } else {
