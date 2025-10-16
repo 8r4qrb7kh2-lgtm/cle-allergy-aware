@@ -29,40 +29,58 @@ serve(async (req) => {
 
 TASK: Find each dish and return its bounding box as percentages of the image dimensions.
 
-COORDINATE SYSTEM:
-- x, y, w, h are ALL percentages (0-100) of the image dimensions
-- x = horizontal distance from LEFT edge of image to LEFT edge of dish
-- y = vertical distance from TOP edge of image to TOP edge of dish
+COORDINATE SYSTEM - EXTREMELY IMPORTANT:
+- x, y, w, h are ALL percentages (0-100) of the ENTIRE image dimensions
+- x = horizontal distance from LEFT edge of ENTIRE IMAGE to LEFT edge of dish text
+- y = vertical distance from TOP edge of ENTIRE IMAGE to TOP edge of dish text
 - w = width of the dish area (name + price + description)
 - h = height of the dish area
 
-MEASUREMENT PROCESS:
-1. Look at the ENTIRE image dimensions (width and height in pixels)
-2. Find where the dish text starts horizontally - that's your x
-3. Find where the dish text starts vertically - that's your y
-4. Measure how wide the dish text area is - convert to percentage of image width
-5. Measure how tall the dish text area is - convert to percentage of image height
+CRITICAL MEASUREMENT RULES:
+1. ALWAYS measure from the absolute edges of the digital image file, NOT from any menu board or visible objects
+2. If there's whitespace or borders in the image, include those in your calculations
+3. Look at where dishes ACTUALLY appear on screen when viewing the raw image file
 
-COMMON PATTERNS:
-- Menus often have 2-3 columns
-- Left column typically: x=2-8%, w=20-30%
-- Middle column typically: x=35-45%, w=20-30%
-- Right column typically: x=68-78%, w=20-30%
-- Dishes usually have h=4-8% (height)
-- First dish often starts at y=15-25%
-- Subsequent dishes add 8-12% to y each time
+STEP-BY-STEP CALCULATION METHOD:
+For each dish, imagine the image is 1000 pixels wide and 1000 pixels tall:
+1. Count how many pixels from the LEFT edge of the image to where the dish text starts (e.g., 50 pixels)
+2. Divide by image width and multiply by 100 to get x% (e.g., 50/1000 * 100 = 5%)
+3. Count how many pixels from the TOP edge of the image to where the dish text starts (e.g., 200 pixels)
+4. Divide by image height and multiply by 100 to get y% (e.g., 200/1000 * 100 = 20%)
+5. Measure the dish text width in pixels and convert to percentage
+6. Measure the dish text height in pixels and convert to percentage
 
-CRITICAL: Measure from the actual image edges, NOT from the menu board edges visible in the photo.
+VALIDATION CHECKS:
+- If your x values are consistently too high or too low, you're measuring from the wrong reference point
+- All dishes in a single column should have similar x values (within 1-2%)
+- Dishes should have consistent spacing - if y values jump erratically, recheck your measurements
+- The sum x + w should never exceed 100
+- The sum y + h should never exceed 100
+
+COMMON ERRORS TO AVOID:
+❌ Measuring from menu board edge instead of image edge
+❌ Using pixel values instead of percentages
+❌ Ignoring whitespace/margins in the image
+❌ Inconsistent x values for dishes in the same column
+❌ Overlays that extend beyond image boundaries (x+w > 100 or y+h > 100)
+
+EXAMPLE MEASUREMENTS:
+If image is 800px wide × 1200px tall:
+- Dish at pixel position (60, 240) with size (200, 80)
+  → x = 60/800 * 100 = 7.5%
+  → y = 240/1200 * 100 = 20%
+  → w = 200/800 * 100 = 25%
+  → h = 80/1200 * 100 = 6.67%
 
 Return JSON:
 {
   "dishes": [
     {
       "id": "exact dish name",
-      "x": 5.0,
-      "y": 18.0,
+      "x": 7.5,
+      "y": 20.0,
       "w": 25.0,
-      "h": 6.0,
+      "h": 6.67,
       "allergens": [],
       "removable": [],
       "crossContamination": [],
@@ -72,14 +90,19 @@ Return JSON:
   ]
 }
 
-Be very careful with positioning - overlays will be drawn using these exact coordinates.`
+FINAL REMINDER: Double-check that ALL x, y coordinates are measured from the absolute top-left corner (0, 0) of the entire digital image file.`
 
     const userPrompt = `Please analyze this menu image and detect all dishes with their PRECISE locations.
 
-Important:
-- Measure coordinates from the actual image edges (not menu board edges)
-- Be very accurate with x, y positions - they must align with where the dishes actually appear
-- Each dish should have a tight bounding box around its name, price, and description`
+CRITICAL INSTRUCTIONS:
+1. Measure ALL coordinates from the top-left corner (0,0) of the ENTIRE digital image file
+2. Include any whitespace, borders, or margins in your percentage calculations
+3. DO NOT measure from menu board edges or visible objects - only from the image file edges
+4. Verify that dishes in the same column have consistent x values (within 1-2%)
+5. Double-check that x+w ≤ 100 and y+h ≤ 100 for every dish
+6. Use the step-by-step calculation method described in the system prompt
+
+Each dish should have a tight bounding box around its name, price, and description.`
 
     // Extract base64 data from data URL
     const base64Data = imageData.split(',')[1] || imageData

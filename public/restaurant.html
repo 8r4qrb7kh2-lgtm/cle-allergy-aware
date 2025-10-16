@@ -99,8 +99,8 @@
   #mobileViewerChrome .chromeTop .mobileZoomGroup{pointer-events:auto}
   #mobileViewerChrome button{pointer-events:auto}
   .mobileViewerSummary{flex:1;display:flex;align-items:center;justify-content:center;pointer-events:none}
-  .mobileViewerSummaryInner{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:999px;border:1px solid rgba(76,90,212,0.35);background:rgba(8,12,28,0.88);box-shadow:0 10px 28px rgba(0,0,0,0.35);color:var(--muted);flex-wrap:wrap;justify-content:center;max-width:min(96vw,840px)}
-  .mobileViewerSummaryInner .label{font-weight:600;color:var(--ink)}
+  .mobileViewerSummaryInner{display:inline-flex;flex-direction:column;align-items:flex-start;gap:8px;padding:12px 20px;border-radius:16px;border:1px solid rgba(76,90,212,0.35);background:rgba(8,12,28,0.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 28px rgba(0,0,0,0.35);color:var(--muted);max-width:min(92vw,720px)}
+  .mobileViewerSummaryInner .label{font-weight:600;color:var(--ink);white-space:nowrap}
   .mobileViewerSummaryInner .values{color:var(--ink)}
   .mobileViewerControlBtn{background:rgba(18,24,58,0.9);border:1px solid rgba(76,90,212,0.5);color:var(--ink);padding:10px 18px;border-radius:999px;font-weight:600;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,0.35)}
   .mobileZoomGroup{display:inline-flex;align-items:center;gap:14px;background:rgba(18,24,58,0.9);border:1px solid rgba(76,90,212,0.4);border-radius:999px;padding:10px 18px;box-shadow:0 10px 28px rgba(0,0,0,0.3)}
@@ -598,12 +598,35 @@ function updateFullScreenAllergySummary(){
   const summary=document.getElementById('mobileViewerAllergySummary');
   if(!summary) return;
   const uniqueKeys=Array.from(new Set((state.allergies||[]).map(norm))).filter(Boolean);
-  const selected=uniqueKeys.map(cap);
-  if(selected.length){
-    summary.innerHTML=`<div class="mobileViewerSummaryInner"><span class="label">Selected:</span><span class="values">${selected.map(esc).join(', ')}</span></div>`;
+  const selectedDiets=(state.diets||[]);
+
+  let html='';
+  if(uniqueKeys.length || selectedDiets.length){
+    html='<div class="mobileViewerSummaryInner">';
+
+    // Allergens with emoji badges
+    if(uniqueKeys.length){
+      const allergenBadges=uniqueKeys.map(a=>{
+        const emoji=allergenEmoji[a]||'🔴';
+        return `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(76,90,212,0.25);border:1px solid rgba(76,90,212,0.4);border-radius:999px;padding:4px 10px;font-size:0.85rem;"><span>${emoji}</span><span>${esc(cap(a))}</span></span>`;
+      }).join('');
+      html+=`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span class="label">Allergens:</span>${allergenBadges}</div>`;
+    }
+
+    // Dietary preferences with emoji
+    if(selectedDiets.length){
+      const dietBadges=selectedDiets.map(d=>{
+        const emoji=d==='Vegan'?'🌱':d==='Vegetarian'?'🥬':d==='Pescatarian'?'🐟':d==='Kosher'?'✡️':d==='Halal'?'☪️':'🍽️';
+        return `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);border-radius:999px;padding:4px 10px;font-size:0.85rem;"><span>${emoji}</span><span>${esc(d)}</span></span>`;
+      }).join('');
+      html+=`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:${uniqueKeys.length?'6px':'0'}"><span class="label">Diets:</span>${dietBadges}</div>`;
+    }
+
+    html+='</div>';
   } else {
-    summary.innerHTML=`<div class="mobileViewerSummaryInner"><span class="values">No allergens selected</span></div>`;
+    html=`<div class="mobileViewerSummaryInner"><span class="values">No allergens or dietary preferences selected</span></div>`;
   }
+  summary.innerHTML=html;
 }
 
 function setMobileZoom(level, resetBase=false){
@@ -3395,7 +3418,12 @@ function renderSavedChips(el){
     updateFullScreenAllergySummary();
     return;
   }
-  const row=div('','chips'); saved.forEach(a=>row.appendChild(div(esc(cap(a)),'chip active'))); el.appendChild(row);
+  const row=div('','chips');
+  saved.forEach(a=>{
+    const emoji=allergenEmoji[a]||'🔴';
+    row.appendChild(div(`${emoji} ${esc(cap(a))}`,'chip active'));
+  });
+  el.appendChild(row);
   updateFullScreenAllergySummary();
 }
 
@@ -3406,7 +3434,12 @@ function renderSavedDiets(el){
     el.appendChild(div('<div class="note">No saved dietary preferences. Use "Edit saved dietary preferences".</div>'));
     return;
   }
-  const row=div('','chips'); saved.forEach(d=>row.appendChild(div(esc(d),'chip active'))); el.appendChild(row);
+  const row=div('','chips');
+  saved.forEach(d=>{
+    const emoji=d==='Vegan'?'🌱':d==='Vegetarian'?'🥬':d==='Pescatarian'?'🐟':d==='Kosher'?'✡️':d==='Halal'?'☪️':'🍽️';
+    row.appendChild(div(`${emoji} ${esc(d)}`,'chip active'));
+  });
+  el.appendChild(row);
 }
 
 /* selector for QR guests */
