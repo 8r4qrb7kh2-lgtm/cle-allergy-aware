@@ -1144,7 +1144,7 @@ function ensureAiAssistElements(){
           <button type="button" class="btn btnPrimary" id="aiAssistProcessBtn">Process text</button>
           <span class="aiAssistStatus" id="aiAssistStatus"></span>
         </div>
-        <div class="aiAssistMedia">
+        <div class="aiAssistMedia aiAssistHidden" id="aiAssistMedia">
           <button type="button" class="btn" id="aiAssistUploadBtn">Upload label photo</button>
           <button type="button" class="btn" id="aiAssistCameraBtn">📷 Take photo</button>
           <input type="file" id="aiAssistFileInput" class="aiAssistHidden" accept="image/*" capture="environment">
@@ -1918,7 +1918,15 @@ async function openAiBrandSearch(rowIdx){
       const suggestions=await fetchBrandSuggestions(query, ingredientName);
       aiAssistState.brandSuggestions[rowIdx]=suggestions;
       if(!suggestions.length){
-        rowBrandResults.innerHTML='<div>No brands found. Try a different search.</div>';
+        rowBrandResults.innerHTML=`
+          <div style="text-align:center;padding:20px">
+            <p style="margin-bottom:12px">No brands found.</p>
+            <button type="button" class="btn aiBrandSearchAgain">Try a different search</button>
+          </div>
+        `;
+        rowBrandResults.querySelector('.aiBrandSearchAgain').addEventListener('click', () => {
+          openAiBrandSearch(rowIdx);
+        });
         return;
       }
       rowBrandResults.innerHTML=`
@@ -1934,9 +1942,28 @@ async function openAiBrandSearch(rowIdx){
             ${item.brand?`<span>${esc(item.brand)}</span>`:''}
             ${item.ingredientsImage?'<span style="color:#4c5ad4">✓ Has label image - click to verify</span>':'<span style="color:#dc5252">⚠️ No label image available</span>'}
             ${item.productUrl?`<a href="${esc(item.productUrl)}" target="_blank" rel="noopener" style="font-size:0.85rem;color:#4c5ad4">View on Open Food Facts</a>`:''}
+            <button type="button" class="btn btnSmall aiBrandApply" data-row="${rowIdx}" data-index="${idx}" style="margin-top:8px">Add this brand</button>
           </div>
         </div>
-      `).join('')}`;
+      `).join('')}
+      <div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid rgba(76,90,212,0.2)">
+        <button type="button" class="btn aiBrandSearchAgain">Search again</button>
+      </div>
+      `;
+
+      // Add click handlers for "Add this brand" buttons
+      rowBrandResults.querySelectorAll('.aiBrandApply').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const suggestionIdx = Number(e.target.dataset.index);
+          applyBrandSuggestion(rowIdx, suggestionIdx);
+        });
+      });
+
+      // Add click handler for "Search again" button
+      rowBrandResults.querySelector('.aiBrandSearchAgain').addEventListener('click', () => {
+        openAiBrandSearch(rowIdx);
+      });
+
       aiAssistSetStatus('Review images carefully before applying. Click images to verify ingredient labels match.','warn');
     }catch(err){
       console.error('Brand lookup failed',err);
