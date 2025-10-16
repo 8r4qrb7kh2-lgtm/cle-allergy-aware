@@ -3052,24 +3052,38 @@ function tooltipBodyHTML(item,sel,userDiets){
 
   let html='';
 
-  // Display dietary preferences if any (SEPARATE SECTION)
-  if(item.diets && item.diets.length > 0){
-    const userDietSet = new Set(userDiets || []);
-    const dietBadges = item.diets.map(diet => {
-      const isMatch = userDietSet.has(diet);
-      const emoji = {
-        'Vegan': '🌱',
-        'Vegetarian': '🥬',
-        'Pescatarian': '🐟',
-        'Kosher': '✡️',
-        'Halal': '☪️'
-      }[diet] || '✓';
-      const bgColor = isMatch ? 'rgba(76,200,90,0.25)' : 'rgba(76,200,90,0.15)';
-      const borderColor = isMatch ? 'rgba(76,200,90,0.6)' : 'rgba(76,200,90,0.4)';
-      const fontWeight = isMatch ? 'font-weight:600;' : '';
-      return `<span style="display:inline-block;padding:4px 10px;margin:2px 4px 2px 0;background:${bgColor};border:1px solid ${borderColor};border-radius:12px;font-size:0.85rem;color:#4cc85a;white-space:nowrap;${fontWeight}">${emoji} ${esc(diet)}</span>`;
-    }).join('');
-    html+=`<div class="note" style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(76,90,212,0.2)"><strong style="display:block;margin-bottom:6px;color:var(--ink)">Dietary Options</strong>${dietBadges}</div>`;
+  // Display dietary preferences section
+  const userDietSet = new Set(userDiets || []);
+  const hasUserDiets = userDiets && userDiets.length > 0;
+  const itemDiets = item.diets || [];
+
+  if(hasUserDiets || itemDiets.length > 0){
+    let dietContent = '';
+
+    if(itemDiets.length > 0){
+      const dietBadges = itemDiets.map(diet => {
+        const isMatch = userDietSet.has(diet);
+        const emoji = {
+          'Vegan': '🌱',
+          'Vegetarian': '🥬',
+          'Pescatarian': '🐟',
+          'Kosher': '✡️',
+          'Halal': '☪️'
+        }[diet] || '✓';
+        const bgColor = isMatch ? 'rgba(76,200,90,0.25)' : 'rgba(76,200,90,0.15)';
+        const borderColor = isMatch ? 'rgba(76,200,90,0.6)' : 'rgba(76,200,90,0.4)';
+        const fontWeight = isMatch ? 'font-weight:600;' : '';
+        return `<span style="display:inline-block;padding:4px 10px;margin:2px 4px 2px 0;background:${bgColor};border:1px solid ${borderColor};border-radius:12px;font-size:0.85rem;color:#4cc85a;white-space:nowrap;${fontWeight}">${emoji} ${esc(diet)}</span>`;
+      }).join('');
+      dietContent = dietBadges;
+    } else if(hasUserDiets){
+      // Show that the item doesn't provide any dietary options when user has preferences
+      dietContent = '<span style="color:var(--muted);font-size:0.85rem;font-style:italic">No dietary information available</span>';
+    }
+
+    if(dietContent){
+      html+=`<div class="note" style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(76,90,212,0.2)"><strong style="display:block;margin-bottom:6px;color:var(--ink)">Dietary Options</strong>${dietContent}</div>`;
+    }
   }
 
   // If no allergen selections, return what we have (might be dietary info)
