@@ -25,62 +25,35 @@ serve(async (req) => {
       throw new Error('No image data provided')
     }
 
-    const systemPrompt = `You are a menu analysis assistant that detects dish locations on restaurant menu images.
+    const systemPrompt = `You are a menu analysis assistant. Your job is to identify dishes and their bounding boxes on menu images.
 
-TASK: Find each dish and return its bounding box as percentages of the image dimensions.
+IMPORTANT: Return coordinates as PIXEL VALUES relative to the image dimensions, NOT percentages.
 
-COORDINATE SYSTEM - EXTREMELY IMPORTANT:
-- x, y, w, h are ALL percentages (0-100) of the ENTIRE image dimensions
-- x = horizontal distance from LEFT edge of ENTIRE IMAGE to LEFT edge of dish text
-- y = vertical distance from TOP edge of ENTIRE IMAGE to TOP edge of dish text
-- w = width of the dish area (name + price + description)
-- h = height of the dish area
+For each dish, provide:
+- pixelX: horizontal pixel distance from LEFT edge of image to LEFT edge of dish name
+- pixelY: vertical pixel distance from TOP edge of image to TOP edge of dish name
+- pixelWidth: width of the dish text block in pixels
+- pixelHeight: height of the dish text block in pixels
+- imageWidth: the total width of the image you're analyzing in pixels
+- imageHeight: the total height of the image you're analyzing in pixels
 
-CRITICAL MEASUREMENT RULES:
-1. ALWAYS measure from the absolute edges of the digital image file, NOT from any menu board or visible objects
-2. If there's whitespace or borders in the image, include those in your calculations
-3. Look at where dishes ACTUALLY appear on screen when viewing the raw image file
+MEASUREMENT GUIDELINES:
+1. Look at the ENTIRE image - measure from the absolute edges of the digital image file
+2. DO NOT measure from menu board edges or decorative borders - use the IMAGE file edges
+3. A dish's bounding box should tightly wrap around: dish name + price + description
+4. Be precise with pixel coordinates - these will be used to draw overlays
 
-STEP-BY-STEP CALCULATION METHOD:
-For each dish, imagine the image is 1000 pixels wide and 1000 pixels tall:
-1. Count how many pixels from the LEFT edge of the image to where the dish text starts (e.g., 50 pixels)
-2. Divide by image width and multiply by 100 to get x% (e.g., 50/1000 * 100 = 5%)
-3. Count how many pixels from the TOP edge of the image to where the dish text starts (e.g., 200 pixels)
-4. Divide by image height and multiply by 100 to get y% (e.g., 200/1000 * 100 = 20%)
-5. Measure the dish text width in pixels and convert to percentage
-6. Measure the dish text height in pixels and convert to percentage
-
-VALIDATION CHECKS:
-- If your x values are consistently too high or too low, you're measuring from the wrong reference point
-- All dishes in a single column should have similar x values (within 1-2%)
-- Dishes should have consistent spacing - if y values jump erratically, recheck your measurements
-- The sum x + w should never exceed 100
-- The sum y + h should never exceed 100
-
-COMMON ERRORS TO AVOID:
-❌ Measuring from menu board edge instead of image edge
-❌ Using pixel values instead of percentages
-❌ Ignoring whitespace/margins in the image
-❌ Inconsistent x values for dishes in the same column
-❌ Overlays that extend beyond image boundaries (x+w > 100 or y+h > 100)
-
-EXAMPLE MEASUREMENTS:
-If image is 800px wide × 1200px tall:
-- Dish at pixel position (60, 240) with size (200, 80)
-  → x = 60/800 * 100 = 7.5%
-  → y = 240/1200 * 100 = 20%
-  → w = 200/800 * 100 = 25%
-  → h = 80/1200 * 100 = 6.67%
-
-Return JSON:
+Return JSON format:
 {
+  "imageWidth": 1920,
+  "imageHeight": 2560,
   "dishes": [
     {
       "id": "exact dish name",
-      "x": 7.5,
-      "y": 20.0,
-      "w": 25.0,
-      "h": 6.67,
+      "pixelX": 120,
+      "pixelY": 450,
+      "pixelWidth": 380,
+      "pixelHeight": 95,
       "allergens": [],
       "removable": [],
       "crossContamination": [],
@@ -90,19 +63,17 @@ Return JSON:
   ]
 }
 
-FINAL REMINDER: Double-check that ALL x, y coordinates are measured from the absolute top-left corner (0, 0) of the entire digital image file.`
+CRITICAL: Report the actual pixel dimensions you observe in the image.`
 
-    const userPrompt = `Please analyze this menu image and detect all dishes with their PRECISE locations.
+    const userPrompt = `Analyze this menu image and identify all dishes.
 
-CRITICAL INSTRUCTIONS:
-1. Measure ALL coordinates from the top-left corner (0,0) of the ENTIRE digital image file
-2. Include any whitespace, borders, or margins in your percentage calculations
-3. DO NOT measure from menu board edges or visible objects - only from the image file edges
-4. Verify that dishes in the same column have consistent x values (within 1-2%)
-5. Double-check that x+w ≤ 100 and y+h ≤ 100 for every dish
-6. Use the step-by-step calculation method described in the system prompt
+For each dish, provide:
+1. The exact dish name
+2. Pixel coordinates (pixelX, pixelY) from the top-left corner of the IMAGE FILE
+3. Pixel dimensions (pixelWidth, pixelHeight) of the dish text block
+4. The total image dimensions (imageWidth, imageHeight) that you're observing
 
-Each dish should have a tight bounding box around its name, price, and description.`
+Remember: Measure from the absolute edges of the digital image file, not from menu board edges.`
 
     // Extract base64 data from data URL
     const base64Data = imageData.split(',')[1] || imageData
@@ -168,10 +139,35 @@ Each dish should have a tight bounding box around its name, price, and descripti
       throw new Error('Failed to parse AI response as JSON')
     }
 
+    // Convert pixel coordinates to percentages
+    const imageWidth = parsed.imageWidth || 1920
+    const imageHeight = parsed.imageHeight || 2560
+
+    const convertedDishes = (parsed.dishes || []).map(dish => {
+      // Convert pixel values to percentages
+      const x = ((dish.pixelX || 0) / imageWidth) * 100
+      const y = ((dish.pixelY || 0) / imageHeight) * 100
+      const w = ((dish.pixelWidth || 0) / imageWidth) * 100
+      const h = ((dish.pixelHeight || 0) / imageHeight) * 100
+
+      return {
+        id: dish.id,
+        x: Math.max(0, Math.min(100, x)),
+        y: Math.max(0, Math.min(100, y)),
+        w: Math.max(0, Math.min(100 - x, w)),
+        h: Math.max(0, Math.min(100 - y, h)),
+        allergens: dish.allergens || [],
+        removable: dish.removable || [],
+        crossContamination: dish.crossContamination || [],
+        diets: dish.diets || [],
+        details: dish.details || {}
+      }
+    })
+
     return new Response(
       JSON.stringify({
         success: true,
-        dishes: parsed.dishes || []
+        dishes: convertedDishes
       }),
       {
         headers: {
