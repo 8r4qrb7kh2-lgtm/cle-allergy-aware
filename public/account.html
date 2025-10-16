@@ -79,7 +79,7 @@
         <!-- Allergen settings (shown when logged in) -->
         <section id="allergen-section" class="auth-card" style="display:none;">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-            <h2 style="margin:0;">Select your allergens</h2>
+            <h2 style="margin:0;">My Allergens</h2>
             <button class="primary-btn" id="save-btn" type="button">Save changes</button>
           </div>
           <div id="allergen-pills" class="allergen-select"></div>
@@ -89,7 +89,7 @@
         <!-- Dietary Preferences settings (shown when logged in) -->
         <section id="diet-section" class="auth-card" style="display:none;">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-            <h2 style="margin:0;">Dietary Preferences</h2>
+            <h2 style="margin:0;">My Dietary Preferences</h2>
             <button class="primary-btn" id="save-diet-btn" type="button">Save changes</button>
           </div>
           <div id="diet-pills" class="allergen-select"></div>
@@ -306,13 +306,30 @@
 
     async function saveDiets(diets) {
       if (!currentUser) return;
+      // Get current allergens to preserve them
+      const { data: current } = await supabaseClient
+        .from('user_allergies')
+        .select('allergens, diets')
+        .eq('user_id', currentUser.id)
+        .maybeSingle();
+
+      const payload = {
+        user_id: currentUser.id,
+        allergens: current?.allergens || [],
+        updated_at: new Date().toISOString()
+      };
+
+      // Only include diets if the column exists
+      if (current && 'diets' in current) {
+        payload.diets = diets;
+      } else {
+        // If diets column doesn't exist, throw a helpful error
+        throw new Error('Dietary preferences feature requires a database update. Please contact support.');
+      }
+
       const { error } = await supabaseClient
         .from('user_allergies')
-        .upsert({
-          user_id: currentUser.id,
-          diets: diets,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id' });
+        .upsert(payload, { onConflict: 'user_id' });
       if (error) throw error;
     }
 
@@ -338,13 +355,27 @@
 
     async function saveAllergies(allergies) {
       if (!currentUser) return;
+      // Get current diets to preserve them
+      const { data: current } = await supabaseClient
+        .from('user_allergies')
+        .select('diets')
+        .eq('user_id', currentUser.id)
+        .maybeSingle();
+
+      const payload = {
+        user_id: currentUser.id,
+        allergens: allergies,
+        updated_at: new Date().toISOString()
+      };
+
+      // Only include diets if the column exists in the response
+      if (current && 'diets' in current) {
+        payload.diets = current.diets || [];
+      }
+
       const { error } = await supabaseClient
         .from('user_allergies')
-        .upsert({
-          user_id: currentUser.id,
-          allergens: allergies,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'user_id' });
+        .upsert(payload, { onConflict: 'user_id' });
       if (error) throw error;
     }
 
