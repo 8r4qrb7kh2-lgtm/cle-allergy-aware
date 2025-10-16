@@ -2920,7 +2920,7 @@ function tooltipBodyHTML(item,sel,userDiets){
 
   let html='';
 
-  // Display dietary preferences if any
+  // Display dietary preferences if any (SEPARATE SECTION)
   if(item.diets && item.diets.length > 0){
     const userDietSet = new Set(userDiets || []);
     const dietBadges = item.diets.map(diet => {
@@ -2937,10 +2937,13 @@ function tooltipBodyHTML(item,sel,userDiets){
       const fontWeight = isMatch ? 'font-weight:600;' : '';
       return `<span style="display:inline-block;padding:4px 10px;margin:2px 4px 2px 0;background:${bgColor};border:1px solid ${borderColor};border-radius:12px;font-size:0.85rem;color:#4cc85a;white-space:nowrap;${fontWeight}">${emoji} ${esc(diet)}</span>`;
     }).join('');
-    html+=`<div class="note" style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(76,90,212,0.2)"><strong style="display:block;margin-bottom:6px">Dietary Options</strong>${dietBadges}</div>`;
+    html+=`<div class="note" style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(76,90,212,0.2)"><strong style="display:block;margin-bottom:6px;color:var(--ink)">Dietary Options</strong>${dietBadges}</div>`;
   }
 
   if(!sel.length) return html || `<div class="note">No allergen information to display.</div>`;
+
+  // Add allergen section header
+  if(html) html+=`<strong style="display:block;margin-bottom:8px;color:var(--ink)">Allergen Information</strong>`;
   const hits=(item.allergens||[]).filter(a=>sel.includes(a));
   const removableSet=new Set((item.removable||[]).map(r=>norm(r.allergen||'')));
   
@@ -2961,10 +2964,10 @@ function tooltipBodyHTML(item,sel,userDiets){
     }).join('');
     html+=`<div class="note tooltipWarnText"><strong>Contains (can be accommodated)</strong><ul class="tooltipList">${list}</ul></div>`;
   }
-  if(!hits.length){
+  if(!hits.length && !hasCross){
     html+=`<div class="note tooltipNeutralText">Safe - no allergens found.</div>`;
   }
-  
+
   if(hasCross){
     const crossHits=(item.crossContamination||[]).filter(a=>sel.includes(a));
     const crossList=crossHits.map(a=>`<li>${esc(cap(a))}</li>`).join('');
