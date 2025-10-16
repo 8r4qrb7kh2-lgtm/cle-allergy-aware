@@ -246,7 +246,7 @@
   .algBtn.active{background:#1a2351;box-shadow:0 0 0 3px #7c9cff33 inset;border-color:#4c5ad4}
   .algInput{background:#0c1230;color:var(--ink);border:1px solid #31407f;border-radius:8px;padding:8px 10px;width:100%}
   .algChk{display:flex;align-items:center;gap:8px;white-space:nowrap;justify-self:end}
-  .saveRow{display:none}
+  .saveRow{display:none;justify-content:flex-end;margin:12px 0}
 
   .editBox{position:absolute;border:2px solid var(--warn);border-radius:6px;background:transparent;cursor:move}
   .editBadge{position:absolute;top:2px;right:2px;width:18px;height:18px;background:#3651ff;border:1.5px solid #dbe2ff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;z-index:10;line-height:1}
@@ -3061,7 +3061,7 @@ function tooltipBodyHTML(item,sel,userDiets){
     html+=`<div class="note tooltipWarnText"><strong>Contains (can be accommodated)</strong><ul class="tooltipList">${list}</ul></div>`;
   }
   if(!hits.length && !hasCross){
-    html+=`<div class="note tooltipNeutralText">Safe - no allergens found.</div>`;
+    html+=`<div class="note tooltipNeutralText">Meets all requirements - no allergens found.</div>`;
   }
 
   if(hasCross){
@@ -3633,9 +3633,9 @@ function renderRestaurant(){
       <button class="ackBtn off" id="ackBtn">I understand</button>
     </div>
     <div id="legendRow" style="display:none" class="legend">
-      <span><span class="key ok"></span> Safe for you</span>
+      <span><span class="key ok"></span> Meets all requirements</span>
       <span><span class="key warn"></span> Can be accommodated</span>
-      <span><span class="key bad"></span> Not safe</span>
+      <span><span class="key bad"></span> Does not meet requirements</span>
       <span><span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;background:#facc15;border:2px solid #facc15;border-radius:50%;font-size:9px;vertical-align:middle;color:#000;font-weight:bold;margin-right:4px;">⚠</span>Cross-contamination risk</span>
       <span class="note">👆 Hover or tap for details</span>
     </div>
@@ -3760,7 +3760,7 @@ function renderEditor(){
   const img=new Image(); img.src=rs.menuImage||''; img.className='menuImg'; inner.appendChild(img);
 
   const overlays=JSON.parse(JSON.stringify(rs.overlays||[]));
-  let dirty=false; function setDirty(v=true){dirty=v; document.getElementById('saveRow').style.display=dirty?'block':'none';}
+  let dirty=false; function setDirty(v=true){dirty=v; document.getElementById('saveRow').style.display=dirty?'flex':'none';}
 
   // Track all changes as they happen
   let pendingChanges=[];
