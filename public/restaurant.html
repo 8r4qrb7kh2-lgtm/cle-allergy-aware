@@ -2337,16 +2337,10 @@ function displayAutoBrandPreviews(){
 
       // Add click handler
       card.addEventListener('click', () => {
-        // For simple brand suggestions (no ingredient data), apply directly
-        if(!suggestion.ingredientsImage && !suggestion.ingredientsList?.length){
+        // Always show verification modal for all brands
+        showBrandConfirmationModal(suggestion, () => {
           applyBrandSuggestionConfirmed(rowIdx, suggestion);
-          aiAssistSetStatus(`Added ${suggestion.name}. Note: No ingredient label available - manually verify allergens.`, 'warn');
-        } else {
-          // For full suggestions with ingredient data, show verification modal
-          showBrandConfirmationModal(suggestion, () => {
-            applyBrandSuggestionConfirmed(rowIdx, suggestion);
-          });
-        }
+        });
       });
 
       // Brand image thumbnail
