@@ -172,7 +172,13 @@
   .aiBrandCell .aiBrandActions .aiBrandClearBtn{background:#301424;border:1px solid #4c2138}
   .aiBrandCell .aiBrandActions .aiBrandClearBtn:hover{border-color:#a12525;box-shadow:0 0 8px rgba(220,82,120,0.55)}
   .aiBrandPreview{display:flex;gap:10px;flex-wrap:wrap}
-  .aiBrandPreview img{width:96px;height:96px;object-fit:cover;border-radius:12px;border:1px solid rgba(76,90,212,0.35);background:#0b1020}
+  .aiBrandPreview img{width:150px;height:150px;object-fit:contain;border-radius:12px;border:1px solid rgba(76,90,212,0.35);background:#0b1020;cursor:pointer;transition:all 0.2s}
+  .aiBrandPreview img:hover{border-color:rgba(76,90,212,0.7);box-shadow:0 0 12px rgba(76,90,212,0.4);transform:scale(1.02)}
+  .imageModal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:10000;align-items:center;justify-content:center;padding:20px}
+  .imageModal.show{display:flex}
+  .imageModal img{max-width:90vw;max-height:90vh;object-fit:contain;border-radius:12px;border:2px solid rgba(76,90,212,0.5);box-shadow:0 10px 50px rgba(0,0,0,0.8)}
+  .imageModal .closeModal{position:absolute;top:20px;right:20px;background:rgba(76,90,212,0.8);color:white;border:none;border-radius:50%;width:48px;height:48px;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .imageModal .closeModal:hover{background:rgba(76,90,212,1)}
   .aiIngredientList{color:var(--muted);font-size:0.85rem}
   .aiAllergenChecklist{display:flex;flex-wrap:wrap;gap:8px}
   .aiAllergenChecklist label{display:flex;align-items:center;gap:6px;background:#12183a;border:1px solid rgba(76,90,212,0.3);border-radius:999px;padding:6px 10px;font-size:0.85rem}
@@ -1168,6 +1174,23 @@ function ensureAiAssistElements(){
     document.body.appendChild(backdrop);
     aiAssistBackdrop=backdrop;
     aiAssistPanel=backdrop.querySelector('#aiAssistPanel');
+
+    // Create image modal
+    if(!document.getElementById('imageModal')){
+      const modal=document.createElement('div');
+      modal.id='imageModal';
+      modal.className='imageModal';
+      modal.innerHTML=`
+        <button type="button" class="closeModal" onclick="closeImageModal()" aria-label="Close">×</button>
+        <img id="imageModalImg" src="" alt="Full size image">
+      `;
+      modal.addEventListener('click',(e)=>{
+        if(e.target.classList.contains('imageModal')){
+          closeImageModal();
+        }
+      });
+      document.body.appendChild(modal);
+    }
     aiAssistCloseBtn=backdrop.querySelector('#aiAssistClose');
     aiAssistInput=backdrop.querySelector('#aiAssistInput');
     aiAssistDictateBtn=backdrop.querySelector('#aiAssistDictateBtn');
@@ -1463,8 +1486,8 @@ function updateAiBrandPreview(rowElement){
     const parts=[];
     const brandImage=rowElement.dataset.brandImage||'';
     const ingredientsImage=rowElement.dataset.ingredientsImage||'';
-    if(brandImage) parts.push(`<img src="${esc(brandImage)}" alt="Brand preview" loading="lazy">`);
-    if(ingredientsImage) parts.push(`<img src="${esc(ingredientsImage)}" alt="Ingredients label" loading="lazy">`);
+    if(brandImage) parts.push(`<img src="${esc(brandImage)}" alt="Brand preview" loading="lazy" onclick="openImageModal('${esc(brandImage)}')" title="Click to enlarge">`);
+    if(ingredientsImage) parts.push(`<img src="${esc(ingredientsImage)}" alt="Ingredients label" loading="lazy" onclick="openImageModal('${esc(ingredientsImage)}')" title="Click to enlarge">`);
     brandPreview.innerHTML=parts.join('');
   }
   const listNote=rowElement.querySelector('.aiIngredientList');
@@ -1535,8 +1558,8 @@ function renderAiTable(rows){
     }
     const allergens=new Set((row.allergens||[]).map(norm));
     const brandPreviewParts=[];
-    if(row.brandImage) brandPreviewParts.push(`<img src="${esc(row.brandImage)}" alt="${esc(row.brand||row.name||'Brand')}" loading="lazy">`);
-    if(row.ingredientsImage) brandPreviewParts.push(`<img src="${esc(row.ingredientsImage)}" alt="Ingredients label" loading="lazy">`);
+    if(row.brandImage) brandPreviewParts.push(`<img src="${esc(row.brandImage)}" alt="${esc(row.brand||row.name||'Brand')}" loading="lazy" onclick="openImageModal('${esc(row.brandImage)}')" title="Click to enlarge">`);
+    if(row.ingredientsImage) brandPreviewParts.push(`<img src="${esc(row.ingredientsImage)}" alt="Ingredients label" loading="lazy" onclick="openImageModal('${esc(row.ingredientsImage)}')" title="Click to enlarge">`);
     const ingredientsListNote=row.ingredientsList && row.ingredientsList.length ? `Label ingredients: ${row.ingredientsList.map(ingredient=>esc(ingredient)).join(', ')}` : '';
     tr.innerHTML=`
       <td><input type="text" class="aiIngredientName" placeholder="Ingredient name" value="${esc(row.name||'')}"></td>
@@ -1611,6 +1634,24 @@ function openAiAssistant(context){
   }
   renderAiTable([]);
   toggleAiAssistBackdrop(true);
+}
+
+function openImageModal(imageSrc){
+  const modal=document.getElementById('imageModal');
+  const img=document.getElementById('imageModalImg');
+  if(modal && img){
+    img.src=imageSrc;
+    modal.classList.add('show');
+    document.body.style.overflow='hidden';
+  }
+}
+
+function closeImageModal(){
+  const modal=document.getElementById('imageModal');
+  if(modal){
+    modal.classList.remove('show');
+    document.body.style.overflow='';
+  }
 }
 
 function closeAiAssistant(){
@@ -1719,9 +1760,10 @@ async function fetchBrandSuggestions(query){
       image:product.image_front_small_url || product.image_front_url || '',
       ingredientsImage:product.image_ingredients_url || '',
       ingredientsList,
-      allergens
+      allergens,
+      productUrl:product.url || ''
     };
-  }).filter(item=>item.name);
+  }).filter(item=>item.name && item.ingredientsImage);
 }
 
 async function openAiBrandSearch(rowIdx){
@@ -1753,7 +1795,8 @@ async function openAiBrandSearch(rowIdx){
         <div class="aiBrandSuggestionInfo">
           <strong>${esc(item.name)}</strong>
           ${item.brand?`<span>${esc(item.brand)}</span>`:''}
-          ${item.ingredientsImage?'<span>Ingredients label available</span>':''}
+          ${item.ingredientsImage?'<span>✓ Ingredients label available</span>':''}
+          ${item.productUrl?`<a href="${esc(item.productUrl)}" target="_blank" rel="noopener" style="font-size:0.85rem;color:#4c5ad4">View on Open Food Facts</a>`:''}
         </div>
       </div>
     `).join('');
