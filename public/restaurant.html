@@ -2105,6 +2105,181 @@ async function fetchBrandSuggestions(query, ingredientName){
   }).filter(item=>item.name);
 }
 
+async function autoSearchBrandsForAllIngredients(){
+  ensureAiAssistElements();
+  const rows=collectAiTableData();
+
+  if(!rows || rows.length === 0) return;
+
+  aiAssistSetStatus('Searching for common brands...', 'info');
+
+  // Search for brands for each ingredient in parallel
+  const searchPromises = rows.map(async (row, rowIdx) => {
+    if(!row.name || row.brands?.length > 0){
+      // Skip if no name or already has brands
+      return null;
+    }
+
+    try {
+      const suggestions = await fetchBrandSuggestions(row.name, row.name);
+      // Store top 3 suggestions for this row
+      aiAssistState.brandSuggestions[rowIdx] = suggestions.slice(0, 3);
+      return { rowIdx, suggestions: suggestions.slice(0, 3) };
+    } catch(err) {
+      console.warn(`Auto brand search failed for ${row.name}:`, err);
+      return null;
+    }
+  });
+
+  await Promise.all(searchPromises);
+
+  // Re-render to show brand preview cards
+  renderAiTable(rows);
+  displayAutoBrandPreviews();
+
+  aiAssistSetStatus('Brand suggestions loaded. Click a brand to verify and apply.', 'info');
+}
+
+function displayAutoBrandPreviews(){
+  ensureAiAssistElements();
+  if(!aiAssistTableBody) return;
+
+  // For each row, display brand preview cards inline
+  aiAssistTableBody.querySelectorAll('tr').forEach((row) => {
+    const rowIdx = Number(row.dataset.index || '0');
+    const suggestions = aiAssistState.brandSuggestions[rowIdx];
+
+    if(!suggestions || suggestions.length === 0) return;
+
+    // Don't show suggestions if row already has brands
+    if(row.dataset.brands){
+      try {
+        const brands = JSON.parse(row.dataset.brands);
+        if(brands.length > 0) return; // Skip if already has brands
+      } catch(_) {}
+    }
+
+    const brandCell = row.querySelector('.aiBrandCell');
+    if(!brandCell) return;
+
+    // Check if there's already a brand suggestions container
+    let previewContainer = brandCell.querySelector('.aiAutoBrandPreviews');
+    if(!previewContainer){
+      previewContainer = document.createElement('div');
+      previewContainer.className = 'aiAutoBrandPreviews';
+      previewContainer.style.cssText = `
+        margin-top: 12px;
+        padding: 12px;
+        background: rgba(76,90,212,0.05);
+        border: 1px solid rgba(76,90,212,0.2);
+        border-radius: 8px;
+      `;
+
+      const title = document.createElement('div');
+      title.style.cssText = 'font-size: 0.85rem; color: #a0a0a0; margin-bottom: 8px; font-weight: 500;';
+      title.textContent = 'Suggested brands (click to verify):';
+      previewContainer.appendChild(title);
+
+      brandCell.appendChild(previewContainer);
+    }
+
+    // Create preview cards
+    const cardsContainer = document.createElement('div');
+    cardsContainer.style.cssText = 'display: flex; gap: 8px; flex-wrap: wrap;';
+
+    suggestions.forEach((suggestion, idx) => {
+      const card = document.createElement('div');
+      card.className = 'aiAutoBrandCard';
+      card.dataset.rowIdx = rowIdx;
+      card.dataset.suggestionIdx = idx;
+      card.style.cssText = `
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: #0c102a;
+        border: 1px solid rgba(76,90,212,0.3);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        flex: 1;
+        min-width: 150px;
+        max-width: 250px;
+      `;
+
+      // Add hover effect
+      card.addEventListener('mouseenter', () => {
+        card.style.borderColor = 'rgba(76,90,212,0.6)';
+        card.style.background = '#12183a';
+        card.style.transform = 'translateY(-2px)';
+        card.style.boxShadow = '0 4px 8px rgba(76,90,212,0.2)';
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.borderColor = 'rgba(76,90,212,0.3)';
+        card.style.background = '#0c102a';
+        card.style.transform = 'translateY(0)';
+        card.style.boxShadow = 'none';
+      });
+
+      // Add click handler
+      card.addEventListener('click', () => {
+        showBrandConfirmationModal(suggestion, () => {
+          applyBrandSuggestionConfirmed(rowIdx, suggestion);
+        });
+      });
+
+      // Brand image thumbnail
+      if(suggestion.image){
+        const img = document.createElement('img');
+        img.src = suggestion.image;
+        img.alt = suggestion.name;
+        img.style.cssText = `
+          width: 40px;
+          height: 40px;
+          object-fit: contain;
+          border-radius: 4px;
+          background: #0b1020;
+          flex-shrink: 0;
+        `;
+        card.appendChild(img);
+      }
+
+      // Brand info
+      const info = document.createElement('div');
+      info.style.cssText = 'flex: 1; min-width: 0;';
+
+      const name = document.createElement('div');
+      name.style.cssText = `
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #fff;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      `;
+      name.textContent = suggestion.name;
+
+      const status = document.createElement('div');
+      status.style.cssText = 'font-size: 0.75rem; margin-top: 2px;';
+      if(suggestion.ingredientsImage){
+        status.style.color = '#4caf50';
+        status.textContent = '✓ Has label';
+      } else {
+        status.style.color = '#f59e0b';
+        status.textContent = '⚠ No label';
+      }
+
+      info.appendChild(name);
+      info.appendChild(status);
+      card.appendChild(info);
+
+      cardsContainer.appendChild(card);
+    });
+
+    previewContainer.appendChild(cardsContainer);
+  });
+}
+
 async function openAiBrandSearch(rowIdx){
   ensureAiAssistElements();
   const rows=collectAiTableData();
@@ -2483,8 +2658,11 @@ function applyBrandSuggestionConfirmed(rowIdx, suggestion){
   console.log('Collected data after brand update:', allData);
   renderAiTable(allData);
 
+  // Re-display auto brand previews (will hide for rows with brands)
+  displayAutoBrandPreviews();
+
   // Close the inline brand results
-  const rowBrandResults=row.querySelector('.aiRowBrandResults');
+  const rowBrandResults=aiAssistTableBody?.querySelector(`tr[data-index="${rowIdx}"] .aiRowBrandResults`);
   if(rowBrandResults){
     rowBrandResults.classList.remove('show');
     rowBrandResults.innerHTML='';
@@ -2648,6 +2826,11 @@ function handleAiAssistantResult(payload){
   });
   renderAiTable(rows);
   aiAssistSetStatus(rows.length?'AI ingredient suggestions ready. Review before applying.':'AI could not extract ingredients from the description.','info');
+
+  // Automatically search for common brands for each ingredient
+  if(rows.length > 0){
+    autoSearchBrandsForAllIngredients();
+  }
 }
 
 function handleAiAssistantError(payload){
