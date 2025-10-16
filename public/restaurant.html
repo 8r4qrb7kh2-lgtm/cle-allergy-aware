@@ -187,7 +187,7 @@
   .imageModal .closeModal:hover{background:rgba(76,90,212,1)}
   .aiIngredientList{color:var(--muted);font-size:0.85rem}
   .aiIngredientRow{display:flex;flex-direction:column;gap:12px}
-  .aiIngredientMain{display:grid;grid-template-columns:1fr 2fr 2fr auto;gap:12px;align-items:start}
+  .aiIngredientMain{display:grid;grid-template-columns:1fr 2fr 2fr 1.5fr auto;gap:12px;align-items:start}
   .aiRowBrandResults{display:none;flex-direction:column;gap:12px;padding:16px;border:1px solid rgba(76,90,212,0.35);border-radius:16px;background:rgba(9,13,30,0.9);margin-top:8px}
   .aiRowBrandResults.show{display:flex}
   .aiAllergenChecklist{display:flex;flex-wrap:wrap;gap:8px}
@@ -1196,11 +1196,12 @@ function ensureAiAssistElements(){
             <table id="aiAssistTable">
               <thead>
                 <tr>
-                  <th style="width:22%">Ingredient</th>
-                  <th style="width:28%">Brand</th>
-                  <th style="width:28%">Allergens</th>
+                  <th style="width:15%">Ingredient</th>
+                  <th style="width:22%">Brand</th>
+                  <th style="width:22%">Allergens</th>
+                  <th style="width:20%">Dietary Options</th>
                   <th style="width:12%">Confirmed</th>
-                  <th style="width:10%">Actions</th>
+                  <th style="width:9%">Actions</th>
                 </tr>
               </thead>
               <tbody id="aiAssistTableBody"></tbody>
@@ -1710,7 +1711,7 @@ function renderAiTable(rows){
     const isConfirmed = row.confirmed || false;
 
     tr.innerHTML=`
-      <td colspan="5">
+      <td colspan="6">
         <div class="aiIngredientRow">
           <div class="aiIngredientMain">
             <input type="text" class="aiIngredientName" placeholder="Ingredient name" value="${esc(row.name||'')}">
@@ -1732,8 +1733,7 @@ function renderAiTable(rows){
                 }).join('')}
               </div>
             </div>
-            <div style="margin-top:16px">
-              <strong style="display:block;margin-bottom:8px;color:var(--ink)">Dietary Options</strong>
+            <div>
               <div class="aiDietChecklist">
                 ${DIETS.map(diet=>{
                   const dietSet = new Set((row.diets||[]).map(d=>d));
@@ -3764,13 +3764,16 @@ function renderEditor(){
 
   // Track all changes as they happen
   let pendingChanges=[];
+  let originalOverlaysRef = JSON.stringify(rs.overlays||[]);
 
   const saveBtn=document.getElementById('saveBtn');
   function setSaveState(s){
     if(!saveBtn)return;
     if(s==='saving'){saveBtn.disabled=true;saveBtn.textContent='Saving…';saveBtn.classList.remove('btnSuccess','btnDanger','btnPrimary');saveBtn.classList.add('btn');}
     else if(s==='saved'){saveBtn.disabled=true;saveBtn.textContent='Saved';saveBtn.classList.remove('btn','btnDanger','btnPrimary');saveBtn.classList.add('btnSuccess');
-      setTimeout(()=>{saveBtn.disabled=false;saveBtn.textContent='Save to site';saveBtn.classList.remove('btnSuccess','btnDanger');saveBtn.classList.add('btnPrimary');pendingChanges=[];},900);}
+      // Update originalOverlaysRef after successful save
+      originalOverlaysRef = JSON.stringify(overlays);
+      setTimeout(()=>{saveBtn.disabled=false;saveBtn.textContent='Save to site';saveBtn.classList.remove('btnSuccess','btnDanger');saveBtn.classList.add('btnPrimary');pendingChanges=[];setDirty(false);},900);}
     else if(s==='error'){saveBtn.disabled=false;saveBtn.textContent='Retry save';saveBtn.classList.remove('btnSuccess','btnPrimary');saveBtn.classList.add('btnDanger');}
   }
   function formatChangesForLog(changesList){
@@ -3805,14 +3808,13 @@ function renderEditor(){
   }
 
   if(saveBtn){
-    const originalOverlays=JSON.stringify(rs.overlays||[]);
     saveBtn.onclick=()=>{
       setSaveState('saving');
       let changesList=[];
       if(pendingChanges.length>0){
         changesList=[...pendingChanges];
       } else {
-        changesList=describeOverlayChanges(JSON.parse(originalOverlays),overlays);
+        changesList=describeOverlayChanges(JSON.parse(originalOverlaysRef),overlays);
       }
       if(!changesList.length){
         setSaveState('saved');
@@ -4384,8 +4386,7 @@ function renderEditor(){
         if(pendingChanges.length>0){
           changesList=[...pendingChanges];
         } else {
-          const originalOverlays=JSON.stringify(rs.overlays||[]);
-          changesList=describeOverlayChanges(JSON.parse(originalOverlays),overlays);
+          changesList=describeOverlayChanges(JSON.parse(originalOverlaysRef),overlays);
         }
         if(changesList.length){
           const formattedChanges=formatChangesForLog(changesList);
