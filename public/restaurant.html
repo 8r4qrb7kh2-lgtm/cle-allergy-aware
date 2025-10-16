@@ -3148,12 +3148,23 @@ function renderTopbar(){
   if(!isQrExperience){
     const navWrap=div('','topNav');
     const tabs=div('','tabs');
-    const navItems=[{t:'All restaurants',to:'/restaurants'}];
+    const navItems=[
+      {t:'All restaurants',to:'/restaurants'},
+      {t:'How It Works',to:'/how-it-works',external:true}
+    ];
     if(state.user?.loggedIn){
       navItems.push({t:'Favorite restaurants',to:'/favorites'});
     }
     navItems.forEach(n=>{
-      const b=div(n.t,'tab'); b.onclick=()=>send({type:'navigate',to:n.to}); tabs.appendChild(b);
+      const b=div(n.t,'tab');
+      b.onclick=()=>{
+        if(n.external){
+          window.location.href=n.to+'.html';
+        } else {
+          send({type:'navigate',to:n.to});
+        }
+      };
+      tabs.appendChild(b);
     });
     navWrap.appendChild(tabs);
     const acct=div(state.user?.loggedIn?'My Account':'Sign in','acctBtn');
