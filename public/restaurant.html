@@ -2408,6 +2408,11 @@ function applyBrandSuggestionConfirmed(rowIdx, suggestion){
   console.log('Adding brand:', newBrand);
   brands.push(newBrand);
 
+  // IMPORTANT: Update the DOM row's dataset BEFORE calling collectAiTableData
+  // This ensures the brands data is available when we collect and re-render
+  row.dataset.brands = JSON.stringify(brands);
+  console.log('Updated row.dataset.brands:', row.dataset.brands);
+
   // Update allergens checkboxes with combined allergens from all brands
   const allAllergens = new Set();
   brands.forEach(brand => {
@@ -2421,15 +2426,10 @@ function applyBrandSuggestionConfirmed(rowIdx, suggestion){
     }
   });
 
-  // Store updated brands and re-render the table
+  // NOW collect data (will include the updated brands) and re-render
   const allData = collectAiTableData();
-  const updatedData = allData.map(r => {
-    if(r.index === rowIdx){
-      return {...r, brands: brands};
-    }
-    return r;
-  });
-  renderAiTable(updatedData);
+  console.log('Collected data after brand update:', allData);
+  renderAiTable(allData);
 
   // Close the inline brand results
   const rowBrandResults=row.querySelector('.aiRowBrandResults');
