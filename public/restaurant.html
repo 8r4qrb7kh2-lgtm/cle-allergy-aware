@@ -1143,38 +1143,50 @@ function ensureAiAssistElements(){
           <h2 id="aiAssistTitle">AI Ingredient Assistant</h2>
           <button type="button" class="aiAssistClose" id="aiAssistClose" aria-label="Close AI assistant">×</button>
         </div>
-        <p class="aiAssistIntro">Upload or take a photo of your recipe, or describe the dish ingredients below.</p>
+        <p class="aiAssistIntro">Upload recipe photos or describe the dish ingredients below.</p>
 
-        <!-- Photo Upload Section at Top -->
+        <!-- Photo Upload Section -->
         <div class="aiAssistMedia" id="aiAssistMedia">
-          <button type="button" class="btn" id="aiAssistUploadRecipeBtn">📁 Upload recipe photo</button>
-          <button type="button" class="btn" id="aiAssistCameraRecipeBtn">📷 Take recipe photo</button>
-          <input type="file" id="aiAssistRecipeFileInput" class="aiAssistHidden" accept="image/*">
+          <button type="button" class="btn" id="aiAssistUploadRecipeBtn" style="flex:1">📁 Upload photos</button>
+          <button type="button" class="btn" id="aiAssistCameraRecipeBtn" style="flex:1">📷 Take photo</button>
+          <input type="file" id="aiAssistRecipeFileInput" class="aiAssistHidden" accept="image/*" multiple>
         </div>
+
+        <!-- Photo Previews Container -->
+        <div id="aiAssistPhotosContainer" style="display:none;margin:16px 0;padding:12px;background:rgba(76,90,212,0.1);border:1px solid rgba(76,90,212,0.3);border-radius:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <strong style="color:var(--ink)">Recipe Photos</strong>
+            <button type="button" class="btn" id="aiAssistClearAllPhotosBtn" style="font-size:0.85rem;padding:4px 12px">Clear All</button>
+          </div>
+          <div id="aiAssistPhotosList" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+        </div>
+
         <div class="aiAssistMediaPreview" id="aiAssistMediaPreview">
           <video id="aiAssistVideo" class="aiAssistHidden" playsinline muted></video>
-          <img id="aiAssistImagePreview" class="aiAssistHidden" alt="Ingredient label preview">
           <div class="aiAssistPhotoControls">
             <button type="button" class="btn" id="aiAssistCaptureBtn">Capture photo</button>
             <button type="button" class="btn" id="aiAssistCancelCameraBtn">Cancel camera</button>
-            <button type="button" class="btn" id="aiAssistClearImageBtn">Clear image</button>
           </div>
         </div>
 
         <!-- OR Divider -->
-        <div style="display: flex; align-items: center; gap: 16px; margin: 24px 0;">
+        <div style="display: flex; align-items: center; gap: 16px; margin: 20px 0;">
           <div style="flex: 1; height: 1px; background: rgba(76,90,212,0.3);"></div>
-          <span style="color: #a0a0a0; font-weight: 600; font-size: 1.1rem;">OR</span>
+          <span style="color: #a0a0a0; font-weight: 600; font-size: 1rem;">OR</span>
           <div style="flex: 1; height: 1px; background: rgba(76,90,212,0.3);"></div>
         </div>
 
         <!-- Text Input Section -->
-        <textarea id="aiAssistInput" class="aiAssistInput" placeholder="Example: Grilled chicken marinated in yogurt, lemon juice, garlic, served with toasted pita and tahini sauce."></textarea>
-        <div class="aiAssistControls">
-          <button type="button" class="btn" id="aiAssistDictateBtn">🎙 Dictate</button>
-          <button type="button" class="btn btnPrimary" id="aiAssistProcessBtn">Process text</button>
-          <span class="aiAssistStatus" id="aiAssistStatus"></span>
+        <div style="position:relative;">
+          <textarea id="aiAssistInput" class="aiAssistInput" placeholder="Example: Grilled chicken marinated in yogurt, lemon juice, garlic, served with toasted pita and tahini sauce."></textarea>
+          <button type="button" class="btn" id="aiAssistDictateBtn" style="position:absolute;bottom:12px;left:12px;padding:6px 12px;font-size:0.9rem">🎙 Dictate</button>
         </div>
+
+        <!-- Process Button -->
+        <button type="button" class="btn" id="aiAssistProcessBtn" style="width:100%;margin-top:16px;padding:14px;font-size:1.1rem;font-weight:600;background:#2d7d46;border-color:#3a9d5a;color:white">
+          ✓ Process Input
+        </button>
+        <span class="aiAssistStatus" id="aiAssistStatus" style="display:block;margin-top:8px;text-align:center"></span>
         <div class="aiAssistResults" id="aiAssistResults" aria-live="polite">
           <h3 style="margin:0">Ingredients</h3>
           <div class="aiAssistTableWrapper">
@@ -1240,15 +1252,11 @@ function ensureAiAssistElements(){
     aiAssistAddRowBtn=backdrop.querySelector('#aiAssistAddRowBtn');
     aiAssistApplyBtn=backdrop.querySelector('#aiAssistApplyBtn');
     aiAssistBrandResults=backdrop.querySelector('#aiAssistBrandResults');
-    aiAssistUploadBtn=backdrop.querySelector('#aiAssistUploadBtn');
-    aiAssistCameraBtn=backdrop.querySelector('#aiAssistCameraBtn');
-    aiAssistFileInput=backdrop.querySelector('#aiAssistFileInput');
-    aiAssistImagePreview=backdrop.querySelector('#aiAssistImagePreview');
     aiAssistVideo=backdrop.querySelector('#aiAssistVideo');
     aiAssistCaptureBtn=backdrop.querySelector('#aiAssistCaptureBtn');
     aiAssistCancelCameraBtn=backdrop.querySelector('#aiAssistCancelCameraBtn');
-    aiAssistClearImageBtn=backdrop.querySelector('#aiAssistClearImageBtn');
     aiAssistMediaPreview=backdrop.querySelector('#aiAssistMediaPreview');
+    window.aiAssistPhotos = []; // Store multiple photos
     aiAssistElementsBound=false;
   }
   if(!aiAssistElementsBound){
@@ -1270,12 +1278,20 @@ function ensureAiAssistElements(){
         recipeFileInput.click();
       });
       recipeFileInput.addEventListener('change',()=>{
-        const file=recipeFileInput.files && recipeFileInput.files[0];
-        if(file) handleRecipePhotoUpload(file);
+        const files=recipeFileInput.files;
+        if(files && files.length) handleMultipleRecipePhotoUpload(files);
       });
     }
     if(cameraRecipeBtn){
       cameraRecipeBtn.addEventListener('click',()=>handleRecipePhotoCamera());
+    }
+
+    const clearAllPhotosBtn = aiAssistBackdrop.querySelector('#aiAssistClearAllPhotosBtn');
+    if(clearAllPhotosBtn){
+      clearAllPhotosBtn.addEventListener('click',()=>{
+        window.aiAssistPhotos = [];
+        renderPhotoPreviews();
+      });
     }
 
     aiAssistAddRowBtn.addEventListener('click',()=>{
@@ -2584,6 +2600,56 @@ async function handleRecipePhotoUpload(file){
   }
 }
 
+function renderPhotoPreviews(){
+  const container = document.getElementById('aiAssistPhotosContainer');
+  const photosList = document.getElementById('aiAssistPhotosList');
+  if(!container || !photosList) return;
+
+  if(!window.aiAssistPhotos || window.aiAssistPhotos.length === 0){
+    container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'block';
+  photosList.innerHTML = '';
+
+  window.aiAssistPhotos.forEach((photoData, idx) => {
+    const photoDiv = document.createElement('div');
+    photoDiv.style.cssText = 'position:relative;width:100px;height:100px;border:1px solid rgba(76,90,212,0.3);border-radius:4px;overflow:hidden;';
+    photoDiv.innerHTML = `
+      <img src="${photoData}" style="width:100%;height:100%;object-fit:cover;cursor:pointer;" onclick="openImageModal('${photoData}')" alt="Recipe photo ${idx + 1}">
+      <button type="button" onclick="removePhotoAtIndex(${idx})" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.7);color:white;border:none;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:16px;line-height:1;">×</button>
+    `;
+    photosList.appendChild(photoDiv);
+  });
+}
+
+async function handleMultipleRecipePhotoUpload(files){
+  ensureAiAssistElements();
+  if(!window.aiAssistPhotos) window.aiAssistPhotos = [];
+
+  for(let i = 0; i < files.length; i++){
+    const file = files[i];
+    try{
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        window.aiAssistPhotos.push(e.target.result);
+        renderPhotoPreviews();
+      };
+      reader.readAsDataURL(file);
+    }catch(err){
+      console.error('Failed to read file', err);
+    }
+  }
+}
+
+function removePhotoAtIndex(idx){
+  if(window.aiAssistPhotos && idx >= 0 && idx < window.aiAssistPhotos.length){
+    window.aiAssistPhotos.splice(idx, 1);
+    renderPhotoPreviews();
+  }
+}
+
 async function handleRecipePhotoCamera(){
   ensureAiAssistElements();
   try{
@@ -2601,24 +2667,51 @@ async function handleRecipePhotoCamera(){
   }
 }
 
-function handleAiProcess(){
+async function handleAiProcess(){
   ensureAiAssistElements();
   if(!aiAssistInput) return;
   const text=aiAssistInput.value.trim();
-  const hasImage=!!aiAssistState.imageData;
-  if(!text && !hasImage){
-    aiAssistSetStatus('Describe the dish or add a label photo before processing.','warn');
+  const hasPhotos = window.aiAssistPhotos && window.aiAssistPhotos.length > 0;
+  if(!text && !hasPhotos){
+    aiAssistSetStatus('Describe the dish or add recipe photos before processing.','warn');
     return;
   }
+
+  // If we have photos, process them
+  if(hasPhotos){
+    aiAssistSetStatus('Processing ' + window.aiAssistPhotos.length + ' recipe photo(s) using AI...');
+    for(let i = 0; i < window.aiAssistPhotos.length; i++){
+      const photoData = window.aiAssistPhotos[i];
+      const payload = {
+        imageData: photoData,
+        imageFileName: `recipe_${i+1}.jpg`,
+        text: text || 'Please extract all ingredients from this recipe image.',
+        dishName: aiAssistState.context?.getCurrentName ? aiAssistState.context.getCurrentName() : ''
+      };
+
+      try{
+        const result = await requestAiExtraction(payload);
+        const rows = Array.isArray(result?.ingredients) ? result.ingredients : [];
+        if(rows.length > 0){
+          // Merge with existing data
+          const existingData = collectAiTableData();
+          renderAiTable([...existingData, ...rows]);
+          aiAssistSetStatus(`Photo ${i+1}/${window.aiAssistPhotos.length} processed. Review ingredients before applying.`, 'info');
+        }
+      }catch(err){
+        console.error('Recipe photo extraction failed', err);
+        aiAssistSetStatus(`Failed to read recipe photo ${i+1}: ` + (err.message || err), 'error');
+      }
+    }
+    return;
+  }
+
+  // Otherwise process text
   aiAssistSetStatus('Processing description…');
   const payload={
     text,
     dishName:aiAssistState.context?.getCurrentName ? aiAssistState.context.getCurrentName() : ''
   };
-  if(aiAssistState.imageData){
-    payload.imageData=aiAssistState.imageData;
-    if(aiAssistState.imageFileName) payload.imageFileName=aiAssistState.imageFileName;
-  }
   if(window!==window.parent){
     const requestId=`ai-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     aiAssistState.pendingRequestId=requestId;
