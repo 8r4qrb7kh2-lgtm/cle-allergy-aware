@@ -1786,7 +1786,7 @@ function closeImageModal(){
 function closeAiAssistant(){
   ensureAiAssistElements();
 
-  // Check for unsaved changes
+  // Check for unsaved changes (don't prompt if already saved to dish)
   const data = collectAiTableData();
   const hasData = data.length > 0 && data.some(item => item.name.trim());
   const hasUnsavedChanges = hasData && !aiAssistState.savedToDish;
@@ -1795,13 +1795,15 @@ function closeAiAssistant(){
     const confirmClose = confirm(
       '⚠️ You have unsaved work in the AI Assistant.\n\n' +
       'Would you like to save a draft before closing?\n\n' +
-      '• Click "OK" to save a draft\n' +
+      '• Click "OK" to save a draft and close\n' +
       '• Click "Cancel" to close without saving'
     );
 
     if(confirmClose){
       saveAiDraft();
-      return; // Don't close after saving draft
+      // Continue to close the modal after saving draft
+    } else {
+      // User chose to close without saving - continue
     }
   }
 
