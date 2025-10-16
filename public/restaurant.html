@@ -1784,16 +1784,58 @@ function toggleAiDictation(){
   }
 }
 
+async function correctSpellingWithAI(query, ingredientName){
+  try {
+    // Use Supabase function to correct spelling
+    const client = window.supabaseClient;
+    if(!client?.functions?.invoke){
+      return query;
+    }
+
+    const { data, error } = await client.functions.invoke('spelling-corrector', {
+      body: {
+        query: query,
+        ingredientName: ingredientName
+      }
+    });
+
+    if(error){
+      console.warn('Spelling correction error:', error);
+      return query;
+    }
+
+    const corrected = data?.corrected || query;
+    return corrected;
+  } catch(err) {
+    console.warn('AI spelling correction failed', err);
+  }
+  return query;
+}
+
 async function fetchBrandSuggestions(query, ingredientName){
   ensureAiAssistElements();
   if(!query) return [];
 
   // Try multiple search strategies for better results with misspellings
   let products = [];
+  let searchQuery = query;
 
-  // Strategy 1: Exact search
+  // Strategy 0: Use AI to correct spelling if Supabase client is available
+  if(window.supabaseClient){
+    try {
+      const corrected = await correctSpellingWithAI(query, ingredientName);
+      if(corrected && corrected !== query){
+        console.log(`AI corrected "${query}" to "${corrected}"`);
+        searchQuery = corrected;
+      }
+    } catch(err) {
+      console.warn('AI spelling correction failed, continuing with original query', err);
+    }
+  }
+
+  // Strategy 1: Exact search (with potentially corrected spelling)
   try {
-    const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=${AI_BRAND_LIMIT * 2}`;
+    const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(searchQuery)}&search_simple=1&action=process&json=1&page_size=${AI_BRAND_LIMIT * 2}`;
     const res=await fetch(url);
     if(res.ok){
       const data=await res.json();
@@ -1804,9 +1846,9 @@ async function fetchBrandSuggestions(query, ingredientName){
   }
 
   // Strategy 2: If no results, try fuzzy search by removing last letter and adding wildcard
-  if(products.length === 0 && query.length > 4){
+  if(products.length === 0 && searchQuery.length > 4){
     try {
-      const fuzzyQuery = query.substring(0, query.length - 1) + '*';
+      const fuzzyQuery = searchQuery.substring(0, searchQuery.length - 1) + '*';
       const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(fuzzyQuery)}&search_simple=1&action=process&json=1&page_size=${AI_BRAND_LIMIT * 2}`;
       const res=await fetch(url);
       if(res.ok){
@@ -1821,7 +1863,7 @@ async function fetchBrandSuggestions(query, ingredientName){
   // Strategy 3: If still no results, try without brand constraint
   if(products.length === 0){
     try {
-      const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&action=process&json=1&page_size=${AI_BRAND_LIMIT * 2}`;
+      const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(searchQuery)}&action=process&json=1&page_size=${AI_BRAND_LIMIT * 2}`;
       const res=await fetch(url);
       if(res.ok){
         const data=await res.json();
