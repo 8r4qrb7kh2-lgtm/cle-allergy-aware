@@ -501,7 +501,7 @@ function detectAllergensInText(text){
   ALLERGENS.forEach(a=>{ if(lower.includes(a)) found.add(a); });
   return [...found];
 }
-const state={page:null,restaurants:[],restaurant:null,allergies:[],ack:false,user:{loggedIn:false},canEdit:false,qr:false,_hydrated:false,aiAssistEndpoint:null};
+const state={page:null,restaurants:[],restaurant:null,allergies:[],diets:[],ack:false,user:{loggedIn:false},canEdit:false,qr:false,_hydrated:false,aiAssistEndpoint:null};
 let mobileInfoPanel=null;
 let currentMobileInfoItem=null;
 let mobileViewerChrome=null;
@@ -3164,6 +3164,51 @@ function renderSelector(el){
   updateFullScreenAllergySummary();
 }
 
+function renderDietSelector(el){
+  el.innerHTML='';
+  const row=div('','chips');
+  row.setAttribute('role','list');
+  const sel=new Set(state.diets||[]);
+  DIETS.forEach(diet=>{
+    const isActive=sel.has(diet);
+    const c=div(esc(diet),'chip clickable'+(isActive?' active':''));
+    c.setAttribute('role','button');
+    c.setAttribute('tabindex','0');
+    c.setAttribute('aria-pressed',isActive?'true':'false');
+    c.dataset.value=diet;
+    const toggle=()=>{
+      if(sel.has(diet)){
+        sel.delete(diet);
+      } else {
+        sel.add(diet);
+      }
+      state.diets=[...sel];
+      try{sessionStorage.setItem('qrDiets',JSON.stringify(state.diets));}catch(_){}
+      renderDietSelector(el);
+      if(window.__rerenderLayer__) window.__rerenderLayer__();
+      if(prefersMobileInfo()) renderMobileInfo(currentMobileInfoItem);
+    };
+    c.addEventListener('click',(evt)=>{
+      evt.preventDefault();
+      evt.stopPropagation();
+      toggle();
+    },{passive:false});
+    c.addEventListener('touchend',(evt)=>{
+      evt.preventDefault();
+      evt.stopPropagation();
+      toggle();
+    },{passive:false});
+    c.addEventListener('keydown',(evt)=>{
+      if(evt.key==='Enter' || evt.key===' '){
+        evt.preventDefault();
+        toggle();
+      }
+    });
+    row.appendChild(c);
+  });
+  el.appendChild(row);
+}
+
 /* draw (simple image that follows page zoom) */
 function drawMenu(container,imageURL){
   container.innerHTML='';
@@ -3348,13 +3393,19 @@ function renderRestaurant(){
     </div>
     <div class="pill">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:8px">
-        <div style="font-weight:600">${(state.qr||!state.user?.loggedIn)?'Select your allergies':'Your saved allergies'}</div>
-        ${(!state.qr && state.user?.loggedIn)?`<button class="btn clickable" id="editSavedBtn">Edit saved allergens</button>`:''}
+        <div style="font-weight:600">${(state.qr||!state.user?.loggedIn)?'Select Your Allergens':'Your Saved Allergens'}</div>
+        ${(!state.qr && state.user?.loggedIn)?`<button class="btn clickable" id="editSavedBtn">Edit Saved Allergens</button>`:''}
       </div>
       <div id="savedChips"></div>
     </div>
+    <div class="pill">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:8px">
+        <div style="font-weight:600">Dietary Preferences (Optional)</div>
+      </div>
+      <div id="dietChips"></div>
+    </div>
     <div class="banner">
-      <span>Reference only. Ingredients & practices can change. Always inform staff about your allergies.</span>
+      <span>Reference only. Ingredients & practices can change. Always inform staff about your allergens.</span>
       <button class="ackBtn off" id="ackBtn">I understand</button>
     </div>
     <div id="legendRow" style="display:none" class="legend">
@@ -3374,6 +3425,9 @@ function renderRestaurant(){
 
   const chipsHost=document.getElementById('savedChips');
   if(state.qr||!state.user?.loggedIn) renderSelector(chipsHost); else renderSavedChips(chipsHost);
+
+  const dietChipsHost=document.getElementById('dietChips');
+  renderDietSelector(dietChipsHost);
 
   const menu=document.getElementById('menu');
   ensureMobileInfoPanel();
@@ -4141,11 +4195,17 @@ function renderEditor(){
       list.dataset.aiIngredients='';
       list.dataset.aiIngredientSummary='';
     }
-    const sel=new Set(it.allergens||[]); 
-    const details=it.details||{}; 
+    const sel=new Set(it.allergens||[]);
+    const details=it.details||{};
     const rem=new Map((it.removable||[]).map(r=>[r.allergen,r.component]));
     const cross=new Set(it.crossContamination||[]);
-    
+
+    // Add allergen section heading
+    const allergenTitle = document.createElement('h3');
+    allergenTitle.textContent = 'Allergen Information';
+    allergenTitle.style.cssText = 'margin: 0 0 12px 0; color: var(--ink);';
+    list.appendChild(allergenTitle);
+
     ALLERGENS.forEach(a=>{
       const row=document.createElement('div'); row.className='algRow';
       const b=document.createElement('div'); b.className='algBtn'; b.textContent=cap(a); b.dataset.a=a; if(sel.has(a)) b.classList.add('active');
@@ -4421,6 +4481,9 @@ window.addEventListener('message',(ev)=>{
   if(m.aiAssistEndpoint){state.aiAssistEndpoint=m.aiAssistEndpoint;}
   if((state.qr||urlQR) && (!state.allergies||!state.allergies.length)){
     try{const s=sessionStorage.getItem('qrAllergies'); if(s) state.allergies=JSON.parse(s)||[];}catch(_){}
+  }
+  if((state.qr||urlQR) && (!state.diets||!state.diets.length)){
+    try{const s=sessionStorage.getItem('qrDiets'); if(s) state.diets=JSON.parse(s)||[];}catch(_){}
   }
   if(m.page==='restaurant'||m.restaurant){state.ack=false;}
   if(m.type==='allergiesSaved'){state.allergies=m.allergies||[];}
