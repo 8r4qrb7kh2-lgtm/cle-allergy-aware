@@ -1763,7 +1763,7 @@ async function fetchBrandSuggestions(query){
       allergens,
       productUrl:product.url || ''
     };
-  }).filter(item=>item.name && item.ingredientsImage);
+  }).filter(item=>item.name);
 }
 
 async function openAiBrandSearch(rowIdx){
