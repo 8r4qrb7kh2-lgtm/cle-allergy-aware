@@ -167,10 +167,16 @@
   #aiAssistTable th{text-align:left;background:rgba(17,26,60,0.75)}
   .aiAssistTableWrapper tr:last-child td{border-bottom:none}
   .aiBrandCell{display:flex;flex-direction:column;gap:10px}
+  .aiBrandsList{display:flex;flex-direction:column;gap:10px}
+  .aiBrandItem{background:#12183a;border:1px solid rgba(76,90,212,0.3);border-radius:12px;padding:10px}
+  .aiBrandItemHeader{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .aiBrandItemHeader strong{font-size:0.9rem}
+  .aiRemoveBrand{background:#301424;border:1px solid #4c2138;padding:2px 8px;font-size:1.2rem;line-height:1}
+  .aiRemoveBrand:hover{border-color:#a12525;box-shadow:0 0 8px rgba(220,82,120,0.55)}
+  .aiNoBrands{color:var(--muted);font-size:0.85rem;font-style:italic}
   .aiBrandCell .aiBrandActions{display:flex;gap:8px;flex-wrap:wrap}
   .aiBrandCell .aiBrandActions .btn{padding:8px 12px;font-size:0.9rem}
-  .aiBrandCell .aiBrandActions .aiBrandClearBtn{background:#301424;border:1px solid #4c2138}
-  .aiBrandCell .aiBrandActions .aiBrandClearBtn:hover{border-color:#a12525;box-shadow:0 0 8px rgba(220,82,120,0.55)}
+  .btnSmall{padding:4px 8px !important;font-size:0.85rem !important}
   .aiBrandPreview{display:flex;gap:10px;flex-wrap:wrap}
   .aiBrandPreview img{width:150px;height:150px;object-fit:contain;border-radius:12px;border:1px solid rgba(76,90,212,0.35);background:#0b1020;cursor:pointer;transition:all 0.2s}
   .aiBrandPreview img:hover{border-color:rgba(76,90,212,0.7);box-shadow:0 0 12px rgba(76,90,212,0.4);transform:scale(1.02)}
@@ -1265,28 +1271,16 @@ function ensureAiAssistElements(){
         openAiBrandSearch(idx);
         return;
       }
-      if(event.target.classList.contains('aiBrandClearBtn') || event.target.closest('.aiBrandClearBtn')){
-        const nameInput=row.querySelector('.aiIngredientName');
-        const brandInput=row.querySelector('.aiIngredientBrand');
-        if(nameInput){
-          forgetBrand(nameInput.value);
+      if(event.target.classList.contains('aiRemoveBrand') || event.target.closest('.aiRemoveBrand')){
+        const brandIdx = Number(event.target.dataset.brandIdx || event.target.closest('.aiRemoveBrand')?.dataset.brandIdx);
+        if(!isNaN(brandIdx)){
+          const data = collectAiTableData();
+          if(data[idx] && data[idx].brands){
+            data[idx].brands.splice(brandIdx, 1);
+            renderAiTable(data);
+            aiAssistSetStatus('Brand removed from this ingredient.','info');
+          }
         }
-        if(brandInput){
-          brandInput.value='';
-        }
-        row.dataset.brandImage='';
-        row.dataset.ingredientsImage='';
-        delete row.dataset.ingredientsList;
-        updateAiBrandPreview(row);
-
-        // Close any open brand search results for this row
-        const rowBrandResults=row.querySelector('.aiRowBrandResults');
-        if(rowBrandResults){
-          rowBrandResults.classList.remove('show');
-          rowBrandResults.innerHTML='';
-        }
-
-        aiAssistSetStatus('Brand cleared for this ingredient.','info');
         return;
       }
     });
@@ -1516,15 +1510,17 @@ function collectAiTableData(){
   aiAssistTableBody.querySelectorAll('tr').forEach(row=>{
     const idx=Number(row.dataset.index||'0');
     const name=row.querySelector('.aiIngredientName')?.value.trim()||'';
-    const brand=row.querySelector('.aiIngredientBrand')?.value.trim()||'';
     const allergens=[...row.querySelectorAll('.aiAllergenChecklist input:checked')].map(input=>input.value);
-    const brandImage=row.dataset.brandImage||'';
-    const ingredientsImage=row.dataset.ingredientsImage||'';
-    let ingredientsList=[];
-    if(row.dataset.ingredientsList){
-      try{ingredientsList=JSON.parse(row.dataset.ingredientsList)||[];}catch(_){ingredientsList=[];}
+
+    // Collect multiple brands
+    const brands=[];
+    if(row.dataset.brands){
+      try{
+        brands.push(...JSON.parse(row.dataset.brands));
+      }catch(_){}
     }
-    data.push({index:idx,name,brand,allergens,brandImage,ingredientsImage,ingredientsList});
+
+    data.push({index:idx,name,allergens,brands});
   });
   return data;
 }
@@ -1553,39 +1549,45 @@ function renderAiTable(rows){
     }
     const tr=document.createElement('tr');
     tr.dataset.index=idx;
-    if(row.brandImage){
-      tr.dataset.brandImage=row.brandImage;
-    } else {
-      tr.dataset.brandImage='';
-    }
-    if(row.ingredientsImage){
-      tr.dataset.ingredientsImage=row.ingredientsImage;
-    } else {
-      tr.dataset.ingredientsImage='';
-    }
-    if(row.ingredientsList && row.ingredientsList.length){
-      tr.dataset.ingredientsList=JSON.stringify(row.ingredientsList);
-    } else {
-      delete tr.dataset.ingredientsList;
-    }
     const allergens=new Set((row.allergens||[]).map(norm));
-    const brandPreviewParts=[];
-    if(row.brandImage) brandPreviewParts.push(`<img src="${esc(row.brandImage)}" alt="${esc(row.brand||row.name||'Brand')}" loading="lazy" onclick="openImageModal('${esc(row.brandImage)}')" title="Click to enlarge">`);
-    if(row.ingredientsImage) brandPreviewParts.push(`<img src="${esc(row.ingredientsImage)}" alt="Ingredients label" loading="lazy" onclick="openImageModal('${esc(row.ingredientsImage)}')" title="Click to enlarge">`);
-    const ingredientsListNote=row.ingredientsList && row.ingredientsList.length ? `Label ingredients: ${row.ingredientsList.map(ingredient=>esc(ingredient)).join(', ')}` : '';
+
+    // Support multiple brands - store in dataset
+    const brands = row.brands || [];
+    if(brands.length > 0){
+      tr.dataset.brands=JSON.stringify(brands);
+    } else {
+      delete tr.dataset.brands;
+    }
+    const brandsHTML = brands.length > 0 ? brands.map((brand, brandIdx) => {
+      const brandImages = [];
+      if(brand.brandImage) brandImages.push(`<img src="${esc(brand.brandImage)}" alt="${esc(brand.name||'Brand')}" loading="lazy" onclick="openImageModal('${esc(brand.brandImage)}')" title="Click to enlarge">`);
+      if(brand.ingredientsImage) brandImages.push(`<img src="${esc(brand.ingredientsImage)}" alt="Ingredients label" loading="lazy" onclick="openImageModal('${esc(brand.ingredientsImage)}')" title="Click to enlarge">`);
+      const ingredientsNote = brand.ingredientsList && brand.ingredientsList.length ? `Label ingredients: ${brand.ingredientsList.map(i=>esc(i)).join(', ')}` : '';
+
+      return `
+        <div class="aiBrandItem" data-brand-idx="${brandIdx}">
+          <div class="aiBrandItemHeader">
+            <strong>${esc(brand.name || 'Brand ' + (brandIdx + 1))}</strong>
+            <button type="button" class="btn btnSmall aiRemoveBrand" data-brand-idx="${brandIdx}">×</button>
+          </div>
+          <div class="aiBrandPreview">${brandImages.join('')}</div>
+          ${ingredientsNote ? `<div class="aiIngredientList">${ingredientsNote}</div>` : ''}
+        </div>
+      `;
+    }).join('') : '<div class="aiNoBrands">No brands added yet</div>';
+
     tr.innerHTML=`
       <td colspan="4">
         <div class="aiIngredientRow">
           <div class="aiIngredientMain">
             <input type="text" class="aiIngredientName" placeholder="Ingredient name" value="${esc(row.name||'')}">
             <div class="aiBrandCell">
-              <input type="text" class="aiIngredientBrand" placeholder="Brand (optional)" value="${esc(row.brand||'')}">
-              <div class="aiBrandActions">
-                <button type="button" class="btn aiBrandSearchBtn">Find brand</button>
-                <button type="button" class="btn aiBrandClearBtn">Clear brand</button>
+              <div class="aiBrandsList">
+                ${brandsHTML}
               </div>
-              <div class="aiBrandPreview">${brandPreviewParts.join('')}</div>
-              <div class="aiIngredientList">${ingredientsListNote}</div>
+              <div class="aiBrandActions">
+                <button type="button" class="btn aiBrandSearchBtn">+ Add brand</button>
+              </div>
             </div>
             <div class="aiAllergenChecklist">
               ${ALLERGENS.map(allergen=>{
@@ -1928,36 +1930,43 @@ function applyBrandSuggestion(rowIdx, suggestionIdx){
 
   const row=aiAssistTableBody?.querySelector(`tr[data-index="${rowIdx}"]`);
   if(!row) return;
-  const brandInput=row.querySelector('.aiIngredientBrand');
-  const nameInput=row.querySelector('.aiIngredientName');
-  if(brandInput){
-    brandInput.value=suggestion.brand || suggestion.name || brandInput.value;
+
+  // Get existing brands array
+  let brands = [];
+  if(row.dataset.brands){
+    try{
+      brands = JSON.parse(row.dataset.brands);
+    }catch(_){}
   }
-  if(nameInput && !nameInput.value.trim() && suggestion.name){
-    nameInput.value=suggestion.name;
-  }
-  if(suggestion.image) row.dataset.brandImage=suggestion.image;
-  if(suggestion.ingredientsImage) row.dataset.ingredientsImage=suggestion.ingredientsImage;
-  if(Array.isArray(suggestion.ingredientsList)){
-    row.dataset.ingredientsList=JSON.stringify(suggestion.ingredientsList);
-  }
-  updateAiBrandPreview(row);
-  if(Array.isArray(suggestion.allergens)){
-    const allergenSet=new Set(suggestion.allergens.map(norm));
-    row.querySelectorAll('.aiAllergenChecklist input').forEach(input=>{
-      if(allergenSet.has(norm(input.value))){
-        input.checked=true;
-      }
-    });
-  }
-  if(nameInput){
-    rememberBrand(nameInput.value,{
-      brand:brandInput?.value||suggestion.brand||'',
-      brandImage:suggestion.image||'',
-      ingredientsImage:suggestion.ingredientsImage||'',
-      ingredientsList:Array.isArray(suggestion.ingredientsList)?suggestion.ingredientsList:[],
-      allergens:Array.isArray(suggestion.allergens)?suggestion.allergens:[],
-    });
+
+  // Add new brand to the array
+  const newBrand = {
+    name: suggestion.brand || suggestion.name || 'Brand',
+    brandImage: suggestion.image || '',
+    ingredientsImage: suggestion.ingredientsImage || '',
+    ingredientsList: Array.isArray(suggestion.ingredientsList) ? suggestion.ingredientsList : [],
+    allergens: Array.isArray(suggestion.allergens) ? suggestion.allergens : []
+  };
+  brands.push(newBrand);
+
+  // Update allergens checkboxes with combined allergens from all brands
+  const allAllergens = new Set();
+  brands.forEach(brand => {
+    if(Array.isArray(brand.allergens)){
+      brand.allergens.forEach(a => allAllergens.add(norm(a)));
+    }
+  });
+  row.querySelectorAll('.aiAllergenChecklist input').forEach(input=>{
+    if(allAllergens.has(norm(input.value))){
+      input.checked=true;
+    }
+  });
+
+  // Store updated brands and re-render the row
+  const rowData = collectAiTableData().find(r => r.index === rowIdx);
+  if(rowData){
+    rowData.brands = brands;
+    renderAiTable(collectAiTableData().map(r => r.index === rowIdx ? {...r, brands} : r));
   }
 
   // Close the inline brand results
