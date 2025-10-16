@@ -495,6 +495,18 @@ const ALLERGEN_ALIASES={
   soya:'soy',
   sesame:'sesame'
 };
+const ALLERGEN_EMOJI={
+  'dairy':'🥛',
+  'egg':'🥚',
+  'peanut':'🥜',
+  'tree nut':'🌰',
+  'shellfish':'🦐',
+  'fish':'🐟',
+  'gluten':'🌾',
+  'soy':'🫘',
+  'sesame':'🍪',
+  'wheat':'🌾'
+};
 
 function detectAllergensInText(text){
   if(!text) return [];
@@ -607,7 +619,7 @@ function updateFullScreenAllergySummary(){
     // Allergens with emoji badges
     if(uniqueKeys.length){
       const allergenBadges=uniqueKeys.map(a=>{
-        const emoji=allergenEmoji[a]||'🔴';
+        const emoji=ALLERGEN_EMOJI[a]||'🔴';
         return `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(76,90,212,0.25);border:1px solid rgba(76,90,212,0.4);border-radius:999px;padding:4px 10px;font-size:0.85rem;"><span>${emoji}</span><span>${esc(cap(a))}</span></span>`;
       }).join('');
       html+=`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span class="label">Allergens:</span>${allergenBadges}</div>`;
@@ -3084,30 +3096,16 @@ function tooltipBodyHTML(item,sel,userDiets){
     const unsafeHits=hits.filter(a=>!removableSet.has(norm(a)));
     const removableHits=hits.filter(a=>removableSet.has(norm(a)));
 
-    // Allergen emoji mapping
-    const allergenEmoji = {
-      'dairy': '🥛',
-      'egg': '🥚',
-      'peanut': '🥜',
-      'tree nut': '🌰',
-      'shellfish': '🦐',
-      'fish': '🐟',
-      'gluten': '🌾',
-      'soy': '🫘',
-      'sesame': '🍪',
-      'wheat': '🌾'
-    };
-
     if(unsafeHits.length){
       const list=unsafeHits.map(a=>{
-        const emoji = allergenEmoji[a.toLowerCase()] || '⚠️';
+        const emoji = ALLERGEN_EMOJI[a.toLowerCase()] || '⚠️';
         return `<div style="margin-bottom:4px">${emoji} Contains <strong>${esc(a.toLowerCase())}</strong> (cannot be accommodated)</div>`;
       }).join('');
       html+=`<div class="note tooltipDangerText">${list}</div>`;
     }
     if(removableHits.length){
       const list=removableHits.map(a=>{
-        const emoji = allergenEmoji[a.toLowerCase()] || '⚠️';
+        const emoji = ALLERGEN_EMOJI[a.toLowerCase()] || '⚠️';
         return `<div style="margin-bottom:4px">${emoji} Contains <strong>${esc(a.toLowerCase())}</strong> (can be accommodated)</div>`;
       }).join('');
       html+=`<div class="note tooltipWarnText">${list}</div>`;
@@ -3119,7 +3117,7 @@ function tooltipBodyHTML(item,sel,userDiets){
     if(hasCross){
       const crossHits=(item.crossContamination||[]).filter(a=>sel.includes(a));
       const crossList=crossHits.map(a=>{
-        const emoji = allergenEmoji[a.toLowerCase()] || '⚠️';
+        const emoji = ALLERGEN_EMOJI[a.toLowerCase()] || '⚠️';
         return `<div style="margin-bottom:4px">${emoji} Cross-contamination risk: <strong>${esc(a.toLowerCase())}</strong></div>`;
       }).join('');
       html+=`<div class="note tooltipNeutralText">${crossList}</div>`;
@@ -3420,7 +3418,7 @@ function renderSavedChips(el){
   }
   const row=div('','chips');
   saved.forEach(a=>{
-    const emoji=allergenEmoji[a]||'🔴';
+    const emoji=ALLERGEN_EMOJI[a]||'🔴';
     row.appendChild(div(`${emoji} ${esc(cap(a))}`,'chip active'));
   });
   el.appendChild(row);
