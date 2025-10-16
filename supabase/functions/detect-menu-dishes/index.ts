@@ -25,35 +25,44 @@ serve(async (req) => {
       throw new Error('No image data provided')
     }
 
-    const systemPrompt = `You are a menu analysis assistant for a restaurant allergen awareness system.
+    const systemPrompt = `You are a menu analysis assistant that detects dish locations on restaurant menu images.
 
-Your task is to analyze a menu image and detect all the dishes visible on it, along with their PRECISE locations.
+TASK: Find each dish and return its bounding box as percentages of the image dimensions.
 
-CRITICAL POSITIONING INSTRUCTIONS:
-1. Identify ALL dish names visible on the menu
-2. For each dish, calculate its EXACT bounding box location as percentages of the FULL image dimensions
-3. x = distance from LEFT edge to dish's LEFT edge (0-100%)
-4. y = distance from TOP edge to dish's TOP edge (0-100%)
-5. w = width of the dish text and description (typically 15-25%)
-6. h = height of the dish entry including name and description (typically 5-12%)
+COORDINATE SYSTEM:
+- x, y, w, h are ALL percentages (0-100) of the image dimensions
+- x = horizontal distance from LEFT edge of image to LEFT edge of dish
+- y = vertical distance from TOP edge of image to TOP edge of dish
+- w = width of the dish area (name + price + description)
+- h = height of the dish area
 
-POSITIONING ACCURACY:
-- Measure from the actual edges of the image, not from menu borders
-- Include the dish NAME + PRICE + short DESCRIPTION in the bounding box
-- For multi-column menus: left column x=5-30%, middle column x=35-60%, right column x=65-90%
-- Vertical spacing: dishes typically start every 8-15% down the page
-- Make boxes tight but include all text for each dish
-- DO NOT create overlapping boxes
+MEASUREMENT PROCESS:
+1. Look at the ENTIRE image dimensions (width and height in pixels)
+2. Find where the dish text starts horizontally - that's your x
+3. Find where the dish text starts vertically - that's your y
+4. Measure how wide the dish text area is - convert to percentage of image width
+5. Measure how tall the dish text area is - convert to percentage of image height
 
-Return a JSON object with this exact structure:
+COMMON PATTERNS:
+- Menus often have 2-3 columns
+- Left column typically: x=2-8%, w=20-30%
+- Middle column typically: x=35-45%, w=20-30%
+- Right column typically: x=68-78%, w=20-30%
+- Dishes usually have h=4-8% (height)
+- First dish often starts at y=15-25%
+- Subsequent dishes add 8-12% to y each time
+
+CRITICAL: Measure from the actual image edges, NOT from the menu board edges visible in the photo.
+
+Return JSON:
 {
   "dishes": [
     {
-      "id": "EXACT dish name as written on menu",
-      "x": 10.5,
-      "y": 15.2,
-      "w": 20.0,
-      "h": 8.0,
+      "id": "exact dish name",
+      "x": 5.0,
+      "y": 18.0,
+      "w": 25.0,
+      "h": 6.0,
       "allergens": [],
       "removable": [],
       "crossContamination": [],
@@ -63,13 +72,7 @@ Return a JSON object with this exact structure:
   ]
 }
 
-EXAMPLE for a menu with appetizers in left column:
-- First dish: {"id": "Hummus", "x": 5, "y": 20, "w": 22, "h": 8}
-- Second dish: {"id": "Baba Ganoush", "x": 5, "y": 30, "w": 22, "h": 8}
-
-IMPORTANT:
-- Leave allergens, removable, crossContamination, diets, and details as empty - manager fills these
-- Focus on PRECISE positioning - this is critical for proper overlay placement`
+Be very careful with positioning - overlays will be drawn using these exact coordinates.`
 
     const userPrompt = `Please analyze this menu image and detect all dishes with their PRECISE locations.
 

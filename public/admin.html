@@ -179,6 +179,7 @@
       </a>
       <div class="simple-nav">
         <button onclick="window.location.href='restaurants.html'" type="button">All restaurants</button>
+        <button onclick="window.location.href='how-it-works.html'" type="button">How it works</button>
         <button onclick="window.location.href='account.html'" type="button">My Account</button>
       </div>
     </div>
@@ -243,8 +244,8 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnb2l5eWNjdG53bmdocnZzaWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0MzY1MjYsImV4cCI6MjA3NjAxMjUyNn0.xlSSXr0Gl7j-vsckrj-2anpPmp4BG2SUIdN-_dquSA8'
     );
 
-    // Admin email - only this user can access
-    const ADMIN_EMAIL = 'matthewrobertdavis8@gmail.com';
+    // Admin user ID - only this user can access
+    const ADMIN_USER_ID = 'b877f028-599f-4ae7-83ff-5c957045e1d7';
 
     let currentUser = null;
 
@@ -252,7 +253,7 @@
     async function checkAuth() {
       const { data: { user } } = await supabase.auth.getUser();
 
-      if (!user || user.email !== ADMIN_EMAIL) {
+      if (!user || user.id !== ADMIN_USER_ID) {
         document.getElementById('access-denied').style.display = 'block';
         return false;
       }

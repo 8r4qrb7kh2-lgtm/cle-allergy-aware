@@ -3071,7 +3071,7 @@ function tooltipBodyHTML(item,sel,userDiets){
       'fish': '🐟',
       'gluten': '🌾',
       'soy': '🫘',
-      'sesame': '🌱',
+      'sesame': '🍪',
       'wheat': '🌾'
     };
 
@@ -3150,7 +3150,7 @@ function renderTopbar(){
     const tabs=div('','tabs');
     const navItems=[
       {t:'All restaurants',to:'/restaurants'},
-      {t:'How It Works',to:'/how-it-works',external:true}
+      {t:'How it works',to:'/how-it-works',external:true}
     ];
     if(state.user?.loggedIn){
       navItems.push({t:'Favorite restaurants',to:'/favorites'});
