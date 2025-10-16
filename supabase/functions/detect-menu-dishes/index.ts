@@ -27,24 +27,32 @@ serve(async (req) => {
 
     const systemPrompt = `You are a menu analysis assistant for a restaurant allergen awareness system.
 
-Your task is to analyze a menu image and detect all the dishes visible on it, along with their approximate locations.
+Your task is to analyze a menu image and detect all the dishes visible on it, along with their PRECISE locations.
 
-IMPORTANT INSTRUCTIONS:
+CRITICAL POSITIONING INSTRUCTIONS:
 1. Identify ALL dish names visible on the menu
-2. For each dish, estimate its bounding box location as percentages of the image (x, y, width, height)
-3. x and y are the top-left corner coordinates as percentages (0-100)
-4. width and height are the dimensions as percentages (0-100)
-5. Try to create tight bounding boxes around each dish name and its description
-6. If dishes are organized in columns or sections, respect that layout
+2. For each dish, calculate its EXACT bounding box location as percentages of the FULL image dimensions
+3. x = distance from LEFT edge to dish's LEFT edge (0-100%)
+4. y = distance from TOP edge to dish's TOP edge (0-100%)
+5. w = width of the dish text and description (typically 15-25%)
+6. h = height of the dish entry including name and description (typically 5-12%)
+
+POSITIONING ACCURACY:
+- Measure from the actual edges of the image, not from menu borders
+- Include the dish NAME + PRICE + short DESCRIPTION in the bounding box
+- For multi-column menus: left column x=5-30%, middle column x=35-60%, right column x=65-90%
+- Vertical spacing: dishes typically start every 8-15% down the page
+- Make boxes tight but include all text for each dish
+- DO NOT create overlapping boxes
 
 Return a JSON object with this exact structure:
 {
   "dishes": [
     {
-      "id": "dish name as it appears on menu",
+      "id": "EXACT dish name as written on menu",
       "x": 10.5,
       "y": 15.2,
-      "w": 25.0,
+      "w": 20.0,
       "h": 8.0,
       "allergens": [],
       "removable": [],
@@ -55,13 +63,20 @@ Return a JSON object with this exact structure:
   ]
 }
 
-IMPORTANT:
-- x, y, w, h should be percentages (decimals between 0 and 100)
-- Make sure bounding boxes don't overlap too much
-- Leave allergens, removable, crossContamination, diets, and details as empty arrays/objects - the restaurant manager will fill these in
-- Focus on getting accurate dish names and reasonable bounding boxes`
+EXAMPLE for a menu with appetizers in left column:
+- First dish: {"id": "Hummus", "x": 5, "y": 20, "w": 22, "h": 8}
+- Second dish: {"id": "Baba Ganoush", "x": 5, "y": 30, "w": 22, "h": 8}
 
-    const userPrompt = `Please analyze this menu image and detect all dishes with their locations.`
+IMPORTANT:
+- Leave allergens, removable, crossContamination, diets, and details as empty - manager fills these
+- Focus on PRECISE positioning - this is critical for proper overlay placement`
+
+    const userPrompt = `Please analyze this menu image and detect all dishes with their PRECISE locations.
+
+Important:
+- Measure coordinates from the actual image edges (not menu board edges)
+- Be very accurate with x, y positions - they must align with where the dishes actually appear
+- Each dish should have a tight bounding box around its name, price, and description`
 
     // Extract base64 data from data URL
     const base64Data = imageData.split(',')[1] || imageData
