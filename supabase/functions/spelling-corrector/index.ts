@@ -43,19 +43,24 @@ serve(async (req) => {
         max_tokens: 50,
         messages: [{
           role: 'user',
-          content: `You are a spelling correction assistant for food product searches. The user is searching for "${ingredientName}" and typed the brand name "${query}".
+          content: `You are a spelling correction assistant for food product searches. The user is searching for products and typed: "${query}"
 
-IMPORTANT: Only correct OBVIOUS spelling mistakes. If the brand name looks reasonable (even if you don't recognize it), return it EXACTLY as typed. Do NOT replace valid brand names with alternatives.
+The ingredient being searched for is: "${ingredientName}"
+
+IMPORTANT RULES:
+1. Only correct OBVIOUS spelling mistakes
+2. Return the COMPLETE search query (ingredient + brand), not just the brand name
+3. If the text looks reasonable, return it EXACTLY as typed
+4. Do NOT remove the ingredient name from the query
+5. Do NOT replace valid brand names with alternatives
 
 Examples:
-- "chobaani" → "chobani" (clear typo)
-- "danon" → "dannon" (clear typo)
-- "sysco" → "sysco" (valid brand, return as-is)
-- "chobani" → "chobani" (correct, return as-is)
-- "kraft" → "kraft" (correct, return as-is)
-- "badia" → "badia" (valid brand, return as-is)
+- "italian seasoning chobaani" → "italian seasoning chobani" (fix typo in brand)
+- "italian seasoning sysco" → "italian seasoning sysco" (valid, return as-is)
+- "yogurt danon" → "yogurt dannon" (fix typo in brand)
+- "ricotta cheese galbani" → "ricotta cheese galbani" (correct, return as-is)
 
-Response (brand name only, no explanations):`
+Response (complete search query, no explanations):`
         }]
       }),
     })

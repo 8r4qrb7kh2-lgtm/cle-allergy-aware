@@ -1662,8 +1662,9 @@ function renderAiTable(rows){
       // Show message if no images are available
       const imagesDisplay = brandImages.length > 0 ? brandImages.join('') : '<div style="color:var(--muted);font-size:0.85rem;font-style:italic">No product images available</div>';
       console.log(`  - Final imagesDisplay length: ${imagesDisplay.length}, brandImages count: ${brandImages.length}`);
+      console.log(`  - imagesDisplay HTML: ${imagesDisplay.substring(0, 200)}...`);
 
-      return `
+      const brandItemHTML = `
         <div class="aiBrandItem" data-brand-idx="${brandIdx}">
           <div class="aiBrandItemHeader">
             <strong>${esc(brand.name || 'Brand ' + (brandIdx + 1))}</strong>
@@ -1673,7 +1674,11 @@ function renderAiTable(rows){
           ${ingredientsNote ? `<div class="aiIngredientList">${ingredientsNote}</div>` : '<div style="color:var(--muted);font-size:0.85rem;font-style:italic">No ingredient list available</div>'}
         </div>
       `;
+      console.log(`  - Brand item HTML length: ${brandItemHTML.length}`);
+      return brandItemHTML;
     }).join('') : '<div class="aiNoBrands">No brands added yet</div>';
+
+    console.log(`Total brandsHTML length: ${brandsHTML.length}`);
 
     const isConfirmed = row.confirmed || false;
 
