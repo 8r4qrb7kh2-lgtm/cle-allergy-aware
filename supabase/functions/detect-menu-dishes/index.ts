@@ -107,8 +107,8 @@ Remember: Measure from the absolute edges of the digital image file, not from me
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 8000,
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 4000,
         system: systemPrompt,
         messages: [{
           role: 'user',
@@ -119,8 +119,9 @@ Remember: Measure from the absolute edges of the digital image file, not from me
 
     if (!claudeResponse.ok) {
       const error = await claudeResponse.text()
-      console.error('Claude API error:', error)
-      throw new Error(`Claude API error: ${error}`)
+      console.error('Claude API error status:', claudeResponse.status)
+      console.error('Claude API error body:', error)
+      throw new Error(`Claude API error (${claudeResponse.status}): ${error.substring(0, 200)}`)
     }
 
     const aiResult = await claudeResponse.json()
