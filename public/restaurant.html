@@ -462,6 +462,7 @@ if (!slug) {
 document.body.style.display='none';
 
 const ALLERGENS=["dairy","egg","peanut","tree nut","shellfish","fish","gluten","soy","sesame","wheat"];
+const DIETS=["Vegan","Vegetarian","Pescatarian","Kosher","Halal"];
 const ALLERGEN_ALIASES={
   milk:'dairy',
   lactose:'dairy',
@@ -2807,10 +2808,25 @@ function tooltipBodyHTML(item,sel){
   const status=computeStatus(item,sel);
   const details=item.details||{};
   const hasCross=hasCrossContamination(item,sel);
-  
+
   if(!sel.length) return `<div class="note">No saved allergens selected.</div>`;
-  
+
   let html='';
+
+  // Display dietary preferences if any
+  if(item.diets && item.diets.length > 0){
+    const dietBadges = item.diets.map(diet => {
+      const emoji = {
+        'Vegan': '🌱',
+        'Vegetarian': '🥬',
+        'Pescatarian': '🐟',
+        'Kosher': '✡️',
+        'Halal': '☪️'
+      }[diet] || '✓';
+      return `<span style="display:inline-block;padding:4px 10px;margin:2px 4px 2px 0;background:rgba(76,200,90,0.15);border:1px solid rgba(76,200,90,0.4);border-radius:12px;font-size:0.85rem;color:#4cc85a;white-space:nowrap">${emoji} ${esc(diet)}</span>`;
+    }).join('');
+    html+=`<div class="note" style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(76,90,212,0.2)"><strong style="display:block;margin-bottom:6px">Dietary Options</strong>${dietBadges}</div>`;
+  }
   const hits=(item.allergens||[]).filter(a=>sel.includes(a));
   const removableSet=new Set((item.removable||[]).map(r=>norm(r.allergen||'')));
   
@@ -4068,7 +4084,7 @@ function renderEditor(){
 
   img.onload=drawAll; if(img.complete) drawAll();
   document.getElementById('addBox').onclick=()=>{
-    const newOverlay={id:'New item',x:10,y:10,w:20,h:8,allergens:[],removable:[],crossContamination:[],details:{}};
+    const newOverlay={id:'New item',x:10,y:10,w:20,h:8,allergens:[],removable:[],crossContamination:[],diets:[],details:{}};
     overlays.push(newOverlay);
     pendingChanges.push(`${newOverlay.id}: Added overlay`);
     drawAll();
@@ -4136,32 +4152,56 @@ function renderEditor(){
       const inp=document.createElement('input'); inp.className='algInput'; inp.placeholder='Which part of the dish contains the allergen?'; inp.value=details[a]||'';
       const lab=document.createElement('label'); lab.className='algChk'; const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=rem.has(a); lab.appendChild(cb); lab.appendChild(document.createTextNode('can be accommodated'));
       const labCross=document.createElement('label'); labCross.className='algChk'; const cbCross=document.createElement('input'); cbCross.type='checkbox'; cbCross.checked=cross.has(a); labCross.appendChild(cbCross); labCross.appendChild(document.createTextNode('cross-contamination risk'));
-      
+
       function reflect(){
-        const on=b.classList.contains('active'); 
-        inp.style.display=on?'block':'none'; 
-        lab.style.display=on?'flex':'none'; 
+        const on=b.classList.contains('active');
+        inp.style.display=on?'block':'none';
+        lab.style.display=on?'flex':'none';
         labCross.style.display='flex';
         updatePreview();
       }
-      b.onclick=()=>{b.classList.toggle('active'); reflect();}; 
-      cb.onchange=updatePreview; 
+      b.onclick=()=>{b.classList.toggle('active'); reflect();};
+      cb.onchange=updatePreview;
       cbCross.onchange=updatePreview;
       inp.oninput=updatePreview;
       row.appendChild(b); row.appendChild(inp); row.appendChild(lab); row.appendChild(labCross); list.appendChild(row); reflect();
     });
+
+    // Add dietary preference section
+    const dietTitle = document.createElement('h3');
+    dietTitle.textContent = 'Dietary Preferences';
+    dietTitle.style.cssText = 'margin: 24px 0 12px 0; padding-top: 16px; border-top: 1px solid rgba(76,90,212,0.3); color: var(--ink);';
+    list.appendChild(dietTitle);
+
+    const dietSel = new Set(it.diets||[]);
+    DIETS.forEach(diet=>{
+      const row=document.createElement('div'); row.className='algRow';
+      const b=document.createElement('div'); b.className='algBtn dietBtn'; b.textContent=diet; b.dataset.diet=diet; if(dietSel.has(diet)) b.classList.add('active');
+
+      b.onclick=()=>{b.classList.toggle('active'); updatePreview();};
+      row.appendChild(b); list.appendChild(row);
+    });
     
     function updatePreview(){
-      const tmp={id:(document.getElementById('itemName').value||it.id||'Item'),allergens:[],removable:[],crossContamination:[],details:{}};
+      const tmp={id:(document.getElementById('itemName').value||it.id||'Item'),allergens:[],removable:[],crossContamination:[],diets:[],details:{}};
       list.querySelectorAll('.algRow').forEach(row=>{
-        const a=row.querySelector('.algBtn').dataset.a;
-        const on=row.querySelector('.algBtn').classList.contains('active');
-        const txt=row.querySelector('.algInput').value.trim();
-        const checkboxes=row.querySelectorAll('input[type="checkbox"]');
-        const isRem=checkboxes[0].checked;
-        const isCross=checkboxes[1].checked;
-        if(on){tmp.allergens.push(a); if(txt) tmp.details[a]=txt; if(isRem) tmp.removable.push({allergen:a,component:txt||a});}
-        if(isCross){tmp.crossContamination.push(a);}
+        const btn = row.querySelector('.algBtn');
+        const a=btn.dataset.a;
+        const diet=btn.dataset.diet;
+        const on=btn.classList.contains('active');
+
+        if(diet){
+          // This is a diet button
+          if(on) tmp.diets.push(diet);
+        } else if(a){
+          // This is an allergen button
+          const txt=row.querySelector('.algInput')?.value.trim()||'';
+          const checkboxes=row.querySelectorAll('input[type="checkbox"]');
+          const isRem=checkboxes[0]?.checked;
+          const isCross=checkboxes[1]?.checked;
+          if(on){tmp.allergens.push(a); if(txt) tmp.details[a]=txt; if(isRem) tmp.removable.push({allergen:a,component:txt||a});}
+          if(isCross){tmp.crossContamination.push(a);}
+        }
       });
       document.getElementById('previewBox').innerHTML=tooltipBodyHTML(tmp,ALLERGENS.slice());
     }
@@ -4255,16 +4295,25 @@ function renderEditor(){
       const oldName=it.id;
       const oldAllergens=new Set(it.allergens||[]);
 
-      const final={allergens:[],removable:[],crossContamination:[],details:{}};
+      const final={allergens:[],removable:[],crossContamination:[],diets:[],details:{}};
       list.querySelectorAll('.algRow').forEach(row=>{
-        const a=row.querySelector('.algBtn').dataset.a;
-        const on=row.querySelector('.algBtn').classList.contains('active');
-        const txt=row.querySelector('.algInput').value.trim();
-        const checkboxes=row.querySelectorAll('input[type="checkbox"]');
-        const isRem=checkboxes[0].checked;
-        const isCross=checkboxes[1].checked;
-        if(on){final.allergens.push(a); if(txt) final.details[a]=txt; if(isRem) final.removable.push({allergen:a,component:txt||a}); }
-        if(isCross){final.crossContamination.push(a);}
+        const btn = row.querySelector('.algBtn');
+        const a=btn.dataset.a;
+        const diet=btn.dataset.diet;
+        const on=btn.classList.contains('active');
+
+        if(diet){
+          // This is a diet button
+          if(on) final.diets.push(diet);
+        } else if(a){
+          // This is an allergen button
+          const txt=row.querySelector('.algInput')?.value.trim()||'';
+          const checkboxes=row.querySelectorAll('input[type="checkbox"]');
+          const isRem=checkboxes[0]?.checked;
+          const isCross=checkboxes[1]?.checked;
+          if(on){final.allergens.push(a); if(txt) final.details[a]=txt; if(isRem) final.removable.push({allergen:a,component:txt||a}); }
+          if(isCross){final.crossContamination.push(a);}
+        }
       });
       if(list && list.dataset.aiIngredientSummary){
         try{
@@ -4302,6 +4351,7 @@ function renderEditor(){
       it.details=final.details;
       it.removable=final.removable;
       it.crossContamination=final.crossContamination;
+      it.diets=final.diets;
       if(list){
         list.dataset.aiIngredients='';
         list.dataset.aiIngredientSummary='';
