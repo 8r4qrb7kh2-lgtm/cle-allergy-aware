@@ -3785,6 +3785,31 @@ function renderRestaurant(){
 }
 
 /* editor */
+async function detectDishesOnMenu(imageData){
+  try {
+    const response=await fetch('https://fgoiyycctnwnghrvsilt.supabase.co/functions/v1/detect-menu-dishes',{
+      method:'POST',
+      headers:{
+        'Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnb2l5eWNjdG53bmdocnZzaWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0MzY1MjYsImV4cCI6MjA3NjAxMjUyNn0.xlSSXr0Gl7j-vsckrj-2anpPmp4BG2SUIdN-_dquSA8',
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify({imageData})
+    });
+
+    if(!response.ok){
+      const errorText=await response.text();
+      console.error('API error:',errorText);
+      throw new Error('Failed to detect dishes');
+    }
+
+    const result=await response.json();
+    return result;
+  } catch(err){
+    console.error('Detection error:',err);
+    return {success:false,error:err.message,dishes:[]};
+  }
+}
+
 function renderEditor(){
   renderTopbar();
   const rs=state.restaurant||{};
@@ -3794,12 +3819,14 @@ function renderEditor(){
     <div class="mgrRow" style="justify-content:space-between">
       <button class="btn" id="backBtn">← Done</button>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn" id="uploadMenuPhotoBtn">📷 Upload Menu Photo</button>
         <button class="btn" id="viewLogBtn">📋 View log of changes</button>
         <button class="btn btnDanger" id="confirmBtn">Confirm allergen information is up-to-date</button>
         <button class="btn" id="addBox">Add overlay</button>
         <div class="saveRow" id="saveRow"><button class="btn btnPrimary" id="saveBtn">Save to site</button></div>
       </div>
     </div>
+    <input type="file" id="menuPhotoInput" accept="image/*" style="display:none">
     <div class="note" id="lastConfirmedText" style="text-align:right;font-size:12px;margin-top:4px">Last confirmed: ${rs.lastConfirmed?esc(fmtDateTime(rs.lastConfirmed)):'Never'}</div>
     <div class="note" style="margin-bottom:8px">Drag to move. Drag any corner to resize. Click ✏️ to edit details.</div>
     <div class="menuWrap show" id="menu"></div>
@@ -4435,6 +4462,67 @@ function renderEditor(){
     drawAll();
     setDirty(true);
   };
+
+  // Upload Menu Photo handler
+  document.getElementById('uploadMenuPhotoBtn').onclick=()=>{
+    document.getElementById('menuPhotoInput').click();
+  };
+
+  document.getElementById('menuPhotoInput').onchange=async(e)=>{
+    const file=e.target.files[0];
+    if(!file) return;
+
+    const uploadBtn=document.getElementById('uploadMenuPhotoBtn');
+    uploadBtn.disabled=true;
+    uploadBtn.textContent='📷 Uploading...';
+
+    try {
+      // Read and compress the image
+      const reader=new FileReader();
+      reader.onload=async(ev)=>{
+        const dataUrl=ev.target.result;
+        const compressed=await compressImage(dataUrl,1200,0.8);
+
+        uploadBtn.textContent='🔍 Detecting dishes...';
+
+        // Call AI to detect dishes on the menu
+        const detectionResult=await detectDishesOnMenu(compressed);
+
+        if(detectionResult.success){
+          // Update menu image
+          rs.menuImage=compressed;
+          img.src=compressed;
+
+          // Clear existing overlays and add detected ones
+          overlays.length=0;
+          overlays.push(...detectionResult.dishes);
+
+          pendingChanges.push('Uploaded new menu photo and detected dishes');
+
+          drawAll();
+          setDirty(true);
+
+          uploadBtn.textContent='✓ Detected '+detectionResult.dishes.length+' dishes';
+          setTimeout(()=>{
+            uploadBtn.disabled=false;
+            uploadBtn.textContent='📷 Upload Menu Photo';
+          },2000);
+        } else {
+          throw new Error(detectionResult.error||'Failed to detect dishes');
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch(err){
+      console.error('Upload error:',err);
+      alert('Failed to process menu photo: '+err.message);
+      uploadBtn.disabled=false;
+      uploadBtn.textContent='📷 Upload Menu Photo';
+    }
+
+    // Reset input
+    e.target.value='';
+  };
+
   document.getElementById('backBtn').onclick=()=>{
     if(dirty){
       const oldTitle=document.title;
