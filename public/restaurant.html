@@ -1506,7 +1506,7 @@ function stopAiCamera(notify){
   }
 }
 
-function captureAiPhoto(){
+async function captureAiPhoto(){
   ensureAiAssistElements();
   if(!aiAssistVideo || !aiAssistState.mediaStream){
     aiAssistSetStatus('Start the camera before capturing a photo.','warn');
@@ -1527,10 +1527,17 @@ function captureAiPhoto(){
     return;
   }
   ctx.drawImage(aiAssistVideo,0,0,width,height);
-  aiAssistState.imageData=canvas.toDataURL('image/jpeg',0.92);
-  aiAssistState.imageFileName=`label-${Date.now()}.jpg`;
+  const rawImage = canvas.toDataURL('image/jpeg',0.92);
+
+  // Compress the captured photo
+  const compressed = await compressImage(rawImage);
+
+  // Add to photos array for multi-photo workflow
+  if(!window.aiAssistPhotos) window.aiAssistPhotos = [];
+  window.aiAssistPhotos.push(compressed);
+
   stopAiCamera();
-  updateAiAssistMediaPreview();
+  renderPhotoPreviews();
   aiAssistSetStatus('Photo captured. Review before processing.','success');
 }
 
@@ -2561,10 +2568,15 @@ async function requestAiExtraction(payload){
       throw new Error(text || 'AI proxy returned an error');
     }
 
-    return await response.json();
+    const data = await response.json();
+    return data;
   } catch(err) {
     console.error('AI extraction via proxy failed:', err);
-    throw new Error('AI service unavailable');
+    // Provide more specific error message
+    if(err.message && err.message.includes('JSON')) {
+      throw new Error('Invalid response from AI service. Please try again.');
+    }
+    throw err; // Throw original error with its message
   }
 }
 
@@ -2624,6 +2636,34 @@ function renderPhotoPreviews(){
   });
 }
 
+// Compress image to reduce payload size
+function compressImage(dataUrl, maxWidth = 1200, quality = 0.8) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      // Calculate new dimensions while maintaining aspect ratio
+      if (width > maxWidth) {
+        height = (height * maxWidth) / width;
+        width = maxWidth;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      // Convert to JPEG with quality compression
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = dataUrl;
+  });
+}
+
 async function handleMultipleRecipePhotoUpload(files){
   ensureAiAssistElements();
   if(!window.aiAssistPhotos) window.aiAssistPhotos = [];
@@ -2632,8 +2672,10 @@ async function handleMultipleRecipePhotoUpload(files){
     const file = files[i];
     try{
       const reader = new FileReader();
-      reader.onload = (e) => {
-        window.aiAssistPhotos.push(e.target.result);
+      reader.onload = async (e) => {
+        // Compress image before storing
+        const compressed = await compressImage(e.target.result);
+        window.aiAssistPhotos.push(compressed);
         renderPhotoPreviews();
       };
       reader.readAsDataURL(file);
