@@ -1788,24 +1788,27 @@ function toggleAiDictation(){
 
 async function correctSpellingWithAI(query, ingredientName){
   try {
-    // Use Supabase function to correct spelling
-    const client = window.supabaseClient;
-    if(!client?.functions?.invoke){
-      return query;
-    }
-
-    const { data, error } = await client.functions.invoke('spelling-corrector', {
-      body: {
-        query: query,
-        ingredientName: ingredientName
-      }
+    // Use proxy to avoid CORS issues
+    const response = await fetch('/api/ai-proxy', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        functionName: 'spelling-corrector',
+        payload: {
+          query: query,
+          ingredientName: ingredientName
+        }
+      })
     });
 
-    if(error){
-      console.warn('Spelling correction error:', error);
+    if(!response.ok){
+      console.warn('Spelling correction failed:', response.status);
       return query;
     }
 
+    const data = await response.json();
     const corrected = data?.corrected || query;
     return corrected;
   } catch(err) {
@@ -2158,20 +2161,30 @@ async function requestAiExtraction(payload){
     }
     return await res.json();
   }
-  const client=window.supabaseClient;
-  if(client?.functions?.invoke){
-    const candidates=['ai-ingredient-assistant','ai-ingredient-extract','aiAssistExtract'];
-    for(const fn of candidates){
-      try{
-        const { data, error } = await client.functions.invoke(fn,{ body: payload });
-        if(error) continue;
-        if(data) return data;
-      }catch(err){
-        console.warn('AI function call failed',fn,err);
-      }
+
+  // Use proxy to avoid CORS issues
+  try {
+    const response = await fetch('/api/ai-proxy', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        functionName: 'ai-ingredient-assistant',
+        payload: payload
+      })
+    });
+
+    if(!response.ok){
+      const text = await response.text().catch(() => response.statusText);
+      throw new Error(text || 'AI proxy returned an error');
     }
+
+    return await response.json();
+  } catch(err) {
+    console.error('AI extraction via proxy failed:', err);
+    throw new Error('AI service unavailable');
   }
-  throw new Error('AI service unavailable');
 }
 
 async function handleRecipePhotoUpload(file){
