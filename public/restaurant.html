@@ -1720,6 +1720,25 @@ function renderAiTable(rows){
     aiAssistBrandResults.classList.remove('show');
     aiAssistBrandResults.innerHTML='';
   }
+
+  // Auto-search for brands if there are ingredients without brands and without suggestions
+  const needsBrandSearch = data.some((row, idx) => {
+    return row.name &&
+           (!row.brands || row.brands.length === 0) &&
+           (!aiAssistState.brandSuggestions[idx] || aiAssistState.brandSuggestions[idx].length === 0);
+  });
+
+  if(needsBrandSearch){
+    // Delay slightly to let the DOM update
+    setTimeout(() => {
+      autoSearchBrandsForAllIngredients();
+    }, 100);
+  } else if(data.length > 0) {
+    // Just display existing suggestions if we have them
+    setTimeout(() => {
+      displayAutoBrandPreviews();
+    }, 50);
+  }
 }
 
 function heuristicallyExtractIngredients(text){
