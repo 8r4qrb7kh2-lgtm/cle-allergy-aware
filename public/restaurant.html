@@ -1590,6 +1590,7 @@ function renderAiTable(rows){
     });
 
     const brandsHTML = brands.length > 0 ? brands.map((brand, brandIdx) => {
+      console.log('Rendering brand:', brand);
       const brandImages = [];
       if(brand.brandImage) brandImages.push(`<img src="${esc(brand.brandImage)}" alt="${esc(brand.name||'Brand')}" loading="lazy" onclick="openImageModal('${esc(brand.brandImage)}')" title="Click to enlarge">`);
       if(brand.ingredientsImage) brandImages.push(`<img src="${esc(brand.ingredientsImage)}" alt="Ingredients label" loading="lazy" onclick="openImageModal('${esc(brand.ingredientsImage)}')" title="Click to enlarge">`);
@@ -1597,6 +1598,7 @@ function renderAiTable(rows){
 
       // Show message if no images are available
       const imagesDisplay = brandImages.length > 0 ? brandImages.join('') : '<div style="color:var(--muted);font-size:0.85rem;font-style:italic">No product images available</div>';
+      console.log('Brand images array:', brandImages, 'Display:', imagesDisplay.substring(0, 50));
 
       return `
         <div class="aiBrandItem" data-brand-idx="${brandIdx}">
