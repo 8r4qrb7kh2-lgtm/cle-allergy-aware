@@ -1892,8 +1892,8 @@ function handleAiAssistantResult(payload){
     if(row && row.name && row.brand){
       rememberBrand(row.name,{
         brand:row.brand,
-        brandImage=row.brandImage||'',
-        ingredientsImage=row.ingredientsImage||'',
+        brandImage:row.brandImage||'',
+        ingredientsImage:row.ingredientsImage||'',
         ingredientsList:Array.isArray(row.ingredientsList)?row.ingredientsList:[],
         allergens:Array.isArray(row.allergens)?row.allergens:[],
       });
@@ -1921,8 +1921,8 @@ function applyAiIngredientsToOverlay(){
     if(row && row.name && row.brand){
       rememberBrand(row.name,{
         brand:row.brand,
-        brandImage=row.brandImage||'',
-        ingredientsImage=row.ingredientsImage||'',
+        brandImage:row.brandImage||'',
+        ingredientsImage:row.ingredientsImage||'',
         ingredientsList:Array.isArray(row.ingredientsList)?row.ingredientsList:[],
         allergens:Array.isArray(row.allergens)?row.allergens:[],
       });
