@@ -1746,7 +1746,7 @@ function toggleAiDictation(){
   }
 }
 
-async function fetchBrandSuggestions(query){
+async function fetchBrandSuggestions(query, ingredientName){
   ensureAiAssistElements();
   if(!query) return [];
 
@@ -1755,7 +1755,7 @@ async function fetchBrandSuggestions(query){
 
   // Strategy 1: Exact search
   try {
-    const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=${AI_BRAND_LIMIT}`;
+    const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=${AI_BRAND_LIMIT * 2}`;
     const res=await fetch(url);
     if(res.ok){
       const data=await res.json();
@@ -1769,7 +1769,7 @@ async function fetchBrandSuggestions(query){
   if(products.length === 0 && query.length > 4){
     try {
       const fuzzyQuery = query.substring(0, query.length - 1) + '*';
-      const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(fuzzyQuery)}&search_simple=1&action=process&json=1&page_size=${AI_BRAND_LIMIT}`;
+      const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(fuzzyQuery)}&search_simple=1&action=process&json=1&page_size=${AI_BRAND_LIMIT * 2}`;
       const res=await fetch(url);
       if(res.ok){
         const data=await res.json();
@@ -1783,7 +1783,7 @@ async function fetchBrandSuggestions(query){
   // Strategy 3: If still no results, try without brand constraint
   if(products.length === 0){
     try {
-      const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&action=process&json=1&page_size=${AI_BRAND_LIMIT}`;
+      const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&action=process&json=1&page_size=${AI_BRAND_LIMIT * 2}`;
       const res=await fetch(url);
       if(res.ok){
         const data=await res.json();
@@ -1792,6 +1792,19 @@ async function fetchBrandSuggestions(query){
     } catch(err) {
       console.warn('Broad search failed', err);
     }
+  }
+
+  if(!products.length) return [];
+
+  // Filter products to match ingredient name (e.g., "tahini" should only show tahini products)
+  if(ingredientName){
+    const ingredientTerms = ingredientName.toLowerCase().split(/\s+/).filter(term => term.length > 2);
+    products = products.filter(product => {
+      const productName = (product.product_name || '').toLowerCase();
+      const productCategories = (product.categories || '').toLowerCase();
+      // Check if any ingredient term appears in product name or categories
+      return ingredientTerms.some(term => productName.includes(term) || productCategories.includes(term));
+    });
   }
 
   if(!products.length) return [];
@@ -1862,9 +1875,10 @@ async function openAiBrandSearch(rowIdx){
     aiAssistSetStatus('Select an ingredient first.','warn');
     return;
   }
-  const query=rows[rowIdx].brand || rows[rowIdx].name;
-  if(!query){
-    aiAssistSetStatus('Add a name before searching for a brand.','warn');
+
+  const ingredientName = rows[rowIdx].name;
+  if(!ingredientName){
+    aiAssistSetStatus('Add an ingredient name before searching for a brand.','warn');
     return;
   }
 
@@ -1874,39 +1888,76 @@ async function openAiBrandSearch(rowIdx){
   const rowBrandResults=rowElement.querySelector('.aiRowBrandResults');
   if(!rowBrandResults) return;
 
-  aiAssistSetStatus('Searching for brand suggestions…');
+  // Show search form
   rowBrandResults.classList.add('show');
-  rowBrandResults.innerHTML='<div>Looking up brands…</div>';
+  rowBrandResults.innerHTML=`
+    <div class="aiBrandSearchForm">
+      <div style="margin-bottom:12px">
+        <label style="display:block;margin-bottom:6px;font-weight:500">Ingredient: <strong>${esc(ingredientName)}</strong></label>
+        <input type="text" class="aiBrandSearchInput" placeholder="Optional: brand name (e.g., 'Chobani', 'Once Again')" style="width:100%;padding:8px;background:#0c102a;border:1px solid rgba(76,90,212,0.4);border-radius:8px;color:#fff">
+      </div>
+      <div style="display:flex;gap:8px">
+        <button type="button" class="btn aiBrandSearchSubmit">Search</button>
+        <button type="button" class="btn aiBrandSearchCancel" style="background:#301424;border-color:#4c2138">Cancel</button>
+      </div>
+    </div>
+  `;
 
-  try{
-    const suggestions=await fetchBrandSuggestions(query);
-    aiAssistState.brandSuggestions[rowIdx]=suggestions;
-    if(!suggestions.length){
-      rowBrandResults.innerHTML='<div>No brands found. Try a different search.</div>';
-      return;
-    }
-    rowBrandResults.innerHTML=`
-      <div style="background:rgba(220,82,82,0.15);border:1px solid rgba(220,82,82,0.4);border-radius:12px;padding:12px;margin-bottom:16px">
-        <strong style="color:#dc5252">⚠️ Safety Warning</strong>
-        <p style="margin:8px 0 0 0;font-size:0.9rem;line-height:1.4">Data is crowdsourced and may be outdated or incorrect. ALWAYS verify ingredient labels match the actual product image before relying on allergen information.</p>
-      </div>
-      ${suggestions.map((item,idx)=>`
-      <div class="aiBrandSuggestion" data-row="${rowIdx}" data-index="${idx}">
-        ${item.image?`<img src="${esc(item.image)}" alt="${esc(item.name)}" loading="lazy">`:''}
-        <div class="aiBrandSuggestionInfo">
-          <strong>${esc(item.name)}</strong>
-          ${item.brand?`<span>${esc(item.brand)}</span>`:''}
-          ${item.ingredientsImage?'<span style="color:#4c5ad4">✓ Has label image - click to verify</span>':'<span style="color:#dc5252">⚠️ No label image available</span>'}
-          ${item.productUrl?`<a href="${esc(item.productUrl)}" target="_blank" rel="noopener" style="font-size:0.85rem;color:#4c5ad4">View on Open Food Facts</a>`:''}
+  const searchInput = rowBrandResults.querySelector('.aiBrandSearchInput');
+  const submitBtn = rowBrandResults.querySelector('.aiBrandSearchSubmit');
+  const cancelBtn = rowBrandResults.querySelector('.aiBrandSearchCancel');
+
+  const performSearch = async () => {
+    const brandFilter = searchInput.value.trim();
+    const query = brandFilter ? `${ingredientName} ${brandFilter}` : ingredientName;
+
+    aiAssistSetStatus('Searching for brand suggestions…');
+    rowBrandResults.innerHTML='<div>Looking up brands…</div>';
+
+    try{
+      const suggestions=await fetchBrandSuggestions(query, ingredientName);
+      aiAssistState.brandSuggestions[rowIdx]=suggestions;
+      if(!suggestions.length){
+        rowBrandResults.innerHTML='<div>No brands found. Try a different search.</div>';
+        return;
+      }
+      rowBrandResults.innerHTML=`
+        <div style="background:rgba(220,82,82,0.15);border:1px solid rgba(220,82,82,0.4);border-radius:12px;padding:12px;margin-bottom:16px">
+          <strong style="color:#dc5252">⚠️ Safety Warning</strong>
+          <p style="margin:8px 0 0 0;font-size:0.9rem;line-height:1.4">Data is crowdsourced and may be outdated or incorrect. ALWAYS verify ingredient labels match the actual product image before relying on allergen information.</p>
         </div>
-      </div>
-    `).join('')}`;
-    aiAssistSetStatus('Review images carefully before applying. Click images to verify ingredient labels match.','warn');
-  }catch(err){
-    console.error('Brand lookup failed',err);
-    rowBrandResults.innerHTML='<div>Could not retrieve brand information.</div>';
-    aiAssistSetStatus('Brand lookup failed. Try again later.','warn');
-  }
+        ${suggestions.map((item,idx)=>`
+        <div class="aiBrandSuggestion" data-row="${rowIdx}" data-index="${idx}">
+          ${item.image?`<img src="${esc(item.image)}" alt="${esc(item.name)}" loading="lazy">`:''}
+          <div class="aiBrandSuggestionInfo">
+            <strong>${esc(item.name)}</strong>
+            ${item.brand?`<span>${esc(item.brand)}</span>`:''}
+            ${item.ingredientsImage?'<span style="color:#4c5ad4">✓ Has label image - click to verify</span>':'<span style="color:#dc5252">⚠️ No label image available</span>'}
+            ${item.productUrl?`<a href="${esc(item.productUrl)}" target="_blank" rel="noopener" style="font-size:0.85rem;color:#4c5ad4">View on Open Food Facts</a>`:''}
+          </div>
+        </div>
+      `).join('')}`;
+      aiAssistSetStatus('Review images carefully before applying. Click images to verify ingredient labels match.','warn');
+    }catch(err){
+      console.error('Brand lookup failed',err);
+      rowBrandResults.innerHTML='<div>Could not retrieve brand information.</div>';
+      aiAssistSetStatus('Brand lookup failed. Try again later.','warn');
+    }
+  };
+
+  submitBtn.addEventListener('click', performSearch);
+  cancelBtn.addEventListener('click', () => {
+    rowBrandResults.classList.remove('show');
+    rowBrandResults.innerHTML = '';
+  });
+  searchInput.addEventListener('keypress', (e) => {
+    if(e.key === 'Enter'){
+      performSearch();
+    }
+  });
+
+  // Focus the input
+  setTimeout(() => searchInput.focus(), 100);
 }
 
 function applyBrandSuggestion(rowIdx, suggestionIdx){
