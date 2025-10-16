@@ -3167,7 +3167,7 @@ function renderTopbar(){
       tabs.appendChild(b);
     });
     navWrap.appendChild(tabs);
-    const acct=div(state.user?.loggedIn?'My Account':'Sign in','acctBtn');
+    const acct=div(state.user?.loggedIn?'My account':'Sign in','acctBtn');
     acct.onclick=()=>{
       if(state.user?.loggedIn){
         send({type:'navigate',to:'/accounts'});
