@@ -405,16 +405,18 @@ if (!slug) {
     // Get current user
     const { data: { user } } = await supabaseClient.auth.getUser();
 
-    // Get user allergies if logged in
+    // Get user allergies and diets if logged in
     let allergies = [];
+    let diets = [];
     let canEdit = false;
     if (user) {
       const { data: record } = await supabaseClient
         .from('user_allergies')
-        .select('allergens')
+        .select('allergens, diets')
         .eq('user_id', user.id)
         .maybeSingle();
       allergies = record?.allergens || [];
+      diets = record?.diets || [];
 
       const { data: managerRecord, error: managerError } = await supabaseClient
         .from('restaurant_managers')
@@ -438,6 +440,7 @@ if (!slug) {
       restaurant: restaurantData,
       user: user ? { loggedIn: true, email: user.email, id: user.id, name: user.user_metadata?.first_name || null } : { loggedIn: false },
       allergies: allergies,
+      diets: diets,
       canEdit: canEdit,
       canEditSource: canEdit ? 'manager-row' : 'none',
       qr: isQrVisit
@@ -3115,6 +3118,16 @@ function renderSavedChips(el){
   updateFullScreenAllergySummary();
 }
 
+function renderSavedDiets(el){
+  el.innerHTML='';
+  const saved=(state.diets||[]);
+  if(!saved.length){
+    el.appendChild(div('<div class="note">No saved dietary preferences. Use "Edit saved dietary preferences".</div>'));
+    return;
+  }
+  const row=div('','chips'); saved.forEach(d=>row.appendChild(div(esc(d),'chip active'))); el.appendChild(row);
+}
+
 /* selector for QR guests */
 function renderSelector(el){
   el.innerHTML='';
@@ -3400,7 +3413,8 @@ function renderRestaurant(){
     </div>
     <div class="pill">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:8px">
-        <div style="font-weight:600">Dietary Preferences (Optional)</div>
+        <div style="font-weight:600">${(state.qr||!state.user?.loggedIn)?'Dietary Preferences':'Your Saved Dietary Preferences'}</div>
+        ${(!state.qr && state.user?.loggedIn)?`<button class="btn clickable" id="editSavedDietsBtn">Edit Saved Dietary Preferences</button>`:''}
       </div>
       <div id="dietChips"></div>
     </div>
@@ -3427,7 +3441,7 @@ function renderRestaurant(){
   if(state.qr||!state.user?.loggedIn) renderSelector(chipsHost); else renderSavedChips(chipsHost);
 
   const dietChipsHost=document.getElementById('dietChips');
-  renderDietSelector(dietChipsHost);
+  if(state.qr||!state.user?.loggedIn) renderDietSelector(dietChipsHost); else renderSavedDiets(dietChipsHost);
 
   const menu=document.getElementById('menu');
   ensureMobileInfoPanel();
@@ -3500,6 +3514,9 @@ function renderRestaurant(){
   if(!state.qr && state.user?.loggedIn){
     const editBtn=document.getElementById('editSavedBtn');
     if(editBtn) editBtn.onclick=()=>send({type:'navigate',to:'/accounts',slug:rs.slug});
+
+    const editDietsBtn=document.getElementById('editSavedDietsBtn');
+    if(editDietsBtn) editDietsBtn.onclick=()=>send({type:'navigate',to:'/accounts',slug:rs.slug});
   }
 
   if(state.canEdit){
@@ -4474,6 +4491,7 @@ window.addEventListener('message',(ev)=>{
   if(m.user){state.user=m.user;}
   if(state.user?.loggedIn){closeQrPromo('login'); hideQrBanner();}
   if(m.allergies){state.allergies=m.allergies;}
+  if(m.diets){state.diets=m.diets;}
   if(m.restaurant){state.restaurant=normalizeRestaurant(m.restaurant);}
   if(m.restaurants){state.restaurants=m.restaurants;}
   if(typeof m.canEdit==='boolean'){state.canEdit=m.canEdit;}
