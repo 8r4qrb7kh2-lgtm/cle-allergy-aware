@@ -2318,12 +2318,16 @@ function showBrandConfirmationModal(suggestion, onConfirm){
 
       <div style="background: rgba(220,82,82,0.15); border: 1px solid rgba(220,82,82,0.4); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
         <p style="margin: 0 0 12px 0; font-weight: 600; color: #dc5252;">✓ Before confirming, verify:</p>
-        <ul style="margin: 0; padding-left: 20px; line-height: 1.8; font-size: 0.9rem;">
-          <li>The product image matches what you use</li>
-          <li>The ingredient label image is readable and matches the list shown</li>
-          <li>All allergens are correctly identified</li>
-          <li>This is the exact brand and product you use</li>
-        </ul>
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 0.95rem; line-height: 1.5;">
+            <input type="checkbox" class="verifyCheckbox" style="width: 20px; height: 20px; cursor: pointer; flex-shrink: 0;">
+            <span>The ingredient label image is readable and matches this exact product</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 0.95rem; line-height: 1.5;">
+            <input type="checkbox" class="verifyCheckbox" style="width: 20px; height: 20px; cursor: pointer; flex-shrink: 0;">
+            <span>All allergens shown are correctly identified for my restaurant</span>
+          </label>
+        </div>
       </div>
     ` : !hasImage ? `
       <div style="background: rgba(220,82,82,0.15); border: 1px solid rgba(220,82,82,0.4); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
@@ -2371,10 +2375,35 @@ function showBrandConfirmationModal(suggestion, onConfirm){
   // Add hover effects
   const confirmBtn = modalContent.querySelector('.confirmApply');
   const cancelBtn = modalContent.querySelector('.confirmCancel');
+  const verifyCheckboxes = modalContent.querySelectorAll('.verifyCheckbox');
+
+  // Disable confirm button initially if there are verification checkboxes
+  if(verifyCheckboxes.length > 0 && hasImage){
+    confirmBtn.disabled = true;
+    confirmBtn.style.opacity = '0.5';
+    confirmBtn.style.cursor = 'not-allowed';
+  }
+
+  // Enable/disable confirm button based on checkboxes
+  const updateConfirmButton = () => {
+    if(verifyCheckboxes.length === 0 || !hasImage){
+      return; // No checkboxes or no image, always enabled
+    }
+    const allChecked = Array.from(verifyCheckboxes).every(cb => cb.checked);
+    confirmBtn.disabled = !allChecked;
+    confirmBtn.style.opacity = allChecked ? '1' : '0.5';
+    confirmBtn.style.cursor = allChecked ? 'pointer' : 'not-allowed';
+  };
+
+  verifyCheckboxes.forEach(cb => {
+    cb.addEventListener('change', updateConfirmButton);
+  });
 
   confirmBtn.addEventListener('mouseenter', () => {
-    confirmBtn.style.transform = 'translateY(-2px)';
-    confirmBtn.style.boxShadow = '0 4px 12px rgba(76,90,212,0.4)';
+    if(!confirmBtn.disabled){
+      confirmBtn.style.transform = 'translateY(-2px)';
+      confirmBtn.style.boxShadow = '0 4px 12px rgba(76,90,212,0.4)';
+    }
   });
   confirmBtn.addEventListener('mouseleave', () => {
     confirmBtn.style.transform = 'translateY(0)';
@@ -2390,6 +2419,7 @@ function showBrandConfirmationModal(suggestion, onConfirm){
 
   // Handle confirm
   confirmBtn.addEventListener('click', () => {
+    if(confirmBtn.disabled) return;
     document.body.removeChild(modal);
     onConfirm();
   });
