@@ -192,6 +192,8 @@
   .aiRowBrandResults.show{display:flex}
   .aiAllergenChecklist{display:flex;flex-wrap:wrap;gap:8px}
   .aiAllergenChecklist label{display:flex;align-items:center;gap:6px;background:#12183a;border:1px solid rgba(76,90,212,0.3);border-radius:999px;padding:6px 10px;font-size:0.85rem}
+  .aiAllergenChecklist label.aiDetected{background:rgba(34,139,34,0.15);border-color:rgba(76,175,80,0.5)}
+  .aiAllergenChecklist label.aiDetected:hover{background:rgba(34,139,34,0.25);border-color:rgba(76,175,80,0.7)}
   .aiAllergenChecklist input{margin:0}
   .aiAssistTableActions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
   .aiAssistTableActions .aiAssistSpacer{flex:1 1 auto}
@@ -1144,10 +1146,10 @@ function ensureAiAssistElements(){
           <button type="button" class="btn btnPrimary" id="aiAssistProcessBtn">Process text</button>
           <span class="aiAssistStatus" id="aiAssistStatus"></span>
         </div>
-        <div class="aiAssistMedia aiAssistHidden" id="aiAssistMedia">
-          <button type="button" class="btn" id="aiAssistUploadBtn">Upload label photo</button>
-          <button type="button" class="btn" id="aiAssistCameraBtn">📷 Take photo</button>
-          <input type="file" id="aiAssistFileInput" class="aiAssistHidden" accept="image/*" capture="environment">
+        <div class="aiAssistMedia" id="aiAssistMedia">
+          <button type="button" class="btn" id="aiAssistUploadRecipeBtn">📁 Upload recipe photo</button>
+          <button type="button" class="btn" id="aiAssistCameraRecipeBtn">📷 Take recipe photo</button>
+          <input type="file" id="aiAssistRecipeFileInput" class="aiAssistHidden" accept="image/*">
         </div>
         <div class="aiAssistMediaPreview" id="aiAssistMediaPreview">
           <video id="aiAssistVideo" class="aiAssistHidden" playsinline muted></video>
@@ -1229,6 +1231,26 @@ function ensureAiAssistElements(){
     aiAssistCloseBtn.addEventListener('click',()=>closeAiAssistant());
     aiAssistDictateBtn.addEventListener('click',()=>toggleAiDictation());
     aiAssistProcessBtn.addEventListener('click',()=>handleAiProcess());
+
+    // Recipe photo upload/camera handlers
+    const uploadRecipeBtn = backdrop.querySelector('#aiAssistUploadRecipeBtn');
+    const cameraRecipeBtn = backdrop.querySelector('#aiAssistCameraRecipeBtn');
+    const recipeFileInput = backdrop.querySelector('#aiAssistRecipeFileInput');
+
+    if(uploadRecipeBtn && recipeFileInput){
+      uploadRecipeBtn.addEventListener('click',()=>{
+        recipeFileInput.value='';
+        recipeFileInput.click();
+      });
+      recipeFileInput.addEventListener('change',()=>{
+        const file=recipeFileInput.files && recipeFileInput.files[0];
+        if(file) handleRecipePhotoUpload(file);
+      });
+    }
+    if(cameraRecipeBtn){
+      cameraRecipeBtn.addEventListener('click',()=>handleRecipePhotoCamera());
+    }
+
     aiAssistAddRowBtn.addEventListener('click',()=>{
       const data=collectAiTableData();
       data.push({name:'',brand:'',allergens:[]});
@@ -1558,6 +1580,15 @@ function renderAiTable(rows){
     } else {
       delete tr.dataset.brands;
     }
+
+    // Collect all AI-detected allergens from brands
+    const aiDetectedAllergens = new Set();
+    brands.forEach(brand => {
+      if(Array.isArray(brand.allergens)){
+        brand.allergens.forEach(a => aiDetectedAllergens.add(norm(a)));
+      }
+    });
+
     const brandsHTML = brands.length > 0 ? brands.map((brand, brandIdx) => {
       const brandImages = [];
       if(brand.brandImage) brandImages.push(`<img src="${esc(brand.brandImage)}" alt="${esc(brand.name||'Brand')}" loading="lazy" onclick="openImageModal('${esc(brand.brandImage)}')" title="Click to enlarge">`);
@@ -1592,7 +1623,8 @@ function renderAiTable(rows){
             <div class="aiAllergenChecklist">
               ${ALLERGENS.map(allergen=>{
                 const checked=allergens.has(norm(allergen))?'checked':'';
-                return `<label><input type="checkbox" value="${esc(allergen)}" ${checked}>${esc(cap(allergen))}</label>`;
+                const aiDetected=aiDetectedAllergens.has(norm(allergen))?'aiDetected':'';
+                return `<label class="${aiDetected}"><input type="checkbox" value="${esc(allergen)}" ${checked}>${esc(cap(allergen))}</label>`;
               }).join('')}
             </div>
             <button type="button" class="btn aiDeleteRow">Remove</button>
@@ -2086,6 +2118,55 @@ async function requestAiExtraction(payload){
     }
   }
   throw new Error('AI service unavailable');
+}
+
+async function handleRecipePhotoUpload(file){
+  ensureAiAssistElements();
+  try{
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const imageData = e.target.result;
+      aiAssistSetStatus('Reading recipe from photo using AI...');
+
+      const payload = {
+        imageData: imageData,
+        imageFileName: file.name,
+        text: 'Please extract all ingredients from this recipe image.',
+        dishName: aiAssistState.context?.getCurrentName ? aiAssistState.context.getCurrentName() : ''
+      };
+
+      try{
+        const result = await requestAiExtraction(payload);
+        const rows = Array.isArray(result?.ingredients) ? result.ingredients : [];
+        renderAiTable(rows);
+        aiAssistSetStatus(rows.length ? 'Extracted ingredients from recipe photo. Review before applying.' : 'Could not extract ingredients from recipe photo.', rows.length ? 'info' : 'warn');
+      }catch(err){
+        console.error('Recipe photo extraction failed', err);
+        aiAssistSetStatus('Failed to read recipe photo: ' + (err.message || err), 'error');
+      }
+    };
+    reader.readAsDataURL(file);
+  }catch(err){
+    console.error('Recipe photo upload failed', err);
+    aiAssistSetStatus('Failed to upload recipe photo: ' + (err.message || err), 'error');
+  }
+}
+
+async function handleRecipePhotoCamera(){
+  ensureAiAssistElements();
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    aiAssistState.mediaStream = stream;
+    if(aiAssistVideo){
+      aiAssistVideo.srcObject = stream;
+      aiAssistVideo.play();
+    }
+    updateAiAssistMediaPreview();
+    aiAssistSetStatus('Position recipe in view and click Capture photo');
+  }catch(err){
+    console.error('Camera access failed', err);
+    aiAssistSetStatus('Could not access camera: ' + (err.message || err), 'error');
+  }
 }
 
 function handleAiProcess(){
