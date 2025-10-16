@@ -3052,7 +3052,45 @@ function tooltipBodyHTML(item,sel,userDiets){
 
   let html='';
 
-  // Display dietary preferences section
+  // Build allergen section first
+  if(sel.length){
+    html+=`<strong style="display:block;margin-bottom:8px;color:var(--ink)">Allergen Information</strong>`;
+    const hits=(item.allergens||[]).filter(a=>sel.includes(a));
+    const removableSet=new Set((item.removable||[]).map(r=>norm(r.allergen||'')));
+
+    const unsafeHits=hits.filter(a=>!removableSet.has(norm(a)));
+    const removableHits=hits.filter(a=>removableSet.has(norm(a)));
+
+    if(unsafeHits.length){
+      const list=unsafeHits.map(a=>{
+        const why=details[a]?` — ${esc(details[a])}`:'';
+        return `<li>${esc(cap(a))}${why}</li>`;
+      }).join('');
+      html+=`<div class="note tooltipDangerText"><strong>Contains (cannot be accommodated)</strong><ul class="tooltipList">${list}</ul></div>`;
+    }
+    if(removableHits.length){
+      const list=removableHits.map(a=>{
+        const why=details[a]?` — ${esc(details[a])}`:'';
+        return `<li>${esc(cap(a))}${why}</li>`;
+      }).join('');
+      html+=`<div class="note tooltipWarnText"><strong>Contains (can be accommodated)</strong><ul class="tooltipList">${list}</ul></div>`;
+    }
+    if(!hits.length && !hasCross){
+      html+=`<div class="note tooltipNeutralText">Meets all requirements - no allergens found.</div>`;
+    }
+
+    if(hasCross){
+      const crossHits=(item.crossContamination||[]).filter(a=>sel.includes(a));
+      const crossList=crossHits.map(a=>`<li>${esc(cap(a))}</li>`).join('');
+      html+=`<div class="note tooltipNeutralText"><strong>Cross-contamination risk</strong><ul class="tooltipList">${crossList}</ul></div>`;
+    }
+
+    if(details && details.__ingredientsSummary){
+      html+=`<div class="note tooltipNeutralText"><strong>Ingredients</strong><br>${esc(details.__ingredientsSummary)}</div>`;
+    }
+  }
+
+  // Display dietary preferences section after allergen info
   const userDietSet = new Set(userDiets || []);
   const hasUserDiets = userDiets && userDiets.length > 0;
   const itemDiets = item.diets || [];
@@ -3082,49 +3120,10 @@ function tooltipBodyHTML(item,sel,userDiets){
     }
 
     if(dietContent){
-      html+=`<div class="note" style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(76,90,212,0.2)"><strong style="display:block;margin-bottom:6px;color:var(--ink)">Dietary Options</strong>${dietContent}</div>`;
+      html+=`<div class="note" style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(76,90,212,0.2)"><strong style="display:block;margin-bottom:6px;color:var(--ink)">Dietary Options</strong>${dietContent}</div>`;
     }
   }
 
-  // If no allergen selections, return what we have (might be dietary info)
-  if(!sel.length) return html || `<div class="note">No information to display.</div>`;
-
-  // Add allergen section header
-  if(html) html+=`<strong style="display:block;margin-bottom:8px;color:var(--ink)">Allergen Information</strong>`;
-  const hits=(item.allergens||[]).filter(a=>sel.includes(a));
-  const removableSet=new Set((item.removable||[]).map(r=>norm(r.allergen||'')));
-  
-  const unsafeHits=hits.filter(a=>!removableSet.has(norm(a)));
-  const removableHits=hits.filter(a=>removableSet.has(norm(a)));
-  
-  if(unsafeHits.length){
-    const list=unsafeHits.map(a=>{
-      const why=details[a]?` — ${esc(details[a])}`:'';
-      return `<li>${esc(cap(a))}${why}</li>`;
-    }).join('');
-    html+=`<div class="note tooltipDangerText"><strong>Contains (cannot be accommodated)</strong><ul class="tooltipList">${list}</ul></div>`;
-  }
-  if(removableHits.length){
-    const list=removableHits.map(a=>{
-      const why=details[a]?` — ${esc(details[a])}`:'';
-      return `<li>${esc(cap(a))}${why}</li>`;
-    }).join('');
-    html+=`<div class="note tooltipWarnText"><strong>Contains (can be accommodated)</strong><ul class="tooltipList">${list}</ul></div>`;
-  }
-  if(!hits.length && !hasCross){
-    html+=`<div class="note tooltipNeutralText">Meets all requirements - no allergens found.</div>`;
-  }
-
-  if(hasCross){
-    const crossHits=(item.crossContamination||[]).filter(a=>sel.includes(a));
-    const crossList=crossHits.map(a=>`<li>${esc(cap(a))}</li>`).join('');
-    html+=`<div class="note tooltipNeutralText"><strong>Cross-contamination risk</strong><ul class="tooltipList">${crossList}</ul></div>`;
-  }
-  
-  if(details && details.__ingredientsSummary){
-    html+=`<div class="note tooltipNeutralText"><strong>Ingredients</strong><br>${esc(details.__ingredientsSummary)}</div>`;
-  }
-  
   return html;
 }
 
