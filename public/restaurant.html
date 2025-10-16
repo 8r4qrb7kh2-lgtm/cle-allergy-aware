@@ -465,7 +465,7 @@ if (!slug) {
 })();
 document.body.style.display='none';
 
-const ALLERGENS=["dairy","egg","peanut","tree nut","shellfish","fish","gluten","soy","sesame","wheat"];
+const ALLERGENS=["dairy","egg","peanut","tree nut","shellfish","fish","soy","sesame","wheat"];
 const DIETS=["Vegan","Vegetarian","Pescatarian","Kosher","Halal"];
 const ALLERGEN_ALIASES={
   milk:'dairy',
@@ -488,7 +488,6 @@ const ALLERGEN_ALIASES={
   fish:'fish',
   salmon:'fish',
   tuna:'fish',
-  gluten:'gluten',
   wheat:'wheat',
   soy:'soy',
   soya:'soy',
@@ -501,7 +500,6 @@ const ALLERGEN_EMOJI={
   'tree nut':'🌰',
   'shellfish':'🦐',
   'fish':'🐟',
-  'gluten':'🌾',
   'soy':'🫘',
   'sesame':'⚫',
   'wheat':'🌾'
@@ -3189,7 +3187,7 @@ function renderTopbar(){
       tabs.appendChild(b);
     });
     navWrap.appendChild(tabs);
-    const acct=div(state.user?.loggedIn?'My account':'Sign in','acctBtn');
+    const acct=div(state.user?.loggedIn?'Account settings':'Sign in','acctBtn');
     acct.onclick=()=>{
       if(state.user?.loggedIn){
         send({type:'navigate',to:'/accounts'});
