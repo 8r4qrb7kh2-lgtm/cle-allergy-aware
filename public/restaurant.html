@@ -2123,12 +2123,15 @@ function applyBrandSuggestion(rowIdx, suggestionIdx){
     }
   });
 
-  // Store updated brands and re-render the row
-  const rowData = collectAiTableData().find(r => r.index === rowIdx);
-  if(rowData){
-    rowData.brands = brands;
-    renderAiTable(collectAiTableData().map(r => r.index === rowIdx ? {...r, brands} : r));
-  }
+  // Store updated brands and re-render the table
+  const allData = collectAiTableData();
+  const updatedData = allData.map(r => {
+    if(r.index === rowIdx){
+      return {...r, brands: brands};
+    }
+    return r;
+  });
+  renderAiTable(updatedData);
 
   // Close the inline brand results
   const rowBrandResults=row.querySelector('.aiRowBrandResults');
