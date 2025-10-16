@@ -1633,15 +1633,27 @@ function renderAiTable(rows){
     });
 
     const brandsHTML = brands.length > 0 ? brands.map((brand, brandIdx) => {
-      console.log('Rendering brand:', brand);
+      console.log(`Rendering brand ${brandIdx}:`, brand);
+      console.log(`  - brandImage: ${brand.brandImage}`);
+      console.log(`  - ingredientsImage: ${brand.ingredientsImage}`);
+      console.log(`  - ingredientsList: ${brand.ingredientsList ? brand.ingredientsList.length : 0} items`);
+
       const brandImages = [];
-      if(brand.brandImage) brandImages.push(`<img src="${esc(brand.brandImage)}" alt="${esc(brand.name||'Brand')}" loading="lazy" onclick="openImageModal('${esc(brand.brandImage)}')" title="Click to enlarge">`);
-      if(brand.ingredientsImage) brandImages.push(`<img src="${esc(brand.ingredientsImage)}" alt="Ingredients label" loading="lazy" onclick="openImageModal('${esc(brand.ingredientsImage)}')" title="Click to enlarge">`);
+      if(brand.brandImage) {
+        const imgTag = `<img src="${esc(brand.brandImage)}" alt="${esc(brand.name||'Brand')}" loading="lazy" onclick="openImageModal('${esc(brand.brandImage)}')" title="Click to enlarge">`;
+        console.log(`  - Adding brandImage tag (length: ${imgTag.length})`);
+        brandImages.push(imgTag);
+      }
+      if(brand.ingredientsImage) {
+        const imgTag = `<img src="${esc(brand.ingredientsImage)}" alt="Ingredients label" loading="lazy" onclick="openImageModal('${esc(brand.ingredientsImage)}')" title="Click to enlarge">`;
+        console.log(`  - Adding ingredientsImage tag (length: ${imgTag.length})`);
+        brandImages.push(imgTag);
+      }
       const ingredientsNote = brand.ingredientsList && brand.ingredientsList.length ? `Label ingredients: ${brand.ingredientsList.map(i=>esc(i)).join(', ')}` : '';
 
       // Show message if no images are available
       const imagesDisplay = brandImages.length > 0 ? brandImages.join('') : '<div style="color:var(--muted);font-size:0.85rem;font-style:italic">No product images available</div>';
-      console.log('Brand images array:', brandImages, 'Display:', imagesDisplay.substring(0, 50));
+      console.log(`  - Final imagesDisplay length: ${imagesDisplay.length}, brandImages count: ${brandImages.length}`);
 
       return `
         <div class="aiBrandItem" data-brand-idx="${brandIdx}">
