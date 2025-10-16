@@ -2709,6 +2709,33 @@ async function handleRecipePhotoCamera(){
   }
 }
 
+// Helper function to check if ingredient is duplicate
+function isDuplicateIngredient(newIngredient, existingData) {
+  const newName = (newIngredient.name || '').toLowerCase().trim();
+  if (!newName) return false;
+
+  return existingData.some(existing => {
+    const existingName = (existing.name || '').toLowerCase().trim();
+    return existingName === newName;
+  });
+}
+
+// Helper function to merge new ingredients with existing ones, avoiding duplicates
+function mergeIngredientsWithoutDuplicates(existingData, newRows) {
+  const merged = [...existingData];
+  let duplicateCount = 0;
+
+  newRows.forEach(newRow => {
+    if (!isDuplicateIngredient(newRow, merged)) {
+      merged.push(newRow);
+    } else {
+      duplicateCount++;
+    }
+  });
+
+  return { merged, duplicateCount };
+}
+
 async function handleAiProcess(){
   ensureAiAssistElements();
   if(!aiAssistInput) return;
@@ -2735,10 +2762,17 @@ async function handleAiProcess(){
         const result = await requestAiExtraction(payload);
         const rows = Array.isArray(result?.ingredients) ? result.ingredients : [];
         if(rows.length > 0){
-          // Merge with existing data
+          // Merge with existing data, avoiding duplicates
           const existingData = collectAiTableData();
-          renderAiTable([...existingData, ...rows]);
-          aiAssistSetStatus(`Photo ${i+1}/${window.aiAssistPhotos.length} processed. Review ingredients before applying.`, 'info');
+          const { merged, duplicateCount } = mergeIngredientsWithoutDuplicates(existingData, rows);
+          renderAiTable(merged);
+
+          let statusMsg = `Photo ${i+1}/${window.aiAssistPhotos.length} processed.`;
+          if (duplicateCount > 0) {
+            statusMsg += ` ${duplicateCount} duplicate${duplicateCount > 1 ? 's' : ''} skipped.`;
+          }
+          statusMsg += ' Review ingredients before applying.';
+          aiAssistSetStatus(statusMsg, 'info');
         }
       }catch(err){
         console.error('Recipe photo extraction failed', err);
@@ -2767,14 +2801,31 @@ async function handleAiProcess(){
       try{
         const result=await requestAiExtraction(payload);
         const rows=Array.isArray(result?.ingredients)?result.ingredients:[];
-        renderAiTable(rows);
-        aiAssistSetStatus(rows.length?'AI ingredient suggestions ready. Review before applying.':'AI could not extract ingredients from the description.','info');
+
+        // Merge with existing data, avoiding duplicates
+        const existingData = collectAiTableData();
+        const { merged, duplicateCount } = mergeIngredientsWithoutDuplicates(existingData, rows);
+        renderAiTable(merged);
+
+        let statusMsg = rows.length ? 'AI ingredient suggestions ready. Review before applying.' : 'AI could not extract ingredients from the description.';
+        if (duplicateCount > 0) {
+          statusMsg += ` (${duplicateCount} duplicate${duplicateCount > 1 ? 's' : ''} skipped)`;
+        }
+        aiAssistSetStatus(statusMsg, 'info');
       }catch(err){
         console.error('AI extraction failed',err);
         if(text){
           const ingredients=heuristicallyExtractIngredients(text);
-          renderAiTable(ingredients);
-          aiAssistSetStatus('AI service unavailable—generated a draft using local parsing. Review before applying.','warn');
+          // Also check for duplicates in fallback
+          const existingData = collectAiTableData();
+          const { merged, duplicateCount } = mergeIngredientsWithoutDuplicates(existingData, ingredients);
+          renderAiTable(merged);
+
+          let statusMsg = 'AI service unavailable—generated a draft using local parsing. Review before applying.';
+          if (duplicateCount > 0) {
+            statusMsg += ` (${duplicateCount} duplicate${duplicateCount > 1 ? 's' : ''} skipped)`;
+          }
+          aiAssistSetStatus(statusMsg, 'warn');
         } else {
           aiAssistSetStatus('AI assistant request failed: '+(err.message||err),'warn');
         }
