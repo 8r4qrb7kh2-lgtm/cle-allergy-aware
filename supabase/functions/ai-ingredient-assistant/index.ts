@@ -21,8 +21,37 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured')
     }
 
-    // Build the prompt
-    const prompt = `You are an ingredient analysis assistant for a restaurant allergen awareness system.
+    // Build the prompt based on whether we have an image
+    const prompt = imageData
+      ? `You are an ingredient analysis assistant for a restaurant allergen awareness system.
+
+CRITICAL: You have been provided an ingredient label image. Read the ACTUAL ingredients from the image.
+
+${text ? `Context: ${text}` : ''}
+${dishName ? `Dish Name: ${dishName}` : ''}
+
+IMPORTANT INSTRUCTIONS:
+1. Read the ingredients list EXACTLY as shown in the image
+2. Do NOT guess or infer - only use what you can clearly read
+3. Identify allergens from this list: dairy, egg, peanut, tree nut, shellfish, fish, gluten, soy, sesame, wheat
+4. If the image is unclear or missing ingredients, indicate that in the response
+
+Return a JSON object with this exact structure:
+{
+  "ingredients": [
+    {
+      "name": "ingredient name",
+      "brand": "brand name if visible in image, otherwise empty string",
+      "allergens": ["allergen1", "allergen2"],
+      "ingredientsList": ["exact ingredients as listed on the label"],
+      "imageQuality": "good|poor|unreadable"
+    }
+  ],
+  "verifiedFromImage": true
+}
+
+Be VERY conservative with allergens - only flag what you can clearly identify from the label.`
+      : `You are an ingredient analysis assistant for a restaurant allergen awareness system.
 
 Analyze the following dish description and extract:
 1. Individual ingredients
@@ -41,7 +70,8 @@ Return a JSON object with this exact structure:
       "allergens": ["allergen1", "allergen2"],
       "ingredientsList": ["raw ingredient from label"]
     }
-  ]
+  ],
+  "verifiedFromImage": false
 }
 
 Be conservative - only flag allergens you are confident about based on the description.`

@@ -1789,18 +1789,23 @@ async function openAiBrandSearch(rowIdx){
       aiAssistBrandResults.innerHTML='<div>No brands found. Try a different search.</div>';
       return;
     }
-    aiAssistBrandResults.innerHTML=suggestions.map((item,idx)=>`
+    aiAssistBrandResults.innerHTML=`
+      <div style="background:rgba(220,82,82,0.15);border:1px solid rgba(220,82,82,0.4);border-radius:12px;padding:12px;margin-bottom:16px">
+        <strong style="color:#dc5252">⚠️ Safety Warning</strong>
+        <p style="margin:8px 0 0 0;font-size:0.9rem;line-height:1.4">Data is crowdsourced and may be outdated or incorrect. ALWAYS verify ingredient labels match the actual product image before relying on allergen information.</p>
+      </div>
+      ${suggestions.map((item,idx)=>`
       <div class="aiBrandSuggestion" data-row="${rowIdx}" data-index="${idx}">
         ${item.image?`<img src="${esc(item.image)}" alt="${esc(item.name)}" loading="lazy">`:''}
         <div class="aiBrandSuggestionInfo">
           <strong>${esc(item.name)}</strong>
           ${item.brand?`<span>${esc(item.brand)}</span>`:''}
-          ${item.ingredientsImage?'<span>✓ Ingredients label available</span>':''}
+          ${item.ingredientsImage?'<span style="color:#4c5ad4">✓ Has label image - click to verify</span>':'<span style="color:#dc5252">⚠️ No label image available</span>'}
           ${item.productUrl?`<a href="${esc(item.productUrl)}" target="_blank" rel="noopener" style="font-size:0.85rem;color:#4c5ad4">View on Open Food Facts</a>`:''}
         </div>
       </div>
-    `).join('');
-    aiAssistSetStatus('Tap a brand to apply it to the ingredient.','info');
+    `).join('')}`;
+    aiAssistSetStatus('Review images carefully before applying. Click images to verify ingredient labels match.','warn');
   }catch(err){
     console.error('Brand lookup failed',err);
     aiAssistBrandResults.innerHTML='<div>Could not retrieve brand information.</div>';
@@ -1813,6 +1818,20 @@ function applyBrandSuggestion(rowIdx, suggestionIdx){
   const suggestions=aiAssistState.brandSuggestions[rowIdx]||[];
   const suggestion=suggestions[suggestionIdx];
   if(!suggestion) return;
+
+  // Safety confirmation for products with ingredient data
+  if(suggestion.ingredientsList && suggestion.ingredientsList.length > 0){
+    const hasImage = suggestion.ingredientsImage;
+    const message = hasImage
+      ? `⚠️ SAFETY CHECK:\n\nYou are about to apply ingredient data from Open Food Facts.\n\nIMPORTANT: This data is crowdsourced and may be outdated or incorrect.\n\nBefore applying:\n1. Click the ingredient label image to view it full-size\n2. Verify the ingredients list matches the image exactly\n3. Check that allergens are correctly identified\n\nProduct: ${suggestion.name}\nIngredients: ${suggestion.ingredientsList.slice(0,3).join(', ')}${suggestion.ingredientsList.length > 3 ? '...' : ''}\n\nHave you verified the ingredient label image matches this data?`
+      : `⚠️ WARNING:\n\nThis product has ingredient data but NO LABEL IMAGE.\n\nWithout a label image, you cannot verify:\n- If the data is current\n- If it matches the actual product\n- If allergens are accurate\n\nProduct: ${suggestion.name}\n\nIt is NOT RECOMMENDED to use this data without visual verification.\n\nDo you want to proceed anyway?`;
+
+    if(!confirm(message)){
+      aiAssistSetStatus('Brand not applied. Verification required for safety.','warn');
+      return;
+    }
+  }
+
   const row=aiAssistTableBody?.querySelector(`tr[data-index="${rowIdx}"]`);
   if(!row) return;
   const brandInput=row.querySelector('.aiIngredientBrand');
@@ -1850,7 +1869,7 @@ function applyBrandSuggestion(rowIdx, suggestionIdx){
     aiAssistBrandResults.classList.remove('show');
     aiAssistBrandResults.innerHTML='';
   }
-  aiAssistSetStatus('Brand applied to ingredient.','success');
+  aiAssistSetStatus('Brand applied. Please review allergens carefully.','warn');
 }
 
 async function requestAiExtraction(payload){
