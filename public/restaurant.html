@@ -91,9 +91,8 @@
   .overlayLayer{position:absolute;left:0;top:0;pointer-events:none;line-height:normal;width:100%;height:100%}
   .overlay{position:absolute;border:1.5px solid;border-radius:4px;background:transparent;pointer-events:auto;box-sizing:border-box}
   .overlay:hover{box-shadow:0 0 0 3px #ffffff22,0 6px 16px rgba(0,0,0,.35)}
-  .mobileMenuNotice{margin:16px 0;padding:14px 16px;border-radius:18px;background:rgba(18,24,58,0.75);border:1px solid rgba(76,90,212,0.4);color:var(--ink);text-align:center;display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;box-shadow:0 14px 32px rgba(0,0,0,0.28)}
-  .mobileMenuNoticeText{font-size:0.95rem;line-height:1.5;color:var(--muted)}
-  .mobileMenuNotice .mobileMenuOpenBtn{min-width:200px}
+  .mobileMenuNotice{margin:16px 0;display:flex;flex-direction:column;gap:12px;align-items:stretch}
+  .mobileMenuNotice .mobileMenuOpenBtn{width:100%}
   #mobileViewerChrome{position:fixed;inset:0;z-index:3400;display:none;pointer-events:none}
   body.mobileViewerActive #mobileViewerChrome{display:block}
   #mobileViewerChrome .chromeTop{position:fixed;top:calc(env(safe-area-inset-top,0) + 18px);left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 clamp(16px,4vw,32px);pointer-events:none}
@@ -2988,12 +2987,32 @@ async function fetchChangeLogEntries(restaurantId){
   return data||[];
 }
 /* risk + tooltip */
-function computeStatus(item,sel){
-  if(!sel||!sel.length) return 'neutral';
-  const hits=(item.allergens||[]).filter(a=>sel.includes(a));
-  if(!hits.length) return 'safe';
-  const removableAll=hits.every(a=>(item.removable||[]).some(r=>r.allergen===a));
-  return removableAll?'removable':'unsafe';
+function computeStatus(item,sel,userDiets){
+  const hasAllergenReqs = sel && sel.length > 0;
+  const hasDietReqs = userDiets && userDiets.length > 0;
+
+  if(!hasAllergenReqs && !hasDietReqs) return 'neutral';
+
+  // Check allergen requirements
+  const allergenHits=(item.allergens||[]).filter(a=>sel.includes(a));
+  const hasAllergenIssues = allergenHits.length > 0;
+  const allergenRemovableAll = hasAllergenIssues ? allergenHits.every(a=>(item.removable||[]).some(r=>r.allergen===a)) : true;
+
+  // Check dietary requirements
+  const itemDiets = new Set(item.diets || []);
+  const meetsDietReqs = !hasDietReqs || userDiets.every(diet => itemDiets.has(diet));
+
+  // If doesn't meet dietary requirements, it's unsafe
+  if(!meetsDietReqs) return 'unsafe';
+
+  // If has allergen issues that can't be removed, it's unsafe
+  if(hasAllergenIssues && !allergenRemovableAll) return 'unsafe';
+
+  // If has removable allergen issues, it's removable
+  if(hasAllergenIssues && allergenRemovableAll) return 'removable';
+
+  // Otherwise it's safe
+  return 'safe';
 }
 
 function hasCrossContamination(item,sel){
@@ -3008,7 +3027,7 @@ function currentScale(){
   catch(_){ return 1; }
 }
 function tooltipBodyHTML(item,sel,userDiets){
-  const status=computeStatus(item,sel);
+  const status=computeStatus(item,sel,userDiets);
   const details=item.details||{};
   const hasCross=hasCrossContamination(item,sel);
 
@@ -3504,7 +3523,7 @@ function drawMenu(container,imageURL){
       
       const box=document.createElement('div');
       box.className='overlay';
-      const st=computeStatus(it,state.allergies||[]);
+      const st=computeStatus(it,state.allergies||[],state.diets||[]);
       box.style.borderColor=colors[st]||colors.neutral;
       box.style.left=(+it.x||0)+'%'; 
       box.style.top=(+it.y||0)+'%'; 
@@ -3640,11 +3659,10 @@ function renderRestaurant(){
       <span class="note">👆 Hover or tap for details</span>
     </div>
     <div id="confirmedRow" style="display:none" class="note">Last confirmed by staff: ${rs.lastConfirmed?esc(fmtDate(rs.lastConfirmed)):'—'}</div>
-    <div class="mobileMenuNotice" id="mobileMenuNotice" aria-hidden="true" style="display:none">
-      <div class="mobileMenuNoticeText">Open the menu in full screen for zoom controls.</div>
-      <button class="btn btnPrimary mobileMenuOpenBtn" type="button">Open menu full screen</button>
-    </div>
     <div class="menuWrap" id="menu"></div>
+    <div class="mobileMenuNotice" id="mobileMenuNotice" aria-hidden="true" style="display:none">
+      <button class="btn btnPrimary mobileMenuOpenBtn" type="button" style="width:100%;max-width:100%">Open menu full screen</button>
+    </div>
   `;
 
   const chipsHost=document.getElementById('savedChips');
@@ -4421,7 +4439,7 @@ function renderEditor(){
       </div>
       <div id="manualEntrySection" style="display:none;">
         <div id="algList"></div>
-        <div class="note" style="margin:8px 0 4px">Live preview (assumes the user is allergic to everything)</div>
+        <div class="note" style="margin:8px 0 4px">Live preview</div>
         <div id="previewBox" style="border:1px solid #2a3466;border-radius:10px;padding:10px"></div>
       </div>
       <div class="editorActionRow" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
