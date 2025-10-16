@@ -108,7 +108,7 @@ Remember: Measure from the absolute edges of the digital image file, not from me
       },
       body: JSON.stringify({
         model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 4000,
+        max_tokens: 8000,
         system: systemPrompt,
         messages: [{
           role: 'user',
@@ -126,6 +126,8 @@ Remember: Measure from the absolute edges of the digital image file, not from me
     const aiResult = await claudeResponse.json()
     const responseText = aiResult.content[0].text
 
+    console.log('AI Response:', responseText.substring(0, 500)) // Log first 500 chars
+
     // Parse JSON from response
     let parsed
     try {
@@ -134,9 +136,11 @@ Remember: Measure from the absolute edges of the digital image file, not from me
                        responseText.match(/```\n([\s\S]*?)\n```/)
       const jsonText = jsonMatch ? jsonMatch[1] : responseText
       parsed = JSON.parse(jsonText)
+      console.log('Parsed dishes count:', parsed.dishes?.length || 0)
     } catch (e) {
       console.error('Failed to parse JSON:', responseText)
-      throw new Error('Failed to parse AI response as JSON')
+      console.error('Parse error:', e)
+      throw new Error(`Failed to parse AI response as JSON: ${e.message}`)
     }
 
     // Convert pixel coordinates to percentages
