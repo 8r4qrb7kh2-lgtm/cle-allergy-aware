@@ -45,15 +45,17 @@ serve(async (req) => {
           role: 'user',
           content: `You are a spelling correction assistant for food product searches. The user is searching for "${ingredientName}" and typed the brand name "${query}".
 
-If there's a spelling mistake, return ONLY the corrected brand name. If the spelling looks correct, return the original text exactly as provided.
+IMPORTANT: Only correct OBVIOUS spelling mistakes. If the brand name looks reasonable (even if you don't recognize it), return it EXACTLY as typed. Do NOT replace valid brand names with alternatives.
 
 Examples:
-- "chobaani" → "chobani"
-- "danon" → "dannon"
-- "chobani" → "chobani"
-- "kraft" → "kraft"
+- "chobaani" → "chobani" (clear typo)
+- "danon" → "dannon" (clear typo)
+- "sysco" → "sysco" (valid brand, return as-is)
+- "chobani" → "chobani" (correct, return as-is)
+- "kraft" → "kraft" (correct, return as-is)
+- "badia" → "badia" (valid brand, return as-is)
 
-Response (brand name only):`
+Response (brand name only, no explanations):`
         }]
       }),
     })
