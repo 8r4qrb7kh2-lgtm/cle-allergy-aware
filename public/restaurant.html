@@ -3904,6 +3904,19 @@ function renderEditor(){
           const allergenWord=removed.length===1?'allergen':'allergens';
           changes.push(`${itemName}: Removed ${allergenWord} ${removed.join(', ')}`);
         }
+        // Track dietary preference changes
+        const oldDiets=new Set(old.diets||[]);
+        const newDiets=new Set(item.diets||[]);
+        const addedDiets=[...newDiets].filter(d=>!oldDiets.has(d));
+        const removedDiets=[...oldDiets].filter(d=>!newDiets.has(d));
+        if(addedDiets.length){
+          const dietWord=addedDiets.length===1?'dietary option':'dietary options';
+          changes.push(`${itemName}: Added ${dietWord} ${addedDiets.join(', ')}`);
+        }
+        if(removedDiets.length){
+          const dietWord=removedDiets.length===1?'dietary option':'dietary options';
+          changes.push(`${itemName}: Removed ${dietWord} ${removedDiets.join(', ')}`);
+        }
         const moved=old.x!==item.x || old.y!==item.y || old.w!==item.w || old.h!==item.h;
         if(moved){
           changes.push(`${itemName}: Adjusted overlay position`);
@@ -4817,6 +4830,8 @@ window.addEventListener('message',(ev)=>{
   if(m.type==='overlaysSaved'){
     try{setSaveState('saved');}catch(_){ }
     if(m.restaurant) state.restaurant=normalizeRestaurant(m.restaurant) || state.restaurant;
+    // Re-render overlays to update colors based on new data
+    if(window.__rerenderLayer__) window.__rerenderLayer__();
   }
   if(m.type==='saveFailed'){try{setSaveState('error');}catch(_){ }}
   if(m.type==='confirmationSaved'){
