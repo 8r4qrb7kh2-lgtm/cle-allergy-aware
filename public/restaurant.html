@@ -95,12 +95,11 @@
   .mobileMenuNotice .mobileMenuOpenBtn{width:100%}
   #mobileViewerChrome{position:fixed;inset:0;z-index:3400;display:none;pointer-events:none}
   body.mobileViewerActive #mobileViewerChrome{display:block}
-  #mobileViewerChrome .chromeTop{position:fixed;top:calc(env(safe-area-inset-top,0) + 18px);left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 clamp(16px,4vw,32px);pointer-events:none}
-  #mobileViewerChrome .chromeTop .mobileZoomGroup{pointer-events:auto}
+  #mobileViewerChrome .chromeTop{position:fixed;top:calc(env(safe-area-inset-top,0) + 12px);left:0;right:0;display:flex;flex-direction:column;align-items:stretch;gap:10px;padding:0 clamp(12px,3vw,20px);pointer-events:none}
   #mobileViewerChrome button{pointer-events:auto}
-  .mobileViewerSummary{flex:1;display:flex;align-items:center;justify-content:center;pointer-events:none}
-  .mobileViewerSummaryInner{display:inline-flex;flex-direction:column;align-items:flex-start;gap:8px;padding:12px 20px;border-radius:16px;border:1px solid rgba(76,90,212,0.35);background:rgba(8,12,28,0.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 28px rgba(0,0,0,0.35);color:var(--muted);max-width:min(92vw,720px)}
-  .mobileViewerSummaryInner .label{font-weight:600;color:var(--ink);white-space:nowrap}
+  .mobileViewerSummary{width:100%;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .mobileViewerSummaryInner{display:inline-flex;flex-direction:column;align-items:flex-start;gap:6px;padding:10px 16px;border-radius:14px;border:1px solid rgba(76,90,212,0.35);background:rgba(8,12,28,0.94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:0 10px 28px rgba(0,0,0,0.35);color:var(--muted);max-width:100%;width:100%}
+  .mobileViewerSummaryInner .label{font-weight:600;color:var(--ink);white-space:nowrap;font-size:0.9rem}
   .mobileViewerSummaryInner .values{color:var(--ink)}
   .mobileViewerControlBtn{background:rgba(18,24,58,0.9);border:1px solid rgba(76,90,212,0.5);color:var(--ink);padding:10px 18px;border-radius:999px;font-weight:600;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,0.35)}
   .mobileZoomGroup{display:inline-flex;align-items:center;gap:14px;background:rgba(18,24,58,0.9);border:1px solid rgba(76,90,212,0.4);border-radius:999px;padding:10px 18px;box-shadow:0 10px 28px rgba(0,0,0,0.3)}
@@ -504,7 +503,7 @@ const ALLERGEN_EMOJI={
   'fish':'🐟',
   'gluten':'🌾',
   'soy':'🫘',
-  'sesame':'🍪',
+  'sesame':'🥖',
   'wheat':'🌾'
 };
 
@@ -578,13 +577,15 @@ function ensureMobileViewerChrome(){
     chrome.id='mobileViewerChrome';
     chrome.innerHTML=`
       <div class="chromeTop">
-        <button type="button" class="mobileViewerControlBtn" id="mobileViewerCloseBtn">Close</button>
-        <div class="mobileViewerSummary" id="mobileViewerAllergySummary" aria-live="polite"></div>
-        <div class="mobileZoomGroup">
-          <button type="button" id="mobileZoomOutBtn" aria-label="Zoom out">−</button>
-          <span id="mobileZoomValue">100%</span>
-          <button type="button" id="mobileZoomInBtn" aria-label="Zoom in">+</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;pointer-events:auto;">
+          <button type="button" class="mobileViewerControlBtn" id="mobileViewerCloseBtn">Close</button>
+          <div class="mobileZoomGroup">
+            <button type="button" id="mobileZoomOutBtn" aria-label="Zoom out">−</button>
+            <span id="mobileZoomValue">100%</span>
+            <button type="button" id="mobileZoomInBtn" aria-label="Zoom in">+</button>
+          </div>
         </div>
+        <div class="mobileViewerSummary" id="mobileViewerAllergySummary" aria-live="polite"></div>
       </div>`;
     document.body.appendChild(chrome);
   }
@@ -620,18 +621,18 @@ function updateFullScreenAllergySummary(){
     if(uniqueKeys.length){
       const allergenBadges=uniqueKeys.map(a=>{
         const emoji=ALLERGEN_EMOJI[a]||'🔴';
-        return `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(76,90,212,0.25);border:1px solid rgba(76,90,212,0.4);border-radius:999px;padding:4px 10px;font-size:0.85rem;"><span>${emoji}</span><span>${esc(cap(a))}</span></span>`;
+        return `<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(76,90,212,0.25);border:1px solid rgba(76,90,212,0.4);border-radius:999px;padding:3px 8px;font-size:0.8rem;white-space:nowrap;"><span>${emoji}</span><span>${esc(cap(a))}</span></span>`;
       }).join('');
-      html+=`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span class="label">Allergens:</span>${allergenBadges}</div>`;
+      html+=`<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;"><span class="label">Allergens:</span>${allergenBadges}</div>`;
     }
 
     // Dietary preferences with emoji
     if(selectedDiets.length){
       const dietBadges=selectedDiets.map(d=>{
         const emoji=d==='Vegan'?'🌱':d==='Vegetarian'?'🥬':d==='Pescatarian'?'🐟':d==='Kosher'?'✡️':d==='Halal'?'☪️':'🍽️';
-        return `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);border-radius:999px;padding:4px 10px;font-size:0.85rem;"><span>${emoji}</span><span>${esc(d)}</span></span>`;
+        return `<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);border-radius:999px;padding:3px 8px;font-size:0.8rem;white-space:nowrap;"><span>${emoji}</span><span>${esc(d)}</span></span>`;
       }).join('');
-      html+=`<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:${uniqueKeys.length?'6px':'0'}"><span class="label">Diets:</span>${dietBadges}</div>`;
+      html+=`<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:${uniqueKeys.length?'5px':'0'}"><span class="label">Diets:</span>${dietBadges}</div>`;
     }
 
     html+='</div>';
