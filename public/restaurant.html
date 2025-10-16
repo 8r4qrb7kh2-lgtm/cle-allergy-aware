@@ -100,7 +100,7 @@
   #mobileViewerChrome .chromeTop .mobileZoomGroup{pointer-events:auto}
   #mobileViewerChrome button{pointer-events:auto}
   .mobileViewerSummary{flex:1;display:flex;align-items:center;justify-content:center;pointer-events:none}
-  .mobileViewerSummaryInner{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:999px;border:1px solid rgba(76,90,212,0.35);background:rgba(8,12,28,0.88);box-shadow:0 10px 28px rgba(0,0,0,0.35);color:var(--muted);flex-wrap:wrap;justify-content:center;max-width:min(96vw,760px)}
+  .mobileViewerSummaryInner{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:999px;border:1px solid rgba(76,90,212,0.35);background:rgba(8,12,28,0.88);box-shadow:0 10px 28px rgba(0,0,0,0.35);color:var(--muted);flex-wrap:wrap;justify-content:center;max-width:min(96vw,840px)}
   .mobileViewerSummaryInner .label{font-weight:600;color:var(--ink)}
   .mobileViewerSummaryInner .values{color:var(--ink)}
   .mobileViewerControlBtn{background:rgba(18,24,58,0.9);border:1px solid rgba(76,90,212,0.5);color:var(--ink);padding:10px 18px;border-radius:999px;font-weight:600;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,0.35)}
@@ -133,6 +133,59 @@
   .tooltipDangerText{color:var(--bad);font-weight:500}
   .tooltipWarnText{color:var(--warn);font-weight:500}
   .tooltipNeutralText{color:#cbd5f5}
+
+  .aiAssistBackdrop{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(7,11,28,0.85);z-index:3600}
+  .aiAssistBackdrop.show{display:flex}
+  .aiAssistPanel{width:min(960px,calc(100% - 32px));max-height:90vh;overflow:auto;background:linear-gradient(180deg,#111a3c,#0d132a);border:1px solid #2a3466;border-radius:20px;box-shadow:0 20px 50px rgba(0,0,0,0.5);padding:26px;display:flex;flex-direction:column;gap:18px}
+  .aiAssistHead{display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .aiAssistHead h2{margin:0;font-size:clamp(1.1rem,1rem + 1vw,1.6rem)}
+  .aiAssistClose{background:rgba(22,32,90,0.9);border:1px solid rgba(76,90,212,0.4);color:var(--ink);width:40px;height:40px;border-radius:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;touch-action:manipulation}
+  .aiAssistClose:hover{border-color:var(--hover);box-shadow:0 0 8px #3651ff}
+  .aiAssistClose:focus{outline:2px solid var(--hover);outline-offset:2px}
+  .aiAssistIntro{margin:0;color:var(--muted);font-size:0.95rem}
+  .aiAssistInput{width:100%;min-height:160px;border-radius:16px;border:1px solid rgba(76,90,212,0.35);background:rgba(10,16,36,0.95);color:var(--ink);padding:16px;font-size:1rem;resize:vertical}
+  .aiAssistControls{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+  .aiAssistStatus{font-size:0.9rem;color:var(--muted)}
+  .aiAssistStatus[data-tone="warn"]{color:var(--warn)}
+  .aiAssistStatus[data-tone="error"]{color:var(--bad)}
+  .aiAssistStatus[data-tone="success"]{color:var(--ok)}
+  .aiAssistMedia{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:6px}
+  .aiAssistMedia button{background:#16205a;border:1px solid rgba(76,90,212,0.4);color:var(--ink);padding:10px 14px;border-radius:12px;cursor:pointer}
+  .aiAssistMedia button:hover{border-color:var(--hover);box-shadow:0 0 8px #3651ff}
+  .aiAssistMediaPreview{display:none;flex-direction:column;gap:12px}
+  .aiAssistMediaPreview.show{display:flex}
+  .aiAssistMediaPreview video,.aiAssistMediaPreview img{max-width:320px;border-radius:12px;border:1px solid rgba(76,90,212,0.35);background:#000}
+  .aiAssistPhotoControls{display:flex;gap:10px;flex-wrap:wrap}
+  .aiAssistPhotoControls button{background:#16205a;border:1px solid rgba(76,90,212,0.4);color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer}
+  .aiAssistPhotoControls button:hover{border-color:var(--hover);box-shadow:0 0 8px #3651ff}
+  .aiAssistHidden{display:none !important}
+  .aiAssistResults{display:none;flex-direction:column;gap:16px}
+  .aiAssistResults.show{display:flex}
+  .aiAssistTableWrapper{overflow-x:auto;border:1px solid rgba(76,90,212,0.35);border-radius:16px;background:rgba(9,13,30,0.9)}
+  #aiAssistTable{width:100%;border-collapse:collapse;min-width:720px;font-size:0.95rem}
+  #aiAssistTable th,#aiAssistTable td{padding:12px;border-bottom:1px solid rgba(76,90,212,0.2);vertical-align:top}
+  #aiAssistTable th{text-align:left;background:rgba(17,26,60,0.75)}
+  .aiAssistTableWrapper tr:last-child td{border-bottom:none}
+  .aiBrandCell{display:flex;flex-direction:column;gap:10px}
+  .aiBrandCell .aiBrandActions{display:flex;gap:8px;flex-wrap:wrap}
+  .aiBrandCell .aiBrandActions .btn{padding:8px 12px;font-size:0.9rem}
+  .aiBrandCell .aiBrandActions .aiBrandClearBtn{background:#301424;border:1px solid #4c2138}
+  .aiBrandCell .aiBrandActions .aiBrandClearBtn:hover{border-color:#a12525;box-shadow:0 0 8px rgba(220,82,120,0.55)}
+  .aiBrandPreview{display:flex;gap:10px;flex-wrap:wrap}
+  .aiBrandPreview img{width:96px;height:96px;object-fit:cover;border-radius:12px;border:1px solid rgba(76,90,212,0.35);background:#0b1020}
+  .aiIngredientList{color:var(--muted);font-size:0.85rem}
+  .aiAllergenChecklist{display:flex;flex-wrap:wrap;gap:8px}
+  .aiAllergenChecklist label{display:flex;align-items:center;gap:6px;background:#12183a;border:1px solid rgba(76,90,212,0.3);border-radius:999px;padding:6px 10px;font-size:0.85rem}
+  .aiAllergenChecklist input{margin:0}
+  .aiAssistTableActions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .aiAssistTableActions .aiAssistSpacer{flex:1 1 auto}
+  .aiAssistBrandResults{display:none;flex-direction:column;gap:12px;padding:16px;border:1px solid rgba(76,90,212,0.35);border-radius:16px;background:rgba(9,13,30,0.9);max-height:320px;overflow:auto}
+  .aiAssistBrandResults.show{display:flex}
+  .aiBrandSuggestion{border:1px solid rgba(76,90,212,0.35);border-radius:12px;padding:12px;display:flex;gap:12px;cursor:pointer;align-items:flex-start;background:#12183a}
+  .aiBrandSuggestion:hover{border-color:var(--hover);box-shadow:0 0 8px #3651ff}
+  .aiBrandSuggestion img{width:72px;height:72px;border-radius:10px;object-fit:cover;border:1px solid rgba(76,90,212,0.35)}
+  .aiBrandSuggestion h4{margin:0;font-size:1rem}
+  .aiBrandSuggestion p{margin:4px 0 0;font-size:0.85rem;color:var(--muted)}
 
   /* Modal (editor) */
   .modalBack{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:3000;overflow:auto;padding:20px}
@@ -429,7 +482,7 @@ function detectAllergensInText(text){
   ALLERGENS.forEach(a=>{ if(lower.includes(a)) found.add(a); });
   return [...found];
 }
-const state={page:null,restaurants:[],restaurant:null,allergies:[],ack:false,user:{loggedIn:false},canEdit:false,qr:false,_hydrated:false};
+const state={page:null,restaurants:[],restaurant:null,allergies:[],ack:false,user:{loggedIn:false},canEdit:false,qr:false,_hydrated:false,aiAssistEndpoint:null};
 let mobileInfoPanel=null;
 let currentMobileInfoItem=null;
 let mobileViewerChrome=null;
@@ -907,6 +960,15 @@ let aiAssistTableBody=null;
 let aiAssistAddRowBtn=null;
 let aiAssistApplyBtn=null;
 let aiAssistBrandResults=null;
+let aiAssistUploadBtn=null;
+let aiAssistCameraBtn=null;
+let aiAssistFileInput=null;
+let aiAssistImagePreview=null;
+let aiAssistVideo=null;
+let aiAssistCaptureBtn=null;
+let aiAssistCancelCameraBtn=null;
+let aiAssistClearImageBtn=null;
+let aiAssistMediaPreview=null;
 let aiAssistElementsBound=false;
 
 const aiAssistState={
@@ -914,10 +976,103 @@ const aiAssistState={
   recognition:null,
   listening:false,
   pendingRequestId:null,
-  brandSuggestions:{}
+  brandSuggestions:{},
+  imageData:null,
+  imageFileName:null,
+  mediaStream:null,
 };
 
 const AI_BRAND_LIMIT=6;
+const AI_BRAND_MEMORY_KEY='cle:aiBrandMemory:v1';
+
+let aiBrandMemoryCache=null;
+
+function loadAiBrandMemory(){
+  if(aiBrandMemoryCache) return aiBrandMemoryCache;
+  try{
+    const raw=localStorage.getItem(AI_BRAND_MEMORY_KEY);
+    aiBrandMemoryCache=raw?JSON.parse(raw):{};
+  }catch(_){
+    aiBrandMemoryCache={};
+  }
+  return aiBrandMemoryCache;
+}
+
+function persistAiBrandMemory(){
+  try{
+    localStorage.setItem(AI_BRAND_MEMORY_KEY,JSON.stringify(aiBrandMemoryCache||{}));
+  }catch(_){ }
+}
+
+function normalizeIngredientKey(name){
+  return norm(name||'').replace(/[^a-z0-9]+/g,' ').trim();
+}
+
+function rememberBrand(name,data={}){
+  const key=normalizeIngredientKey(name);
+  if(!key) return;
+  const store=loadAiBrandMemory();
+  const brand=(data.brand||'').trim();
+  if(!brand){
+    delete store[key];
+    persistAiBrandMemory();
+    return;
+  }
+  store[key]={
+    brand,
+    brandImage:data.brandImage||'',
+    ingredientsImage:data.ingredientsImage||'',
+    ingredientsList:Array.isArray(data.ingredientsList)?data.ingredientsList.slice():[],
+    allergens:Array.isArray(data.allergens)?data.allergens.slice():[],
+  };
+  persistAiBrandMemory();
+}
+
+function forgetBrand(name){
+  const key=normalizeIngredientKey(name);
+  if(!key) return;
+  const store=loadAiBrandMemory();
+  if(store[key]){
+    delete store[key];
+    persistAiBrandMemory();
+  }
+}
+
+function getRememberedBrand(name){
+  const key=normalizeIngredientKey(name);
+  if(!key) return null;
+  const store=loadAiBrandMemory();
+  return store[key]||null;
+}
+
+function fillRowFromMemory(rowElement,force){
+  if(!rowElement) return;
+  const nameInput=rowElement.querySelector('.aiIngredientName');
+  const brandInput=rowElement.querySelector('.aiIngredientBrand');
+  const name=(nameInput?.value||'').trim();
+  if(!name) return;
+  const memory=getRememberedBrand(name);
+  if(!memory) return;
+  if(brandInput && (force || !(brandInput.value||'').trim()) && memory.brand){
+    brandInput.value=memory.brand;
+  }
+  if(memory.brandImage){
+    rowElement.dataset.brandImage=memory.brandImage;
+  }
+  if(memory.ingredientsImage){
+    rowElement.dataset.ingredientsImage=memory.ingredientsImage;
+  }
+  if(memory.ingredientsList && memory.ingredientsList.length){
+    rowElement.dataset.ingredientsList=JSON.stringify(memory.ingredientsList);
+  }
+  if(memory.allergens && memory.allergens.length){
+    const allergenSet=new Set(memory.allergens.map(norm));
+    rowElement.querySelectorAll('.aiAllergenChecklist input').forEach(input=>{
+      if(allergenSet.has(norm(input.value))) input.checked=true;
+    });
+  }
+  updateAiBrandPreview(rowElement);
+}
 
 function aiAssistSetStatus(message='', tone='info'){
   if(!aiAssistStatusEl) return;
@@ -944,6 +1099,15 @@ function ensureAiAssistElements(){
     aiAssistAddRowBtn=null;
     aiAssistApplyBtn=null;
     aiAssistBrandResults=null;
+    aiAssistUploadBtn=null;
+    aiAssistCameraBtn=null;
+    aiAssistFileInput=null;
+    aiAssistImagePreview=null;
+    aiAssistVideo=null;
+    aiAssistCaptureBtn=null;
+    aiAssistCancelCameraBtn=null;
+    aiAssistClearImageBtn=null;
+    aiAssistMediaPreview=null;
     aiAssistElementsBound=false;
   }
   if(!aiAssistBackdrop){
@@ -963,6 +1127,20 @@ function ensureAiAssistElements(){
           <button type="button" class="btn" id="aiAssistDictateBtn">🎙 Dictate</button>
           <button type="button" class="btn btnPrimary" id="aiAssistProcessBtn">Process text</button>
           <span class="aiAssistStatus" id="aiAssistStatus"></span>
+        </div>
+        <div class="aiAssistMedia">
+          <button type="button" class="btn" id="aiAssistUploadBtn">Upload label photo</button>
+          <button type="button" class="btn" id="aiAssistCameraBtn">📷 Take photo</button>
+          <input type="file" id="aiAssistFileInput" class="aiAssistHidden" accept="image/*" capture="environment">
+        </div>
+        <div class="aiAssistMediaPreview" id="aiAssistMediaPreview">
+          <video id="aiAssistVideo" class="aiAssistHidden" playsinline muted></video>
+          <img id="aiAssistImagePreview" class="aiAssistHidden" alt="Ingredient label preview">
+          <div class="aiAssistPhotoControls">
+            <button type="button" class="btn" id="aiAssistCaptureBtn">Capture photo</button>
+            <button type="button" class="btn" id="aiAssistCancelCameraBtn">Cancel camera</button>
+            <button type="button" class="btn" id="aiAssistClearImageBtn">Clear image</button>
+          </div>
         </div>
         <div class="aiAssistResults" id="aiAssistResults" aria-live="polite">
           <h3 style="margin:0">Ingredients</h3>
@@ -1000,6 +1178,15 @@ function ensureAiAssistElements(){
     aiAssistAddRowBtn=backdrop.querySelector('#aiAssistAddRowBtn');
     aiAssistApplyBtn=backdrop.querySelector('#aiAssistApplyBtn');
     aiAssistBrandResults=backdrop.querySelector('#aiAssistBrandResults');
+    aiAssistUploadBtn=backdrop.querySelector('#aiAssistUploadBtn');
+    aiAssistCameraBtn=backdrop.querySelector('#aiAssistCameraBtn');
+    aiAssistFileInput=backdrop.querySelector('#aiAssistFileInput');
+    aiAssistImagePreview=backdrop.querySelector('#aiAssistImagePreview');
+    aiAssistVideo=backdrop.querySelector('#aiAssistVideo');
+    aiAssistCaptureBtn=backdrop.querySelector('#aiAssistCaptureBtn');
+    aiAssistCancelCameraBtn=backdrop.querySelector('#aiAssistCancelCameraBtn');
+    aiAssistClearImageBtn=backdrop.querySelector('#aiAssistClearImageBtn');
+    aiAssistMediaPreview=backdrop.querySelector('#aiAssistMediaPreview');
     aiAssistElementsBound=false;
   }
   if(!aiAssistElementsBound){
@@ -1015,6 +1202,28 @@ function ensureAiAssistElements(){
       renderAiTable(data);
     });
     aiAssistApplyBtn.addEventListener('click',()=>applyAiIngredientsToOverlay());
+    if(aiAssistUploadBtn && aiAssistFileInput){
+      aiAssistUploadBtn.addEventListener('click',()=>{
+        aiAssistFileInput.value='';
+        aiAssistFileInput.click();
+      });
+      aiAssistFileInput.addEventListener('change',()=>{
+        const file=aiAssistFileInput.files && aiAssistFileInput.files[0];
+        if(file) handleAiFileSelection(file);
+      });
+    }
+    if(aiAssistCameraBtn){
+      aiAssistCameraBtn.addEventListener('click',()=>startAiCamera());
+    }
+    if(aiAssistCaptureBtn){
+      aiAssistCaptureBtn.addEventListener('click',()=>captureAiPhoto());
+    }
+    if(aiAssistCancelCameraBtn){
+      aiAssistCancelCameraBtn.addEventListener('click',()=>stopAiCamera(true));
+    }
+    if(aiAssistClearImageBtn){
+      aiAssistClearImageBtn.addEventListener('click',()=>clearAiImage());
+    }
     aiAssistTableBody.addEventListener('click',(event)=>{
       const row=event.target.closest('tr');
       if(!row) return;
@@ -1029,6 +1238,52 @@ function ensureAiAssistElements(){
         openAiBrandSearch(idx);
         return;
       }
+      if(event.target.classList.contains('aiBrandClearBtn') || event.target.closest('.aiBrandClearBtn')){
+        const nameInput=row.querySelector('.aiIngredientName');
+        const brandInput=row.querySelector('.aiIngredientBrand');
+        if(nameInput){
+          forgetBrand(nameInput.value);
+        }
+        if(brandInput){
+          brandInput.value='';
+        }
+        row.dataset.brandImage='';
+        row.dataset.ingredientsImage='';
+        delete row.dataset.ingredientsList;
+        updateAiBrandPreview(row);
+        aiAssistSetStatus('Brand cleared for this ingredient.','info');
+        return;
+      }
+    });
+    aiAssistTableBody.addEventListener('input',(event)=>{
+      const row=event.target.closest('tr');
+      if(!row) return;
+      if(event.target.classList.contains('aiIngredientName')){
+        fillRowFromMemory(row,false);
+      }
+    });
+    aiAssistTableBody.addEventListener('change',(event)=>{
+      const row=event.target.closest('tr');
+      if(!row) return;
+      if(event.target.classList.contains('aiIngredientBrand')){
+        const name=row.querySelector('.aiIngredientName')?.value||'';
+        const brand=event.target.value.trim();
+        if(name){
+          if(brand){
+            rememberBrand(name,{brand});
+            row.dataset.brandImage='';
+            row.dataset.ingredientsImage='';
+            delete row.dataset.ingredientsList;
+            updateAiBrandPreview(row);
+          } else {
+            forgetBrand(name);
+            row.dataset.brandImage='';
+            row.dataset.ingredientsImage='';
+            delete row.dataset.ingredientsList;
+            updateAiBrandPreview(row);
+          }
+        }
+      }
     });
     aiAssistBrandResults.addEventListener('click',(event)=>{
       const card=event.target.closest('.aiBrandSuggestion');
@@ -1037,6 +1292,7 @@ function ensureAiAssistElements(){
       const suggestionIdx=Number(card.dataset.index||'0');
       applyBrandSuggestion(rowIdx,suggestionIdx);
     });
+    updateAiAssistMediaPreview();
     aiAssistElementsBound=true;
   }
 }
@@ -1050,6 +1306,171 @@ function toggleAiAssistBackdrop(show){
   } else {
     aiAssistBackdrop.classList.remove('show');
     aiAssistBackdrop.setAttribute('aria-hidden','true');
+  }
+}
+
+function updateAiAssistMediaPreview(){
+  ensureAiAssistElements();
+  const hasImage=!!aiAssistState.imageData;
+  const hasStream=!!aiAssistState.mediaStream;
+  if(aiAssistMediaPreview){
+    aiAssistMediaPreview.classList.toggle('show',hasImage||hasStream);
+  }
+  if(aiAssistVideo){
+    if(hasStream){
+      aiAssistVideo.classList.remove('aiAssistHidden');
+      if(aiAssistVideo.srcObject!==aiAssistState.mediaStream){
+        aiAssistVideo.srcObject=aiAssistState.mediaStream;
+      }
+      aiAssistVideo.play().catch(()=>{});
+    } else {
+      try{aiAssistVideo.pause();}catch(_){ }
+      aiAssistVideo.srcObject=null;
+      aiAssistVideo.classList.add('aiAssistHidden');
+    }
+  }
+  if(aiAssistCaptureBtn){
+    aiAssistCaptureBtn.classList.toggle('aiAssistHidden',!hasStream);
+  }
+  if(aiAssistCancelCameraBtn){
+    aiAssistCancelCameraBtn.classList.toggle('aiAssistHidden',!hasStream);
+  }
+  if(aiAssistImagePreview){
+    if(hasImage){
+      aiAssistImagePreview.src=aiAssistState.imageData;
+      aiAssistImagePreview.classList.remove('aiAssistHidden');
+    } else {
+      aiAssistImagePreview.src='';
+      aiAssistImagePreview.classList.add('aiAssistHidden');
+    }
+  }
+  if(aiAssistClearImageBtn){
+    aiAssistClearImageBtn.classList.toggle('aiAssistHidden',!hasImage);
+  }
+}
+
+function handleAiFileSelection(file){
+  ensureAiAssistElements();
+  if(!file){
+    aiAssistSetStatus('No file selected.','warn');
+    return;
+  }
+  const reader=new FileReader();
+  reader.onload=()=>{
+    aiAssistState.imageData=typeof reader.result==='string'?reader.result:null;
+    aiAssistState.imageFileName=file.name||'label.jpg';
+    stopAiCamera();
+    updateAiAssistMediaPreview();
+    aiAssistSetStatus('Label photo attached. Review before processing.','info');
+  };
+  reader.onerror=()=>{
+    aiAssistSetStatus('Could not read the selected image.','warn');
+  };
+  reader.readAsDataURL(file);
+}
+
+async function startAiCamera(){
+  ensureAiAssistElements();
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    aiAssistSetStatus('Camera capture is not supported in this browser.','warn');
+    return;
+  }
+  try{
+    if(aiAssistState.mediaStream){
+      stopAiCamera();
+    }
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+    aiAssistState.mediaStream=stream;
+    aiAssistState.imageData=null;
+    aiAssistState.imageFileName=null;
+    updateAiAssistMediaPreview();
+    aiAssistSetStatus('Camera ready. Capture the label when it looks clear.','info');
+  }catch(err){
+    console.error('Camera error',err);
+    aiAssistSetStatus('Could not access the camera: '+(err.message||err),'warn');
+  }
+}
+
+function stopAiCamera(notify){
+  ensureAiAssistElements();
+  if(aiAssistState.mediaStream){
+    try{aiAssistState.mediaStream.getTracks().forEach(track=>track.stop());}catch(_){ }
+  }
+  aiAssistState.mediaStream=null;
+  if(aiAssistVideo){
+    try{aiAssistVideo.pause();}catch(_){ }
+    aiAssistVideo.srcObject=null;
+  }
+  updateAiAssistMediaPreview();
+  if(notify){
+    aiAssistSetStatus('Camera closed.','info');
+  }
+}
+
+function captureAiPhoto(){
+  ensureAiAssistElements();
+  if(!aiAssistVideo || !aiAssistState.mediaStream){
+    aiAssistSetStatus('Start the camera before capturing a photo.','warn');
+    return;
+  }
+  const width=aiAssistVideo.videoWidth||1280;
+  const height=aiAssistVideo.videoHeight||720;
+  if(!width || !height){
+    aiAssistSetStatus('Camera is still focusing. Try capturing again in a moment.','warn');
+    return;
+  }
+  const canvas=document.createElement('canvas');
+  canvas.width=width;
+  canvas.height=height;
+  const ctx=canvas.getContext('2d');
+  if(!ctx){
+    aiAssistSetStatus('Could not capture the photo.','warn');
+    return;
+  }
+  ctx.drawImage(aiAssistVideo,0,0,width,height);
+  aiAssistState.imageData=canvas.toDataURL('image/jpeg',0.92);
+  aiAssistState.imageFileName=`label-${Date.now()}.jpg`;
+  stopAiCamera();
+  updateAiAssistMediaPreview();
+  aiAssistSetStatus('Photo captured. Review before processing.','success');
+}
+
+function clearAiImage(){
+  ensureAiAssistElements();
+  aiAssistState.imageData=null;
+  aiAssistState.imageFileName=null;
+  if(aiAssistFileInput){
+    aiAssistFileInput.value='';
+  }
+  updateAiAssistMediaPreview();
+  aiAssistSetStatus('Label image cleared.','info');
+}
+
+function getRowIngredientsList(rowElement){
+  if(!rowElement || !rowElement.dataset.ingredientsList) return [];
+  try{
+    const parsed=JSON.parse(rowElement.dataset.ingredientsList);
+    return Array.isArray(parsed)?parsed:[];
+  }catch(_){
+    return [];
+  }
+}
+
+function updateAiBrandPreview(rowElement){
+  if(!rowElement) return;
+  const brandPreview=rowElement.querySelector('.aiBrandPreview');
+  if(brandPreview){
+    const parts=[];
+    const brandImage=rowElement.dataset.brandImage||'';
+    const ingredientsImage=rowElement.dataset.ingredientsImage||'';
+    if(brandImage) parts.push(`<img src="${esc(brandImage)}" alt="Brand preview" loading="lazy">`);
+    if(ingredientsImage) parts.push(`<img src="${esc(ingredientsImage)}" alt="Ingredients label" loading="lazy">`);
+    brandPreview.innerHTML=parts.join('');
+  }
+  const listNote=rowElement.querySelector('.aiIngredientList');
+  if(listNote){
+    const list=getRowIngredientsList(rowElement);
+    listNote.textContent=list.length?`Label ingredients: ${list.join(', ')}`:'';
   }
 }
 
@@ -1076,26 +1497,57 @@ function collectAiTableData(){
 function renderAiTable(rows){
   ensureAiAssistElements();
   if(!aiAssistTableBody || !aiAssistResultsEl) return;
-  const data=Array.isArray(rows)?rows:collectAiTableData();
+  const source=Array.isArray(rows)?rows:collectAiTableData();
+  const data=source.map(item=>({...item}));
   aiAssistTableBody.innerHTML='';
   aiAssistState.brandSuggestions={};
   data.forEach((row,idx)=>{
+    if(row.name){
+      const memory=getRememberedBrand(row.name);
+      if(memory){
+        if(!row.brand && memory.brand) row.brand=memory.brand;
+        if(!row.brandImage && memory.brandImage) row.brandImage=memory.brandImage;
+        if(!row.ingredientsImage && memory.ingredientsImage) row.ingredientsImage=memory.ingredientsImage;
+        if((!row.ingredientsList || !row.ingredientsList.length) && memory.ingredientsList){
+          row.ingredientsList=memory.ingredientsList.slice();
+        }
+        if((!row.allergens || !row.allergens.length) && memory.allergens){
+          row.allergens=memory.allergens.slice();
+        }
+      }
+    }
     const tr=document.createElement('tr');
     tr.dataset.index=idx;
-    if(row.brandImage) tr.dataset.brandImage=row.brandImage;
-    if(row.ingredientsImage) tr.dataset.ingredientsImage=row.ingredientsImage;
-    if(row.ingredientsList) tr.dataset.ingredientsList=JSON.stringify(row.ingredientsList);
+    if(row.brandImage){
+      tr.dataset.brandImage=row.brandImage;
+    } else {
+      tr.dataset.brandImage='';
+    }
+    if(row.ingredientsImage){
+      tr.dataset.ingredientsImage=row.ingredientsImage;
+    } else {
+      tr.dataset.ingredientsImage='';
+    }
+    if(row.ingredientsList && row.ingredientsList.length){
+      tr.dataset.ingredientsList=JSON.stringify(row.ingredientsList);
+    } else {
+      delete tr.dataset.ingredientsList;
+    }
     const allergens=new Set((row.allergens||[]).map(norm));
-    const brandPreviewImg = row.brandImage ? `<img src="${esc(row.brandImage)}" alt="${esc(row.brand||row.name||'Brand')}" loading="lazy">` : '';
-    const ingredientsPreviewImg = row.ingredientsImage ? `<img src="${esc(row.ingredientsImage)}" alt="Ingredients label" loading="lazy">` : '';
-    const ingredientsListNote = row.ingredientsList && row.ingredientsList.length ? `Label ingredients: ${row.ingredientsList.map(ingredient=>esc(ingredient)).join(', ')}` : '';
+    const brandPreviewParts=[];
+    if(row.brandImage) brandPreviewParts.push(`<img src="${esc(row.brandImage)}" alt="${esc(row.brand||row.name||'Brand')}" loading="lazy">`);
+    if(row.ingredientsImage) brandPreviewParts.push(`<img src="${esc(row.ingredientsImage)}" alt="Ingredients label" loading="lazy">`);
+    const ingredientsListNote=row.ingredientsList && row.ingredientsList.length ? `Label ingredients: ${row.ingredientsList.map(ingredient=>esc(ingredient)).join(', ')}` : '';
     tr.innerHTML=`
       <td><input type="text" class="aiIngredientName" placeholder="Ingredient name" value="${esc(row.name||'')}"></td>
       <td>
         <div class="aiBrandCell">
           <input type="text" class="aiIngredientBrand" placeholder="Brand (optional)" value="${esc(row.brand||'')}">
-          <button type="button" class="btn aiBrandSearchBtn">Find brand</button>
-          <div class="aiBrandPreview">${brandPreviewImg}${ingredientsPreviewImg}</div>
+          <div class="aiBrandActions">
+            <button type="button" class="btn aiBrandSearchBtn">Find brand</button>
+            <button type="button" class="btn aiBrandClearBtn">Clear brand</button>
+          </div>
+          <div class="aiBrandPreview">${brandPreviewParts.join('')}</div>
           <div class="aiIngredientList">${ingredientsListNote}</div>
         </div>
       </td>
@@ -1110,6 +1562,7 @@ function renderAiTable(rows){
       <td><button type="button" class="btn aiDeleteRow">Remove</button></td>
     `;
     aiAssistTableBody.appendChild(tr);
+    updateAiBrandPreview(tr);
   });
   aiAssistResultsEl.classList.toggle('show', data.length>0);
   if(aiAssistBrandResults){
@@ -1147,6 +1600,10 @@ function openAiAssistant(context){
   aiAssistState.context=context||{};
   aiAssistState.pendingRequestId=null;
   aiAssistState.brandSuggestions={};
+  aiAssistState.imageData=null;
+  aiAssistState.imageFileName=null;
+  stopAiCamera();
+  updateAiAssistMediaPreview();
   aiAssistSetStatus('');
   if(aiAssistInput){
     aiAssistInput.value=context?.seedText||'';
@@ -1164,7 +1621,12 @@ function closeAiAssistant(){
   aiAssistState.recognition=null;
   aiAssistState.listening=false;
   aiAssistState.pendingRequestId=null;
+  aiAssistState.brandSuggestions={};
   aiAssistSetStatus('');
+  stopAiCamera();
+  aiAssistState.imageData=null;
+  aiAssistState.imageFileName=null;
+  updateAiAssistMediaPreview();
   if(aiAssistResultsEl){
     aiAssistResultsEl.classList.remove('show');
   }
@@ -1323,24 +1785,22 @@ function applyBrandSuggestion(rowIdx, suggestionIdx){
   if(Array.isArray(suggestion.ingredientsList)){
     row.dataset.ingredientsList=JSON.stringify(suggestion.ingredientsList);
   }
-  const preview=row.querySelector('.aiBrandPreview');
-  if(preview){
-    preview.innerHTML=`
-      ${suggestion.image?`<img src="${esc(suggestion.image)}" alt="${esc(suggestion.name)}" loading="lazy">`:''}
-      ${suggestion.ingredientsImage?`<img src="${esc(suggestion.ingredientsImage)}" alt="Ingredients label" loading="lazy">`:''}
-    `;
-  }
-  const listNote=row.querySelector('.aiIngredientList');
-  if(listNote){
-    const items=suggestion.ingredientsList||[];
-    listNote.textContent=items.length?`Label ingredients: ${items.join(', ')}`:'';
-  }
+  updateAiBrandPreview(row);
   if(Array.isArray(suggestion.allergens)){
     const allergenSet=new Set(suggestion.allergens.map(norm));
     row.querySelectorAll('.aiAllergenChecklist input').forEach(input=>{
       if(allergenSet.has(norm(input.value))){
         input.checked=true;
       }
+    });
+  }
+  if(nameInput){
+    rememberBrand(nameInput.value,{
+      brand:brandInput?.value||suggestion.brand||'',
+      brandImage:suggestion.image||'',
+      ingredientsImage:suggestion.ingredientsImage||'',
+      ingredientsList:Array.isArray(suggestion.ingredientsList)?suggestion.ingredientsList:[],
+      allergens:Array.isArray(suggestion.allergens)?suggestion.allergens:[],
     });
   }
   if(aiAssistBrandResults){
@@ -1350,28 +1810,76 @@ function applyBrandSuggestion(rowIdx, suggestionIdx){
   aiAssistSetStatus('Brand applied to ingredient.','success');
 }
 
+async function requestAiExtraction(payload){
+  const endpoint=state.aiAssistEndpoint || window.__CLE_AI_ENDPOINT__ || null;
+  if(endpoint){
+    const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(!res.ok){
+      const text=await res.text().catch(()=>res.statusText);
+      throw new Error(text||'AI endpoint returned an error');
+    }
+    return await res.json();
+  }
+  const client=window.supabaseClient;
+  if(client?.functions?.invoke){
+    const candidates=['ai-ingredient-assistant','ai-ingredient-extract','aiAssistExtract'];
+    for(const fn of candidates){
+      try{
+        const { data, error } = await client.functions.invoke(fn,{ body: payload });
+        if(error) continue;
+        if(data) return data;
+      }catch(err){
+        console.warn('AI function call failed',fn,err);
+      }
+    }
+  }
+  throw new Error('AI service unavailable');
+}
+
 function handleAiProcess(){
   ensureAiAssistElements();
   if(!aiAssistInput) return;
   const text=aiAssistInput.value.trim();
-  if(!text){
-    aiAssistSetStatus('Please describe the dish before processing.','warn');
+  const hasImage=!!aiAssistState.imageData;
+  if(!text && !hasImage){
+    aiAssistSetStatus('Describe the dish or add a label photo before processing.','warn');
     return;
   }
   aiAssistSetStatus('Processing description…');
-  if(window===window.parent){
-    const ingredients=heuristicallyExtractIngredients(text);
-    renderAiTable(ingredients);
-    aiAssistSetStatus('Draft ingredient list generated. Review and adjust as needed.','success');
-  } else {
+  const payload={
+    text,
+    dishName:aiAssistState.context?.getCurrentName ? aiAssistState.context.getCurrentName() : ''
+  };
+  if(aiAssistState.imageData){
+    payload.imageData=aiAssistState.imageData;
+    if(aiAssistState.imageFileName) payload.imageFileName=aiAssistState.imageFileName;
+  }
+  if(window!==window.parent){
     const requestId=`ai-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     aiAssistState.pendingRequestId=requestId;
     parent.postMessage({
       type:'aiAssistExtract',
       requestId,
-      text,
-      dishName:aiAssistState.context?.getCurrentName ? aiAssistState.context.getCurrentName() : ''
+      ...payload
     },"*");
+  } else {
+    (async()=>{
+      try{
+        const result=await requestAiExtraction(payload);
+        const rows=Array.isArray(result?.ingredients)?result.ingredients:[];
+        renderAiTable(rows);
+        aiAssistSetStatus(rows.length?'AI ingredient suggestions ready. Review before applying.':'AI could not extract ingredients from the description.','info');
+      }catch(err){
+        console.error('AI extraction failed',err);
+        if(text){
+          const ingredients=heuristicallyExtractIngredients(text);
+          renderAiTable(ingredients);
+          aiAssistSetStatus('AI service unavailable—generated a draft using local parsing. Review before applying.','warn');
+        } else {
+          aiAssistSetStatus('AI assistant request failed: '+(err.message||err),'warn');
+        }
+      }
+    })();
   }
 }
 
@@ -1380,6 +1888,17 @@ function handleAiAssistantResult(payload){
   if(!payload || payload.requestId!==aiAssistState.pendingRequestId) return;
   aiAssistState.pendingRequestId=null;
   const rows=Array.isArray(payload.ingredients)?payload.ingredients:[];
+  rows.forEach(row=>{
+    if(row && row.name && row.brand){
+      rememberBrand(row.name,{
+        brand:row.brand,
+        brandImage=row.brandImage||'',
+        ingredientsImage=row.ingredientsImage||'',
+        ingredientsList:Array.isArray(row.ingredientsList)?row.ingredientsList:[],
+        allergens:Array.isArray(row.allergens)?row.allergens:[],
+      });
+    }
+  });
   renderAiTable(rows);
   aiAssistSetStatus(rows.length?'AI ingredient suggestions ready. Review before applying.':'AI could not extract ingredients from the description.','info');
 }
@@ -1398,6 +1917,17 @@ function applyAiIngredientsToOverlay(){
     aiAssistSetStatus('Add at least one ingredient before applying.','warn');
     return;
   }
+  rows.forEach(row=>{
+    if(row && row.name && row.brand){
+      rememberBrand(row.name,{
+        brand:row.brand,
+        brandImage=row.brandImage||'',
+        ingredientsImage=row.ingredientsImage||'',
+        ingredientsList:Array.isArray(row.ingredientsList)?row.ingredientsList:[],
+        allergens:Array.isArray(row.allergens)?row.allergens:[],
+      });
+    }
+  });
   if(aiAssistState.context?.onApply){
     aiAssistState.context.onApply(rows);
   }
@@ -3063,6 +3593,7 @@ window.addEventListener('message',(ev)=>{
   if(m.restaurants){state.restaurants=m.restaurants;}
   if(typeof m.canEdit==='boolean'){state.canEdit=m.canEdit;}
   if(typeof m.qr==='boolean'){state.qr=m.qr;} else if(urlQR){state.qr=true;}
+  if(m.aiAssistEndpoint){state.aiAssistEndpoint=m.aiAssistEndpoint;}
   if((state.qr||urlQR) && (!state.allergies||!state.allergies.length)){
     try{const s=sessionStorage.getItem('qrAllergies'); if(s) state.allergies=JSON.parse(s)||[];}catch(_){}
   }
@@ -3096,6 +3627,3 @@ window.addEventListener('message',(ev)=>{
 <script type="module" src="js/report-modal.js"></script>
 </body>
 </html>
-  .tooltipDanger{border:1px solid var(--bad);background:rgba(62,14,22,0.88);color:var(--bad)}
-  .tooltipWarn{border:1px solid var(--warn);background:rgba(56,44,12,0.88);color:#facc15}
-  .tooltipNeutral{border:1px solid rgba(148,163,184,0.4);background:rgba(16,24,52,0.88);color:#d1d9ff}
