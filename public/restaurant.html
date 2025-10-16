@@ -1595,14 +1595,17 @@ function renderAiTable(rows){
       if(brand.ingredientsImage) brandImages.push(`<img src="${esc(brand.ingredientsImage)}" alt="Ingredients label" loading="lazy" onclick="openImageModal('${esc(brand.ingredientsImage)}')" title="Click to enlarge">`);
       const ingredientsNote = brand.ingredientsList && brand.ingredientsList.length ? `Label ingredients: ${brand.ingredientsList.map(i=>esc(i)).join(', ')}` : '';
 
+      // Show message if no images are available
+      const imagesDisplay = brandImages.length > 0 ? brandImages.join('') : '<div style="color:var(--muted);font-size:0.85rem;font-style:italic">No product images available</div>';
+
       return `
         <div class="aiBrandItem" data-brand-idx="${brandIdx}">
           <div class="aiBrandItemHeader">
             <strong>${esc(brand.name || 'Brand ' + (brandIdx + 1))}</strong>
             <button type="button" class="btn btnSmall aiRemoveBrand" data-brand-idx="${brandIdx}">×</button>
           </div>
-          <div class="aiBrandPreview">${brandImages.join('')}</div>
-          ${ingredientsNote ? `<div class="aiIngredientList">${ingredientsNote}</div>` : ''}
+          <div class="aiBrandPreview">${imagesDisplay}</div>
+          ${ingredientsNote ? `<div class="aiIngredientList">${ingredientsNote}</div>` : '<div style="color:var(--muted);font-size:0.85rem;font-style:italic">No ingredient list available</div>'}
         </div>
       `;
     }).join('') : '<div class="aiNoBrands">No brands added yet</div>';
@@ -1620,12 +1623,15 @@ function renderAiTable(rows){
                 <button type="button" class="btn aiBrandSearchBtn">+ Add brand</button>
               </div>
             </div>
-            <div class="aiAllergenChecklist">
-              ${ALLERGENS.map(allergen=>{
-                const checked=allergens.has(norm(allergen))?'checked':'';
-                const aiDetected=aiDetectedAllergens.has(norm(allergen))?'aiDetected':'';
-                return `<label class="${aiDetected}"><input type="checkbox" value="${esc(allergen)}" ${checked}>${esc(cap(allergen))}</label>`;
-              }).join('')}
+            <div>
+              ${aiDetectedAllergens.size > 0 ? '<div style="color:#4caf50;font-size:0.8rem;margin-bottom:6px">✓ Green = AI detected from brand labels</div>' : ''}
+              <div class="aiAllergenChecklist">
+                ${ALLERGENS.map(allergen=>{
+                  const checked=allergens.has(norm(allergen))?'checked':'';
+                  const aiDetected=aiDetectedAllergens.has(norm(allergen))?'aiDetected':'';
+                  return `<label class="${aiDetected}"><input type="checkbox" value="${esc(allergen)}" ${checked}>${esc(cap(allergen))}</label>`;
+                }).join('')}
+              </div>
             </div>
             <button type="button" class="btn aiDeleteRow">Remove</button>
           </div>
