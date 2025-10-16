@@ -1786,11 +1786,11 @@ function renderAiTable(rows){
               <div style="display:flex;flex-direction:column;gap:8px">
                 <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
                   <input type="radio" name="removable_${idx}" value="yes" class="aiRemovableRadio">
-                  <span style="font-size:0.9rem">Can be removed</span>
+                  <span style="font-size:0.9rem">Can be substituted out</span>
                 </label>
                 <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
                   <input type="radio" name="removable_${idx}" value="no" class="aiRemovableRadio">
-                  <span style="font-size:0.9rem">Cannot be removed</span>
+                  <span style="font-size:0.9rem">Cannot be substituted out</span>
                 </label>
               </div>
             </div>
@@ -3100,14 +3100,14 @@ function tooltipBodyHTML(item,sel,userDiets){
     if(unsafeHits.length){
       const list=unsafeHits.map(a=>{
         const emoji = ALLERGEN_EMOJI[a.toLowerCase()] || '⚠️';
-        return `<div style="margin-bottom:4px">${emoji} Contains <strong>${esc(a.toLowerCase())}</strong> (cannot be accommodated)</div>`;
+        return `<div style="margin-bottom:4px">${emoji} Contains <strong>${esc(a.toLowerCase())}</strong> (cannot be substituted out)</div>`;
       }).join('');
       html+=`<div class="note tooltipDangerText">${list}</div>`;
     }
     if(removableHits.length){
       const list=removableHits.map(a=>{
         const emoji = ALLERGEN_EMOJI[a.toLowerCase()] || '⚠️';
-        return `<div style="margin-bottom:4px">${emoji} Contains <strong>${esc(a.toLowerCase())}</strong> (can be accommodated)</div>`;
+        return `<div style="margin-bottom:4px">${emoji} Contains <strong>${esc(a.toLowerCase())}</strong> (can be substituted out)</div>`;
       }).join('');
       html+=`<div class="note tooltipWarnText">${list}</div>`;
     }
@@ -4651,7 +4651,7 @@ function renderEditor(){
       const row=document.createElement('div'); row.className='algRow';
       const b=document.createElement('div'); b.className='algBtn'; b.textContent=cap(a); b.dataset.a=a; if(sel.has(a)) b.classList.add('active');
       const inp=document.createElement('input'); inp.className='algInput'; inp.placeholder='Which part of the dish contains the allergen?'; inp.value=details[a]||'';
-      const lab=document.createElement('label'); lab.className='algChk'; const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=rem.has(a); lab.appendChild(cb); lab.appendChild(document.createTextNode('can be accommodated'));
+      const lab=document.createElement('label'); lab.className='algChk'; const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=rem.has(a); lab.appendChild(cb); lab.appendChild(document.createTextNode('can be substituted out'));
       const labCross=document.createElement('label'); labCross.className='algChk'; const cbCross=document.createElement('input'); cbCross.type='checkbox'; cbCross.checked=cross.has(a); labCross.appendChild(cbCross); labCross.appendChild(document.createTextNode('cross-contamination risk'));
 
       function reflect(){
