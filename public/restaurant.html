@@ -1754,11 +1754,22 @@ async function fetchBrandSuggestions(query){
         if(!allergens.includes(cap(a))) allergens.push(cap(a));
       });
     }
+
+    // Get ingredients image from multiple possible sources
+    let ingredientsImage = product.image_ingredients_url || '';
+    if(!ingredientsImage && product.selected_images?.ingredients){
+      // Try different language variants
+      const ingredImgs = product.selected_images.ingredients.display || product.selected_images.ingredients.small;
+      if(ingredImgs){
+        ingredientsImage = ingredImgs.en || ingredImgs.fr || ingredImgs.es || ingredImgs.de || Object.values(ingredImgs)[0] || '';
+      }
+    }
+
     return {
       name:product.product_name || product.brands || query,
       brand:product.brands || '',
       image:product.image_front_small_url || product.image_front_url || '',
-      ingredientsImage:product.image_ingredients_url || '',
+      ingredientsImage,
       ingredientsList,
       allergens,
       productUrl:product.url || ''
