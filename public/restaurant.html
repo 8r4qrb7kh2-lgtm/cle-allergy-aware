@@ -3063,13 +3063,13 @@ function tooltipBodyHTML(item,sel,userDiets){
 
     if(unsafeHits.length){
       const list=unsafeHits.map(a=>{
-        return `<div style="margin-bottom:4px">Contains ${esc(cap(a))} (cannot be accommodated)</div>`;
+        return `<div style="margin-bottom:4px">Contains <strong>${esc(cap(a))}</strong> (cannot be accommodated)</div>`;
       }).join('');
       html+=`<div class="note tooltipDangerText">${list}</div>`;
     }
     if(removableHits.length){
       const list=removableHits.map(a=>{
-        return `<div style="margin-bottom:4px">Contains ${esc(cap(a))} (can be accommodated)</div>`;
+        return `<div style="margin-bottom:4px">Contains <strong>${esc(cap(a))}</strong> (can be accommodated)</div>`;
       }).join('');
       html+=`<div class="note tooltipWarnText">${list}</div>`;
     }
@@ -3079,7 +3079,7 @@ function tooltipBodyHTML(item,sel,userDiets){
 
     if(hasCross){
       const crossHits=(item.crossContamination||[]).filter(a=>sel.includes(a));
-      const crossList=crossHits.map(a=>`<div style="margin-bottom:4px">Cross-contamination risk: ${esc(cap(a))}</div>`).join('');
+      const crossList=crossHits.map(a=>`<div style="margin-bottom:4px">Cross-contamination risk: <strong>${esc(cap(a))}</strong></div>`).join('');
       html+=`<div class="note tooltipNeutralText">${crossList}</div>`;
     }
 
@@ -3107,8 +3107,9 @@ function tooltipBodyHTML(item,sel,userDiets){
         'Halal': '☪️'
       }[userDiet] || '✓';
       const status = isDietMet ? 'is' : 'is not';
+      const dietLower = userDiet.toLowerCase();
 
-      html+=`<div style="margin-bottom:6px;color:${color};font-size:0.9rem">${emoji} This dish ${status} ${esc(userDiet)}</div>`;
+      html+=`<div style="margin-bottom:6px;color:${color};font-size:0.9rem">${emoji} This dish ${status} <strong>${esc(dietLower)}</strong></div>`;
     });
 
     html+=`</div>`;
