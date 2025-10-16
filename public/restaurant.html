@@ -1881,14 +1881,15 @@ async function fetchBrandSuggestions(query, ingredientName){
 
   if(!products.length) return [];
 
-  // Filter products to match ingredient name (e.g., "tahini" should only show tahini products)
+  // Filter products to match ingredient name (e.g., "italian seasoning" should only show products with BOTH words)
   if(ingredientName){
     const ingredientTerms = ingredientName.toLowerCase().split(/\s+/).filter(term => term.length > 2);
     products = products.filter(product => {
       const productName = (product.product_name || '').toLowerCase();
       const productCategories = (product.categories || '').toLowerCase();
-      // Check if any ingredient term appears in product name or categories
-      return ingredientTerms.some(term => productName.includes(term) || productCategories.includes(term));
+      const combinedText = `${productName} ${productCategories}`;
+      // Check if ALL ingredient terms appear in product name or categories (not just any one)
+      return ingredientTerms.every(term => combinedText.includes(term));
     });
   }
 
