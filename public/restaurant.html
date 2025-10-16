@@ -2823,7 +2823,7 @@ function tooltipBodyHTML(item,sel,userDiets){
   const details=item.details||{};
   const hasCross=hasCrossContamination(item,sel);
 
-  if(!sel.length && (!userDiets || !userDiets.length)) return `<div class="note">No saved allergens or dietary preferences selected.</div>`;
+  if(!sel.length && (!userDiets || !userDiets.length)) return `<div class="note">No dietary preferences saved. Sign in to save your preferences.</div>`;
 
   let html='';
 
@@ -2847,7 +2847,7 @@ function tooltipBodyHTML(item,sel,userDiets){
     html+=`<div class="note" style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(76,90,212,0.2)"><strong style="display:block;margin-bottom:6px">Dietary Options</strong>${dietBadges}</div>`;
   }
 
-  if(!sel.length) return html || `<div class="note">No saved allergens selected.</div>`;
+  if(!sel.length) return html || `<div class="note">No allergen information to display.</div>`;
   const hits=(item.allergens||[]).filter(a=>sel.includes(a));
   const removableSet=new Set((item.removable||[]).map(r=>norm(r.allergen||'')));
   
@@ -2869,7 +2869,7 @@ function tooltipBodyHTML(item,sel,userDiets){
     html+=`<div class="note tooltipWarnText"><strong>Contains (can be accommodated)</strong><ul class="tooltipList">${list}</ul></div>`;
   }
   if(!hits.length){
-    html+=`<div class="note tooltipNeutralText">No selected allergens found.</div>`;
+    html+=`<div class="note tooltipNeutralText">Safe - no allergens found.</div>`;
   }
   
   if(hasCross){
@@ -3441,11 +3441,11 @@ function renderRestaurant(){
       <button class="ackBtn off" id="ackBtn">I understand</button>
     </div>
     <div id="legendRow" style="display:none" class="legend">
-      <span><span class="key ok"></span> Free of selected allergen(s)</span>
-      <span><span class="key warn"></span> Allergen(s) can be accommodated</span>
-      <span><span class="key bad"></span> Allergen(s) not accommodated</span>
+      <span><span class="key ok"></span> Safe for you</span>
+      <span><span class="key warn"></span> Can be accommodated</span>
+      <span><span class="key bad"></span> Not safe</span>
       <span><span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;background:#facc15;border:2px solid #facc15;border-radius:50%;font-size:9px;vertical-align:middle;color:#000;font-weight:bold;margin-right:4px;">⚠</span>Cross-contamination risk</span>
-      <span class="note">👆 Hover or tap a box for details</span>
+      <span class="note">👆 Hover or tap for details</span>
     </div>
     <div id="confirmedRow" style="display:none" class="note">Last confirmed by staff: ${rs.lastConfirmed?esc(fmtDate(rs.lastConfirmed)):'—'}</div>
     <div class="mobileMenuNotice" id="mobileMenuNotice" aria-hidden="true" style="display:none">
