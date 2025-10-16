@@ -2807,18 +2807,20 @@ function currentScale(){
   try{ return (window.visualViewport && window.visualViewport.scale) ? window.visualViewport.scale : 1; }
   catch(_){ return 1; }
 }
-function tooltipBodyHTML(item,sel){
+function tooltipBodyHTML(item,sel,userDiets){
   const status=computeStatus(item,sel);
   const details=item.details||{};
   const hasCross=hasCrossContamination(item,sel);
 
-  if(!sel.length) return `<div class="note">No saved allergens selected.</div>`;
+  if(!sel.length && (!userDiets || !userDiets.length)) return `<div class="note">No saved allergens or dietary preferences selected.</div>`;
 
   let html='';
 
   // Display dietary preferences if any
   if(item.diets && item.diets.length > 0){
+    const userDietSet = new Set(userDiets || []);
     const dietBadges = item.diets.map(diet => {
+      const isMatch = userDietSet.has(diet);
       const emoji = {
         'Vegan': '🌱',
         'Vegetarian': '🥬',
@@ -2826,10 +2828,15 @@ function tooltipBodyHTML(item,sel){
         'Kosher': '✡️',
         'Halal': '☪️'
       }[diet] || '✓';
-      return `<span style="display:inline-block;padding:4px 10px;margin:2px 4px 2px 0;background:rgba(76,200,90,0.15);border:1px solid rgba(76,200,90,0.4);border-radius:12px;font-size:0.85rem;color:#4cc85a;white-space:nowrap">${emoji} ${esc(diet)}</span>`;
+      const bgColor = isMatch ? 'rgba(76,200,90,0.25)' : 'rgba(76,200,90,0.15)';
+      const borderColor = isMatch ? 'rgba(76,200,90,0.6)' : 'rgba(76,200,90,0.4)';
+      const fontWeight = isMatch ? 'font-weight:600;' : '';
+      return `<span style="display:inline-block;padding:4px 10px;margin:2px 4px 2px 0;background:${bgColor};border:1px solid ${borderColor};border-radius:12px;font-size:0.85rem;color:#4cc85a;white-space:nowrap;${fontWeight}">${emoji} ${esc(diet)}</span>`;
     }).join('');
     html+=`<div class="note" style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(76,90,212,0.2)"><strong style="display:block;margin-bottom:6px">Dietary Options</strong>${dietBadges}</div>`;
   }
+
+  if(!sel.length) return html || `<div class="note">No saved allergens selected.</div>`;
   const hits=(item.allergens||[]).filter(a=>sel.includes(a));
   const removableSet=new Set((item.removable||[]).map(r=>norm(r.allergen||'')));
   
@@ -2933,7 +2940,7 @@ function renderMobileInfo(item){
     return;
   }
   currentMobileInfoItem=item;
-  const bodyHTML=tooltipBodyHTML(item,state.allergies||[]);
+  const bodyHTML=tooltipBodyHTML(item,state.allergies||[],state.diets||[]);
   mobileInfoPanel.innerHTML=`
     <div class="mobileInfoHeaderRow">
       <div class="mobileInfoHeader">${esc(item.id||'Item')}</div>
@@ -3275,7 +3282,7 @@ function drawMenu(container,imageURL){
       : (evt?.currentTarget?.getBoundingClientRect ? evt.currentTarget.getBoundingClientRect() : null);
     const clientX = client?.clientX ?? 0;
     const clientY = client?.clientY ?? 0;
-    showTipIn(pageTip, clientX, clientY, item.id||'Item', tooltipBodyHTML(item,state.allergies||[]), rect);
+    showTipIn(pageTip, clientX, clientY, item.id||'Item', tooltipBodyHTML(item,state.allergies||[],state.diets||[]), rect);
   };
 
   function renderLayer(){
@@ -3325,7 +3332,7 @@ function drawMenu(container,imageURL){
         const rect = (e.currentTarget && e.currentTarget.getBoundingClientRect)
           ? e.currentTarget.getBoundingClientRect()
           : box.getBoundingClientRect();
-        showTipIn(pageTip, e.clientX, e.clientY, it.id||'Item', tooltipBodyHTML(it,state.allergies||[]), rect);
+        showTipIn(pageTip, e.clientX, e.clientY, it.id||'Item', tooltipBodyHTML(it,state.allergies||[],state.diets||[]), rect);
       });
       box.addEventListener('mouseleave',hideTip);
       box.addEventListener('click',(e)=>{showOverlayDetails(e,it,e.currentTarget);});
@@ -4280,7 +4287,7 @@ function renderEditor(){
           if(isCross){tmp.crossContamination.push(a);}
         }
       });
-      document.getElementById('previewBox').innerHTML=tooltipBodyHTML(tmp,ALLERGENS.slice());
+      document.getElementById('previewBox').innerHTML=tooltipBodyHTML(tmp,ALLERGENS.slice(),DIETS.slice());
     }
     updatePreview();
     
