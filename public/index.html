@@ -4,30 +4,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CLE Allergy Aware</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      window.location.replace('account.html');
+    });
+  </script>
+  <style>
+    body{
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial;
+      background:#0b1020;
+      color:#e9ecff;
+      text-align:center;
+    }
+    a{color:#7c9cff;}
+  </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt="CLE Allergy Aware" class="logo">
-      <h1>CLE Allergy Aware</h1>
-      <p>Find allergy-safe dining in Cleveland</p>
-    </header>
-    
-    <nav>
-      <a href="restaurants.html">View Restaurants</a>
-      <a href="account.html">My Account</a>
-    </nav>
-    
-    <main>
-      <div class="hero">
-        <h2>Eat Safely. Dine Confidently.</h2>
-        <p>Browse menus with detailed allergen information verified by restaurant managers.</p>
-        <a href="restaurants.html" class="cta-button">Explore Restaurants</a>
-      </div>
-    </main>
+  <div>
+    Redirecting to <a href="account.html">account settings</a>…
   </div>
-  
-  <script type="module" src="js/main.js"></script>
 </body>
 </html>

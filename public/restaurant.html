@@ -75,8 +75,13 @@
   .key.ok{color:var(--ok)} .key.warn{color:var(--warn)} .key.bad{color:var(--bad)}
 
   .ackBtn{padding:8px 12px;border-radius:10px;cursor:pointer;border:1px solid}
-  .ackBtn.off{background:#8b1d1d;border-color:#a12525}
-  .ackBtn.on{background:#17663a;border-color:#1a7b46}
+  @keyframes ackPulse{
+    0%{box-shadow:0 0 0 0 rgba(255,180,180,0.45);}
+    50%{box-shadow:0 0 0 8px rgba(255,180,180,0);}
+    100%{box-shadow:0 0 0 0 rgba(255,180,180,0);}
+  }
+  .ackBtn.off{background:#8b1d1d;border-color:#a12525;animation:ackPulse 1.8s ease-in-out infinite}
+  .ackBtn.on{background:#17663a;border-color:#1a7b46;animation:none}
 
   /* Viewer: simple image that scales with page zoom */
   .menuWrap{display:none;background:#0d132a;border-radius:14px;position:relative;overflow-x:auto;overflow-y:visible;min-height:140px;transform-origin:top left;-webkit-overflow-scrolling:touch}
@@ -91,15 +96,19 @@
   .mobileMenuNotice .mobileMenuOpenBtn{min-width:200px}
   #mobileViewerChrome{position:fixed;inset:0;z-index:3400;display:none;pointer-events:none}
   body.mobileViewerActive #mobileViewerChrome{display:block}
-  #mobileViewerChrome .chromeTop{position:fixed;top:calc(env(safe-area-inset-top,0) + 18px);left:0;right:0;display:flex;justify-content:flex-end;padding:0 24px;pointer-events:none}
-  #mobileViewerChrome .chromeBottom{position:fixed;bottom:calc(env(safe-area-inset-bottom,0) + 28px);left:0;right:0;display:flex;justify-content:center;pointer-events:none}
+  #mobileViewerChrome .chromeTop{position:fixed;top:calc(env(safe-area-inset-top,0) + 18px);left:0;right:0;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 clamp(16px,4vw,32px);pointer-events:none}
+  #mobileViewerChrome .chromeTop .mobileZoomGroup{pointer-events:auto}
   #mobileViewerChrome button{pointer-events:auto}
+  .mobileViewerSummary{flex:1;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .mobileViewerSummaryInner{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:999px;border:1px solid rgba(76,90,212,0.35);background:rgba(8,12,28,0.88);box-shadow:0 10px 28px rgba(0,0,0,0.35);color:var(--muted);flex-wrap:wrap;justify-content:center;max-width:min(96vw,760px)}
+  .mobileViewerSummaryInner .label{font-weight:600;color:var(--ink)}
+  .mobileViewerSummaryInner .values{color:var(--ink)}
   .mobileViewerControlBtn{background:rgba(18,24,58,0.9);border:1px solid rgba(76,90,212,0.5);color:var(--ink);padding:10px 18px;border-radius:999px;font-weight:600;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,0.35)}
   .mobileZoomGroup{display:inline-flex;align-items:center;gap:14px;background:rgba(18,24,58,0.9);border:1px solid rgba(76,90,212,0.4);border-radius:999px;padding:10px 18px;box-shadow:0 10px 28px rgba(0,0,0,0.3)}
   .mobileZoomGroup button{background:transparent;border:none;color:var(--ink);font-size:1.3rem;width:48px;height:48px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center}
   .mobileZoomGroup span{font-weight:600;color:var(--ink);min-width:60px;text-align:center;font-size:0.95rem}
   body.mobileViewerActive{overflow:hidden}
-  body.mobileViewerActive .menuWrap{pointer-events:auto;position:fixed;inset:0;margin:0;border-radius:0;padding:calc(env(safe-area-inset-top,0) + 80px) clamp(14px,4vw,36px) calc(env(safe-area-inset-bottom,0) + 130px);background:rgba(4,7,20,0.96);z-index:3100;overflow:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px}
+  body.mobileViewerActive .menuWrap{pointer-events:auto;position:fixed;inset:0;margin:0;border-radius:0;padding:calc(env(safe-area-inset-top,0) + 120px) clamp(14px,4vw,36px) calc(env(safe-area-inset-bottom,0) + 80px);background:rgba(4,7,20,0.96);z-index:3100;overflow:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:32px}
   body.mobileViewerActive .menuWrap .menuInner{margin:0 auto}
   body.mobileViewerActive .mobileMenuNotice{display:none !important}
   body.mobileViewerActive .topbar,
@@ -114,11 +123,16 @@
   .ovWarning:hover{background:#fbbf24;box-shadow:0 0 6px #facc15}
 
   /* Tooltip (with mobile X). We'll shrink it based on visual viewport scale. */
-  .tip{position:absolute;z-index:1800;pointer-events:auto;background:rgba(15,21,52,0.98);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid #2a3466;border-radius:10px;padding:10px;box-shadow:var(--shadow);display:none;max-width:280px;transform-origin:top left}
+  .tip{position:absolute;z-index:3400;pointer-events:auto;background:rgba(15,21,52,0.98);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid #2a3466;border-radius:10px;padding:10px;box-shadow:var(--shadow);display:none;max-width:280px;transform-origin:top left}
   .tipHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
   .tTitle{font-weight:800}
   .tClose{border:1px solid #2a3466;background:#16205a;color:#fff;border-radius:8px;padding:4px 8px;cursor:pointer;line-height:1}
   .tClose:hover{border-color:var(--hover)}
+  .tooltipList{margin:4px 0 0 18px;padding:0;list-style:disc}
+  .tooltipList li{margin:3px 0}
+  .tooltipDangerText{color:var(--bad);font-weight:500}
+  .tooltipWarnText{color:var(--warn);font-weight:500}
+  .tooltipNeutralText{color:#cbd5f5}
 
   /* Modal (editor) */
   .modalBack{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:3000;overflow:auto;padding:20px}
@@ -142,6 +156,10 @@
   .logEntry .logImage:hover{opacity:0.8}
   .logEntry .logThumbnail{max-width:120px;max-height:80px;object-fit:cover;border-radius:6px;margin-top:6px;cursor:pointer;border:1px solid #2a3466}
   .logEntry .logThumbnail:hover{opacity:0.85;box-shadow:0 0 8px #3651ff}
+  .logAuthor{font-weight:600;margin-bottom:6px}
+  .logItem{margin-top:10px;font-weight:600;color:var(--ink)}
+  .logList{margin:6px 0 0 18px;padding:0;list-style:disc;color:var(--muted);font-size:13px}
+  .logList li{margin:4px 0}
   
   /* Photo preview modal */
   .photoModal{position:fixed;inset:0;background:#000c;display:none;align-items:center;justify-content:center;z-index:4000;padding:20px}
@@ -184,7 +202,7 @@
     background:linear-gradient(180deg,#121a3f,#0d132a);
     border:1px solid #2a3466; border-radius:20px;
     box-shadow:0 18px 50px rgba(0,0,0,.45);
-    padding:34px 34px 30px; position:relative;
+    padding:34px 64px 30px 34px; position:relative;
     display:flex; flex-direction:column; gap:14px; text-align:center;
   }
   .qrPromo h2{margin:0 0 6px;font-size:clamp(1.1rem,1rem + 1vw,1.6rem);}
@@ -373,6 +391,44 @@ if (!slug) {
 document.body.style.display='none';
 
 const ALLERGENS=["dairy","egg","peanut","tree nut","shellfish","fish","gluten","soy","sesame","wheat"];
+const ALLERGEN_ALIASES={
+  milk:'dairy',
+  lactose:'dairy',
+  butter:'dairy',
+  eggs:'egg',
+  egg:'egg',
+  peanuts:'peanut',
+  peanut:'peanut',
+  treenut:'tree nut',
+  "tree nut":"tree nut",
+  "tree nuts":"tree nut",
+  almond:'tree nut',
+  cashew:'tree nut',
+  walnut:'tree nut',
+  shellfish:'shellfish',
+  crustaceans:'shellfish',
+  crustacean:'shellfish',
+  molluscs:'shellfish',
+  fish:'fish',
+  salmon:'fish',
+  tuna:'fish',
+  gluten:'gluten',
+  wheat:'wheat',
+  soy:'soy',
+  soya:'soy',
+  sesame:'sesame'
+};
+
+function detectAllergensInText(text){
+  if(!text) return [];
+  const lower=text.toLowerCase();
+  const found=new Set();
+  Object.entries(ALLERGEN_ALIASES).forEach(([alias,target])=>{
+    if(lower.includes(alias)) found.add(target);
+  });
+  ALLERGENS.forEach(a=>{ if(lower.includes(a)) found.add(a); });
+  return [...found];
+}
 const state={page:null,restaurants:[],restaurant:null,allergies:[],ack:false,user:{loggedIn:false},canEdit:false,qr:false,_hydrated:false};
 let mobileInfoPanel=null;
 let currentMobileInfoItem=null;
@@ -396,6 +452,7 @@ function ensureMobileInfoPanel(){
     mobileInfoPanel.style.background='rgba(11,16,32,0.94)';
     mobileInfoPanel.style.backdropFilter='blur(14px)';
     mobileInfoPanel.style.webkitBackdropFilter='blur(14px)';
+    mobileInfoPanel.style.paddingBottom='calc(24px + env(safe-area-inset-bottom,0))';
   }
   mobileInfoPanel.innerHTML='';
   mobileInfoPanel.classList.remove('show');
@@ -433,8 +490,7 @@ function ensureMobileViewerChrome(){
     chrome.innerHTML=`
       <div class="chromeTop">
         <button type="button" class="mobileViewerControlBtn" id="mobileViewerCloseBtn">Close</button>
-      </div>
-      <div class="chromeBottom">
+        <div class="mobileViewerSummary" id="mobileViewerAllergySummary" aria-live="polite"></div>
         <div class="mobileZoomGroup">
           <button type="button" id="mobileZoomOutBtn" aria-label="Zoom out">−</button>
           <span id="mobileZoomValue">100%</span>
@@ -452,12 +508,25 @@ function ensureMobileViewerChrome(){
   if(closeBtn) closeBtn.onclick=()=>closeMobileViewer();
   if(zoomOutBtn) zoomOutBtn.onclick=()=>setMobileZoom(mobileZoomLevel-0.25);
   if(zoomInBtn) zoomInBtn.onclick=()=>setMobileZoom(mobileZoomLevel+0.25);
+  updateFullScreenAllergySummary();
   return mobileViewerChrome;
 }
 
 function updateZoomIndicator(){
   const indicator=document.getElementById('mobileZoomValue');
   if(indicator) indicator.textContent=`${Math.round(mobileZoomLevel*100)}%`;
+}
+
+function updateFullScreenAllergySummary(){
+  const summary=document.getElementById('mobileViewerAllergySummary');
+  if(!summary) return;
+  const uniqueKeys=Array.from(new Set((state.allergies||[]).map(norm))).filter(Boolean);
+  const selected=uniqueKeys.map(cap);
+  if(selected.length){
+    summary.innerHTML=`<div class="mobileViewerSummaryInner"><span class="label">Selected:</span><span class="values">${selected.map(esc).join(', ')}</span></div>`;
+  } else {
+    summary.innerHTML=`<div class="mobileViewerSummaryInner"><span class="values">No allergens selected</span></div>`;
+  }
 }
 
 function setMobileZoom(level, resetBase=false){
@@ -510,6 +579,7 @@ function openMobileViewer(){
   }
   captureMenuBaseDimensions(true);
   document.body.classList.add('mobileViewerActive');
+  updateFullScreenAllergySummary();
   setMobileZoom(1,true);
   if(prefersMobileInfo()){
     if(currentMobileInfoItem){
@@ -675,24 +745,41 @@ const send=(p)=>{
           const updatedRestaurant = normalizeRestaurant(data);
           window.postMessage({type:'overlaysSaved', restaurant: updatedRestaurant}, '*');
 
-          const changeDescription = p.changes && p.changes.length ? p.changes : 'Menu overlays updated.';
+          const rawChangePayload=p.changes;
+          let changePayload=null;
+          if(rawChangePayload && typeof rawChangePayload==='object' && !Array.isArray(rawChangePayload)){
+            changePayload=rawChangePayload;
+          } else if(typeof rawChangePayload==='string'){
+            try{ changePayload=JSON.parse(rawChangePayload); }
+            catch(_){ changePayload=null; }
+          }
+
+          let authorName='Manager';
+          if(state.user?.name){
+            authorName=state.user.name;
+          } else if(state.user?.user_metadata?.first_name || state.user?.user_metadata?.last_name){
+            const first=state.user.user_metadata.first_name || '';
+            const last=state.user.user_metadata.last_name || '';
+            authorName=`${first} ${last}`.trim();
+          } else if(state.user?.email){
+            authorName=state.user.email.split('@')[0];
+          }
+
+          if(changePayload && changePayload.author){
+            authorName=changePayload.author;
+          }
+
+          const storedChanges=changePayload
+            ? JSON.stringify(changePayload)
+            : (typeof rawChangePayload==='string' ? rawChangePayload : 'Menu overlays updated.');
+
           try{
-            let userName = 'Manager';
-            if(state.user?.name) {
-              userName = state.user.name;
-            } else if(state.user?.user_metadata?.first_name || state.user?.user_metadata?.last_name) {
-              const first = state.user.user_metadata.first_name || '';
-              const last = state.user.user_metadata.last_name || '';
-              userName = `${first} ${last}`.trim();
-            } else if(state.user?.email) {
-              userName = state.user.email.split('@')[0];
-            }
             await insertChangeLogEntry({
               restaurantId,
               timestamp: new Date().toISOString(),
               type: 'update',
-              description: `${userName}: ${changeDescription}`,
-              changes: changeDescription,
+              description: authorName,
+              changes: storedChanges,
               userEmail: state.user?.email || null
             });
           }catch(logError){
@@ -732,12 +819,17 @@ const send=(p)=>{
         } else if(state.user?.email) {
           userName = state.user.email.split('@')[0];
         }
+        const confirmPayload={
+          author:userName,
+          general:['Allergen information confirmed'],
+          items:{}
+        };
         await insertChangeLogEntry({
           restaurantId,
           timestamp,
           type: 'confirm',
-          description: `${userName} confirmed allergen information is up-to-date`,
-          changes: 'Allergen information confirmed',
+          description: userName,
+          changes: JSON.stringify(confirmPayload),
           userEmail: state.user?.email || null,
           photos: p.photos || (p.photo ? [p.photo] : [])
         });
@@ -802,6 +894,517 @@ const esc=s=>(s??'').toString().replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','
 const cap=s=>(s||'').split(' ').map(w=>w? w[0].toUpperCase()+w.slice(1):'').join(' ');
 const fmtDate=d=>{try{const x=new Date(d);return isNaN(x)?'':x.toLocaleDateString();}catch(_){return '';}};
 const fmtDateTime=d=>{try{const x=new Date(d);return isNaN(x)?'':x.toLocaleDateString()+' at '+x.toLocaleTimeString();}catch(_){return '';}};
+
+let aiAssistBackdrop=null;
+let aiAssistPanel=null;
+let aiAssistCloseBtn=null;
+let aiAssistInput=null;
+let aiAssistDictateBtn=null;
+let aiAssistProcessBtn=null;
+let aiAssistStatusEl=null;
+let aiAssistResultsEl=null;
+let aiAssistTableBody=null;
+let aiAssistAddRowBtn=null;
+let aiAssistApplyBtn=null;
+let aiAssistBrandResults=null;
+let aiAssistElementsBound=false;
+
+const aiAssistState={
+  context:null,
+  recognition:null,
+  listening:false,
+  pendingRequestId:null,
+  brandSuggestions:{}
+};
+
+const AI_BRAND_LIMIT=6;
+
+function aiAssistSetStatus(message='', tone='info'){
+  if(!aiAssistStatusEl) return;
+  aiAssistStatusEl.textContent=message;
+  if(message){
+    aiAssistStatusEl.setAttribute('data-tone',tone);
+  } else {
+    aiAssistStatusEl.removeAttribute('data-tone');
+  }
+}
+
+function ensureAiAssistElements(){
+  if(aiAssistBackdrop && aiAssistBackdrop.isConnected) return;
+  if(aiAssistBackdrop && !aiAssistBackdrop.isConnected){
+    aiAssistBackdrop=null;
+    aiAssistPanel=null;
+    aiAssistCloseBtn=null;
+    aiAssistInput=null;
+    aiAssistDictateBtn=null;
+    aiAssistProcessBtn=null;
+    aiAssistStatusEl=null;
+    aiAssistResultsEl=null;
+    aiAssistTableBody=null;
+    aiAssistAddRowBtn=null;
+    aiAssistApplyBtn=null;
+    aiAssistBrandResults=null;
+    aiAssistElementsBound=false;
+  }
+  if(!aiAssistBackdrop){
+    const backdrop=document.createElement('div');
+    backdrop.className='aiAssistBackdrop';
+    backdrop.id='aiAssistBackdrop';
+    backdrop.setAttribute('aria-hidden','true');
+    backdrop.innerHTML=`
+      <div class="aiAssistPanel" id="aiAssistPanel" role="dialog" aria-modal="true" aria-labelledby="aiAssistTitle">
+        <div class="aiAssistHead">
+          <h2 id="aiAssistTitle">AI Ingredient Assistant</h2>
+          <button type="button" class="aiAssistClose" id="aiAssistClose" aria-label="Close AI assistant">×</button>
+        </div>
+        <p class="aiAssistIntro">Describe how the dish is prepared or list its ingredients. The assistant will suggest ingredients, brands, and likely allergens.</p>
+        <textarea id="aiAssistInput" class="aiAssistInput" placeholder="Example: Grilled chicken marinated in yogurt, lemon juice, garlic, served with toasted pita and tahini sauce."></textarea>
+        <div class="aiAssistControls">
+          <button type="button" class="btn" id="aiAssistDictateBtn">🎙 Dictate</button>
+          <button type="button" class="btn btnPrimary" id="aiAssistProcessBtn">Process text</button>
+          <span class="aiAssistStatus" id="aiAssistStatus"></span>
+        </div>
+        <div class="aiAssistResults" id="aiAssistResults" aria-live="polite">
+          <h3 style="margin:0">Ingredients</h3>
+          <div class="aiAssistTableWrapper">
+            <table id="aiAssistTable">
+              <thead>
+                <tr>
+                  <th style="width:24%">Ingredient</th>
+                  <th style="width:32%">Brand</th>
+                  <th>Allergens</th>
+                  <th style="width:60px">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="aiAssistTableBody"></tbody>
+            </table>
+          </div>
+          <div class="aiAssistTableActions">
+            <button type="button" class="btn" id="aiAssistAddRowBtn">Add ingredient</button>
+            <div class="aiAssistSpacer"></div>
+            <button type="button" class="btn btnPrimary" id="aiAssistApplyBtn">Apply to dish</button>
+          </div>
+          <div class="aiAssistBrandResults" id="aiAssistBrandResults" aria-live="polite"></div>
+        </div>
+      </div>`;
+    document.body.appendChild(backdrop);
+    aiAssistBackdrop=backdrop;
+    aiAssistPanel=backdrop.querySelector('#aiAssistPanel');
+    aiAssistCloseBtn=backdrop.querySelector('#aiAssistClose');
+    aiAssistInput=backdrop.querySelector('#aiAssistInput');
+    aiAssistDictateBtn=backdrop.querySelector('#aiAssistDictateBtn');
+    aiAssistProcessBtn=backdrop.querySelector('#aiAssistProcessBtn');
+    aiAssistStatusEl=backdrop.querySelector('#aiAssistStatus');
+    aiAssistResultsEl=backdrop.querySelector('#aiAssistResults');
+    aiAssistTableBody=backdrop.querySelector('#aiAssistTableBody');
+    aiAssistAddRowBtn=backdrop.querySelector('#aiAssistAddRowBtn');
+    aiAssistApplyBtn=backdrop.querySelector('#aiAssistApplyBtn');
+    aiAssistBrandResults=backdrop.querySelector('#aiAssistBrandResults');
+    aiAssistElementsBound=false;
+  }
+  if(!aiAssistElementsBound){
+    aiAssistBackdrop.addEventListener('click',(event)=>{
+      if(event.target===aiAssistBackdrop) closeAiAssistant();
+    });
+    aiAssistCloseBtn.addEventListener('click',()=>closeAiAssistant());
+    aiAssistDictateBtn.addEventListener('click',()=>toggleAiDictation());
+    aiAssistProcessBtn.addEventListener('click',()=>handleAiProcess());
+    aiAssistAddRowBtn.addEventListener('click',()=>{
+      const data=collectAiTableData();
+      data.push({name:'',brand:'',allergens:[]});
+      renderAiTable(data);
+    });
+    aiAssistApplyBtn.addEventListener('click',()=>applyAiIngredientsToOverlay());
+    aiAssistTableBody.addEventListener('click',(event)=>{
+      const row=event.target.closest('tr');
+      if(!row) return;
+      const idx=Number(row.dataset.index||'0');
+      if(event.target.classList.contains('aiDeleteRow') || event.target.closest('.aiDeleteRow')){
+        const data=collectAiTableData();
+        data.splice(idx,1);
+        renderAiTable(data);
+        return;
+      }
+      if(event.target.classList.contains('aiBrandSearchBtn') || event.target.closest('.aiBrandSearchBtn')){
+        openAiBrandSearch(idx);
+        return;
+      }
+    });
+    aiAssistBrandResults.addEventListener('click',(event)=>{
+      const card=event.target.closest('.aiBrandSuggestion');
+      if(!card) return;
+      const rowIdx=Number(card.dataset.row||'0');
+      const suggestionIdx=Number(card.dataset.index||'0');
+      applyBrandSuggestion(rowIdx,suggestionIdx);
+    });
+    aiAssistElementsBound=true;
+  }
+}
+
+function toggleAiAssistBackdrop(show){
+  ensureAiAssistElements();
+  if(!aiAssistBackdrop) return;
+  if(show){
+    aiAssistBackdrop.classList.add('show');
+    aiAssistBackdrop.setAttribute('aria-hidden','false');
+  } else {
+    aiAssistBackdrop.classList.remove('show');
+    aiAssistBackdrop.setAttribute('aria-hidden','true');
+  }
+}
+
+function collectAiTableData(){
+  ensureAiAssistElements();
+  if(!aiAssistTableBody) return [];
+  const data=[];
+  aiAssistTableBody.querySelectorAll('tr').forEach(row=>{
+    const idx=Number(row.dataset.index||'0');
+    const name=row.querySelector('.aiIngredientName')?.value.trim()||'';
+    const brand=row.querySelector('.aiIngredientBrand')?.value.trim()||'';
+    const allergens=[...row.querySelectorAll('.aiAllergenChecklist input:checked')].map(input=>input.value);
+    const brandImage=row.dataset.brandImage||'';
+    const ingredientsImage=row.dataset.ingredientsImage||'';
+    let ingredientsList=[];
+    if(row.dataset.ingredientsList){
+      try{ingredientsList=JSON.parse(row.dataset.ingredientsList)||[];}catch(_){ingredientsList=[];}
+    }
+    data.push({index:idx,name,brand,allergens,brandImage,ingredientsImage,ingredientsList});
+  });
+  return data;
+}
+
+function renderAiTable(rows){
+  ensureAiAssistElements();
+  if(!aiAssistTableBody || !aiAssistResultsEl) return;
+  const data=Array.isArray(rows)?rows:collectAiTableData();
+  aiAssistTableBody.innerHTML='';
+  aiAssistState.brandSuggestions={};
+  data.forEach((row,idx)=>{
+    const tr=document.createElement('tr');
+    tr.dataset.index=idx;
+    if(row.brandImage) tr.dataset.brandImage=row.brandImage;
+    if(row.ingredientsImage) tr.dataset.ingredientsImage=row.ingredientsImage;
+    if(row.ingredientsList) tr.dataset.ingredientsList=JSON.stringify(row.ingredientsList);
+    const allergens=new Set((row.allergens||[]).map(norm));
+    const brandPreviewImg = row.brandImage ? `<img src="${esc(row.brandImage)}" alt="${esc(row.brand||row.name||'Brand')}" loading="lazy">` : '';
+    const ingredientsPreviewImg = row.ingredientsImage ? `<img src="${esc(row.ingredientsImage)}" alt="Ingredients label" loading="lazy">` : '';
+    const ingredientsListNote = row.ingredientsList && row.ingredientsList.length ? `Label ingredients: ${row.ingredientsList.map(ingredient=>esc(ingredient)).join(', ')}` : '';
+    tr.innerHTML=`
+      <td><input type="text" class="aiIngredientName" placeholder="Ingredient name" value="${esc(row.name||'')}"></td>
+      <td>
+        <div class="aiBrandCell">
+          <input type="text" class="aiIngredientBrand" placeholder="Brand (optional)" value="${esc(row.brand||'')}">
+          <button type="button" class="btn aiBrandSearchBtn">Find brand</button>
+          <div class="aiBrandPreview">${brandPreviewImg}${ingredientsPreviewImg}</div>
+          <div class="aiIngredientList">${ingredientsListNote}</div>
+        </div>
+      </td>
+      <td>
+        <div class="aiAllergenChecklist">
+          ${ALLERGENS.map(allergen=>{
+            const checked=allergens.has(norm(allergen))?'checked':'';
+            return `<label><input type="checkbox" value="${esc(allergen)}" ${checked}>${esc(cap(allergen))}</label>`;
+          }).join('')}
+        </div>
+      </td>
+      <td><button type="button" class="btn aiDeleteRow">Remove</button></td>
+    `;
+    aiAssistTableBody.appendChild(tr);
+  });
+  aiAssistResultsEl.classList.toggle('show', data.length>0);
+  if(aiAssistBrandResults){
+    aiAssistBrandResults.classList.remove('show');
+    aiAssistBrandResults.innerHTML='';
+  }
+}
+
+function heuristicallyExtractIngredients(text){
+  if(!text) return [];
+  const tokens=text
+    .split(/\r?\n|\.|;/)
+    .map(part=>part.split(/\band\b|\bwith\b|,/i))
+    .flat()
+    .map(part=>part.trim())
+    .filter(Boolean);
+  const unique=new Map();
+  tokens.forEach(token=>{
+    const cleaned=token.replace(/[\d/]+/g,'').replace(/\b(teaspoons?|tablespoons?|cups?|ounces?|grams?|lbs?|pounds?|ml|l|kg)\b/gi,'').replace(/[\(\)]/g,'').replace(/\s+/g,' ').trim();
+    if(!cleaned) return;
+    const key=norm(cleaned);
+    if(unique.has(key)) return;
+    const detectedAllergens=ALLERGENS.filter(a=>token.toLowerCase().includes(a));
+    unique.set(key,{name:cap(cleaned),brand:'',allergens:detectedAllergens,ingredientsList:[cap(cleaned)]});
+  });
+  if(unique.size===0){
+    return [{name:'',brand:'',allergens:[]}];
+  }
+  return Array.from(unique.values());
+}
+
+function openAiAssistant(context){
+  ensureAiAssistElements();
+  if(!aiAssistBackdrop) return;
+  aiAssistState.context=context||{};
+  aiAssistState.pendingRequestId=null;
+  aiAssistState.brandSuggestions={};
+  aiAssistSetStatus('');
+  if(aiAssistInput){
+    aiAssistInput.value=context?.seedText||'';
+    setTimeout(()=>{aiAssistInput.focus(); aiAssistInput.selectionStart=aiAssistInput.value.length;},120);
+  }
+  renderAiTable([]);
+  toggleAiAssistBackdrop(true);
+}
+
+function closeAiAssistant(){
+  ensureAiAssistElements();
+  if(aiAssistState.recognition){
+    try{aiAssistState.recognition.stop();}catch(_){}
+  }
+  aiAssistState.recognition=null;
+  aiAssistState.listening=false;
+  aiAssistState.pendingRequestId=null;
+  aiAssistSetStatus('');
+  if(aiAssistResultsEl){
+    aiAssistResultsEl.classList.remove('show');
+  }
+  if(aiAssistTableBody){
+    aiAssistTableBody.innerHTML='';
+  }
+  if(aiAssistBrandResults){
+    aiAssistBrandResults.classList.remove('show');
+    aiAssistBrandResults.innerHTML='';
+  }
+  if(aiAssistDictateBtn) aiAssistDictateBtn.textContent='🎙 Dictate';
+  toggleAiAssistBackdrop(false);
+}
+
+function toggleAiDictation(){
+  ensureAiAssistElements();
+  if(aiAssistState.listening){
+    if(aiAssistState.recognition){
+      try{aiAssistState.recognition.stop();}catch(_){}
+    }
+    aiAssistState.listening=false;
+    aiAssistSetStatus('Dictation stopped.','info');
+    if(aiAssistDictateBtn) aiAssistDictateBtn.textContent='🎙 Dictate';
+    return;
+  }
+  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SpeechRecognition){
+    aiAssistSetStatus('Dictation is not supported in this browser.','warn');
+    return;
+  }
+  try{
+    const recognition=new SpeechRecognition();
+    recognition.lang='en-US';
+    recognition.continuous=true;
+    recognition.interimResults=true;
+    recognition.onresult=(event)=>{
+      let transcript='';
+      for(let i=0;i<event.results.length;i++){
+        transcript+=event.results[i][0].transcript;
+      }
+      if(aiAssistInput) aiAssistInput.value=transcript.trim();
+    };
+    recognition.onerror=(evt)=>{
+      aiAssistSetStatus('Dictation error: '+(evt.error||'unknown'), 'warn');
+    };
+    recognition.onend=()=>{
+      aiAssistState.listening=false;
+      aiAssistState.recognition=null;
+      if(aiAssistDictateBtn) aiAssistDictateBtn.textContent='🎙 Dictate';
+    };
+    recognition.start();
+    aiAssistState.recognition=recognition;
+    aiAssistState.listening=true;
+    aiAssistSetStatus('Dictation active… speak now.');
+    if(aiAssistDictateBtn) aiAssistDictateBtn.textContent='⏹ Stop dictation';
+  }catch(err){
+    console.error('Dictation failed',err);
+    aiAssistSetStatus('Could not start dictation: '+(err.message||err),'error');
+  }
+}
+
+async function fetchBrandSuggestions(query){
+  ensureAiAssistElements();
+  if(!query) return [];
+  const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=${AI_BRAND_LIMIT}`;
+  const res=await fetch(url);
+  if(!res.ok) throw new Error('Brand lookup failed');
+  const data=await res.json();
+  const products=Array.isArray(data.products)?data.products:[];
+  return products.map(product=>{
+    const allergens=[];
+    if(Array.isArray(product.allergens_tags)){
+      product.allergens_tags.forEach(tag=>{
+        const key=norm(tag.replace(/^en:/,'').replace(/-/g,' '));
+        const mapped=ALLERGEN_ALIASES[key] || key;
+        if(mapped && ALLERGENS.some(a=>norm(a)===mapped)) allergens.push(cap(mapped));
+      });
+    }
+    const ingredientsText = product.ingredients_text_en || product.ingredients_text || product.ingredients_original || '';
+    let ingredientsList=[];
+    if(ingredientsText){
+      ingredientsList=ingredientsText.split(/[,;\n]/).map(part=>part.replace(/\(.+?\)/g,'').trim()).filter(Boolean).map(cap);
+      detectAllergensInText(ingredientsText).forEach(a=>{
+        if(!allergens.includes(cap(a))) allergens.push(cap(a));
+      });
+    }
+    return {
+      name:product.product_name || product.brands || query,
+      brand:product.brands || '',
+      image:product.image_front_small_url || product.image_front_url || '',
+      ingredientsImage:product.image_ingredients_url || '',
+      ingredientsList,
+      allergens
+    };
+  }).filter(item=>item.name);
+}
+
+async function openAiBrandSearch(rowIdx){
+  ensureAiAssistElements();
+  if(!aiAssistBrandResults) return;
+  const rows=collectAiTableData();
+  if(!rows[rowIdx]){
+    aiAssistSetStatus('Select an ingredient first.','warn');
+    return;
+  }
+  const query=rows[rowIdx].brand || rows[rowIdx].name;
+  if(!query){
+    aiAssistSetStatus('Add a name before searching for a brand.','warn');
+    return;
+  }
+  aiAssistSetStatus('Searching for brand suggestions…');
+  aiAssistBrandResults.classList.add('show');
+  aiAssistBrandResults.innerHTML='<div>Looking up brands…</div>';
+  try{
+    const suggestions=await fetchBrandSuggestions(query);
+    aiAssistState.brandSuggestions[rowIdx]=suggestions;
+    if(!suggestions.length){
+      aiAssistBrandResults.innerHTML='<div>No brands found. Try a different search.</div>';
+      return;
+    }
+    aiAssistBrandResults.innerHTML=suggestions.map((item,idx)=>`
+      <div class="aiBrandSuggestion" data-row="${rowIdx}" data-index="${idx}">
+        ${item.image?`<img src="${esc(item.image)}" alt="${esc(item.name)}" loading="lazy">`:''}
+        <div class="aiBrandSuggestionInfo">
+          <strong>${esc(item.name)}</strong>
+          ${item.brand?`<span>${esc(item.brand)}</span>`:''}
+          ${item.ingredientsImage?'<span>Ingredients label available</span>':''}
+        </div>
+      </div>
+    `).join('');
+    aiAssistSetStatus('Tap a brand to apply it to the ingredient.','info');
+  }catch(err){
+    console.error('Brand lookup failed',err);
+    aiAssistBrandResults.innerHTML='<div>Could not retrieve brand information.</div>';
+    aiAssistSetStatus('Brand lookup failed. Try again later.','warn');
+  }
+}
+
+function applyBrandSuggestion(rowIdx, suggestionIdx){
+  ensureAiAssistElements();
+  const suggestions=aiAssistState.brandSuggestions[rowIdx]||[];
+  const suggestion=suggestions[suggestionIdx];
+  if(!suggestion) return;
+  const row=aiAssistTableBody?.querySelector(`tr[data-index="${rowIdx}"]`);
+  if(!row) return;
+  const brandInput=row.querySelector('.aiIngredientBrand');
+  const nameInput=row.querySelector('.aiIngredientName');
+  if(brandInput){
+    brandInput.value=suggestion.brand || suggestion.name || brandInput.value;
+  }
+  if(nameInput && !nameInput.value.trim() && suggestion.name){
+    nameInput.value=suggestion.name;
+  }
+  if(suggestion.image) row.dataset.brandImage=suggestion.image;
+  if(suggestion.ingredientsImage) row.dataset.ingredientsImage=suggestion.ingredientsImage;
+  if(Array.isArray(suggestion.ingredientsList)){
+    row.dataset.ingredientsList=JSON.stringify(suggestion.ingredientsList);
+  }
+  const preview=row.querySelector('.aiBrandPreview');
+  if(preview){
+    preview.innerHTML=`
+      ${suggestion.image?`<img src="${esc(suggestion.image)}" alt="${esc(suggestion.name)}" loading="lazy">`:''}
+      ${suggestion.ingredientsImage?`<img src="${esc(suggestion.ingredientsImage)}" alt="Ingredients label" loading="lazy">`:''}
+    `;
+  }
+  const listNote=row.querySelector('.aiIngredientList');
+  if(listNote){
+    const items=suggestion.ingredientsList||[];
+    listNote.textContent=items.length?`Label ingredients: ${items.join(', ')}`:'';
+  }
+  if(Array.isArray(suggestion.allergens)){
+    const allergenSet=new Set(suggestion.allergens.map(norm));
+    row.querySelectorAll('.aiAllergenChecklist input').forEach(input=>{
+      if(allergenSet.has(norm(input.value))){
+        input.checked=true;
+      }
+    });
+  }
+  if(aiAssistBrandResults){
+    aiAssistBrandResults.classList.remove('show');
+    aiAssistBrandResults.innerHTML='';
+  }
+  aiAssistSetStatus('Brand applied to ingredient.','success');
+}
+
+function handleAiProcess(){
+  ensureAiAssistElements();
+  if(!aiAssistInput) return;
+  const text=aiAssistInput.value.trim();
+  if(!text){
+    aiAssistSetStatus('Please describe the dish before processing.','warn');
+    return;
+  }
+  aiAssistSetStatus('Processing description…');
+  if(window===window.parent){
+    const ingredients=heuristicallyExtractIngredients(text);
+    renderAiTable(ingredients);
+    aiAssistSetStatus('Draft ingredient list generated. Review and adjust as needed.','success');
+  } else {
+    const requestId=`ai-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    aiAssistState.pendingRequestId=requestId;
+    parent.postMessage({
+      type:'aiAssistExtract',
+      requestId,
+      text,
+      dishName:aiAssistState.context?.getCurrentName ? aiAssistState.context.getCurrentName() : ''
+    },"*");
+  }
+}
+
+function handleAiAssistantResult(payload){
+  ensureAiAssistElements();
+  if(!payload || payload.requestId!==aiAssistState.pendingRequestId) return;
+  aiAssistState.pendingRequestId=null;
+  const rows=Array.isArray(payload.ingredients)?payload.ingredients:[];
+  renderAiTable(rows);
+  aiAssistSetStatus(rows.length?'AI ingredient suggestions ready. Review before applying.':'AI could not extract ingredients from the description.','info');
+}
+
+function handleAiAssistantError(payload){
+  ensureAiAssistElements();
+  if(!payload || payload.requestId!==aiAssistState.pendingRequestId) return;
+  aiAssistState.pendingRequestId=null;
+  aiAssistSetStatus(payload.error || 'AI assistant request failed.', 'warn');
+}
+
+function applyAiIngredientsToOverlay(){
+  ensureAiAssistElements();
+  const rows=collectAiTableData();
+  if(!rows.length){
+    aiAssistSetStatus('Add at least one ingredient before applying.','warn');
+    return;
+  }
+  if(aiAssistState.context?.onApply){
+    aiAssistState.context.onApply(rows);
+  }
+  closeAiAssistant();
+  aiAssistSetStatus('');
+}
+
 const daysAgo=d=>{
   try{
     const x=new Date(d);
@@ -903,23 +1506,38 @@ function tooltipBodyHTML(item,sel){
   if(!sel.length) return `<div class="note">No saved allergens selected.</div>`;
   
   let html='';
+  const hits=(item.allergens||[]).filter(a=>sel.includes(a));
+  const removableSet=new Set((item.removable||[]).map(r=>norm(r.allergen||'')));
   
-  if(status!=='safe'){
-    const hits=(item.allergens||[]).filter(a=>sel.includes(a));
-    const list=hits.map(a=>{
-      const rem=(item.removable||[]).find(r=>r.allergen===a);
+  const unsafeHits=hits.filter(a=>!removableSet.has(norm(a)));
+  const removableHits=hits.filter(a=>removableSet.has(norm(a)));
+  
+  if(unsafeHits.length){
+    const list=unsafeHits.map(a=>{
       const why=details[a]?` — ${esc(details[a])}`:'';
-      return `<li style="margin:4px 0">${esc(cap(a))}${why}${rem?' (can be accommodated)':''}</li>`;
+      return `<li>${esc(cap(a))}${why}</li>`;
     }).join('');
-    html+=`<div class="note">Contains:<ul style="margin:6px 0;padding-left:20px">${list}</ul></div>`;
-  } else {
-    html+=`<div class="note">No selected allergens found.</div>`;
+    html+=`<div class="note tooltipDangerText"><strong>Contains (cannot be accommodated)</strong><ul class="tooltipList">${list}</ul></div>`;
+  }
+  if(removableHits.length){
+    const list=removableHits.map(a=>{
+      const why=details[a]?` — ${esc(details[a])}`:'';
+      return `<li>${esc(cap(a))}${why}</li>`;
+    }).join('');
+    html+=`<div class="note tooltipWarnText"><strong>Contains (can be accommodated)</strong><ul class="tooltipList">${list}</ul></div>`;
+  }
+  if(!hits.length){
+    html+=`<div class="note tooltipNeutralText">No selected allergens found.</div>`;
   }
   
   if(hasCross){
     const crossHits=(item.crossContamination||[]).filter(a=>sel.includes(a));
-    const crossList=crossHits.map(a=>`<li style="margin:4px 0">${esc(cap(a))}</li>`).join('');
-    html+=`<div class="note" style="margin-top:8px;color:var(--warn)">⚠️ Cross-contamination risk:<ul style="margin:6px 0;padding-left:20px">${crossList}</ul></div>`;
+    const crossList=crossHits.map(a=>`<li>${esc(cap(a))}</li>`).join('');
+    html+=`<div class="note tooltipNeutralText"><strong>Cross-contamination risk</strong><ul class="tooltipList">${crossList}</ul></div>`;
+  }
+  
+  if(details && details.__ingredientsSummary){
+    html+=`<div class="note tooltipNeutralText"><strong>Ingredients</strong><br>${esc(details.__ingredientsSummary)}</div>`;
   }
   
   return html;
@@ -938,7 +1556,7 @@ function renderTopbar(){
     const tabs=div('','tabs');
     const navItems=[{t:'All restaurants',to:'/restaurants'}];
     if(state.user?.loggedIn){
-      navItems.push({t:'Favorites',to:'/favorites'});
+      navItems.push({t:'Favorite restaurants',to:'/favorites'});
     }
     navItems.forEach(n=>{
       const b=div(n.t,'tab'); b.onclick=()=>send({type:'navigate',to:n.to}); tabs.appendChild(b);
@@ -993,7 +1611,10 @@ function renderMobileInfo(item){
   currentMobileInfoItem=item;
   const bodyHTML=tooltipBodyHTML(item,state.allergies||[]);
   mobileInfoPanel.innerHTML=`
-    <div class="mobileInfoHeader">${esc(item.id||'Item')}</div>
+    <div class="mobileInfoHeaderRow">
+      <div class="mobileInfoHeader">${esc(item.id||'Item')}</div>
+      <button type="button" class="mobileInfoClose" aria-label="Close dish details">×</button>
+    </div>
     ${bodyHTML}
   `;
   mobileInfoPanel.style.background='rgba(11,16,32,0.94)';
@@ -1001,6 +1622,16 @@ function renderMobileInfo(item){
   mobileInfoPanel.style.webkitBackdropFilter='blur(14px)';
   adjustMobileInfoPanelForZoom();
   mobileInfoPanel.classList.add('show');
+  const closeBtn=mobileInfoPanel.querySelector('.mobileInfoClose');
+  if(closeBtn){
+    const closePanel=(ev)=>{
+      if(ev){ev.preventDefault(); ev.stopPropagation();}
+      renderMobileInfo(null);
+    };
+    closeBtn.addEventListener('click',closePanel);
+    closeBtn.addEventListener('touchend',closePanel,{passive:false});
+    closeBtn.addEventListener('keydown',(ev)=>{ if(ev.key==='Enter'||ev.key===' '){ closePanel(ev); }});
+  }
 }
 function syncMobileInfoPanel(){
   if(!mobileInfoPanel) return;
@@ -1154,28 +1785,62 @@ function renderCardsPage(){
 function renderSavedChips(el){
   el.innerHTML='';
   const saved=(state.allergies||[]).map(norm);
-  if(!saved.length){ el.appendChild(div('<div class="note">No saved allergens. Use "Edit saved allergens".</div>')); return; }
+  if(!saved.length){
+    el.appendChild(div('<div class="note">No saved allergens. Use "Edit saved allergens".</div>'));
+    updateFullScreenAllergySummary();
+    return;
+  }
   const row=div('','chips'); saved.forEach(a=>row.appendChild(div(esc(cap(a)),'chip active'))); el.appendChild(row);
+  updateFullScreenAllergySummary();
 }
 
 /* selector for QR guests */
 function renderSelector(el){
   el.innerHTML='';
   const row=div('','chips');
+  row.setAttribute('role','list');
   const sel=new Set((state.allergies||[]).map(norm));
   ALLERGENS.forEach(a=>{
-    const c=div(esc(cap(a)),'chip clickable'+(sel.has(a)?' active':''));
-    c.onclick=()=>{
-      sel.has(a)?sel.delete(a):sel.add(a);
+    const isActive=sel.has(a);
+    const c=div(esc(cap(a)),'chip clickable'+(isActive?' active':''));
+    c.setAttribute('role','button');
+    c.setAttribute('tabindex','0');
+    c.setAttribute('aria-pressed',isActive?'true':'false');
+    c.dataset.value=a;
+    const toggle=()=>{
+      if(sel.has(a)){
+        sel.delete(a);
+      } else {
+        sel.add(a);
+      }
       state.allergies=[...sel];
+      updateFullScreenAllergySummary();
       try{sessionStorage.setItem('qrAllergies',JSON.stringify(state.allergies));}catch(_){}
-      renderSelector(el); if (window.__rerenderLayer__) window.__rerenderLayer__();
+      renderSelector(el);
+      if(window.__rerenderLayer__) window.__rerenderLayer__();
       send({type:'qrAllergies',allergies:state.allergies});
       if(prefersMobileInfo()) renderMobileInfo(currentMobileInfoItem);
     };
+    c.addEventListener('click',(evt)=>{
+      evt.preventDefault();
+      evt.stopPropagation();
+      toggle();
+    },{passive:false});
+    c.addEventListener('touchend',(evt)=>{
+      evt.preventDefault();
+      evt.stopPropagation();
+      toggle();
+    },{passive:false});
+    c.addEventListener('keydown',(evt)=>{
+      if(evt.key==='Enter' || evt.key===' '){
+        evt.preventDefault();
+        toggle();
+      }
+    });
     row.appendChild(c);
   });
   el.appendChild(row);
+  updateFullScreenAllergySummary();
 }
 
 /* draw (simple image that follows page zoom) */
@@ -1507,55 +2172,49 @@ function renderEditor(){
     else if(s==='error'){saveBtn.disabled=false;saveBtn.textContent='Retry save';saveBtn.classList.remove('btnSuccess','btnPrimary');saveBtn.classList.add('btnDanger');}
   }
   function formatChangesForLog(changesList){
-    // Group changes by item
     const firstName=state.user?.user_metadata?.first_name||'';
     const lastName=state.user?.user_metadata?.last_name||'';
-    const fullName=`${firstName} ${lastName}`.trim()||'User';
+    let fullName=`${firstName} ${lastName}`.trim();
+    if(!fullName) fullName=(state.user?.name||'').trim();
+    if(!fullName) fullName=(state.user?.email||'').trim();
+    if(!fullName) fullName='User';
 
     const grouped={};
     const generalChanges=[];
 
-    changesList.forEach(change=>{
-      // Check if change is specific to an item (contains ":")
+    (changesList||[]).forEach(change=>{
+      if(typeof change!=='string') return;
       const colonIndex=change.indexOf(':');
       if(colonIndex>0){
         const itemName=change.substring(0,colonIndex).trim();
         const itemChange=change.substring(colonIndex+1).trim();
-        if(!grouped[itemName])grouped[itemName]=[];
-        grouped[itemName].push(itemChange);
-      } else {
-        generalChanges.push(change);
+        if(!grouped[itemName]) grouped[itemName]=[];
+        if(itemChange) grouped[itemName].push(itemChange);
+      } else if(change.trim()){
+        generalChanges.push(change.trim());
       }
     });
 
-    // Format: Name on first line, then grouped changes
-    let formatted=`**${fullName}**\n\n`;
-
-    // Add general changes first (Added/Removed items, renames)
-    if(generalChanges.length>0){
-      formatted+=generalChanges.map(c=>`• ${c}`).join('\n')+'\n\n';
-    }
-
-    // Add item-specific changes
-    Object.keys(grouped).forEach(itemName=>{
-      formatted+=`${itemName}:\n`;
-      formatted+=grouped[itemName].map(c=>`• ${c}`).join('\n')+'\n\n';
-    });
-
-    return formatted.trim();
+    return {
+      author: fullName,
+      general: generalChanges,
+      items: grouped
+    };
   }
 
   if(saveBtn){
     const originalOverlays=JSON.stringify(rs.overlays||[]);
     saveBtn.onclick=()=>{
       setSaveState('saving');
-      // Use pendingChanges if available, otherwise fall back to comparison
-      let changesList;
+      let changesList=[];
       if(pendingChanges.length>0){
-        changesList=pendingChanges;
+        changesList=[...pendingChanges];
       } else {
-        const oldChanges=describeOverlayChanges(JSON.parse(originalOverlays),overlays);
-        changesList=oldChanges.split('; ');
+        changesList=describeOverlayChanges(JSON.parse(originalOverlays),overlays);
+      }
+      if(!changesList.length){
+        setSaveState('saved');
+        return;
       }
       const formattedChanges=formatChangesForLog(changesList);
       send({type:'saveOverlays',overlays,menuImage:rs.menuImage||'',changes:formattedChanges});
@@ -1564,36 +2223,62 @@ function renderEditor(){
   
   function describeOverlayChanges(oldOverlays,newOverlays){
     const changes=[];
-    const diff=newOverlays.length-oldOverlays.length;
-    if(diff>0){
-      const itemWord=diff===1?'item':'items';
-      changes.push(`Added ${diff} new ${itemWord}`);
-    }
-    if(diff<0){
-      const itemWord=Math.abs(diff)===1?'item':'items';
-      changes.push(`Removed ${Math.abs(diff)} ${itemWord}`);
-    }
-    newOverlays.forEach((item,idx)=>{
-      const old=oldOverlays[idx];
-      if(old&&old.id!==item.id){
+    const oldList=Array.isArray(oldOverlays)?oldOverlays:[];
+    const newList=Array.isArray(newOverlays)?newOverlays:[];
+    const oldById=new Map(oldList.filter(o=>o&&o.id).map(o=>[o.id,o]));
+    const newById=new Map(newList.filter(o=>o&&o.id).map(o=>[o.id,o]));
+    const renamedPairs=[];
+
+    newList.forEach((item,idx)=>{
+      if(!item) return;
+      const itemName=item.id||'Item';
+      const old=oldList[idx];
+      if(old && old.id && item.id && old.id!==item.id){
+        renamedPairs.push({from:old.id,to:item.id});
         changes.push(`Renamed "${old.id}" to "${item.id}"`);
       }
       if(old){
-        const oldAllergens=new Set(old.allergens||[]);
-        const newAllergens=new Set(item.allergens||[]);
+        const oldAllergens=new Set((old.allergens||[]).map(norm));
+        const newAllergens=new Set((item.allergens||[]).map(norm));
         const added=[...newAllergens].filter(a=>!oldAllergens.has(a));
         const removed=[...oldAllergens].filter(a=>!newAllergens.has(a));
         if(added.length){
           const allergenWord=added.length===1?'allergen':'allergens';
-          changes.push(`${item.id}: Added ${allergenWord} ${added.join(', ')}`);
+          changes.push(`${itemName}: Added ${allergenWord} ${added.join(', ')}`);
         }
         if(removed.length){
           const allergenWord=removed.length===1?'allergen':'allergens';
-          changes.push(`${item.id}: Removed ${allergenWord} ${removed.join(', ')}`);
+          changes.push(`${itemName}: Removed ${allergenWord} ${removed.join(', ')}`);
+        }
+        const moved=old.x!==item.x || old.y!==item.y || old.w!==item.w || old.h!==item.h;
+        if(moved){
+          changes.push(`${itemName}: Adjusted overlay position`);
         }
       }
     });
-    return changes.length?changes.join('; '):'Minor adjustments to overlay positions';
+
+    const renamedNewIds=new Set(renamedPairs.map(p=>p.to));
+    const renamedOldIds=new Set(renamedPairs.map(p=>p.from));
+
+    newList.forEach(item=>{
+      if(!item || !item.id) return;
+      if(renamedNewIds.has(item.id)) return;
+      if(!oldById.has(item.id)){
+        const itemName=item.id||'Item';
+        changes.push(`${itemName}: Added overlay`);
+      }
+    });
+
+    oldList.forEach(item=>{
+      if(!item || !item.id) return;
+      if(renamedOldIds.has(item.id)) return;
+      if(!newById.has(item.id)){
+        const itemName=item.id||'Item';
+        changes.push(`${itemName}: Removed overlay`);
+      }
+    });
+
+    return changes;
   }
 
   const confirmBtn=document.getElementById('confirmBtn');
@@ -1881,17 +2566,42 @@ function renderEditor(){
           <span class="logType ${typeClass}">${esc(typeLabel)}</span>
           <span class="logTimestamp">${esc(fmtDateTime(log.timestamp))}</span>
         </div>`;
-      if(log.description){
-        html+=`<div class="note">${esc(log.description)}</div>`;
-      }
-      if(log.changes){
-        // Escape first, then convert markdown to HTML
-        let changesHtml=esc(log.changes);
-        // Convert **text** to <strong>text</strong>
-        changesHtml=changesHtml.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
-        // Convert newlines to <br>
-        changesHtml=changesHtml.replace(/\n/g,'<br>');
-        html+=`<div class="note" style="margin-top:8px;font-size:13px;line-height:1.6">${changesHtml}</div>`;
+      const parsedChanges = (()=>{
+        if(!log.changes) return null;
+        if(typeof log.changes==='object') return log.changes;
+        if(typeof log.changes==='string'){
+          try{return JSON.parse(log.changes);}catch(_){return null;}
+        }
+        return null;
+      })();
+
+      if(parsedChanges && (Object.keys(parsedChanges.items||{}).length || (parsedChanges.general||[]).length)){
+        let authorName=parsedChanges.author || log.description || '';
+        if(authorName.includes(':')) authorName=authorName.split(':')[0];
+        if(authorName){
+          html+=`<div class="logAuthor">${esc(authorName)}</div>`;
+        }
+        if(Array.isArray(parsedChanges.general) && parsedChanges.general.length){
+          html+=`<ul class="logList">${parsedChanges.general.map(item=>`<li>${esc(item)}</li>`).join('')}</ul>`;
+        }
+        Object.entries(parsedChanges.items||{}).forEach(([itemName,entries])=>{
+          html+=`<div class="logItem">${esc(itemName)}</div>`;
+          if(Array.isArray(entries) && entries.length){
+            html+=`<ul class="logList">${entries.map(entry=>`<li>${esc(entry)}</li>`).join('')}</ul>`;
+          }
+        });
+      } else {
+        let authorLine = log.description || (parsedChanges && parsedChanges.author);
+        if(authorLine && authorLine.includes(':')) authorLine=authorLine.split(':')[0];
+        if(authorLine){
+          html+=`<div class="logAuthor">${esc(authorLine)}</div>`;
+        }
+        if(log.changes){
+          let changesHtml=esc(typeof log.changes==='string'?log.changes:JSON.stringify(log.changes));
+          changesHtml=changesHtml.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+          changesHtml=changesHtml.replace(/\n/g,'<br>');
+          html+=`<div class="note" style="margin-top:8px;font-size:13px;line-height:1.6">${changesHtml}</div>`;
+        }
       }
       // Display photos if present (stored as array in database)
       const photos = log.photos || [];
@@ -2053,8 +2763,9 @@ function renderEditor(){
 
   img.onload=drawAll; if(img.complete) drawAll();
   document.getElementById('addBox').onclick=()=>{
-    overlays.push({id:'New item',x:10,y:10,w:20,h:8,allergens:[],removable:[],crossContamination:[],details:{}});
-    pendingChanges.push('Added 1 new item');
+    const newOverlay={id:'New item',x:10,y:10,w:20,h:8,allergens:[],removable:[],crossContamination:[],details:{}};
+    overlays.push(newOverlay);
+    pendingChanges.push(`${newOverlay.id}: Added overlay`);
     drawAll();
     setDirty(true);
   };
@@ -2067,17 +2778,20 @@ function renderEditor(){
       if(result){
         setSaveState('saving');
         // Use pendingChanges if available, otherwise fall back to comparison
-        let changesList;
+        let changesList=[];
         if(pendingChanges.length>0){
-          changesList=pendingChanges;
+          changesList=[...pendingChanges];
         } else {
           const originalOverlays=JSON.stringify(rs.overlays||[]);
-          const oldChanges=describeOverlayChanges(JSON.parse(originalOverlays),overlays);
-          changesList=oldChanges.split('; ');
+          changesList=describeOverlayChanges(JSON.parse(originalOverlays),overlays);
         }
-        const formattedChanges=formatChangesForLog(changesList);
-        send({type:'saveOverlays',overlays,menuImage:rs.menuImage||'',changes:formattedChanges});
-        setTimeout(()=>{state.page='restaurant'; renderRestaurant();},500);
+        if(changesList.length){
+          const formattedChanges=formatChangesForLog(changesList);
+          send({type:'saveOverlays',overlays,menuImage:rs.menuImage||'',changes:formattedChanges});
+          setTimeout(()=>{state.page='restaurant'; renderRestaurant();},500);
+        } else {
+          state.page='restaurant'; renderRestaurant();
+        }
       } else {
         state.page='restaurant'; renderRestaurant();
       }
@@ -2096,10 +2810,16 @@ function renderEditor(){
       </div><div id="algList"></div>
       <div class="note" style="margin:8px 0 4px">Live preview (assumes the user is allergic to everything)</div>
       <div id="previewBox" style="border:1px solid #2a3466;border-radius:10px;padding:10px"></div>
-      <div style="display:flex;gap:8px;margin-top:10px">
+      <div class="editorActionRow" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
         <button class="btn btnPrimary" id="doneBtn">Done</button>
-        <button class="btn btnDanger" id="delBtn">Delete overlay</button></div>`;
+        <button class="btn btnDanger" id="delBtn">Delete overlay</button>
+        <button class="btn" id="aiAssistBtn" type="button">AI ingredient helper</button>
+      </div>`;
     const list=document.getElementById('algList');
+    if(list){
+      list.dataset.aiIngredients='';
+      list.dataset.aiIngredientSummary='';
+    }
     const sel=new Set(it.allergens||[]); 
     const details=it.details||{}; 
     const rem=new Map((it.removable||[]).map(r=>[r.allergen,r.component]));
@@ -2142,6 +2862,90 @@ function renderEditor(){
     }
     updatePreview();
     
+    function applyIngredientsFromAi(rows){
+    if(!Array.isArray(rows) || !rows.length){
+      aiAssistSetStatus('No ingredients to apply.', 'warn');
+      return;
+    }
+      if(list){
+        list.dataset.aiIngredients = JSON.stringify(rows);
+      }
+      const allergenDetailsMap={};
+      const activeAllergens=new Set();
+      const aggregatedIngredientNames=[];
+      rows.forEach(row=>{
+        const allergens=Array.isArray(row.allergens)?row.allergens:[];
+        const name=(row.name||'').trim();
+        const brand=(row.brand||'').trim();
+        if(Array.isArray(row.ingredientsList) && row.ingredientsList.length){
+          aggregatedIngredientNames.push(...row.ingredientsList);
+        } else if(name){
+          aggregatedIngredientNames.push(brand ? `${cap(name)} (${brand})` : cap(name));
+        }
+        const label=name?cap(name):'';
+        const labelWithBrand=brand ? (label?`${label} (${brand})`:brand) : label;
+        allergens.forEach(al=>{
+          const key=norm(al);
+          if(!key) return;
+          activeAllergens.add(key);
+          if(labelWithBrand){
+            if(!allergenDetailsMap[key]) allergenDetailsMap[key]=[];
+            if(!allergenDetailsMap[key].includes(labelWithBrand)){
+              allergenDetailsMap[key].push(labelWithBrand);
+            }
+          }
+        });
+      });
+      if(list){
+        const uniqueAggregated=[...new Set(aggregatedIngredientNames.map(item=>(item||'').trim()).filter(Boolean))];
+        list.dataset.aiIngredientSummary = JSON.stringify(uniqueAggregated);
+      }
+      list.querySelectorAll('.algRow').forEach(row=>{
+        const btn=row.querySelector('.algBtn');
+        const allergen=btn.dataset.a;
+        const key=norm(allergen);
+        const input=row.querySelector('.algInput');
+        const labels=row.querySelectorAll('.algChk');
+        const remLabel=labels[0];
+        const crossLabel=labels[1];
+        const remChk=remLabel?remLabel.querySelector('input'):null;
+        const crossChk=crossLabel?crossLabel.querySelector('input'):null;
+        const isActive=activeAllergens.has(key);
+        btn.classList.toggle('active',isActive);
+        if(input){
+          if(isActive){
+            const explanations=allergenDetailsMap[key]||[];
+            input.value=explanations.length?`Contains ${explanations.join(', ')}`:'';
+          } else {
+            input.value='';
+          }
+          input.style.display=isActive?'block':'none';
+        }
+        if(remLabel){
+          remLabel.style.display=isActive?'flex':'none';
+          if(!isActive && remChk) remChk.checked=false;
+        }
+        if(crossLabel){
+          crossLabel.style.display='flex';
+        }
+      });
+      updatePreview();
+      setDirty(true);
+      aiAssistSetStatus('Ingredient details applied. Review and save the dish when ready.','success');
+    }
+    
+    const aiAssistBtn=document.getElementById('aiAssistBtn');
+    if(aiAssistBtn){
+      aiAssistBtn.onclick=()=>{
+        const seedText=Object.values(it.details||{}).join('\n');
+        openAiAssistant({
+          seedText,
+          getCurrentName:()=>document.getElementById('itemName').value||it.id||'Item',
+          onApply:(rows)=>applyIngredientsFromAi(rows)
+        });
+      };
+    }
+    
     document.getElementById('doneBtn').onclick=()=>{
       const oldName=it.id;
       const oldAllergens=new Set(it.allergens||[]);
@@ -2157,6 +2961,17 @@ function renderEditor(){
         if(on){final.allergens.push(a); if(txt) final.details[a]=txt; if(isRem) final.removable.push({allergen:a,component:txt||a}); }
         if(isCross){final.crossContamination.push(a);}
       });
+      if(list && list.dataset.aiIngredientSummary){
+        try{
+          const rawSummary=JSON.parse(list.dataset.aiIngredientSummary)||[];
+          const summary=[...new Set(rawSummary.map(item=>(item||'').trim()).filter(Boolean))];
+          if(summary.length){
+            final.details.__ingredientsSummary=summary.join(', ');
+          } else {
+            delete final.details.__ingredientsSummary;
+          }
+        }catch(_){ delete final.details.__ingredientsSummary; }
+      }
       const newName=(document.getElementById('itemName').value||it.id||'Item');
 
       // Track rename
@@ -2182,11 +2997,15 @@ function renderEditor(){
       it.details=final.details;
       it.removable=final.removable;
       it.crossContamination=final.crossContamination;
+      if(list){
+        list.dataset.aiIngredients='';
+        list.dataset.aiIngredientSummary='';
+      }
       mb.style.display='none'; drawAll(); setDirty(true);
     };
     document.getElementById('delBtn').onclick=()=>{
       if(confirm('Delete this overlay?')){
-        pendingChanges.push(`Removed 1 item`);
+        pendingChanges.push(`${it.id||'Item'}: Removed overlay`);
         overlays.splice(idx,1);
         mb.style.display='none';
         drawAll();
@@ -2249,6 +3068,8 @@ window.addEventListener('message',(ev)=>{
   }
   if(m.page==='restaurant'||m.restaurant){state.ack=false;}
   if(m.type==='allergiesSaved'){state.allergies=m.allergies||[];}
+  if(m.type==='aiAssistResult'){handleAiAssistantResult(m); return;}
+  if(m.type==='aiAssistError'){handleAiAssistantError(m); return;}
 
   if(m.type==='overlaysSaved'){
     try{setSaveState('saved');}catch(_){ }
@@ -2269,8 +3090,12 @@ window.addEventListener('message',(ev)=>{
   }
 
   renderTopbar(); render();
+  updateFullScreenAllergySummary();
 });
 </script>
 <script type="module" src="js/report-modal.js"></script>
 </body>
 </html>
+  .tooltipDanger{border:1px solid var(--bad);background:rgba(62,14,22,0.88);color:var(--bad)}
+  .tooltipWarn{border:1px solid var(--warn);background:rgba(56,44,12,0.88);color:#facc15}
+  .tooltipNeutral{border:1px solid rgba(148,163,184,0.4);background:rgba(16,24,52,0.88);color:#d1d9ff}
