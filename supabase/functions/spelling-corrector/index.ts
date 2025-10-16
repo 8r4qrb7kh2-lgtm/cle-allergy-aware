@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 
 serve(async (req) => {
   // Handle CORS
@@ -17,7 +17,7 @@ serve(async (req) => {
   try {
     const { query, ingredientName } = await req.json()
 
-    if (!OPENAI_API_KEY) {
+    if (!ANTHROPIC_API_KEY) {
       // Return original query if no API key
       return new Response(
         JSON.stringify({ corrected: query }),
@@ -30,15 +30,17 @@ serve(async (req) => {
       )
     }
 
-    // Use ChatGPT to correct spelling
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Use Claude to correct spelling
+    const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 50,
         messages: [{
           role: 'user',
           content: `You are a spelling correction assistant for food product searches. The user is searching for "${ingredientName}" and typed the brand name "${query}".
@@ -52,15 +54,13 @@ Examples:
 - "kraft" → "kraft"
 
 Response (brand name only):`
-        }],
-        temperature: 0.3,
-        max_tokens: 20
+        }]
       }),
     })
 
-    if (!openaiResponse.ok) {
-      const error = await openaiResponse.text()
-      console.error('OpenAI API error:', error)
+    if (!claudeResponse.ok) {
+      const error = await claudeResponse.text()
+      console.error('Claude API error:', error)
       // Return original query on error
       return new Response(
         JSON.stringify({ corrected: query }),
@@ -73,8 +73,8 @@ Response (brand name only):`
       )
     }
 
-    const aiResult = await openaiResponse.json()
-    const corrected = aiResult.choices[0].message.content.trim()
+    const aiResult = await claudeResponse.json()
+    const corrected = aiResult.content[0].text.trim()
 
     return new Response(
       JSON.stringify({ corrected: corrected || query }),
@@ -91,7 +91,7 @@ Response (brand name only):`
     return new Response(
       JSON.stringify({
         error: error.message || 'Failed to process request',
-        corrected: query
+        corrected: req.body?.query || ''
       }),
       {
         status: 500,

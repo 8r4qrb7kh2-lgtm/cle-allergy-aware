@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY')
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 
 serve(async (req) => {
   // Handle CORS
@@ -17,18 +17,15 @@ serve(async (req) => {
   try {
     const { text, dishName, imageData } = await req.json()
 
-    if (!OPENAI_API_KEY) {
-      throw new Error('OpenAI API key not configured')
+    if (!ANTHROPIC_API_KEY) {
+      throw new Error('Anthropic API key not configured')
     }
 
     // Build the prompt based on whether we have an image
-    const prompt = imageData
+    const systemPrompt = imageData
       ? `You are an ingredient analysis assistant for a restaurant allergen awareness system.
 
 CRITICAL: You have been provided an ingredient label image. Read the ACTUAL ingredients from the image.
-
-${text ? `Context: ${text}` : ''}
-${dishName ? `Dish Name: ${dishName}` : ''}
 
 IMPORTANT INSTRUCTIONS:
 1. Read the ingredients list EXACTLY as shown in the image
@@ -53,13 +50,10 @@ Return a JSON object with this exact structure:
 Be VERY conservative with allergens - only flag what you can clearly identify from the label.`
       : `You are an ingredient analysis assistant for a restaurant allergen awareness system.
 
-Analyze the following dish description and extract:
+Analyze the dish description and extract:
 1. Individual ingredients
 2. Likely brands (if mentioned)
 3. Potential allergens from this list: dairy, egg, peanut, tree nut, shellfish, fish, gluten, soy, sesame, wheat
-
-Dish Name: ${dishName || 'Unknown'}
-Description: ${text}
 
 Return a JSON object with this exact structure:
 {
@@ -76,52 +70,83 @@ Return a JSON object with this exact structure:
 
 Be conservative - only flag allergens you are confident about based on the description.`
 
-    // Call OpenAI API
-    const messages: any[] = [
-      {
-        role: 'user',
-        content: prompt
-      }
-    ]
+    const userPrompt = imageData
+      ? `${text ? `Context: ${text}` : ''}
+${dishName ? `Dish Name: ${dishName}` : ''}
 
-    // If image data is provided, use vision model
+Please analyze the ingredient label image.`
+      : `Dish Name: ${dishName || 'Unknown'}
+Description: ${text}
+
+Please analyze this dish.`
+
+    // Build content array for Claude
+    const content: any[] = []
+
     if (imageData) {
-      messages[0].content = [
-        {
-          type: 'text',
-          text: prompt
-        },
-        {
-          type: 'image_url',
-          image_url: {
-            url: imageData // Should be base64 data URL
-          }
+      // Extract base64 data from data URL
+      const base64Data = imageData.split(',')[1] || imageData
+      const mediaType = imageData.includes('image/png') ? 'image/png' :
+                       imageData.includes('image/jpeg') ? 'image/jpeg' :
+                       imageData.includes('image/jpg') ? 'image/jpeg' :
+                       imageData.includes('image/webp') ? 'image/webp' :
+                       'image/jpeg'
+
+      content.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: mediaType,
+          data: base64Data
         }
-      ]
+      })
     }
 
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    content.push({
+      type: 'text',
+      text: userPrompt
+    })
+
+    // Call Claude API
+    const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: imageData ? 'gpt-4o' : 'gpt-4o-mini',
-        messages: messages,
-        response_format: { type: 'json_object' },
-        temperature: 0.3,
+        model: 'claude-3-5-sonnet-20240620',
+        max_tokens: 2000,
+        system: systemPrompt,
+        messages: [{
+          role: 'user',
+          content: content
+        }]
       }),
     })
 
-    if (!openaiResponse.ok) {
-      const error = await openaiResponse.text()
-      throw new Error(`OpenAI API error: ${error}`)
+    if (!claudeResponse.ok) {
+      const error = await claudeResponse.text()
+      console.error('Claude API error:', error)
+      throw new Error(`Claude API error: ${error}`)
     }
 
-    const aiResult = await openaiResponse.json()
-    const content = aiResult.choices[0].message.content
-    const parsed = JSON.parse(content)
+    const aiResult = await claudeResponse.json()
+    const responseText = aiResult.content[0].text
+
+    // Parse JSON from response
+    let parsed
+    try {
+      // Try to extract JSON from markdown code blocks if present
+      const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/) ||
+                       responseText.match(/```\n([\s\S]*?)\n```/)
+      const jsonText = jsonMatch ? jsonMatch[1] : responseText
+      parsed = JSON.parse(jsonText)
+    } catch (e) {
+      console.error('Failed to parse JSON:', responseText)
+      throw new Error('Failed to parse AI response as JSON')
+    }
 
     return new Response(
       JSON.stringify(parsed),
