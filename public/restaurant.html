@@ -1003,96 +1003,6 @@ const aiAssistState={
 const AI_BRAND_LIMIT=6;
 const AI_BRAND_MEMORY_KEY='cle:aiBrandMemory:v1';
 
-// Common brand suggestions for typical restaurant ingredients
-const COMMON_BRANDS = {
-  'spinach': ['Dole', 'Earthbound Farm', 'Fresh Express'],
-  'lasagna': ['Barilla', 'De Cecco', 'Ronzoni'],
-  'lasagna noodles': ['Barilla', 'De Cecco', 'Ronzoni'],
-  'pasta': ['Barilla', 'De Cecco', 'Ronzoni'],
-  'ricotta cheese': ['Galbani', 'Polly-O', 'Calabro'],
-  'ricotta': ['Galbani', 'Polly-O', 'Calabro'],
-  'mozzarella': ['Galbani', 'Polly-O', 'BelGioioso'],
-  'parmesan': ['Kraft', 'Galbani', 'BelGioioso'],
-  'egg': ['Eggland\'s Best', 'Vital Farms', 'Happy Egg'],
-  'eggs': ['Eggland\'s Best', 'Vital Farms', 'Happy Egg'],
-  'parsley': ['McCormick', 'Simply Organic', 'Spice Islands'],
-  'basil': ['McCormick', 'Simply Organic', 'Spice Islands'],
-  'oregano': ['McCormick', 'Simply Organic', 'Spice Islands'],
-  'garlic': ['McCormick', 'Spice World', 'Christopher Ranch'],
-  'olive oil': ['Bertolli', 'Filippo Berio', 'California Olive Ranch'],
-  'tomato': ['Hunt\'s', 'Muir Glen', 'Cento'],
-  'tomato sauce': ['Hunt\'s', 'Muir Glen', 'Cento'],
-  'tomato paste': ['Hunt\'s', 'Muir Glen', 'Cento'],
-  'chicken': ['Perdue', 'Tyson', 'Foster Farms'],
-  'ground beef': ['Angus', 'Certified Angus Beef', 'Organic Prairie'],
-  'beef': ['Angus', 'Certified Angus Beef', 'Organic Prairie'],
-  'flour': ['King Arthur', 'Gold Medal', 'Pillsbury'],
-  'sugar': ['Domino', 'C&H', 'Imperial'],
-  'salt': ['Morton', 'Diamond Crystal', 'Sea Salt'],
-  'pepper': ['McCormick', 'Simply Organic', 'Spice Islands'],
-  'black pepper': ['McCormick', 'Simply Organic', 'Spice Islands'],
-  'butter': ['Land O Lakes', 'Kerrygold', 'Challenge'],
-  'milk': ['Organic Valley', 'Horizon', 'Lactaid'],
-  'cream': ['Land O Lakes', 'Organic Valley', 'Horizon'],
-  'heavy cream': ['Land O Lakes', 'Organic Valley', 'Horizon'],
-  'yogurt': ['Chobani', 'Fage', 'Stonyfield'],
-  'bread': ['Wonder', 'Nature\'s Own', 'Dave\'s Killer Bread'],
-  'rice': ['Uncle Ben\'s', 'Lundberg', 'Nishiki'],
-  'beans': ['Goya', 'Bush\'s', 'S&W'],
-  'black beans': ['Goya', 'Bush\'s', 'S&W'],
-  'kidney beans': ['Goya', 'Bush\'s', 'S&W'],
-  'chickpeas': ['Goya', 'Bush\'s', 'S&W'],
-  'lentils': ['Goya', 'Bob\'s Red Mill', '365 Organic'],
-  'onion': ['Fresh', 'Organic', 'Local Farm'],
-  'potato': ['Russet', 'Yukon Gold', 'Red Potato'],
-  'carrot': ['Bolthouse Farms', 'Grimmway Farms', 'Cal-Organic'],
-  'celery': ['Dole', 'Fresh Express', 'Organic'],
-  'bell pepper': ['Fresh', 'Organic', 'Local Farm'],
-  'mushroom': ['Giorgio', 'Monterey', 'Whole'],
-  'broccoli': ['Green Giant', 'Birds Eye', 'Fresh'],
-  'cauliflower': ['Green Giant', 'Birds Eye', 'Fresh'],
-  'lettuce': ['Dole', 'Fresh Express', 'Earthbound Farm'],
-  'cabbage': ['Fresh', 'Organic', 'Local Farm'],
-  'kale': ['Earthbound Farm', 'Organic Girl', 'Fresh'],
-  'cheese': ['Kraft', 'Sargento', 'Tillamook'],
-  'cheddar': ['Kraft', 'Sargento', 'Tillamook'],
-  'sour cream': ['Daisy', 'Breakstone\'s', 'Knudsen'],
-  'cream cheese': ['Philadelphia', 'Organic Valley', 'Galbani'],
-  'bacon': ['Oscar Mayer', 'Hormel', 'Applegate'],
-  'sausage': ['Jimmy Dean', 'Johnsonville', 'Aidells'],
-  'ham': ['Boar\'s Head', 'Hormel', 'Oscar Mayer'],
-  'turkey': ['Butterball', 'Jennie-O', 'Honeysuckle White'],
-  'fish': ['Wild Planet', 'Bumble Bee', 'Chicken of the Sea'],
-  'salmon': ['Wild Planet', 'Bumble Bee', 'Chicken of the Sea'],
-  'tuna': ['Wild Planet', 'Bumble Bee', 'Chicken of the Sea'],
-  'shrimp': ['Sea Best', 'Great Value', 'Aqua Star'],
-  'tortilla': ['Mission', 'Old El Paso', 'Guerrero'],
-  'salsa': ['Pace', 'Tostitos', 'Herdez'],
-  'hot sauce': ['Tabasco', 'Frank\'s RedHot', 'Cholula'],
-  'soy sauce': ['Kikkoman', 'Lee Kum Kee', 'La Choy'],
-  'worcestershire': ['Lea & Perrins', 'French\'s', 'Heinz'],
-  'ketchup': ['Heinz', 'Hunt\'s', 'French\'s'],
-  'mustard': ['French\'s', 'Gulden\'s', 'Grey Poupon'],
-  'mayonnaise': ['Hellmann\'s', 'Best Foods', 'Duke\'s'],
-  'mayo': ['Hellmann\'s', 'Best Foods', 'Duke\'s'],
-  'vinegar': ['Heinz', 'Bragg', 'Spectrum'],
-  'balsamic vinegar': ['Bertolli', 'Pompeian', 'Colavita'],
-  'peanut butter': ['Jif', 'Skippy', 'Peter Pan'],
-  'jam': ['Smucker\'s', 'Welch\'s', 'Bonne Maman'],
-  'jelly': ['Smucker\'s', 'Welch\'s', 'Bonne Maman'],
-  'honey': ['Sue Bee', 'Nature Nate\'s', 'Local Honey'],
-  'maple syrup': ['Aunt Jemima', 'Mrs. Butterworth\'s', 'Log Cabin'],
-  'chocolate': ['Hershey\'s', 'Ghirardelli', 'Nestle'],
-  'vanilla': ['McCormick', 'Simply Organic', 'Nielsen-Massey'],
-  'vanilla extract': ['McCormick', 'Simply Organic', 'Nielsen-Massey'],
-  'baking powder': ['Clabber Girl', 'Rumford', 'Calumet'],
-  'baking soda': ['Arm & Hammer', 'Bob\'s Red Mill', 'Clabber Girl'],
-  'yeast': ['Fleischmann\'s', 'Red Star', 'SAF'],
-  'cornstarch': ['Argo', 'Clabber Girl', 'Rumford'],
-  'breadcrumbs': ['Progresso', '4C', 'Kikkoman Panko'],
-  'panko': ['Kikkoman', 'Progresso', '4C']
-};
-
 let aiBrandMemoryCache=null;
 
 function loadAiBrandMemory(){
@@ -1811,24 +1721,6 @@ function renderAiTable(rows){
     aiAssistBrandResults.innerHTML='';
   }
 
-  // Auto-search for brands if there are ingredients without brands and without suggestions
-  const needsBrandSearch = data.some((row, idx) => {
-    return row.name &&
-           (!row.brands || row.brands.length === 0) &&
-           (!aiAssistState.brandSuggestions[idx] || aiAssistState.brandSuggestions[idx].length === 0);
-  });
-
-  if(needsBrandSearch){
-    // Delay slightly to let the DOM update
-    setTimeout(() => {
-      autoSearchBrandsForAllIngredients();
-    }, 100);
-  } else if(data.length > 0) {
-    // Just display existing suggestions if we have them
-    setTimeout(() => {
-      displayAutoBrandPreviews();
-    }, 50);
-  }
 }
 
 function heuristicallyExtractIngredients(text){
@@ -2214,187 +2106,6 @@ async function fetchBrandSuggestions(query, ingredientName){
   }).filter(item=>item.name);
 }
 
-async function autoSearchBrandsForAllIngredients(){
-  ensureAiAssistElements();
-  const rows=collectAiTableData();
-
-  if(!rows || rows.length === 0) return;
-
-  aiAssistSetStatus('Loading common brand suggestions...', 'info');
-
-  // Get brand suggestions for each ingredient
-  rows.forEach((row, rowIdx) => {
-    if(!row.name || row.brands?.length > 0){
-      // Skip if no name or already has brands
-      return;
-    }
-
-    // Look up common brands for this ingredient
-    const ingredientKey = norm(row.name);
-    const brandNames = COMMON_BRANDS[ingredientKey] || [];
-
-    if(brandNames.length > 0){
-      // Create simple brand suggestion objects
-      const suggestions = brandNames.map(brandName => ({
-        name: brandName,
-        brand: brandName,
-        image: '', // No images for simple suggestions
-        ingredientsImage: '',
-        ingredientsList: [],
-        allergens: []
-      }));
-
-      aiAssistState.brandSuggestions[rowIdx] = suggestions;
-    }
-  });
-
-  // Display brand preview cards
-  displayAutoBrandPreviews();
-
-  aiAssistSetStatus('Brand suggestions loaded. Click "+ Add brand" to search for specific products with labels.', 'info');
-}
-
-function displayAutoBrandPreviews(){
-  ensureAiAssistElements();
-  if(!aiAssistTableBody) return;
-
-  // For each row, display brand preview cards inline
-  aiAssistTableBody.querySelectorAll('tr').forEach((row) => {
-    const rowIdx = Number(row.dataset.index || '0');
-    const suggestions = aiAssistState.brandSuggestions[rowIdx];
-
-    if(!suggestions || suggestions.length === 0) return;
-
-    // Don't show suggestions if row already has brands
-    if(row.dataset.brands){
-      try {
-        const brands = JSON.parse(row.dataset.brands);
-        if(brands.length > 0) return; // Skip if already has brands
-      } catch(_) {}
-    }
-
-    const brandCell = row.querySelector('.aiBrandCell');
-    if(!brandCell) return;
-
-    // Check if there's already a brand suggestions container
-    let previewContainer = brandCell.querySelector('.aiAutoBrandPreviews');
-    if(!previewContainer){
-      previewContainer = document.createElement('div');
-      previewContainer.className = 'aiAutoBrandPreviews';
-      previewContainer.style.cssText = `
-        margin-top: 12px;
-        padding: 12px;
-        background: rgba(76,90,212,0.05);
-        border: 1px solid rgba(76,90,212,0.2);
-        border-radius: 8px;
-      `;
-
-      const title = document.createElement('div');
-      title.style.cssText = 'font-size: 0.85rem; color: #a0a0a0; margin-bottom: 8px; font-weight: 500;';
-      title.textContent = 'Suggested brands (click to verify):';
-      previewContainer.appendChild(title);
-
-      brandCell.appendChild(previewContainer);
-    }
-
-    // Create preview cards
-    const cardsContainer = document.createElement('div');
-    cardsContainer.style.cssText = 'display: flex; gap: 8px; flex-wrap: wrap;';
-
-    suggestions.forEach((suggestion, idx) => {
-      const card = document.createElement('div');
-      card.className = 'aiAutoBrandCard';
-      card.dataset.rowIdx = rowIdx;
-      card.dataset.suggestionIdx = idx;
-      card.style.cssText = `
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 12px;
-        background: #0c102a;
-        border: 1px solid rgba(76,90,212,0.3);
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s;
-        flex: 1;
-        min-width: 150px;
-        max-width: 250px;
-      `;
-
-      // Add hover effect
-      card.addEventListener('mouseenter', () => {
-        card.style.borderColor = 'rgba(76,90,212,0.6)';
-        card.style.background = '#12183a';
-        card.style.transform = 'translateY(-2px)';
-        card.style.boxShadow = '0 4px 8px rgba(76,90,212,0.2)';
-      });
-      card.addEventListener('mouseleave', () => {
-        card.style.borderColor = 'rgba(76,90,212,0.3)';
-        card.style.background = '#0c102a';
-        card.style.transform = 'translateY(0)';
-        card.style.boxShadow = 'none';
-      });
-
-      // Add click handler
-      card.addEventListener('click', () => {
-        // Always show verification modal for all brands
-        showBrandConfirmationModal(suggestion, () => {
-          applyBrandSuggestionConfirmed(rowIdx, suggestion);
-        });
-      });
-
-      // Brand image thumbnail
-      if(suggestion.image){
-        const img = document.createElement('img');
-        img.src = suggestion.image;
-        img.alt = suggestion.name;
-        img.style.cssText = `
-          width: 40px;
-          height: 40px;
-          object-fit: contain;
-          border-radius: 4px;
-          background: #0b1020;
-          flex-shrink: 0;
-        `;
-        card.appendChild(img);
-      }
-
-      // Brand info
-      const info = document.createElement('div');
-      info.style.cssText = 'flex: 1; min-width: 0;';
-
-      const name = document.createElement('div');
-      name.style.cssText = `
-        font-size: 0.9rem;
-        font-weight: 500;
-        color: #fff;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      `;
-      name.textContent = suggestion.name;
-
-      const status = document.createElement('div');
-      status.style.cssText = 'font-size: 0.75rem; margin-top: 2px;';
-      if(suggestion.ingredientsImage){
-        status.style.color = '#4caf50';
-        status.textContent = '✓ Has label';
-      } else {
-        status.style.color = '#a0a0a0';
-        status.textContent = 'Common brand';
-      }
-
-      info.appendChild(name);
-      info.appendChild(status);
-      card.appendChild(info);
-
-      cardsContainer.appendChild(card);
-    });
-
-    previewContainer.appendChild(cardsContainer);
-  });
-}
-
 async function openAiBrandSearch(rowIdx){
   ensureAiAssistElements();
   const rows=collectAiTableData();
@@ -2773,9 +2484,6 @@ function applyBrandSuggestionConfirmed(rowIdx, suggestion){
   console.log('Collected data after brand update:', allData);
   renderAiTable(allData);
 
-  // Re-display auto brand previews (will hide for rows with brands)
-  displayAutoBrandPreviews();
-
   // Close the inline brand results
   const rowBrandResults=aiAssistTableBody?.querySelector(`tr[data-index="${rowIdx}"] .aiRowBrandResults`);
   if(rowBrandResults){
@@ -2941,11 +2649,6 @@ function handleAiAssistantResult(payload){
   });
   renderAiTable(rows);
   aiAssistSetStatus(rows.length?'AI ingredient suggestions ready. Review before applying.':'AI could not extract ingredients from the description.','info');
-
-  // Automatically search for common brands for each ingredient
-  if(rows.length > 0){
-    autoSearchBrandsForAllIngredients();
-  }
 }
 
 function handleAiAssistantError(payload){
