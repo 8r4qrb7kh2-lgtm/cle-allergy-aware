@@ -1139,13 +1139,9 @@ function ensureAiAssistElements(){
           <h2 id="aiAssistTitle">AI Ingredient Assistant</h2>
           <button type="button" class="aiAssistClose" id="aiAssistClose" aria-label="Close AI assistant">×</button>
         </div>
-        <p class="aiAssistIntro">Describe how the dish is prepared or list its ingredients. The assistant will suggest ingredients, brands, and likely allergens.</p>
-        <textarea id="aiAssistInput" class="aiAssistInput" placeholder="Example: Grilled chicken marinated in yogurt, lemon juice, garlic, served with toasted pita and tahini sauce."></textarea>
-        <div class="aiAssistControls">
-          <button type="button" class="btn" id="aiAssistDictateBtn">🎙 Dictate</button>
-          <button type="button" class="btn btnPrimary" id="aiAssistProcessBtn">Process text</button>
-          <span class="aiAssistStatus" id="aiAssistStatus"></span>
-        </div>
+        <p class="aiAssistIntro">Upload or take a photo of your recipe, or describe the dish ingredients below.</p>
+
+        <!-- Photo Upload Section at Top -->
         <div class="aiAssistMedia" id="aiAssistMedia">
           <button type="button" class="btn" id="aiAssistUploadRecipeBtn">📁 Upload recipe photo</button>
           <button type="button" class="btn" id="aiAssistCameraRecipeBtn">📷 Take recipe photo</button>
@@ -1160,16 +1156,32 @@ function ensureAiAssistElements(){
             <button type="button" class="btn" id="aiAssistClearImageBtn">Clear image</button>
           </div>
         </div>
+
+        <!-- OR Divider -->
+        <div style="display: flex; align-items: center; gap: 16px; margin: 24px 0;">
+          <div style="flex: 1; height: 1px; background: rgba(76,90,212,0.3);"></div>
+          <span style="color: #a0a0a0; font-weight: 600; font-size: 1.1rem;">OR</span>
+          <div style="flex: 1; height: 1px; background: rgba(76,90,212,0.3);"></div>
+        </div>
+
+        <!-- Text Input Section -->
+        <textarea id="aiAssistInput" class="aiAssistInput" placeholder="Example: Grilled chicken marinated in yogurt, lemon juice, garlic, served with toasted pita and tahini sauce."></textarea>
+        <div class="aiAssistControls">
+          <button type="button" class="btn" id="aiAssistDictateBtn">🎙 Dictate</button>
+          <button type="button" class="btn btnPrimary" id="aiAssistProcessBtn">Process text</button>
+          <span class="aiAssistStatus" id="aiAssistStatus"></span>
+        </div>
         <div class="aiAssistResults" id="aiAssistResults" aria-live="polite">
           <h3 style="margin:0">Ingredients</h3>
           <div class="aiAssistTableWrapper">
             <table id="aiAssistTable">
               <thead>
                 <tr>
-                  <th style="width:24%">Ingredient</th>
-                  <th style="width:32%">Brand</th>
-                  <th>Allergens</th>
-                  <th style="width:60px">Actions</th>
+                  <th style="width:22%">Ingredient</th>
+                  <th style="width:28%">Brand</th>
+                  <th style="width:28%">Allergens</th>
+                  <th style="width:12%">Confirmed</th>
+                  <th style="width:10%">Actions</th>
                 </tr>
               </thead>
               <tbody id="aiAssistTableBody"></tbody>
@@ -1178,7 +1190,18 @@ function ensureAiAssistElements(){
           <div class="aiAssistTableActions">
             <button type="button" class="btn" id="aiAssistAddRowBtn">Add ingredient</button>
             <div class="aiAssistSpacer"></div>
-            <button type="button" class="btn btnPrimary" id="aiAssistApplyBtn">Apply to dish</button>
+            <button type="button" class="btn" id="aiAssistSaveDraftBtn" style="background:#4c5ad4;border-color:#6b7ce6">💾 Save Draft</button>
+            <button type="button" class="btn" id="aiAssistConfirmAllBtn" style="background:#2d7d46;border-color:#3a9d5a">✓ Confirm All Ingredients</button>
+          </div>
+          <div id="aiAssistFinalConfirmation" class="aiAssistHidden" style="margin-top:20px;padding:20px;background:rgba(76,90,212,0.1);border:1px solid rgba(76,90,212,0.3);border-radius:12px;">
+            <h4 style="margin:0 0 12px 0;color:#4c5ad4">Final Confirmation</h4>
+            <p style="margin:0 0 16px 0;font-size:0.95rem;line-height:1.5">
+              Please confirm that all ingredients for this recipe have been added and their allergens are correct.
+            </p>
+            <div style="display:flex;gap:12px">
+              <button type="button" class="btn btnPrimary" id="aiAssistApplyBtn">✓ Save to Dish</button>
+              <button type="button" class="btn" id="aiAssistEditMoreBtn" style="background:#301424;border-color:#4c2138">← Edit Ingredients</button>
+            </div>
           </div>
           <div class="aiAssistBrandResults" id="aiAssistBrandResults" aria-live="polite"></div>
         </div>
@@ -1253,9 +1276,28 @@ function ensureAiAssistElements(){
 
     aiAssistAddRowBtn.addEventListener('click',()=>{
       const data=collectAiTableData();
-      data.push({name:'',brand:'',allergens:[]});
+      data.push({name:'',brand:'',allergens:[],confirmed:false});
       renderAiTable(data);
     });
+
+    // New confirmation workflow buttons
+    const saveDraftBtn = aiAssistBackdrop.querySelector('#aiAssistSaveDraftBtn');
+    const confirmAllBtn = aiAssistBackdrop.querySelector('#aiAssistConfirmAllBtn');
+    const editMoreBtn = aiAssistBackdrop.querySelector('#aiAssistEditMoreBtn');
+    const finalConfirmation = aiAssistBackdrop.querySelector('#aiAssistFinalConfirmation');
+
+    if(saveDraftBtn){
+      saveDraftBtn.addEventListener('click', ()=>saveAiDraft());
+    }
+    if(confirmAllBtn){
+      confirmAllBtn.addEventListener('click', ()=>confirmAllIngredients());
+    }
+    if(editMoreBtn){
+      editMoreBtn.addEventListener('click', ()=>{
+        finalConfirmation.classList.add('aiAssistHidden');
+      });
+    }
+
     aiAssistApplyBtn.addEventListener('click',()=>applyAiIngredientsToOverlay());
     if(aiAssistUploadBtn && aiAssistFileInput){
       aiAssistUploadBtn.addEventListener('click',()=>{
@@ -1533,6 +1575,7 @@ function collectAiTableData(){
     const idx=Number(row.dataset.index||'0');
     const name=row.querySelector('.aiIngredientName')?.value.trim()||'';
     const allergens=[...row.querySelectorAll('.aiAllergenChecklist input:checked')].map(input=>input.value);
+    const confirmed=row.querySelector('.aiConfirmCheckbox')?.checked || false;
 
     // Collect multiple brands
     const brands=[];
@@ -1542,7 +1585,7 @@ function collectAiTableData(){
       }catch(_){}
     }
 
-    data.push({index:idx,name,allergens,brands});
+    data.push({index:idx,name,allergens,brands,confirmed});
   });
   return data;
 }
@@ -1612,8 +1655,10 @@ function renderAiTable(rows){
       `;
     }).join('') : '<div class="aiNoBrands">No brands added yet</div>';
 
+    const isConfirmed = row.confirmed || false;
+
     tr.innerHTML=`
-      <td colspan="4">
+      <td colspan="5">
         <div class="aiIngredientRow">
           <div class="aiIngredientMain">
             <input type="text" class="aiIngredientName" placeholder="Ingredient name" value="${esc(row.name||'')}">
@@ -1634,6 +1679,10 @@ function renderAiTable(rows){
                   return `<label class="${aiDetected}"><input type="checkbox" value="${esc(allergen)}" ${checked}>${esc(cap(allergen))}</label>`;
                 }).join('')}
               </div>
+            </div>
+            <div class="aiConfirmCell" style="text-align:center">
+              <input type="checkbox" class="aiConfirmCheckbox" ${isConfirmed ? 'checked' : ''} title="Confirm allergens are correct">
+              ${isConfirmed ? '<div style="color:#4caf50;font-size:0.8rem;margin-top:4px">✓ Confirmed</div>' : '<div style="color:#f59e0b;font-size:0.8rem;margin-top:4px">⚠ Not confirmed</div>'}
             </div>
             <button type="button" class="btn aiDeleteRow">Remove</button>
           </div>
@@ -1713,6 +1762,26 @@ function closeImageModal(){
 
 function closeAiAssistant(){
   ensureAiAssistElements();
+
+  // Check for unsaved changes
+  const data = collectAiTableData();
+  const hasData = data.length > 0 && data.some(item => item.name.trim());
+  const hasUnsavedChanges = hasData && !aiAssistState.savedToDish;
+
+  if(hasUnsavedChanges){
+    const confirmClose = confirm(
+      '⚠️ You have unsaved work in the AI Assistant.\n\n' +
+      'Would you like to save a draft before closing?\n\n' +
+      '• Click "OK" to save a draft\n' +
+      '• Click "Cancel" to close without saving'
+    );
+
+    if(confirmClose){
+      saveAiDraft();
+      return; // Don't close after saving draft
+    }
+  }
+
   if(aiAssistState.recognition){
     try{aiAssistState.recognition.stop();}catch(_){}
   }
@@ -1720,6 +1789,7 @@ function closeAiAssistant(){
   aiAssistState.listening=false;
   aiAssistState.pendingRequestId=null;
   aiAssistState.brandSuggestions={};
+  aiAssistState.savedToDish=false;
   aiAssistSetStatus('');
   stopAiCamera();
   aiAssistState.imageData=null;
@@ -1735,8 +1805,67 @@ function closeAiAssistant(){
     aiAssistBrandResults.classList.remove('show');
     aiAssistBrandResults.innerHTML='';
   }
+  const finalConfirmation = document.getElementById('aiAssistFinalConfirmation');
+  if(finalConfirmation){
+    finalConfirmation.classList.add('aiAssistHidden');
+  }
   if(aiAssistDictateBtn) aiAssistDictateBtn.textContent='🎙 Dictate';
   toggleAiAssistBackdrop(false);
+}
+
+// Save draft functionality
+function saveAiDraft(){
+  const data = collectAiTableData();
+  if(data.length === 0 || !data.some(item => item.name.trim())){
+    alert('No ingredients to save.');
+    return;
+  }
+
+  const dishName = document.getElementById('dishName')?.value || 'Untitled Dish';
+  const draftKey = `aiAssistDraft_${Date.now()}`;
+
+  try{
+    localStorage.setItem(draftKey, JSON.stringify({
+      dishName: dishName,
+      ingredients: data,
+      timestamp: Date.now()
+    }));
+    aiAssistSetStatus('Draft saved! You can load it later.', 'info');
+    alert(`✓ Draft saved for "${dishName}"!\n\nYou can load this draft later from the AI Assistant.`);
+  }catch(err){
+    console.error('Failed to save draft:', err);
+    alert('Failed to save draft. Please try again.');
+  }
+}
+
+// Confirm all ingredients workflow
+function confirmAllIngredients(){
+  const data = collectAiTableData();
+
+  // Check if there are any ingredients
+  if(data.length === 0 || !data.some(item => item.name.trim())){
+    alert('Please add ingredients before confirming.');
+    return;
+  }
+
+  // Check if all ingredients are confirmed
+  const unconfirmed = data.filter(item => item.name.trim() && !item.confirmed);
+  if(unconfirmed.length > 0){
+    const ingredientNames = unconfirmed.map(item => `• ${item.name}`).join('\n');
+    alert(
+      `⚠️ Please confirm allergens for all ingredients first.\n\n` +
+      `Unconfirmed ingredients:\n${ingredientNames}\n\n` +
+      `Check the "Confirmed" checkbox for each ingredient after verifying its allergens.`
+    );
+    return;
+  }
+
+  // Show final confirmation section
+  const finalConfirmation = document.getElementById('aiAssistFinalConfirmation');
+  if(finalConfirmation){
+    finalConfirmation.classList.remove('aiAssistHidden');
+    finalConfirmation.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+  }
 }
 
 function toggleAiDictation(){
@@ -2483,17 +2612,42 @@ function applyAiIngredientsToOverlay(){
     aiAssistSetStatus('Add at least one ingredient before applying.','warn');
     return;
   }
+
+  // Check if all ingredients are confirmed
+  const unconfirmed = rows.filter(item => item.name.trim() && !item.confirmed);
+  if(unconfirmed.length > 0){
+    const ingredientNames = unconfirmed.map(item => `• ${item.name}`).join('\n');
+    alert(
+      `⚠️ Cannot save - not all ingredients are confirmed.\n\n` +
+      `Unconfirmed ingredients:\n${ingredientNames}\n\n` +
+      `Please:\n` +
+      `1. Check the "Confirmed" checkbox for each ingredient\n` +
+      `2. Click "✓ Confirm All Ingredients" button\n` +
+      `3. Then click "✓ Save to Dish"`
+    );
+    return;
+  }
+
   rows.forEach(row=>{
-    if(row && row.name && row.brand){
-      rememberBrand(row.name,{
-        brand:row.brand,
-        brandImage:row.brandImage||'',
-        ingredientsImage:row.ingredientsImage||'',
-        ingredientsList:Array.isArray(row.ingredientsList)?row.ingredientsList:[],
-        allergens:Array.isArray(row.allergens)?row.allergens:[],
-      });
+    if(row && row.name){
+      // Store brands data for each ingredient
+      if(row.brands && row.brands.length > 0){
+        row.brands.forEach(brand => {
+          rememberBrand(row.name,{
+            brand:brand.name||'',
+            brandImage:brand.brandImage||'',
+            ingredientsImage:brand.ingredientsImage||'',
+            ingredientsList:Array.isArray(brand.ingredientsList)?brand.ingredientsList:[],
+            allergens:Array.isArray(brand.allergens)?brand.allergens:[],
+          });
+        });
+      }
     }
   });
+
+  // Mark as saved
+  aiAssistState.savedToDish = true;
+
   if(aiAssistState.context?.onApply){
     aiAssistState.context.onApply(rows);
   }
