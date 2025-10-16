@@ -1737,7 +1737,27 @@ async function fetchBrandSuggestions(query){
   if(!res.ok) throw new Error('Brand lookup failed');
   const data=await res.json();
   const products=Array.isArray(data.products)?data.products:[];
-  return products.map(product=>{
+
+  // Fetch full product details for first few products to get ingredient images
+  const detailedProducts = await Promise.all(
+    products.slice(0, Math.min(products.length, AI_BRAND_LIMIT)).map(async (product) => {
+      if(!product.code) return product;
+      try {
+        const detailRes = await fetch(`https://world.openfoodfacts.org/api/v2/product/${product.code}.json`);
+        if(detailRes.ok){
+          const detailData = await detailRes.json();
+          if(detailData.product){
+            return {...product, ...detailData.product};
+          }
+        }
+      } catch(err) {
+        console.warn('Failed to fetch product details for', product.code, err);
+      }
+      return product;
+    })
+  );
+
+  return detailedProducts.map(product=>{
     const allergens=[];
     if(Array.isArray(product.allergens_tags)){
       product.allergens_tags.forEach(tag=>{
