@@ -1821,6 +1821,8 @@ async function fetchBrandSuggestions(query, ingredientName){
   let searchQuery = query;
 
   // Strategy 0: Use AI to correct spelling if Supabase client is available
+  // Temporarily disabled due to CORS - will re-enable after fixing
+  /*
   if(window.supabaseClient){
     try {
       const corrected = await correctSpellingWithAI(query, ingredientName);
@@ -1832,6 +1834,7 @@ async function fetchBrandSuggestions(query, ingredientName){
       console.warn('AI spelling correction failed, continuing with original query', err);
     }
   }
+  */
 
   // Strategy 1: Exact search (with potentially corrected spelling)
   try {
@@ -2105,6 +2108,7 @@ function applyBrandSuggestion(rowIdx, suggestionIdx){
     ingredientsList: Array.isArray(suggestion.ingredientsList) ? suggestion.ingredientsList : [],
     allergens: Array.isArray(suggestion.allergens) ? suggestion.allergens : []
   };
+  console.log('Adding brand:', newBrand);
   brands.push(newBrand);
 
   // Update allergens checkboxes with combined allergens from all brands
