@@ -1703,7 +1703,8 @@ function renderAiTable(rows){
       </td>
     `;
     aiAssistTableBody.appendChild(tr);
-    updateAiBrandPreview(tr);
+    // NOTE: updateAiBrandPreview() is obsolete now that we support multiple brands
+    // It was overwriting the brand images we just rendered. Removed.
   });
   aiAssistResultsEl.classList.toggle('show', data.length>0);
   if(aiAssistBrandResults){
