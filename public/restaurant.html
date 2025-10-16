@@ -1639,15 +1639,23 @@ function renderAiTable(rows){
       console.log(`  - ingredientsList: ${brand.ingredientsList ? brand.ingredientsList.length : 0} items`);
 
       const brandImages = [];
+      console.log(`  - Checking brand.brandImage: "${brand.brandImage}", truthy: ${!!brand.brandImage}, type: ${typeof brand.brandImage}`);
+      console.log(`  - Checking brand.ingredientsImage: "${brand.ingredientsImage}", truthy: ${!!brand.ingredientsImage}, type: ${typeof brand.ingredientsImage}`);
+
       if(brand.brandImage) {
         const imgTag = `<img src="${esc(brand.brandImage)}" alt="${esc(brand.name||'Brand')}" loading="lazy" onclick="openImageModal('${esc(brand.brandImage)}')" title="Click to enlarge">`;
         console.log(`  - Adding brandImage tag (length: ${imgTag.length})`);
         brandImages.push(imgTag);
+      } else {
+        console.log(`  - SKIPPED brandImage (falsy value)`);
       }
+
       if(brand.ingredientsImage) {
         const imgTag = `<img src="${esc(brand.ingredientsImage)}" alt="Ingredients label" loading="lazy" onclick="openImageModal('${esc(brand.ingredientsImage)}')" title="Click to enlarge">`;
         console.log(`  - Adding ingredientsImage tag (length: ${imgTag.length})`);
         brandImages.push(imgTag);
+      } else {
+        console.log(`  - SKIPPED ingredientsImage (falsy value)`);
       }
       const ingredientsNote = brand.ingredientsList && brand.ingredientsList.length ? `Label ingredients: ${brand.ingredientsList.map(i=>esc(i)).join(', ')}` : '';
 
