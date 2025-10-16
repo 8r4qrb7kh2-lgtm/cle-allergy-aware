@@ -107,8 +107,8 @@ Remember: Measure from the absolute edges of the digital image file, not from me
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 4000,
+        model: 'claude-3-opus-20240229',
+        max_tokens: 8000,
         system: systemPrompt,
         messages: [{
           role: 'user',
