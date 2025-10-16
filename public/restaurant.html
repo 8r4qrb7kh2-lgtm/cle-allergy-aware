@@ -3063,17 +3063,15 @@ function tooltipBodyHTML(item,sel,userDiets){
 
     if(unsafeHits.length){
       const list=unsafeHits.map(a=>{
-        const why=details[a]?` — ${esc(details[a])}`:'';
-        return `<li>${esc(cap(a))}${why}</li>`;
+        return `<div style="margin-bottom:4px">Contains ${esc(cap(a))} (cannot be accommodated)</div>`;
       }).join('');
-      html+=`<div class="note tooltipDangerText"><strong>Contains (cannot be accommodated)</strong><ul class="tooltipList">${list}</ul></div>`;
+      html+=`<div class="note tooltipDangerText">${list}</div>`;
     }
     if(removableHits.length){
       const list=removableHits.map(a=>{
-        const why=details[a]?` — ${esc(details[a])}`:'';
-        return `<li>${esc(cap(a))}${why}</li>`;
+        return `<div style="margin-bottom:4px">Contains ${esc(cap(a))} (can be accommodated)</div>`;
       }).join('');
-      html+=`<div class="note tooltipWarnText"><strong>Contains (can be accommodated)</strong><ul class="tooltipList">${list}</ul></div>`;
+      html+=`<div class="note tooltipWarnText">${list}</div>`;
     }
     if(!hits.length && !hasCross){
       html+=`<div class="note tooltipNeutralText">None of your selected allergens found.</div>`;
@@ -3081,8 +3079,8 @@ function tooltipBodyHTML(item,sel,userDiets){
 
     if(hasCross){
       const crossHits=(item.crossContamination||[]).filter(a=>sel.includes(a));
-      const crossList=crossHits.map(a=>`<li>${esc(cap(a))}</li>`).join('');
-      html+=`<div class="note tooltipNeutralText"><strong>Cross-contamination risk</strong><ul class="tooltipList">${crossList}</ul></div>`;
+      const crossList=crossHits.map(a=>`<div style="margin-bottom:4px">Cross-contamination risk: ${esc(cap(a))}</div>`).join('');
+      html+=`<div class="note tooltipNeutralText">${crossList}</div>`;
     }
 
     if(details && details.__ingredientsSummary){
@@ -3090,38 +3088,30 @@ function tooltipBodyHTML(item,sel,userDiets){
     }
   }
 
-  // Display dietary preferences section after allergen info
-  const userDietSet = new Set(userDiets || []);
+  // Display dietary preferences section - show status for each user preference
   const hasUserDiets = userDiets && userDiets.length > 0;
-  const itemDiets = item.diets || [];
 
-  if(hasUserDiets || itemDiets.length > 0){
-    let dietContent = '';
+  if(hasUserDiets){
+    html+=`<div class="note" style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(76,90,212,0.2)"><strong style="display:block;margin-bottom:8px;color:var(--ink)">Dietary Options</strong>`;
 
-    if(itemDiets.length > 0){
-      const dietBadges = itemDiets.map(diet => {
-        const isMatch = userDietSet.has(diet);
-        const emoji = {
-          'Vegan': '🌱',
-          'Vegetarian': '🥬',
-          'Pescatarian': '🐟',
-          'Kosher': '✡️',
-          'Halal': '☪️'
-        }[diet] || '✓';
-        const bgColor = isMatch ? 'rgba(76,200,90,0.25)' : 'rgba(76,200,90,0.15)';
-        const borderColor = isMatch ? 'rgba(76,200,90,0.6)' : 'rgba(76,200,90,0.4)';
-        const fontWeight = isMatch ? 'font-weight:600;' : '';
-        return `<span style="display:inline-block;padding:4px 10px;margin:2px 4px 2px 0;background:${bgColor};border:1px solid ${borderColor};border-radius:12px;font-size:0.85rem;color:#4cc85a;white-space:nowrap;${fontWeight}">${emoji} ${esc(diet)}</span>`;
-      }).join('');
-      dietContent = dietBadges;
-    } else if(hasUserDiets){
-      // Show that the item doesn't provide any dietary options when user has preferences
-      dietContent = '<span style="color:var(--muted);font-size:0.85rem;font-style:italic">No dietary information available</span>';
-    }
+    const itemDietSet = new Set(item.diets || []);
 
-    if(dietContent){
-      html+=`<div class="note" style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(76,90,212,0.2)"><strong style="display:block;margin-bottom:6px;color:var(--ink)">Dietary Options</strong>${dietContent}</div>`;
-    }
+    userDiets.forEach(userDiet => {
+      const isDietMet = itemDietSet.has(userDiet);
+      const color = isDietMet ? '#4cc85a' : '#e85d5d';
+      const emoji = {
+        'Vegan': '🌱',
+        'Vegetarian': '🥬',
+        'Pescatarian': '🐟',
+        'Kosher': '✡️',
+        'Halal': '☪️'
+      }[userDiet] || '✓';
+      const status = isDietMet ? 'is' : 'is not';
+
+      html+=`<div style="margin-bottom:6px;color:${color};font-size:0.9rem">${emoji} This dish ${status} ${esc(userDiet)}</div>`;
+    });
+
+    html+=`</div>`;
   }
 
   return html;
