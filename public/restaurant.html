@@ -1276,7 +1276,7 @@ function ensureAiAssistElements(){
 
     aiAssistAddRowBtn.addEventListener('click',()=>{
       const data=collectAiTableData();
-      data.push({name:'',brand:'',allergens:[],confirmed:false});
+      data.push({name:'',allergens:[],brands:[],confirmed:false});
       renderAiTable(data);
     });
 
@@ -1352,31 +1352,17 @@ function ensureAiAssistElements(){
       const row=event.target.closest('tr');
       if(!row) return;
       if(event.target.classList.contains('aiIngredientName')){
-        fillRowFromMemory(row,false);
+        // NOTE: fillRowFromMemory is obsolete with the new multi-brand system
+        // Brand memory loading is now handled in renderAiTable() directly
+        // Removed to prevent overwriting brand preview divs
       }
     });
     aiAssistTableBody.addEventListener('change',(event)=>{
       const row=event.target.closest('tr');
       if(!row) return;
-      if(event.target.classList.contains('aiIngredientBrand')){
-        const name=row.querySelector('.aiIngredientName')?.value||'';
-        const brand=event.target.value.trim();
-        if(name){
-          if(brand){
-            rememberBrand(name,{brand});
-            row.dataset.brandImage='';
-            row.dataset.ingredientsImage='';
-            delete row.dataset.ingredientsList;
-            updateAiBrandPreview(row);
-          } else {
-            forgetBrand(name);
-            row.dataset.brandImage='';
-            row.dataset.ingredientsImage='';
-            delete row.dataset.ingredientsList;
-            updateAiBrandPreview(row);
-          }
-        }
-      }
+      // NOTE: .aiIngredientBrand field no longer exists in the new multi-brand UI
+      // Brand management is now handled through the brand search modal and confirmation workflow
+      // This event listener is kept for backwards compatibility but does nothing
     });
     aiAssistBrandResults.addEventListener('click',(event)=>{
       const card=event.target.closest('.aiBrandSuggestion');
@@ -1598,20 +1584,30 @@ function renderAiTable(rows){
   aiAssistTableBody.innerHTML='';
   aiAssistState.brandSuggestions={};
   data.forEach((row,idx)=>{
-    if(row.name){
+    // Initialize brands array if not present
+    if(!row.brands){
+      row.brands = [];
+    }
+
+    // Load brand from memory if no brands exist yet for this ingredient
+    if(row.name && row.brands.length === 0){
       const memory=getRememberedBrand(row.name);
-      if(memory){
-        if(!row.brand && memory.brand) row.brand=memory.brand;
-        if(!row.brandImage && memory.brandImage) row.brandImage=memory.brandImage;
-        if(!row.ingredientsImage && memory.ingredientsImage) row.ingredientsImage=memory.ingredientsImage;
-        if((!row.ingredientsList || !row.ingredientsList.length) && memory.ingredientsList){
-          row.ingredientsList=memory.ingredientsList.slice();
-        }
+      if(memory && memory.brand){
+        // Convert old single-brand memory format to new multi-brand array format
+        row.brands.push({
+          name: memory.brand,
+          brandImage: memory.brandImage || '',
+          ingredientsImage: memory.ingredientsImage || '',
+          ingredientsList: memory.ingredientsList || [],
+          allergens: memory.allergens || []
+        });
+        // Also merge allergens from memory
         if((!row.allergens || !row.allergens.length) && memory.allergens){
           row.allergens=memory.allergens.slice();
         }
       }
     }
+
     const tr=document.createElement('tr');
     tr.dataset.index=idx;
     const allergens=new Set((row.allergens||[]).map(norm));
