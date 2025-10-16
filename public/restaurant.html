@@ -69,7 +69,7 @@
   .card img{display:block;width:100%;height:160px;object-fit:cover}
   .card .pad{padding:12px}
 
-  .banner{display:flex;align-items:center;gap:10px;background:#351b1b;border:1px solid #5b2c2c;border-radius:12px;padding:10px 12px;margin:10px 0}
+  .banner{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#351b1b;border:1px solid #5b2c2c;border-radius:12px;padding:10px 12px;margin:10px 0}
   .legend{display:flex;gap:16px;align-items:center;flex-wrap:wrap;color:var(--muted);margin:10px 0 16px}
   .key{display:inline-block;width:14px;height:14px;border-radius:4px;border:2px solid currentColor}
   .key.ok{color:var(--ok)} .key.warn{color:var(--warn)} .key.bad{color:var(--bad)}
@@ -186,7 +186,7 @@
   .imageModal .closeModal:hover{background:rgba(76,90,212,1)}
   .aiIngredientList{color:var(--muted);font-size:0.85rem}
   .aiIngredientRow{display:flex;flex-direction:column;gap:12px}
-  .aiIngredientMain{display:grid;grid-template-columns:1fr 2fr 2fr 1.5fr auto;gap:12px;align-items:start}
+  .aiIngredientMain{display:grid;grid-template-columns:1fr 2fr 2fr 1.5fr 1.2fr auto;gap:12px;align-items:start}
   .aiRowBrandResults{display:none;flex-direction:column;gap:12px;padding:16px;border:1px solid rgba(76,90,212,0.35);border-radius:16px;background:rgba(9,13,30,0.9);margin-top:8px}
   .aiRowBrandResults.show{display:flex}
   .aiAllergenChecklist{display:flex;flex-wrap:wrap;gap:8px}
@@ -1195,10 +1195,11 @@ function ensureAiAssistElements(){
             <table id="aiAssistTable">
               <thead>
                 <tr>
-                  <th style="width:15%">Ingredient</th>
-                  <th style="width:22%">Brand</th>
-                  <th style="width:22%">Allergens</th>
-                  <th style="width:20%">Dietary Options</th>
+                  <th style="width:13%">Ingredient</th>
+                  <th style="width:18%">Brand</th>
+                  <th style="width:18%">Allergens</th>
+                  <th style="width:16%">Dietary Options</th>
+                  <th style="width:14%">Removable</th>
                   <th style="width:12%">Confirmed</th>
                   <th style="width:9%">Actions</th>
                 </tr>
@@ -1594,6 +1595,10 @@ function collectAiTableData(){
     const diets=[...row.querySelectorAll('.aiDietChecklist input:checked')].map(input=>input.value);
     const confirmed=row.querySelector('.aiConfirmCheckbox')?.checked || false;
 
+    // Collect removable status
+    const removableRadio=row.querySelector('.aiRemovableRadio:checked');
+    const removable=removableRadio?.value === 'yes';
+
     // Collect multiple brands
     const brands=[];
     if(row.dataset.brands){
@@ -1602,7 +1607,7 @@ function collectAiTableData(){
       }catch(_){}
     }
 
-    data.push({index:idx,name,allergens,diets,brands,confirmed});
+    data.push({index:idx,name,allergens,diets,brands,confirmed,removable});
   });
   return data;
 }
@@ -1710,7 +1715,7 @@ function renderAiTable(rows){
     const isConfirmed = row.confirmed || false;
 
     tr.innerHTML=`
-      <td colspan="6">
+      <td colspan="7">
         <div class="aiIngredientRow">
           <div class="aiIngredientMain">
             <input type="text" class="aiIngredientName" placeholder="Ingredient name" value="${esc(row.name||'')}">
@@ -1739,6 +1744,18 @@ function renderAiTable(rows){
                   const checked=dietSet.has(diet)?'checked':'';
                   return `<label><input type="checkbox" class="aiDietCheckbox" value="${esc(diet)}" ${checked}>${esc(diet)}</label>`;
                 }).join('')}
+              </div>
+            </div>
+            <div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                  <input type="radio" name="removable_${idx}" value="yes" class="aiRemovableRadio">
+                  <span style="font-size:0.9rem">Can be removed</span>
+                </label>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                  <input type="radio" name="removable_${idx}" value="no" class="aiRemovableRadio">
+                  <span style="font-size:0.9rem">Cannot be removed</span>
+                </label>
               </div>
             </div>
             <div class="aiConfirmCell" style="text-align:center">
@@ -3055,7 +3072,8 @@ function tooltipBodyHTML(item,sel,userDiets){
     html+=`<div class="note" style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid rgba(76,90,212,0.2)"><strong style="display:block;margin-bottom:6px;color:var(--ink)">Dietary Options</strong>${dietBadges}</div>`;
   }
 
-  if(!sel.length) return html || `<div class="note">No allergen information to display.</div>`;
+  // If no allergen selections, return what we have (might be dietary info)
+  if(!sel.length) return html || `<div class="note">No information to display.</div>`;
 
   // Add allergen section header
   if(html) html+=`<strong style="display:block;margin-bottom:8px;color:var(--ink)">Allergen Information</strong>`;
@@ -4534,12 +4552,14 @@ function renderEditor(){
       const allergenDetailsMap={};
       const activeAllergens=new Set();
       const activeDiets=new Set();
+      const removableIngredients=new Set(); // Track removable ingredients
       const aggregatedIngredientNames=[];
       rows.forEach(row=>{
         const allergens=Array.isArray(row.allergens)?row.allergens:[];
         const diets=Array.isArray(row.diets)?row.diets:[];
         const name=(row.name||'').trim();
         const brand=(row.brand||'').trim();
+        const isRemovable=row.removable===true;
         if(Array.isArray(row.ingredientsList) && row.ingredientsList.length){
           aggregatedIngredientNames.push(...row.ingredientsList);
         } else if(name){
@@ -4556,6 +4576,10 @@ function renderEditor(){
             if(!allergenDetailsMap[key].includes(labelWithBrand)){
               allergenDetailsMap[key].push(labelWithBrand);
             }
+          }
+          // If this ingredient is marked as removable, track the allergen
+          if(isRemovable){
+            removableIngredients.add(key);
           }
         });
         diets.forEach(diet=>{
@@ -4589,7 +4613,12 @@ function renderEditor(){
         }
         if(remLabel){
           remLabel.style.display=isActive?'flex':'none';
-          if(!isActive && remChk) remChk.checked=false;
+          if(isActive && remChk){
+            // Check the removable checkbox if this allergen is marked as removable
+            remChk.checked=removableIngredients.has(key);
+          } else if(!isActive && remChk){
+            remChk.checked=false;
+          }
         }
         if(crossLabel){
           crossLabel.style.display='flex';
