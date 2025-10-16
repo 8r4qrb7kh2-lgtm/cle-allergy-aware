@@ -1233,9 +1233,9 @@ function ensureAiAssistElements(){
     aiAssistProcessBtn.addEventListener('click',()=>handleAiProcess());
 
     // Recipe photo upload/camera handlers
-    const uploadRecipeBtn = backdrop.querySelector('#aiAssistUploadRecipeBtn');
-    const cameraRecipeBtn = backdrop.querySelector('#aiAssistCameraRecipeBtn');
-    const recipeFileInput = backdrop.querySelector('#aiAssistRecipeFileInput');
+    const uploadRecipeBtn = aiAssistBackdrop.querySelector('#aiAssistUploadRecipeBtn');
+    const cameraRecipeBtn = aiAssistBackdrop.querySelector('#aiAssistCameraRecipeBtn');
+    const recipeFileInput = aiAssistBackdrop.querySelector('#aiAssistRecipeFileInput');
 
     if(uploadRecipeBtn && recipeFileInput){
       uploadRecipeBtn.addEventListener('click',()=>{
