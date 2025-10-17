@@ -13,7 +13,7 @@ export function setupNav(currentPage, user = null) {
 
   // Define all nav items in consistent order
   const navItems = [
-    { id: 'restaurants', label: 'All restaurants', href: 'restaurants.html' },
+    { id: 'restaurants', label: 'All restaurants', href: 'restaurants.html', requiresAuth: true },
     { id: 'favorites', label: 'Favorite restaurants', href: 'favorites.html', requiresAuth: true },
     { id: 'how-it-works', label: 'How it works', href: 'how-it-works.html' },
     { id: 'account', label: 'Account settings', href: 'account.html' }
