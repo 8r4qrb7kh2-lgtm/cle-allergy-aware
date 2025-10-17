@@ -1055,6 +1055,7 @@ const aiAssistState={
   imageData:null,
   imageFileName:null,
   mediaStream:null,
+  detectedDietaryOptions:[]
 };
 
 const AI_BRAND_LIMIT=6;
@@ -2706,8 +2707,21 @@ async function handleRecipePhotoUpload(file){
           ...ing,
           name: ing.name ? ing.name.toLowerCase() : ing.name
         })) : [];
+
+        // Store dietary options if provided by AI
+        if (result?.dietaryOptions && Array.isArray(result.dietaryOptions)) {
+          aiAssistState.detectedDietaryOptions = result.dietaryOptions;
+        }
+
         renderAiTable(rows);
-        aiAssistSetStatus(rows.length ? 'Extracted ingredients from recipe photo. Review before applying.' : 'Could not extract ingredients from recipe photo.', rows.length ? 'info' : 'warn');
+
+        // Show dietary options in status if detected
+        let statusMessage = rows.length ? 'Extracted ingredients from recipe photo. Review before applying.' : 'Could not extract ingredients from recipe photo.';
+        if (result?.dietaryOptions && result.dietaryOptions.length > 0) {
+          statusMessage += ` Detected dietary options: ${result.dietaryOptions.join(', ')}.`;
+        }
+
+        aiAssistSetStatus(statusMessage, rows.length ? 'info' : 'warn');
       }catch(err){
         console.error('Recipe photo extraction failed', err);
         aiAssistSetStatus('Failed to read recipe photo: ' + (err.message || err), 'error');
@@ -3013,7 +3027,12 @@ function applyAiIngredientsToOverlay(){
   aiAssistState.savedToDish = true;
 
   if(aiAssistState.context?.onApply){
-    aiAssistState.context.onApply(rows);
+    // Pass both ingredients and detected dietary options to the overlay
+    const dataToApply = {
+      ingredients: rows,
+      dietaryOptions: aiAssistState.detectedDietaryOptions || []
+    };
+    aiAssistState.context.onApply(rows, dataToApply);
   }
   closeAiAssistant();
   aiAssistSetStatus('');
@@ -4768,7 +4787,7 @@ function renderEditor(){
     }
     updatePreview();
     
-    function applyIngredientsFromAi(rows){
+    function applyIngredientsFromAi(rows, extraData){
     if(!Array.isArray(rows) || !rows.length){
       aiAssistSetStatus('No ingredients to apply.', 'warn');
       return;
@@ -4813,6 +4832,12 @@ function renderEditor(){
           if(diet) activeDiets.add(diet);
         });
       });
+      // Also add dietary options detected by AI from the overall dish analysis
+      if(extraData && Array.isArray(extraData.dietaryOptions)){
+        extraData.dietaryOptions.forEach(diet=>{
+          if(diet) activeDiets.add(diet);
+        });
+      }
       if(list){
         const uniqueAggregated=[...new Set(aggregatedIngredientNames.map(item=>(item||'').trim()).filter(Boolean))];
         list.dataset.aiIngredientSummary = JSON.stringify(uniqueAggregated);
