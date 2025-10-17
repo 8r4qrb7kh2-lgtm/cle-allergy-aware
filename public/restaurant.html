@@ -541,9 +541,11 @@ function ensureMobileInfoPanel(){
     mobileInfoPanel.style.backdropFilter='blur(14px)';
     mobileInfoPanel.style.webkitBackdropFilter='blur(14px)';
     mobileInfoPanel.style.paddingBottom='calc(24px + env(safe-area-inset-bottom,0))';
+    mobileInfoPanel.style.display='none';
   }
   mobileInfoPanel.innerHTML='';
   mobileInfoPanel.classList.remove('show');
+  mobileInfoPanel.style.display='none';
   document.body.appendChild(mobileInfoPanel);
   adjustMobileInfoPanelForZoom();
   return mobileInfoPanel;
@@ -3225,6 +3227,7 @@ function renderMobileInfo(item){
   mobileInfoPanel.style.zIndex='3500';
   if(!prefersMobileInfo()){
     mobileInfoPanel.classList.remove('show');
+    mobileInfoPanel.style.display='none';
     mobileInfoPanel.innerHTML='';
     currentMobileInfoItem=null;
     return;
@@ -3232,6 +3235,7 @@ function renderMobileInfo(item){
   if(!item){
     currentMobileInfoItem=null;
     mobileInfoPanel.innerHTML='';
+    mobileInfoPanel.style.display='none';
     mobileInfoPanel.classList.remove('show');
     return;
   }
@@ -3248,6 +3252,7 @@ function renderMobileInfo(item){
   mobileInfoPanel.style.backdropFilter='blur(14px)';
   mobileInfoPanel.style.webkitBackdropFilter='blur(14px)';
   adjustMobileInfoPanelForZoom();
+  mobileInfoPanel.style.display='block';
   mobileInfoPanel.classList.add('show');
   const closeBtn=mobileInfoPanel.querySelector('.mobileInfoClose');
   if(closeBtn){
@@ -3268,11 +3273,13 @@ function syncMobileInfoPanel(){
       renderMobileInfo(currentMobileInfoItem);
     } else {
       mobileInfoPanel.innerHTML='';
+      mobileInfoPanel.style.display='none';
       mobileInfoPanel.classList.remove('show');
     }
     hideTip();
   } else {
     mobileInfoPanel.classList.remove('show');
+    mobileInfoPanel.style.display='none';
     mobileInfoPanel.innerHTML='';
     currentMobileInfoItem=null;
   }
@@ -3579,6 +3586,7 @@ function drawMenu(container,imageURL){
     }
     if(mobileInfoPanel && mobileInfoPanel.classList.contains('show')){
       mobileInfoPanel.classList.remove('show');
+      mobileInfoPanel.style.display='none';
       mobileInfoPanel.innerHTML='';
       currentMobileInfoItem=null;
     }
@@ -3758,6 +3766,7 @@ function renderRestaurant(){
   const menu=document.getElementById('menu');
   ensureMobileInfoPanel();
   mobileInfoPanel.classList.remove('show');
+  mobileInfoPanel.style.display='none';
   mobileInfoPanel.innerHTML='';
   document.getElementById('ackBtn').onclick=()=>{
     if(!state.ack){send({type:'ack'}); state.ack=true;}
@@ -3803,6 +3812,7 @@ function renderRestaurant(){
     }
     if(mobileInfoPanel){
       mobileInfoPanel.classList.remove('show');
+      mobileInfoPanel.style.display='none';
       mobileInfoPanel.innerHTML='';
       currentMobileInfoItem=null;
     }
