@@ -3461,7 +3461,8 @@ function renderSelector(el){
   const sel=new Set((state.allergies||[]).map(norm));
   ALLERGENS.forEach(a=>{
     const isActive=sel.has(a);
-    const c=div(esc(cap(a)),'chip clickable'+(isActive?' active':''));
+    const emoji=ALLERGEN_EMOJI[a]||'🔴';
+    const c=div(`${emoji} ${esc(cap(a))}`,'chip clickable'+(isActive?' active':''));
     c.setAttribute('role','button');
     c.setAttribute('tabindex','0');
     c.setAttribute('aria-pressed',isActive?'true':'false');
@@ -3509,7 +3510,8 @@ function renderDietSelector(el){
   const sel=new Set(state.diets||[]);
   DIETS.forEach(diet=>{
     const isActive=sel.has(diet);
-    const c=div(esc(diet),'chip clickable'+(isActive?' active':''));
+    const emoji=diet==='Vegan'?'🌱':diet==='Vegetarian'?'🥬':diet==='Pescatarian'?'🐟':diet==='Kosher'?'✡️':diet==='Halal'?'☪️':'🍽️';
+    const c=div(`${emoji} ${esc(diet)}`,'chip clickable'+(isActive?' active':''));
     c.setAttribute('role','button');
     c.setAttribute('tabindex','0');
     c.setAttribute('aria-pressed',isActive?'true':'false');
