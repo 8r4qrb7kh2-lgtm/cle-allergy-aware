@@ -2703,22 +2703,27 @@ async function handleRecipePhotoUpload(file){
 
       try{
         const result = await requestAiExtraction(payload);
-        const rows = Array.isArray(result?.ingredients) ? result.ingredients.map(ing => ({
-          ...ing,
-          name: ing.name ? ing.name.toLowerCase() : ing.name
-        })) : [];
 
         // Store dietary options if provided by AI
-        if (result?.dietaryOptions && Array.isArray(result.dietaryOptions)) {
-          aiAssistState.detectedDietaryOptions = result.dietaryOptions;
+        const dishDietaryOptions = (result?.dietaryOptions && Array.isArray(result.dietaryOptions)) ? result.dietaryOptions : [];
+        if (dishDietaryOptions.length > 0) {
+          aiAssistState.detectedDietaryOptions = dishDietaryOptions;
         }
+
+        // Map ingredients and add dish-level dietary options to each ingredient
+        const rows = Array.isArray(result?.ingredients) ? result.ingredients.map(ing => ({
+          ...ing,
+          name: ing.name ? ing.name.toLowerCase() : ing.name,
+          // Add dish-level dietary options to each ingredient
+          diets: dishDietaryOptions
+        })) : [];
 
         renderAiTable(rows);
 
         // Show dietary options in status if detected
         let statusMessage = rows.length ? 'Extracted ingredients from recipe photo. Review before applying.' : 'Could not extract ingredients from recipe photo.';
-        if (result?.dietaryOptions && result.dietaryOptions.length > 0) {
-          statusMessage += ` Detected dietary options: ${result.dietaryOptions.join(', ')}.`;
+        if (dishDietaryOptions.length > 0) {
+          statusMessage += ` Detected dietary options: ${dishDietaryOptions.join(', ')}.`;
         }
 
         aiAssistSetStatus(statusMessage, rows.length ? 'info' : 'warn');
@@ -2882,7 +2887,16 @@ async function handleAiProcess(){
 
       try{
         const result = await requestAiExtraction(payload);
-        const rows = Array.isArray(result?.ingredients) ? result.ingredients : [];
+
+        // Get dietary options from AI
+        const dishDietaryOptions = (result?.dietaryOptions && Array.isArray(result.dietaryOptions)) ? result.dietaryOptions : [];
+
+        // Add dietary options to each ingredient
+        const rows = Array.isArray(result?.ingredients) ? result.ingredients.map(ing => ({
+          ...ing,
+          diets: dishDietaryOptions
+        })) : [];
+
         if(rows.length > 0){
           // Merge with existing data, avoiding duplicates
           const existingData = collectAiTableData();
@@ -2892,6 +2906,9 @@ async function handleAiProcess(){
           let statusMsg = `Photo ${i+1}/${window.aiAssistPhotos.length} processed.`;
           if (duplicateCount > 0) {
             statusMsg += ` ${duplicateCount} duplicate${duplicateCount > 1 ? 's' : ''} skipped.`;
+          }
+          if (dishDietaryOptions.length > 0) {
+            statusMsg += ` Detected: ${dishDietaryOptions.join(', ')}.`;
           }
           statusMsg += ' Review ingredients before applying.';
           aiAssistSetStatus(statusMsg, 'info');
