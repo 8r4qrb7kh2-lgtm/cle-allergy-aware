@@ -3209,7 +3209,7 @@ function renderTopbar(){
   const isQrExperience=!!(state.qr||urlQR);
   document.body.classList.toggle('qrMode',isQrExperience);
   const brand=div(`<img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt=""><span>Clarivore</span>`,'brand');
-  brand.onclick=()=>window.location.href='account.html';
+  brand.onclick=()=>window.location.href='restaurants.html';
   brand.style.cursor='pointer';
   el.appendChild(brand);
   if(!isQrExperience){
