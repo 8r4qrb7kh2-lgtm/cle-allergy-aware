@@ -536,16 +536,16 @@ function ensureMobileInfoPanel(){
     mobileInfoPanel.className='mobileInfoPanel';
     mobileInfoPanel.setAttribute('aria-live','polite');
     mobileInfoPanel.style.position='fixed';
-    mobileInfoPanel.style.left='0';
-    mobileInfoPanel.style.right='0';
-    mobileInfoPanel.style.bottom='0';
-    mobileInfoPanel.style.width='100%';
+    mobileInfoPanel.style.left='12px';
+    mobileInfoPanel.style.right='12px';
+    mobileInfoPanel.style.bottom='12px';
+    mobileInfoPanel.style.width='auto';
     mobileInfoPanel.style.zIndex='3500';
     mobileInfoPanel.style.background='rgba(11,16,32,0.94)';
     mobileInfoPanel.style.backdropFilter='blur(14px)';
     mobileInfoPanel.style.webkitBackdropFilter='blur(14px)';
     mobileInfoPanel.style.paddingBottom='calc(24px + env(safe-area-inset-bottom,0))';
-    mobileInfoPanel.style.borderRadius='20px 20px 0 0';
+    mobileInfoPanel.style.borderRadius='20px';
     mobileInfoPanel.style.display='none';
   }
   mobileInfoPanel.innerHTML='';
