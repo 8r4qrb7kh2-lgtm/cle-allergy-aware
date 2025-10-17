@@ -53,6 +53,10 @@
             <p class="muted-text" style="margin-bottom:8px;">Select the allergens you avoid (you can update this later).</p>
             <div id="signup-allergen-pills" class="allergen-select"></div>
           </div>
+          <div>
+            <p class="muted-text" style="margin-bottom:8px;">Select your dietary preferences (you can update this later).</p>
+            <div id="signup-diet-pills" class="allergen-select"></div>
+          </div>
           <div class="auth-actions">
             <button class="primary-btn" id="signup-submit-btn" type="button">Create account</button>
           </div>
@@ -145,6 +149,7 @@
     let selectedAllergies = [];
     let selectedDiets = [];
     let signupAllergies = [];
+    let signupDiets = [];
     let currentUser = null;
     const params = new URLSearchParams(window.location.search);
     const redirectParam = params.get('redirect') || null;
@@ -374,6 +379,27 @@
       });
     }
 
+    function renderSignupDiets() {
+      const container = document.getElementById('signup-diet-pills');
+      container.innerHTML = '';
+      DIETS.forEach(diet => {
+        const pill = document.createElement('button');
+        pill.type = 'button';
+        pill.className = 'chip' + (signupDiets.includes(diet) ? ' active' : '');
+        const emoji = DIET_EMOJI[diet] || '';
+        pill.textContent = emoji + ' ' + diet;
+        pill.onclick = () => {
+          if (signupDiets.includes(diet)) {
+            signupDiets = signupDiets.filter(d => d !== diet);
+          } else {
+            signupDiets.push(diet);
+          }
+          renderSignupDiets();
+        };
+        container.appendChild(pill);
+      });
+    }
+
     async function saveAllergies(allergies) {
       if (!currentUser) return;
       // Get current diets to preserve them
@@ -500,9 +526,11 @@
       authSection.style.display = 'none';
       signupView.style.display = 'flex';
       signupAllergies = [];
+      signupDiets = [];
       signupMessage.textContent = '';
       signupMessage.classList.remove('error','success');
       renderSignupAllergens();
+      renderSignupDiets();
     };
 
     document.getElementById('signup-back-btn').onclick = () => {
@@ -510,6 +538,7 @@
       signupView.style.display = 'none';
       authSection.style.display = 'flex';
       signupAllergies = [];
+      signupDiets = [];
     };
 
     document.getElementById('signup-submit-btn').onclick = async () => {
@@ -530,7 +559,7 @@
         email,
         password,
         options: {
-          data: { first_name: firstName, last_name: lastName, allergies: signupAllergies }
+          data: { first_name: firstName, last_name: lastName, allergies: signupAllergies, diets: signupDiets }
         }
       });
 
@@ -546,28 +575,43 @@
       // Attempt immediate login if session returned (email confirmations disabled)
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (session) {
-        // Save allergens immediately after signup
+        // Save allergens and diets immediately after signup
         try {
           const { data: { user } } = await supabaseClient.auth.getUser();
-          if (user && signupAllergies.length > 0) {
-            await supabaseClient
-              .from('user_allergies')
-              .upsert({
-                user_id: user.id,
-                allergens: signupAllergies,
-                updated_at: new Date().toISOString()
-              }, { onConflict: 'user_id' });
+          if (user) {
+            // Save allergens
+            if (signupAllergies.length > 0) {
+              await supabaseClient
+                .from('user_allergies')
+                .upsert({
+                  user_id: user.id,
+                  allergens: signupAllergies,
+                  updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id' });
+            }
+            // Save diets
+            if (signupDiets.length > 0) {
+              await supabaseClient
+                .from('user_allergies')
+                .upsert({
+                  user_id: user.id,
+                  diets: signupDiets,
+                  updated_at: new Date().toISOString()
+                }, { onConflict: 'user_id' });
+            }
           }
         } catch (err) {
-          console.error('Failed to save initial allergens', err);
+          console.error('Failed to save initial preferences', err);
         }
         await checkAuth();
         signupAllergies = [];
+        signupDiets = [];
       } else {
         setTimeout(() => {
           signupView.style.display = 'none';
           authSection.style.display = 'flex';
           signupAllergies = [];
+          signupDiets = [];
         }, 1500);
       }
     };
@@ -614,6 +658,7 @@
         selectedAllergies = [];
         selectedDiets = [];
         signupAllergies = [];
+        signupDiets = [];
         await checkAuth();
       });
     }
