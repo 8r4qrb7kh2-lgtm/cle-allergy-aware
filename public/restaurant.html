@@ -4693,6 +4693,13 @@ function renderEditor(){
           message += 'You will need to manually add/adjust overlays as needed.\n\n';
           message += 'Proceed with updating the menu image?';
 
+          const hasChanges = addedDishes.length > 0 || removedDishes.length > 0;
+
+          // Modify message to include approval notice if changes detected
+          if (hasChanges) {
+            message += '\n⚠️ NOTE: Since changes were detected, this update will require admin approval.\nYou will be notified once approved.';
+          }
+
           const confirmed = confirm(message);
 
           if (confirmed) {
@@ -4708,16 +4715,47 @@ function renderEditor(){
 
             // Mark as dirty and log the change with details
             let changeLog = 'Uploaded new menu image';
-            if (addedDishes.length > 0 || removedDishes.length > 0) {
-              changeLog += ` (AI detected: ${addedDishes.length} new items, ${removedDishes.length} removed items)`;
+            if (hasChanges) {
+              changeLog += ` (AI detected: ${addedDishes.length} new items, ${removedDishes.length} removed items - pending approval)`;
             }
             pendingChanges.push(changeLog);
             setDirty(true);
 
-            // Show alert about new items needing attention
-            if (addedDishes.length > 0) {
+            // Send email notification if changes detected
+            if (hasChanges) {
+              try {
+                await fetch('https://fgoiyycctnwnghrvsilt.supabase.co/functions/v1/send-notification-email', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnb2l5eWNjdG53bmdocnZzaWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0MzY1MjYsImV4cCI6MjA3NjAxMjUyNn0.xlSSXr0Gl7j-vsckrj-2anpPmp4BG2SUIdN-_dquSA8'
+                  },
+                  body: JSON.stringify({
+                    restaurantName: rs.name || 'Unknown Restaurant',
+                    restaurantSlug: rs.slug || '',
+                    addedItems: addedDishes.map(d => d.name),
+                    removedItems: removedDishes.map(o => o.id || 'Unnamed'),
+                    keptItems: keptDishes.length
+                  })
+                });
+
+                // Show pending approval message
+                setTimeout(() => {
+                  alert(`📧 Admin Notification Sent\n\nMenu changes detected and admin has been notified.\n\nYour update is pending approval.\n\n${addedDishes.length > 0 ? `New items to add:\n${addedDishes.map(d => '• ' + d.name).join('\n')}` : ''}`);
+                }, 500);
+              } catch (err) {
+                console.error('Failed to send notification:', err);
+                // Still show the alert about new items
+                if (addedDishes.length > 0) {
+                  setTimeout(() => {
+                    alert(`⚠️ ATTENTION: ${addedDishes.length} new menu item(s) detected!\n\nPlease add overlays for:\n${addedDishes.map(d => '• ' + d.name).join('\n')}`);
+                  }, 500);
+                }
+              }
+            } else {
+              // No changes detected, just show confirmation
               setTimeout(() => {
-                alert(`⚠️ ATTENTION: ${addedDishes.length} new menu item(s) detected!\n\nPlease add overlays for:\n${addedDishes.map(d => '• ' + d.name).join('\n')}`);
+                alert('✓ Menu image updated successfully.\n\nNo menu changes detected by AI.');
               }, 500);
             }
           }
