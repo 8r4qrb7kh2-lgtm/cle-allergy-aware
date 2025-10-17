@@ -734,6 +734,13 @@ function closeMobileViewer(){
     mobileViewerChrome.setAttribute('aria-hidden','true');
   }
   resetMobileZoom();
+  // Close the mobile info panel if it's open
+  if(mobileInfoPanel){
+    mobileInfoPanel.classList.remove('show');
+    mobileInfoPanel.style.display='none';
+    mobileInfoPanel.innerHTML='';
+    currentMobileInfoItem=null;
+  }
   if(prefersMobileInfo()){
     if(currentMobileInfoItem){
       renderMobileInfo(currentMobileInfoItem);
