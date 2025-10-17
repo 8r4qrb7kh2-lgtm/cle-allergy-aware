@@ -51,21 +51,28 @@ Return a JSON object with this exact structure:
   "verifiedFromImage": true
 }
 
-DIETARY OPTIONS RULES:
-- Vegan: No animal products at all (no meat, dairy, eggs, honey, gelatin)
-- Vegetarian: No meat or fish, but may contain dairy/eggs
-- Pescatarian: No meat (except fish/seafood), may contain dairy/eggs
-- Kosher: Meets Jewish dietary laws (no pork/shellfish, no mixing meat/dairy)
-- Halal: Meets Islamic dietary laws (no pork/alcohol)
+DIETARY OPTIONS RULES (IMPORTANT - Be proactive in assigning these):
+- Vegan: Include if ALL ingredients are plant-based (no meat, dairy, eggs, honey, gelatin, or animal-derived additives)
+- Vegetarian: Include if no meat or fish, even if dairy/eggs are present
+- Pescatarian: Include if contains fish/seafood but no other meat, may contain dairy/eggs
+- Kosher: Include if no pork, no shellfish, and no obvious meat+dairy mixing
+- Halal: Include if no pork and no alcohol
 
-EXAMPLE: If you see a recipe listing "30 oz spinach, 15 oz cottage cheese, 1 egg, parsley", create 4 separate entries:
+EXAMPLE 1: If you see "30 oz spinach, 15 oz cottage cheese, 1 egg, parsley":
 - {"name": "spinach", "allergens": [], ...}
 - {"name": "cottage cheese", "allergens": ["dairy"], ...}
 - {"name": "egg", "allergens": ["egg"], ...}
 - {"name": "parsley", "allergens": [], ...}
-And dietaryOptions would be: ["Vegetarian"] (not vegan due to dairy/egg, not pescatarian since no fish)
+dietaryOptions: ["Vegetarian"] (not vegan due to dairy/egg)
 
-Be VERY conservative with allergens and dietary options - only flag what you can clearly identify.`
+EXAMPLE 2: If you see "radish, water, vinegar, salt":
+- All plant-based ingredients
+dietaryOptions: ["Vegan", "Vegetarian", "Pescatarian", "Kosher", "Halal"] (all apply since no animal products)
+
+EXAMPLE 3: If you see "rapeseed oil, water, egg yolk, vinegar, salt":
+dietaryOptions: ["Vegetarian"] (contains egg, so not vegan)
+
+Be VERY conservative with allergens but PROACTIVE with dietary options - if ingredients clearly meet the criteria, include them.`
       : `You are an ingredient analysis assistant for a restaurant allergen awareness system.
 
 Analyze the dish description and extract:
@@ -88,14 +95,19 @@ Return a JSON object with this exact structure:
   "verifiedFromImage": false
 }
 
-DIETARY OPTIONS RULES:
-- Vegan: No animal products at all (no meat, dairy, eggs, honey, gelatin)
-- Vegetarian: No meat or fish, but may contain dairy/eggs
-- Pescatarian: No meat (except fish/seafood), may contain dairy/eggs
-- Kosher: Meets Jewish dietary laws (no pork/shellfish, no mixing meat/dairy)
-- Halal: Meets Islamic dietary laws (no pork/alcohol)
+DIETARY OPTIONS RULES (IMPORTANT - Be proactive in assigning these):
+- Vegan: Include if ALL ingredients are plant-based (no meat, dairy, eggs, honey, gelatin, or animal-derived additives)
+- Vegetarian: Include if no meat or fish, even if dairy/eggs are present
+- Pescatarian: Include if contains fish/seafood but no other meat, may contain dairy/eggs
+- Kosher: Include if no pork, no shellfish, and no obvious meat+dairy mixing
+- Halal: Include if no pork and no alcohol
 
-Be conservative - only flag allergens and dietary options you are confident about based on the description.`
+EXAMPLES:
+- "radish, water, vinegar, salt" → ["Vegan", "Vegetarian", "Pescatarian", "Kosher", "Halal"]
+- "rapeseed oil, water, egg yolk, vinegar, salt" → ["Vegetarian"]
+- "chicken, salt, pepper" → [] (no dietary options apply)
+
+Be conservative with allergens but PROACTIVE with dietary options - if ingredients clearly meet the criteria, include them.`
 
     const userPrompt = imageData
       ? `${text ? `Context: ${text}` : ''}
