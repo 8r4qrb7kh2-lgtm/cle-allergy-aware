@@ -201,11 +201,6 @@
           </div>
 
           <div class="form-group">
-            <label for="restaurant-address">Address *</label>
-            <input type="text" id="restaurant-address" required placeholder="e.g., 123 Main St, Cleveland, OH 44113">
-          </div>
-
-          <div class="form-group">
             <label for="restaurant-website">Website</label>
             <input type="url" id="restaurant-website" placeholder="https://example.com">
           </div>
@@ -328,7 +323,7 @@
         <div class="restaurant-item">
           <div>
             <h3>${r.name}</h3>
-            <p>${r.address || 'No address'}</p>
+            <p>${r.slug || 'no-slug'}</p>
           </div>
           <button class="btn-secondary" onclick="window.location.href='restaurant.html?id=${r.id}'">View</button>
         </div>
@@ -356,7 +351,6 @@
 
       try {
         const name = document.getElementById('restaurant-name').value;
-        const address = document.getElementById('restaurant-address').value;
         const website = document.getElementById('restaurant-website').value;
         const description = document.getElementById('restaurant-description').value;
 
@@ -373,12 +367,10 @@
           .from('restaurants')
           .insert({
             name,
-            address,
-            website,
-            description,
-            menuImage,
+            slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+            menu_image: menuImage,
             overlays: [],
-            lastConfirmed: null
+            last_confirmed: null
           })
           .select()
           .single();
