@@ -3,15 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Account Settings - CLE Allergy Aware</title>
+  <title>Account Settings - Clarivore</title>
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body class="page-shell">
   <header class="simple-topbar">
     <div class="simple-topbar-inner">
       <a class="simple-brand" href="account.html">
-        <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt="CLE Allergy Aware logo">
-        <span>CLE Allergy Aware</span>
+        <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt="Clarivore logo">
+        <span>Clarivore</span>
       </a>
       <div class="simple-nav">
         <button id="navAllRestaurants" type="button" disabled>All restaurants</button>
@@ -84,7 +84,7 @@
             <button class="primary-btn" id="save-btn" type="button">Save changes</button>
           </div>
           <div id="allergen-pills" class="allergen-select"></div>
-          <p id="allergen-status" class="status-text"></p>
+          <p id="allergen-status" class="status-text" style="display:none;"></p>
         </section>
 
         <!-- Dietary Preferences settings (shown when logged in) -->
@@ -94,13 +94,13 @@
             <button class="primary-btn" id="save-diet-btn" type="button">Save changes</button>
           </div>
           <div id="diet-pills" class="allergen-select"></div>
-          <p id="diet-status" class="status-text"></p>
+          <p id="diet-status" class="status-text" style="display:none;"></p>
         </section>
 
         <!-- Password reset -->
         <section id="password-reset-section" class="auth-card" style="display:none;">
           <h2 style="margin:0 0 12px;">Set a new password</h2>
-          <p class="muted-text" style="margin-bottom:12px;">Enter a new password for your CLE Allergy Aware account.</p>
+          <p class="muted-text" style="margin-bottom:12px;">Enter a new password for your Clarivore account.</p>
           <input type="password" id="reset-password" placeholder="New password" autocomplete="new-password">
           <input type="password" id="reset-password-confirm" placeholder="Confirm new password" autocomplete="new-password">
           <div class="auth-actions">
@@ -117,8 +117,26 @@
   <script type="module">
     import supabaseClient from './js/supabase-client.js';
 
-    const ALLERGENS = ["dairy", "egg", "peanut", "tree nut", "shellfish", "fish", "gluten", "soy", "sesame", "wheat"];
+    const ALLERGENS = ["dairy", "egg", "peanut", "tree nut", "shellfish", "fish", "soy", "sesame", "wheat"];
     const DIETS = ["Vegan", "Vegetarian", "Pescatarian", "Kosher", "Halal"];
+    const ALLERGEN_EMOJI = {
+      'dairy': '🥛',
+      'egg': '🥚',
+      'peanut': '🥜',
+      'tree nut': '🌰',
+      'shellfish': '🦐',
+      'fish': '🐟',
+      'soy': '🫛',
+      'sesame': '🫘',
+      'wheat': '🌾'
+    };
+    const DIET_EMOJI = {
+      'Vegan': '🌱',
+      'Vegetarian': '🥬',
+      'Pescatarian': '🐟',
+      'Kosher': '✡️',
+      'Halal': '☪️'
+    };
     let selectedAllergies = [];
     let selectedDiets = [];
     let signupAllergies = [];
@@ -248,7 +266,13 @@
         .select('allergens')
         .eq('user_id', currentUser.id)
         .maybeSingle();
-      selectedAllergies = data?.allergens || [];
+      // Filter out any allergens not in current ALLERGENS list (removes legacy data like 'gluten')
+      const dbAllergens = data?.allergens || [];
+      selectedAllergies = dbAllergens.filter(a => ALLERGENS.includes(a));
+      // If we filtered anything out, save the cleaned list back to the database
+      if (dbAllergens.length !== selectedAllergies.length) {
+        await saveAllergies(selectedAllergies);
+      }
       renderAllergens();
     }
 
@@ -259,7 +283,8 @@
         const pill = document.createElement('button');
         pill.type = 'button';
         pill.className = 'chip' + (selectedAllergies.includes(allergen) ? ' active' : '');
-        pill.textContent = allergen.charAt(0).toUpperCase() + allergen.slice(1);
+        const emoji = ALLERGEN_EMOJI[allergen] || '';
+        pill.textContent = emoji + ' ' + allergen.charAt(0).toUpperCase() + allergen.slice(1);
         pill.onclick = () => {
           if (selectedAllergies.includes(allergen)) {
             selectedAllergies = selectedAllergies.filter(a => a !== allergen);
@@ -292,7 +317,8 @@
         const pill = document.createElement('button');
         pill.type = 'button';
         pill.className = 'chip' + (selectedDiets.includes(diet) ? ' active' : '');
-        pill.textContent = diet;
+        const emoji = DIET_EMOJI[diet] || '';
+        pill.textContent = emoji + ' ' + diet;
         pill.onclick = () => {
           if (selectedDiets.includes(diet)) {
             selectedDiets = selectedDiets.filter(d => d !== diet);
@@ -341,7 +367,8 @@
         const pill = document.createElement('button');
         pill.type = 'button';
         pill.className = 'chip' + (signupAllergies.includes(allergen) ? ' active' : '');
-        pill.textContent = allergen.charAt(0).toUpperCase() + allergen.slice(1);
+        const emoji = ALLERGEN_EMOJI[allergen] || '';
+        pill.textContent = emoji + ' ' + allergen.charAt(0).toUpperCase() + allergen.slice(1);
         pill.onclick = () => {
           if (signupAllergies.includes(allergen)) {
             signupAllergies = signupAllergies.filter(a => a !== allergen);
@@ -390,31 +417,45 @@
 
     document.getElementById('save-btn').onclick = async () => {
       if (!currentUser) return;
+      const saveBtn = document.getElementById('save-btn');
+      const originalText = saveBtn.textContent;
       allergenStatus.textContent = '';
+      allergenStatus.style.display = 'none';
       try {
         await saveAllergies(selectedAllergies);
-        allergenStatus.textContent = 'Saved!';
-        allergenStatus.classList.remove('error');
-        allergenStatus.classList.add('success');
+        saveBtn.textContent = 'Saved!';
+        saveBtn.style.background = '#22c55e';
+        setTimeout(() => {
+          saveBtn.textContent = originalText;
+          saveBtn.style.background = '';
+        }, 2000);
       } catch (error) {
         allergenStatus.textContent = error.message || 'Failed to save.';
         allergenStatus.classList.remove('success');
         allergenStatus.classList.add('error');
+        allergenStatus.style.display = 'block';
       }
     };
 
     document.getElementById('save-diet-btn').onclick = async () => {
       if (!currentUser) return;
+      const saveDietBtn = document.getElementById('save-diet-btn');
+      const originalText = saveDietBtn.textContent;
       dietStatus.textContent = '';
+      dietStatus.style.display = 'none';
       try {
         await saveDiets(selectedDiets);
-        dietStatus.textContent = 'Saved!';
-        dietStatus.classList.remove('error');
-        dietStatus.classList.add('success');
+        saveDietBtn.textContent = 'Saved!';
+        saveDietBtn.style.background = '#22c55e';
+        setTimeout(() => {
+          saveDietBtn.textContent = originalText;
+          saveDietBtn.style.background = '';
+        }, 2000);
       } catch (error) {
         dietStatus.textContent = error.message || 'Failed to save.';
         dietStatus.classList.remove('success');
         dietStatus.classList.add('error');
+        dietStatus.style.display = 'block';
       }
     };
 
