@@ -4,7 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1">
 
-<title>CLE Allergy Aware</title>
+<title>Clarivore</title>
 <style>
   :root{
     --bg:#0b1020; --panel:#111630; --ink:#e9ecff; --muted:#a8b2d6;
@@ -106,6 +106,7 @@
   .mobileInfoHeader{font-weight:700;font-size:1.1rem;color:var(--ink);flex:1}
   .mobileInfoClose{background:rgba(76,90,212,0.3);border:1px solid rgba(76,90,212,0.5);color:var(--ink);width:36px;height:36px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:24px;line-height:1;flex-shrink:0}
   .mobileInfoClose:hover{background:rgba(76,90,212,0.5);border-color:var(--hover)}
+  .mobileInfoContent{padding:0 16px 16px 16px !important}
   .mobileViewerControlBtn{background:rgba(18,24,58,0.9);border:1px solid rgba(76,90,212,0.5);color:var(--ink);padding:10px 18px;border-radius:999px;font-weight:600;cursor:pointer;box-shadow:0 10px 28px rgba(0,0,0,0.35)}
   .mobileZoomGroup{display:inline-flex;align-items:center;gap:14px;background:rgba(18,24,58,0.9);border:1px solid rgba(76,90,212,0.4);border-radius:999px;padding:10px 18px;box-shadow:0 10px 28px rgba(0,0,0,0.3)}
   .mobileZoomGroup button{background:transparent;border:none;color:var(--ink);font-size:1.3rem;width:48px;height:48px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center}
@@ -310,7 +311,6 @@
   body.qrMode .topbar{border-bottom:none; box-shadow:none;}
   body.qrMode .topin{padding:32px 18px;gap:24px;}
   @media (max-width:640px){
-    .topbar{display:none !important}
     .topin{gap:12px;padding:16px 14px 12px}
     .brand{gap:12px}
     .brand img{width:40px;height:40px}
@@ -435,7 +435,8 @@ if (!slug) {
         console.error('Manager lookup failed', managerError);
       }
       console.log('Manager row:', managerRecord, 'error:', managerError);
-      canEdit = !!managerRecord;
+      // TEMPORARY: Make everyone a manager for Falafel Café
+      canEdit = !!managerRecord || restaurant.name === 'Falafel Café';
     }
 
     // Transform restaurant data to match expected format
@@ -506,8 +507,8 @@ const ALLERGEN_EMOJI={
   'tree nut':'🌰',
   'shellfish':'🦐',
   'fish':'🐟',
-  'soy':'🫘',
-  'sesame':'⚫',
+  'soy':'🫛',
+  'sesame':'🫘',
   'wheat':'🌾'
 };
 
@@ -1244,7 +1245,6 @@ function ensureAiAssistElements(){
                   <th style="width:16.5%">Dietary Options</th>
                   <th style="width:13%">Removable</th>
                   <th style="width:7.5%">Confirmed</th>
-                  <th style="width:8%">Actions</th>
                 </tr>
               </thead>
               <tbody id="aiAssistTableBody"></tbody>
@@ -1761,7 +1761,7 @@ function renderAiTable(rows){
       <td colspan="7">
         <div class="aiIngredientRow">
           <div class="aiIngredientMain">
-            <input type="text" class="aiIngredientName" placeholder="Ingredient name" value="${esc(row.name||'')}">
+            <input type="text" class="aiIngredientName" placeholder="Ingredient name" value="${esc((row.name||'').toLowerCase())}">
             <div class="aiBrandCell">
               <div class="aiBrandsList">
                 ${brandsHTML}
@@ -1823,6 +1823,27 @@ function renderAiTable(rows){
 
 }
 
+function normalizeIngredientName(name){
+  const lower = name.toLowerCase().trim();
+  // Map common variations to standard names
+  const aliases = {
+    'mayo': 'mayonnaise',
+    'cuke': 'cucumber',
+    'cukes': 'cucumber',
+    'pickles': 'pickle',
+    'tomatoes': 'tomato',
+    'onions': 'onion',
+    'peppers': 'pepper',
+    'mushrooms': 'mushroom',
+    'olives': 'olive',
+    'carrots': 'carrot',
+    'potatoes': 'potato',
+    'celery stalk': 'celery',
+    'celery stalks': 'celery'
+  };
+  return aliases[lower] || lower;
+}
+
 function heuristicallyExtractIngredients(text){
   if(!text) return [];
   const tokens=text
@@ -1835,10 +1856,11 @@ function heuristicallyExtractIngredients(text){
   tokens.forEach(token=>{
     const cleaned=token.replace(/[\d/]+/g,'').replace(/\b(teaspoons?|tablespoons?|cups?|ounces?|grams?|lbs?|pounds?|ml|l|kg)\b/gi,'').replace(/[\(\)]/g,'').replace(/\s+/g,' ').trim();
     if(!cleaned) return;
-    const key=norm(cleaned);
+    const normalized = normalizeIngredientName(cleaned);
+    const key=norm(normalized);
     if(unique.has(key)) return;
     const detectedAllergens=ALLERGENS.filter(a=>token.toLowerCase().includes(a));
-    unique.set(key,{name:cap(cleaned),brand:'',allergens:detectedAllergens,ingredientsList:[cap(cleaned)]});
+    unique.set(key,{name:normalized,brand:'',allergens:detectedAllergens,ingredientsList:[normalized]});
   });
   if(unique.size===0){
     return [{name:'',brand:'',allergens:[]}];
@@ -2135,6 +2157,24 @@ async function fetchBrandSuggestions(query, ingredientName){
 
   if(!products.length) return [];
 
+  // Filter for English language products only
+  products = products.filter(product => {
+    const productName = (product.product_name || '').toLowerCase();
+    const productNameEn = product.product_name_en || '';
+
+    // Reject if contains common French words
+    const frenchWords = ['de', 'du', 'le', 'la', 'les', 'moutarde', 'fromage', 'beurre', 'sucre', 'farine'];
+    const hasFrenchWord = frenchWords.some(word => {
+      const regex = new RegExp(`\\b${word}\\b`, 'i');
+      return regex.test(productName);
+    });
+
+    if (hasFrenchWord) return false;
+
+    // Accept only if has English product name or lang is explicitly 'en'
+    return productNameEn.length > 0 || product.lang === 'en';
+  });
+
   // Filter products to match ingredient name (e.g., "italian seasoning" should only show products with BOTH words)
   if(ingredientName){
     const ingredientTerms = ingredientName.toLowerCase().split(/\s+/).filter(term => term.length > 2);
@@ -2426,10 +2466,6 @@ function showBrandConfirmationModal(suggestion, onConfirm){
             <input type="checkbox" class="verifyCheckbox" style="width: 20px; height: 20px; cursor: pointer; flex-shrink: 0;">
             <span>The ingredient label image is readable and matches this exact product</span>
           </label>
-          <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; font-size: 0.95rem; line-height: 1.5;">
-            <input type="checkbox" class="verifyCheckbox" style="width: 20px; height: 20px; cursor: pointer; flex-shrink: 0;">
-            <span>All allergens shown are correctly identified for my restaurant</span>
-          </label>
         </div>
       </div>
     ` : !hasImage ? `
@@ -2659,7 +2695,10 @@ async function handleRecipePhotoUpload(file){
 
       try{
         const result = await requestAiExtraction(payload);
-        const rows = Array.isArray(result?.ingredients) ? result.ingredients : [];
+        const rows = Array.isArray(result?.ingredients) ? result.ingredients.map(ing => ({
+          ...ing,
+          name: ing.name ? ing.name.toLowerCase() : ing.name
+        })) : [];
         renderAiTable(rows);
         aiAssistSetStatus(rows.length ? 'Extracted ingredients from recipe photo. Review before applying.' : 'Could not extract ingredients from recipe photo.', rows.length ? 'info' : 'warn');
       }catch(err){
@@ -3170,7 +3209,7 @@ function renderTopbar(){
   const el=document.getElementById('topbar'); el.innerHTML='';
   const isQrExperience=!!(state.qr||urlQR);
   document.body.classList.toggle('qrMode',isQrExperience);
-  const brand=div(`<img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt=""><span>CLE Allergy Aware</span>`,'brand');
+  const brand=div(`<img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt=""><span>Clarivore</span>`,'brand');
   brand.onclick=()=>window.location.href='account.html';
   brand.style.cursor='pointer';
   el.appendChild(brand);
@@ -3251,7 +3290,9 @@ function renderMobileInfo(item){
       <div class="mobileInfoHeader">${esc(item.id||'Item')}</div>
       <button type="button" class="mobileInfoClose" aria-label="Close dish details">×</button>
     </div>
-    ${bodyHTML}
+    <div class="mobileInfoContent">
+      ${bodyHTML}
+    </div>
   `;
   mobileInfoPanel.style.background='rgba(11,16,32,0.94)';
   mobileInfoPanel.style.backdropFilter='blur(14px)';
@@ -3890,11 +3931,13 @@ function renderEditor(){
       <button class="btn" id="backBtn">← Done</button>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <button class="btn" id="viewLogBtn">📋 View log of changes</button>
+        <button class="btn" id="uploadMenuBtn">📷 Upload new menu image</button>
         <button class="btn btnDanger" id="confirmBtn">Confirm allergen information is up-to-date</button>
         <button class="btn" id="addBox">Add overlay</button>
         <div class="saveRow" id="saveRow"><button class="btn btnPrimary" id="saveBtn">Save to site</button></div>
       </div>
     </div>
+    <input type="file" id="menuImageInput" accept="image/*" style="display:none">
     <div class="note" id="lastConfirmedText" style="text-align:right;font-size:12px;margin-top:4px">Last confirmed: ${rs.lastConfirmed?esc(fmtDateTime(rs.lastConfirmed)):'Never'}</div>
     <div class="note" style="margin-bottom:8px">Drag to move. Drag any corner to resize. Click ✏️ to edit details.</div>
     <div class="menuWrap show" id="menu"></div>
@@ -4063,7 +4106,7 @@ function renderEditor(){
     
     body.innerHTML=`
       <div class="photoCapture">
-        <div class="note" style="text-align:center;margin-bottom:8px">Take photos of your current menu to confirm that it aligns with the menu on CLE Allergy Aware</div>
+        <div class="note" style="text-align:center;margin-bottom:8px">Take photos of your current menu to confirm that it aligns with the menu on Clarivore</div>
         <video id="videoStream" class="videoPreview" autoplay playsinline style="display:none"></video>
         <canvas id="photoCanvas" style="display:none"></canvas>
         <div id="photosContainer" style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:12px"></div>
@@ -4531,12 +4574,65 @@ function renderEditor(){
     setDirty(true);
   };
 
-  // AI Upload Menu Photo feature removed - overlays must be created manually
+  // Upload new menu image
+  document.getElementById('uploadMenuBtn').onclick=()=>{
+    document.getElementById('menuImageInput').click();
+  };
+
+  document.getElementById('menuImageInput').onchange=(e)=>{
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Resize image to max 1200px wide while maintaining aspect ratio
+        const maxWidth = 1200;
+        const scale = Math.min(1, maxWidth / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const newMenuImageData = canvas.toDataURL('image/jpeg', 0.85);
+
+        // Show confirmation dialog
+        const oldTitle = document.title;
+        document.title = 'Clarivore';
+        const confirmed = confirm('New menu image loaded. The overlays will stay in their current positions.\n\nPlease verify all overlays are correctly positioned over the right items before saving.\n\nProceed?');
+        document.title = oldTitle;
+
+        if (confirmed) {
+          // Update the menu image
+          rs.menuImage = newMenuImageData;
+          state.restaurant.menuImage = newMenuImageData;
+
+          // Re-render the menu with new image but same overlays
+          const menuImg = document.querySelector('.menuImg');
+          if (menuImg) {
+            menuImg.src = newMenuImageData;
+          }
+
+          // Mark as dirty and log the change
+          pendingChanges.push('Uploaded new menu image');
+          setDirty(true);
+        }
+
+        // Clear the file input
+        e.target.value = '';
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
 
   document.getElementById('backBtn').onclick=()=>{
     if(dirty){
       const oldTitle=document.title;
-      document.title='CLE Allergy Aware';
+      document.title='Clarivore';
       const result=confirm('You have unsaved changes. Do you want to save before exiting?');
       document.title=oldTitle;
       if(result){
