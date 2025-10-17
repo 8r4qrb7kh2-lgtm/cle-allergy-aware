@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="icon" type="image/png" href="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>How It Works - Clarivore</title>
@@ -363,6 +364,60 @@
     <div class="scroll-indicator">↓</div>
   </section>
 
+  <!-- Interactive Demo Section -->
+  <section class="demo-section" style="background: #0a0a0a; min-height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
+    <div class="demo-container" style="max-width: 900px; width: 100%; padding: 40px 20px; position: relative;">
+      <h2 style="text-align: center; font-size: 2.5rem; margin-bottom: 60px; color: var(--ink);">See How It Works</h2>
+
+      <div id="interactiveDemo" style="position: relative; background: #111630; border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: 1px solid #2a3261;">
+        <!-- Demo Menu -->
+        <div class="demo-menu" style="display: grid; gap: 16px;">
+          <div class="demo-item demo-safe" data-step="1" style="background: rgba(34,197,94,0.1); border: 2px solid #22c55e; border-radius: 12px; padding: 16px; position: relative; cursor: pointer; transition: all 0.3s;">
+            <div class="demo-item-name" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 4px;">🥗 Garden Salad</div>
+            <div class="demo-item-desc" style="color: var(--muted); font-size: 0.9rem;">Fresh greens, tomatoes, cucumber</div>
+            <div class="demo-badge" style="position: absolute; top: 16px; right: 16px; width: 24px; height: 24px; background: #22c55e; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">✓</div>
+          </div>
+
+          <div class="demo-item demo-caution" data-step="2" style="background: rgba(250,204,21,0.1); border: 2px solid #facc15; border-radius: 12px; padding: 16px; position: relative; cursor: pointer; transition: all 0.3s;">
+            <div class="demo-item-name" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 4px;">🍝 Pasta Primavera</div>
+            <div class="demo-item-desc" style="color: var(--muted); font-size: 0.9rem;">Vegetables, olive oil, parmesan</div>
+            <div class="demo-badge" style="position: absolute; top: 16px; right: 16px; width: 24px; height: 24px; background: #facc15; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #000; font-weight: bold;">!</div>
+            <div class="demo-overlay" style="display: none; position: absolute; inset: 0; background: rgba(17,22,48,0.95); border-radius: 12px; padding: 20px; backdrop-filter: blur(10px);">
+              <div style="font-weight: 600; font-size: 1rem; margin-bottom: 12px; color: #facc15;">⚠️ Can Accommodate</div>
+              <div style="color: var(--ink); margin-bottom: 8px;">Contains: <span style="color: #facc15;">Dairy (Parmesan)</span></div>
+              <div style="color: var(--muted); font-size: 0.85rem;">Ask to remove parmesan cheese</div>
+            </div>
+          </div>
+
+          <div class="demo-item demo-danger" data-step="3" style="background: rgba(239,68,68,0.1); border: 2px solid #ef4444; border-radius: 12px; padding: 16px; position: relative; cursor: pointer; transition: all 0.3s;">
+            <div class="demo-item-name" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 4px;">🥜 Thai Peanut Noodles</div>
+            <div class="demo-item-desc" style="color: var(--muted); font-size: 0.9rem;">Rice noodles, peanut sauce, vegetables</div>
+            <div class="demo-badge" style="position: absolute; top: 16px; right: 16px; width: 24px; height: 24px; background: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">✕</div>
+            <div class="demo-overlay" style="display: none; position: absolute; inset: 0; background: rgba(17,22,48,0.95); border-radius: 12px; padding: 20px; backdrop-filter: blur(10px);">
+              <div style="font-weight: 600; font-size: 1rem; margin-bottom: 12px; color: #ef4444;">🚫 Contains Allergens</div>
+              <div style="color: var(--ink); margin-bottom: 8px;">Contains: <span style="color: #ef4444;">🥜 Peanuts</span></div>
+              <div style="color: var(--muted); font-size: 0.85rem;">Cannot be modified - avoid this dish</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Animated Cursor -->
+        <div id="demoCursor" style="position: absolute; width: 40px; height: 40px; pointer-events: none; opacity: 0; transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+            <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#7c9cff" stroke="#fff" stroke-width="1.5"/>
+          </svg>
+        </div>
+
+        <!-- Step Indicator -->
+        <div id="stepIndicator" style="text-align: center; margin-top: 30px; color: var(--muted); font-size: 0.95rem; min-height: 24px;"></div>
+      </div>
+
+      <div style="text-align: center; margin-top: 30px; color: var(--muted); font-size: 0.9rem;">
+        <p>Scroll down to see the interaction</p>
+      </div>
+    </div>
+  </section>
+
   <!-- Feature: For Diners -->
   <section class="feature-section" style="background: #0a0a0a;">
     <div class="feature-container">
@@ -526,6 +581,76 @@
     initNav();
   </script>
   <script>
+    // Interactive Demo Animation
+    let currentStep = 0;
+    const totalSteps = 4;
+    let animationActive = false;
+
+    function animateDemo() {
+      const demo = document.getElementById('interactiveDemo');
+      const cursor = document.getElementById('demoCursor');
+      const indicator = document.getElementById('stepIndicator');
+      const items = document.querySelectorAll('.demo-item');
+
+      if (!demo || !cursor) return;
+
+      const rect = demo.getBoundingClientRect();
+      const scrollProgress = 1 - (rect.top / window.innerHeight);
+      const step = Math.floor(scrollProgress * totalSteps);
+
+      if (step !== currentStep && step >= 0 && step < totalSteps) {
+        currentStep = step;
+
+        // Reset all overlays
+        document.querySelectorAll('.demo-overlay').forEach(overlay => {
+          overlay.style.display = 'none';
+        });
+
+        if (currentStep === 0) {
+          // Initial state
+          cursor.style.opacity = '0';
+          indicator.textContent = '';
+        } else if (currentStep === 1) {
+          // Hover over safe item
+          const item = items[0];
+          const itemRect = item.getBoundingClientRect();
+          const demoRect = demo.getBoundingClientRect();
+          cursor.style.left = (itemRect.left - demoRect.left + itemRect.width / 2 - 20) + 'px';
+          cursor.style.top = (itemRect.top - demoRect.top + itemRect.height / 2 - 20) + 'px';
+          cursor.style.opacity = '1';
+          indicator.textContent = '✓ Green means safe - no allergens detected';
+          item.style.transform = 'scale(1.02)';
+          setTimeout(() => item.style.transform = 'scale(1)', 300);
+        } else if (currentStep === 2) {
+          // Click on caution item to show overlay
+          const item = items[1];
+          const overlay = item.querySelector('.demo-overlay');
+          const itemRect = item.getBoundingClientRect();
+          const demoRect = demo.getBoundingClientRect();
+          cursor.style.left = (itemRect.left - demoRect.left + itemRect.width / 2 - 20) + 'px';
+          cursor.style.top = (itemRect.top - demoRect.top + itemRect.height / 2 - 20) + 'px';
+          cursor.style.opacity = '1';
+          overlay.style.display = 'block';
+          indicator.textContent = '⚠️ Yellow means caution - tap for modification options';
+          item.style.transform = 'scale(1.02)';
+          setTimeout(() => item.style.transform = 'scale(1)', 300);
+        } else if (currentStep === 3) {
+          // Click on danger item to show overlay
+          const item = items[2];
+          const overlay = item.querySelector('.demo-overlay');
+          const itemRect = item.getBoundingClientRect();
+          const demoRect = demo.getBoundingClientRect();
+          cursor.style.left = (itemRect.left - demoRect.left + itemRect.width / 2 - 20) + 'px';
+          cursor.style.top = (itemRect.top - demoRect.top + itemRect.height / 2 - 20) + 'px';
+          cursor.style.opacity = '1';
+          overlay.style.display = 'block';
+          indicator.textContent = '🚫 Red means avoid - contains allergens that cannot be removed';
+          item.style.transform = 'scale(1.02)';
+          setTimeout(() => item.style.transform = 'scale(1)', 300);
+        }
+      }
+    }
+
     // Scroll animation observer
     const observerOptions = {
       threshold: 0.2,
@@ -539,6 +664,18 @@
         }
       });
     }, observerOptions);
+
+    // Add scroll listener for demo animation
+    let ticking = false;
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          animateDemo();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    });
 
     // Observe all animated elements
     document.addEventListener('DOMContentLoaded', () => {
