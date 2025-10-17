@@ -16,9 +16,7 @@ export function setupNav(currentPage, user = null) {
     { id: 'restaurants', label: 'All restaurants', href: 'restaurants.html' },
     { id: 'how-it-works', label: 'How it works', href: 'how-it-works.html' },
     { id: 'favorites', label: 'Favorite restaurants', href: 'favorites.html', requiresAuth: true },
-    { id: 'account', label: 'Account settings', href: 'account.html' },
-    { id: 'report-issue', label: 'Report an issue', href: 'report-issue.html' },
-    { id: 'sign-out', label: 'Sign out', requiresAuth: true, action: 'signout' }
+    { id: 'account', label: 'Account settings', href: 'account.html' }
   ];
 
   navItems.forEach(item => {
@@ -48,23 +46,13 @@ export function setupNav(currentPage, user = null) {
     }
 
     // Set up click handler
-    if (item.action === 'signout') {
-      btn.id = 'nav-sign-out';
-      // Handler will be attached by calling page
-    } else {
-      btn.onclick = () => window.location.href = item.href;
-    }
+    btn.onclick = () => window.location.href = item.href;
 
     navContainer.appendChild(btn);
   });
 }
 
+// Deprecated: Sign out handler moved to account page
 export function attachSignOutHandler(supabaseClient) {
-  const signOutBtn = document.getElementById('nav-sign-out');
-  if (signOutBtn) {
-    signOutBtn.onclick = async () => {
-      await supabaseClient.auth.signOut();
-      window.location.href = 'account.html';
-    };
-  }
+  // No-op: kept for backward compatibility
 }

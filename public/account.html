@@ -94,6 +94,13 @@
           <p id="diet-status" class="status-text" style="display:none;"></p>
         </section>
 
+        <!-- Sign out section (shown when logged in) -->
+        <section id="sign-out-section" class="auth-card" style="display:none;">
+          <div style="text-align:center;">
+            <button class="secondary-btn" id="sign-out-btn" type="button">Sign out</button>
+          </div>
+        </section>
+
         <!-- Password reset -->
         <section id="password-reset-section" class="auth-card" style="display:none;">
           <h2 style="margin:0 0 12px;">Set a new password</h2>
@@ -154,6 +161,7 @@
     const detailsSection = document.getElementById('details-section');
     const allergenSection = document.getElementById('allergen-section');
     const dietSection = document.getElementById('diet-section');
+    const signOutSection = document.getElementById('sign-out-section');
     const authMessage = document.getElementById('auth-message');
     const signupMessage = document.getElementById('signup-message');
     const allergenStatus = document.getElementById('allergen-status');
@@ -201,6 +209,7 @@
           detailsSection.style.display = 'none';
           allergenSection.style.display = 'none';
           dietSection.style.display = 'none';
+          signOutSection.style.display = 'none';
           passwordResetSection.style.display = 'flex';
           resetPasswordInput.value = '';
           resetPasswordConfirmInput.value = '';
@@ -214,6 +223,7 @@
         detailsSection.style.display = 'flex';
         allergenSection.style.display = 'flex';
         dietSection.style.display = 'flex';
+        signOutSection.style.display = 'flex';
         passwordResetSection.style.display = 'none';
         populateDetails(user);
         await loadAllergies();
@@ -229,6 +239,7 @@
       } else {
         allergenSection.style.display = 'none';
         dietSection.style.display = 'none';
+        signOutSection.style.display = 'none';
         detailsSection.style.display = 'none';
         signupView.style.display = 'none';
         authSection.style.display = 'flex';
@@ -595,16 +606,17 @@
       setNavState(currentUser);
     };
 
-    // Override sign-out behavior for account page to clear local state
-    document.addEventListener('click', async (e) => {
-      if (e.target.id === 'nav-sign-out') {
+    // Sign out button handler
+    const signOutBtn = document.getElementById('sign-out-btn');
+    if (signOutBtn) {
+      signOutBtn.addEventListener('click', async () => {
         await supabaseClient.auth.signOut();
         selectedAllergies = [];
         selectedDiets = [];
         signupAllergies = [];
         await checkAuth();
-      }
-    });
+      });
+    }
 
     resetPasswordBtn.addEventListener('click', async () => {
       resetMessage.textContent = '';
