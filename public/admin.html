@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin - Add Restaurant - CLE Allergy Aware</title>
+  <title>Admin - Add Restaurant - Clarivore</title>
   <link rel="stylesheet" href="css/styles.css">
   <style>
     .admin-container {
@@ -174,13 +174,11 @@
   <header class="simple-topbar">
     <div class="simple-topbar-inner">
       <a class="simple-brand" href="account.html">
-        <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt="CLE Allergy Aware logo">
-        <span>CLE Allergy Aware</span>
+        <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt="Clarivore logo">
+        <span>Clarivore</span>
       </a>
       <div class="simple-nav">
-        <button onclick="window.location.href='restaurants.html'" type="button">All restaurants</button>
-        <button onclick="window.location.href='how-it-works.html'" type="button">How it works</button>
-        <button onclick="window.location.href='account.html'" type="button">Account settings</button>
+        <!-- Navigation populated by shared-nav.js -->
       </div>
     </div>
   </header>
@@ -238,6 +236,7 @@
 
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+    import { setupNav, attachSignOutHandler } from './js/shared-nav.js';
 
     const supabase = createClient(
       'https://fgoiyycctnwnghrvsilt.supabase.co',
@@ -252,6 +251,12 @@
     // Check authentication
     async function checkAuth() {
       const { data: { user } } = await supabase.auth.getUser();
+
+      // Setup navigation
+      setupNav('restaurants', user);
+      if (user) {
+        attachSignOutHandler(supabase);
+      }
 
       if (!user || user.id !== ADMIN_USER_ID) {
         document.getElementById('access-denied').style.display = 'block';

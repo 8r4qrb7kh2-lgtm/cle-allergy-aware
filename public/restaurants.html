@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>All Restaurants - CLE Allergy Aware</title>
+  <title>All Restaurants - Clarivore</title>
   <link rel="stylesheet" href="css/styles.css">
   <style>
     .restaurant-grid {
@@ -62,14 +62,11 @@
   <header class="simple-topbar">
     <div class="simple-topbar-inner">
       <a class="simple-brand" href="account.html">
-        <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt="CLE Allergy Aware logo">
-        <span>CLE Allergy Aware</span>
+        <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt="Clarivore logo">
+        <span>Clarivore</span>
       </a>
       <div class="simple-nav">
-        <button onclick="window.location.href='how-it-works.html'" type="button">How it works</button>
-        <button id="navAccount" type="button" disabled>Account settings</button>
-        <button id="navFavorites" type="button" disabled style="display:none;">Favorite restaurants</button>
-        <button id="navSignOut" type="button" disabled style="display:none;">Sign out</button>
+        <!-- Navigation populated by shared-nav.js -->
       </div>
     </div>
   </header>
@@ -87,10 +84,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module">
     import supabaseClient from './js/supabase-client.js';
+    import { setupNav, attachSignOutHandler } from './js/shared-nav.js';
 
-    const navAccount = document.getElementById('navAccount');
-    const navSignOut = document.getElementById('navSignOut');
-    const navFavorites = document.getElementById('navFavorites');
     const statusEl = document.getElementById('restaurant-status');
     let favoriteIds = new Set();
     let statusTimer = null;
@@ -246,19 +241,9 @@
       const user = await requireAuth();
       if (!user) return;
 
-      navAccount.disabled = false;
-      navSignOut.disabled = false;
-      navSignOut.style.display = 'inline-flex';
-      navAccount.onclick = () => window.location.href = 'account.html';
-      navSignOut.onclick = async () => {
-        await supabaseClient.auth.signOut();
-        window.location.href = 'account.html';
-      };
-      if (navFavorites) {
-        navFavorites.disabled = false;
-        navFavorites.style.display = 'inline-flex';
-        navFavorites.onclick = () => window.location.href = 'favorites.html';
-      }
+      // Setup navigation with current page indicator
+      setupNav('restaurants', user);
+      attachSignOutHandler(supabaseClient);
 
       await loadFavorites(user.id);
 

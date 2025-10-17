@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Report an issue - CLE Allergy Aware</title>
+  <title>Report an issue - Clarivore</title>
+  <link rel="stylesheet" href="css/styles.css">
   <style>
     :root{
       --bg:#0b1020; --ink:#e9ecff; --muted:#a8b2d6;
@@ -90,18 +91,17 @@
   </style>
 </head>
 <body>
-  <div class="topbar">
-    <div class="topin">
-      <a class="brand" href="account.html">
+  <header class="simple-topbar">
+    <div class="simple-topbar-inner">
+      <a class="simple-brand" href="account.html">
         <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt="">
-        <span>CLE Allergy Aware</span>
+        <span>Clarivore</span>
       </a>
-      <div class="topNav">
-        <a href="restaurants.html">Restaurants</a>
-        <a href="account.html">Sign in</a>
+      <div class="simple-nav">
+        <!-- Navigation populated by shared-nav.js -->
       </div>
     </div>
-  </div>
+  </header>
   <main>
     <div>
       <h1>Report an issue</h1>
@@ -109,6 +109,20 @@
     </div>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module">
+    import supabaseClient from './js/supabase-client.js';
+    import { setupNav, attachSignOutHandler } from './js/shared-nav.js';
+
+    // Setup navigation
+    async function initNav() {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      setupNav('report-issue', user);
+      if (user) {
+        attachSignOutHandler(supabaseClient);
+      }
+    }
+    initNav();
+  </script>
   <script type="module" src="js/report-modal.js"></script>
   <script>
     const launchReportModal = () => {

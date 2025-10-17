@@ -14,11 +14,8 @@
         <span>Clarivore</span>
       </a>
       <div class="simple-nav">
-        <button id="navAllRestaurants" type="button" disabled>All restaurants</button>
-        <button onclick="window.location.href='how-it-works.html'" type="button">How it works</button>
-        <button id="navFavorites" type="button" disabled style="display:none;">Favorite restaurants</button>
+        <!-- Navigation populated by shared-nav.js -->
         <button id="navReturnMenu" type="button" style="display:none;">Back to menu</button>
-        <button id="navSignOut" type="button" style="display:none;">Sign out</button>
       </div>
     </div>
   </header>
@@ -116,6 +113,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module">
     import supabaseClient from './js/supabase-client.js';
+    import { setupNav, attachSignOutHandler } from './js/shared-nav.js';
 
     const ALLERGENS = ["dairy", "egg", "peanut", "tree nut", "shellfish", "fish", "soy", "sesame", "wheat"];
     const DIETS = ["Vegan", "Vegetarian", "Pescatarian", "Kosher", "Halal"];
@@ -150,10 +148,7 @@
       window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
     }
 
-    const navAllRestaurants = document.getElementById('navAllRestaurants');
-    const navFavorites = document.getElementById('navFavorites');
     const navReturnMenu = document.getElementById('navReturnMenu');
-    const navSignOut = document.getElementById('navSignOut');
     const authSection = document.getElementById('auth-section');
     const signupView = document.getElementById('signup-view');
     const detailsSection = document.getElementById('details-section');
@@ -187,23 +182,10 @@
         };
       }
 
-      navAllRestaurants.style.display = user ? 'inline-flex' : (showBackToMenu ? 'none' : 'inline-flex');
-      navAllRestaurants.disabled = !user;
-
-      if (user) {
-        navSignOut.style.display = 'inline-flex';
-        navSignOut.disabled = false;
-        navFavorites.style.display = 'inline-flex';
-        navFavorites.disabled = false;
-        if (isRecoveryMode) {
-          navAllRestaurants.style.display = 'none';
-          navFavorites.style.display = 'none';
-        }
-      } else {
-        navSignOut.style.display = 'none';
-        navSignOut.disabled = true;
-        navFavorites.style.display = 'none';
-        navFavorites.disabled = true;
+      // Setup navigation with current page indicator
+      if (!isRecoveryMode) {
+        setupNav('account', user);
+        attachSignOutHandler(supabaseClient);
       }
     }
 
@@ -613,22 +595,15 @@
       setNavState(currentUser);
     };
 
-    navAllRestaurants.addEventListener('click', () => {
-      if (navAllRestaurants.disabled) return;
-      window.location.href = 'restaurants.html';
-    });
-
-    navFavorites.addEventListener('click', () => {
-      if (navFavorites.disabled) return;
-      window.location.href = 'favorites.html';
-    });
-
-    navSignOut.addEventListener('click', async () => {
-      await supabaseClient.auth.signOut();
-      selectedAllergies = [];
-      selectedDiets = [];
-      signupAllergies = [];
-      await checkAuth();
+    // Override sign-out behavior for account page to clear local state
+    document.addEventListener('click', async (e) => {
+      if (e.target.id === 'nav-sign-out') {
+        await supabaseClient.auth.signOut();
+        selectedAllergies = [];
+        selectedDiets = [];
+        signupAllergies = [];
+        await checkAuth();
+      }
     });
 
     resetPasswordBtn.addEventListener('click', async () => {

@@ -250,7 +250,6 @@
   .algBtn.active{background:#1a2351;box-shadow:0 0 0 3px #7c9cff33 inset;border-color:#4c5ad4}
   .algInput{background:#0c1230;color:var(--ink);border:1px solid #31407f;border-radius:8px;padding:8px 10px;width:100%}
   .algChk{display:flex;align-items:center;gap:8px;white-space:nowrap;justify-self:end}
-  .saveRow{display:none;justify-content:flex-end;margin:12px 0}
 
   .editBox{position:absolute;border:2px solid var(--warn);border-radius:6px;background:transparent;cursor:move}
   .editBadge{position:absolute;top:2px;right:2px;width:18px;height:18px;background:#3651ff;border:1.5px solid #dbe2ff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;z-index:10;line-height:1}
@@ -3934,7 +3933,7 @@ function renderEditor(){
         <button class="btn" id="uploadMenuBtn">📷 Upload new menu image</button>
         <button class="btn btnDanger" id="confirmBtn">Confirm allergen information is up-to-date</button>
         <button class="btn" id="addBox">Add overlay</button>
-        <div class="saveRow" id="saveRow"><button class="btn btnPrimary" id="saveBtn">Save to site</button></div>
+        <button class="btn btnPrimary" id="saveBtn" style="display:none">Save to site</button>
       </div>
     </div>
     <input type="file" id="menuImageInput" accept="image/*" style="display:none">
@@ -3947,7 +3946,7 @@ function renderEditor(){
   const img=new Image(); img.src=rs.menuImage||''; img.className='menuImg'; inner.appendChild(img);
 
   const overlays=JSON.parse(JSON.stringify(rs.overlays||[]));
-  let dirty=false; function setDirty(v=true){dirty=v; document.getElementById('saveRow').style.display=dirty?'flex':'none';}
+  let dirty=false; function setDirty(v=true){dirty=v; document.getElementById('saveBtn').style.display=dirty?'inline-flex':'none';}
 
   // Track all changes as they happen
   let pendingChanges=[];

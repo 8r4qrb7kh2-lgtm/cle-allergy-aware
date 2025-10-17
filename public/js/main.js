@@ -1,6 +1,6 @@
 import supabaseClient from './supabase-client.js';
 
-console.log('CLE Allergy Aware loaded!');
+console.log('Clarivore loaded!');
 console.log('Supabase connected:', supabaseClient ? 'Yes' : 'No');
 
 // Check if user is logged in
