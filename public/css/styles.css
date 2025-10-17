@@ -311,38 +311,8 @@ nav a:hover {
 
 .simple-nav button.current-page,
 .simple-nav a.current-page {
-  position: relative;
   border-color: var(--hover);
-}
-
-.simple-nav button.current-page::before,
-.simple-nav button.current-page::after,
-.simple-nav a.current-page::before,
-.simple-nav a.current-page::after {
-  content: '';
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  border: 2px solid var(--brand);
-  background: transparent;
-}
-
-.simple-nav button.current-page::before,
-.simple-nav a.current-page::before {
-  top: -1px;
-  left: -1px;
-  border-right: none;
-  border-bottom: none;
-  border-radius: 4px 0 0 0;
-}
-
-.simple-nav button.current-page::after,
-.simple-nav a.current-page::after {
-  top: -1px;
-  right: -1px;
-  border-left: none;
-  border-bottom: none;
-  border-radius: 0 4px 0 0;
+  box-shadow: 0 0 0 2px var(--brand);
 }
 
 .page-main {
