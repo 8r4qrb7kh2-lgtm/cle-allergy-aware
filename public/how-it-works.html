@@ -365,55 +365,80 @@
   </section>
 
   <!-- Interactive Demo Section -->
-  <section class="demo-section" style="background: #0a0a0a; min-height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
-    <div class="demo-container" style="max-width: 900px; width: 100%; padding: 40px 20px; position: relative;">
-      <h2 style="text-align: center; font-size: 2.5rem; margin-bottom: 60px; color: var(--ink);">See How It Works</h2>
+  <section class="demo-section" style="background: #0a0a0a; min-height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; padding: 100px 20px;">
+    <div class="demo-container" style="max-width: 900px; width: 100%; position: relative;">
+      <h2 style="text-align: center; font-size: 2.5rem; margin-bottom: 60px; color: #e9ecff;">See How It Works</h2>
 
       <div id="interactiveDemo" style="position: relative; background: #111630; border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: 1px solid #2a3261;">
+        <!-- Your Saved Allergens Header -->
+        <div style="margin-bottom: 20px; padding: 16px; background: rgba(124,156,255,0.1); border: 1px dashed rgba(124,156,255,0.3); border-radius: 12px;">
+          <div style="font-weight: 600; color: #7c9cff; margin-bottom: 8px;">Your Saved Allergens</div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <span style="background: rgba(239,68,68,0.15); color: #e85d5d; padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; border: 1px solid rgba(239,68,68,0.3);">🥛 Dairy</span>
+            <span style="background: rgba(239,68,68,0.15); color: #e85d5d; padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; border: 1px solid rgba(239,68,68,0.3);">🥚 Egg</span>
+            <span style="background: rgba(239,68,68,0.15); color: #e85d5d; padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; border: 1px solid rgba(239,68,68,0.3);">🥜 Peanut</span>
+            <span style="background: rgba(239,68,68,0.15); color: #e85d5d; padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; border: 1px solid rgba(239,68,68,0.3);">🌰 Tree Nut</span>
+          </div>
+          <div style="font-weight: 600; color: #7c9cff; margin-top: 12px; margin-bottom: 8px;">Your Saved Dietary Preferences</div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <span style="background: rgba(76,200,90,0.15); color: #4cc85a; padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; border: 1px solid rgba(76,200,90,0.3);">🌱 Vegan</span>
+          </div>
+        </div>
+
         <!-- Demo Menu -->
         <div class="demo-menu" style="display: grid; gap: 16px;">
           <div class="demo-item demo-safe" data-step="1" style="background: rgba(34,197,94,0.1); border: 2px solid #22c55e; border-radius: 12px; padding: 16px; position: relative; cursor: pointer; transition: all 0.3s;">
-            <div class="demo-item-name" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 4px;">🥗 Garden Salad</div>
-            <div class="demo-item-desc" style="color: var(--muted); font-size: 0.9rem;">Fresh greens, tomatoes, cucumber</div>
-            <div class="demo-badge" style="position: absolute; top: 16px; right: 16px; width: 24px; height: 24px; background: #22c55e; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">✓</div>
+            <div class="demo-item-name" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 4px; color: #e9ecff;">🥗 Garden Salad</div>
+            <div class="demo-item-desc" style="color: #a8b2d6; font-size: 0.9rem;">Fresh greens, tomatoes, cucumber</div>
+            <div class="demo-badge" style="position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; background: #22c55e; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.1rem;">✓</div>
           </div>
 
           <div class="demo-item demo-caution" data-step="2" style="background: rgba(250,204,21,0.1); border: 2px solid #facc15; border-radius: 12px; padding: 16px; position: relative; cursor: pointer; transition: all 0.3s;">
-            <div class="demo-item-name" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 4px;">🍝 Pasta Primavera</div>
-            <div class="demo-item-desc" style="color: var(--muted); font-size: 0.9rem;">Vegetables, olive oil, parmesan</div>
-            <div class="demo-badge" style="position: absolute; top: 16px; right: 16px; width: 24px; height: 24px; background: #facc15; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #000; font-weight: bold;">!</div>
-            <div class="demo-overlay" style="display: none; position: absolute; inset: 0; background: rgba(17,22,48,0.95); border-radius: 12px; padding: 20px; backdrop-filter: blur(10px);">
-              <div style="font-weight: 600; font-size: 1rem; margin-bottom: 12px; color: #facc15;">⚠️ Can Accommodate</div>
-              <div style="color: var(--ink); margin-bottom: 8px;">Contains: <span style="color: #facc15;">Dairy (Parmesan)</span></div>
-              <div style="color: var(--muted); font-size: 0.85rem;">Ask to remove parmesan cheese</div>
+            <div class="demo-item-name" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 4px; color: #e9ecff;">🍝 Pasta Primavera</div>
+            <div class="demo-item-desc" style="color: #a8b2d6; font-size: 0.9rem;">Vegetables, olive oil, parmesan</div>
+            <div class="demo-badge" style="position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; background: #facc15; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #000; font-weight: bold; font-size: 1.2rem;">!</div>
+            <div class="demo-overlay" style="display: none; position: absolute; inset: 0; background: rgba(11,16,32,0.97); border-radius: 12px; padding: 20px; backdrop-filter: blur(14px); font-size: 0.95rem;">
+              <strong style="display: block; margin-bottom: 12px; color: #e9ecff; font-size: 1rem;">Allergen Information</strong>
+              <div style="background: rgba(250,204,21,0.15); padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 3px solid #facc15;">
+                <div style="color: #e9ecff; margin-bottom: 6px;">🥛 Contains <strong>dairy</strong> (can be substituted out)</div>
+              </div>
+              <div style="padding-top: 12px; margin-top: 12px; border-top: 1px solid rgba(124,156,255,0.2);">
+                <strong style="display: block; margin-bottom: 8px; color: #e9ecff;">Dietary Options</strong>
+                <div style="color: #e85d5d; font-size: 0.9rem; margin-bottom: 6px;">🌱 This dish is not <strong>vegan</strong></div>
+              </div>
             </div>
           </div>
 
           <div class="demo-item demo-danger" data-step="3" style="background: rgba(239,68,68,0.1); border: 2px solid #ef4444; border-radius: 12px; padding: 16px; position: relative; cursor: pointer; transition: all 0.3s;">
-            <div class="demo-item-name" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 4px;">🥜 Thai Peanut Noodles</div>
-            <div class="demo-item-desc" style="color: var(--muted); font-size: 0.9rem;">Rice noodles, peanut sauce, vegetables</div>
-            <div class="demo-badge" style="position: absolute; top: 16px; right: 16px; width: 24px; height: 24px; background: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">✕</div>
-            <div class="demo-overlay" style="display: none; position: absolute; inset: 0; background: rgba(17,22,48,0.95); border-radius: 12px; padding: 20px; backdrop-filter: blur(10px);">
-              <div style="font-weight: 600; font-size: 1rem; margin-bottom: 12px; color: #ef4444;">🚫 Contains Allergens</div>
-              <div style="color: var(--ink); margin-bottom: 8px;">Contains: <span style="color: #ef4444;">🥜 Peanuts</span></div>
-              <div style="color: var(--muted); font-size: 0.85rem;">Cannot be modified - avoid this dish</div>
+            <div class="demo-item-name" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 4px; color: #e9ecff;">🥜 Thai Peanut Noodles</div>
+            <div class="demo-item-desc" style="color: #a8b2d6; font-size: 0.9rem;">Rice noodles, peanut sauce, vegetables</div>
+            <div class="demo-badge" style="position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; background: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.2rem;">✕</div>
+            <div class="demo-overlay" style="display: none; position: absolute; inset: 0; background: rgba(11,16,32,0.97); border-radius: 12px; padding: 20px; backdrop-filter: blur(14px); font-size: 0.95rem;">
+              <strong style="display: block; margin-bottom: 12px; color: #e9ecff; font-size: 1rem;">Allergen Information</strong>
+              <div style="background: rgba(239,68,68,0.15); padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 3px solid #ef4444;">
+                <div style="color: #e9ecff; margin-bottom: 6px;">🥜 Contains <strong>peanut</strong> (cannot be substituted out)</div>
+              </div>
+              <div style="padding-top: 12px; margin-top: 12px; border-top: 1px solid rgba(124,156,255,0.2);">
+                <strong style="display: block; margin-bottom: 8px; color: #e9ecff;">Dietary Options</strong>
+                <div style="color: #4cc85a; font-size: 0.9rem; margin-bottom: 6px;">🌱 This dish is <strong>vegan</strong></div>
+              </div>
             </div>
           </div>
         </div>
 
         <!-- Animated Cursor -->
-        <div id="demoCursor" style="position: absolute; width: 40px; height: 40px; pointer-events: none; opacity: 0; transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);">
+        <div id="demoCursor" style="position: absolute; width: 40px; height: 40px; pointer-events: none; opacity: 0; transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1); z-index: 10;">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
             <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#7c9cff" stroke="#fff" stroke-width="1.5"/>
           </svg>
         </div>
 
         <!-- Step Indicator -->
-        <div id="stepIndicator" style="text-align: center; margin-top: 30px; color: var(--muted); font-size: 0.95rem; min-height: 24px;"></div>
+        <div id="stepIndicator" style="text-align: center; margin-top: 30px; color: #a8b2d6; font-size: 0.95rem; min-height: 24px;"></div>
       </div>
 
-      <div style="text-align: center; margin-top: 30px; color: var(--muted); font-size: 0.9rem;">
-        <p>Scroll down to see the interaction</p>
+      <div style="text-align: center; margin-top: 30px; color: #a8b2d6; font-size: 0.9rem;">
+        <p>↓ Scroll down to see the interaction ↓</p>
       </div>
     </div>
   </section>
@@ -582,9 +607,8 @@
   </script>
   <script>
     // Interactive Demo Animation
-    let currentStep = 0;
+    let currentStep = -1;
     const totalSteps = 4;
-    let animationActive = false;
 
     function animateDemo() {
       const demo = document.getElementById('interactiveDemo');
@@ -592,22 +616,38 @@
       const indicator = document.getElementById('stepIndicator');
       const items = document.querySelectorAll('.demo-item');
 
-      if (!demo || !cursor) return;
+      if (!demo || !cursor || !items.length) return;
 
       const rect = demo.getBoundingClientRect();
-      const scrollProgress = 1 - (rect.top / window.innerHeight);
-      const step = Math.floor(scrollProgress * totalSteps);
+      const viewportMid = window.innerHeight / 2;
 
-      if (step !== currentStep && step >= 0 && step < totalSteps) {
+      // Calculate progress based on demo position relative to viewport middle
+      let progress = 0;
+      if (rect.top > viewportMid) {
+        progress = 0; // Demo is below middle
+      } else if (rect.bottom < viewportMid) {
+        progress = 1; // Demo is above middle
+      } else {
+        // Demo is crossing the middle - interpolate
+        progress = (viewportMid - rect.top) / rect.height;
+        progress = Math.max(0, Math.min(1, progress));
+      }
+
+      const step = Math.floor(progress * (totalSteps - 0.5));
+
+      if (step !== currentStep) {
         currentStep = step;
 
-        // Reset all overlays
+        // Reset all overlays and transforms
         document.querySelectorAll('.demo-overlay').forEach(overlay => {
           overlay.style.display = 'none';
         });
+        items.forEach(item => {
+          item.style.transform = 'scale(1)';
+        });
 
         if (currentStep === 0) {
-          // Initial state
+          // Initial state - show all items normally
           cursor.style.opacity = '0';
           indicator.textContent = '';
         } else if (currentStep === 1) {
@@ -618,9 +658,8 @@
           cursor.style.left = (itemRect.left - demoRect.left + itemRect.width / 2 - 20) + 'px';
           cursor.style.top = (itemRect.top - demoRect.top + itemRect.height / 2 - 20) + 'px';
           cursor.style.opacity = '1';
-          indicator.textContent = '✓ Green means safe - no allergens detected';
+          indicator.textContent = '✓ Green border means safe - no allergens detected';
           item.style.transform = 'scale(1.02)';
-          setTimeout(() => item.style.transform = 'scale(1)', 300);
         } else if (currentStep === 2) {
           // Click on caution item to show overlay
           const item = items[1];
@@ -630,11 +669,10 @@
           cursor.style.left = (itemRect.left - demoRect.left + itemRect.width / 2 - 20) + 'px';
           cursor.style.top = (itemRect.top - demoRect.top + itemRect.height / 2 - 20) + 'px';
           cursor.style.opacity = '1';
-          overlay.style.display = 'block';
-          indicator.textContent = '⚠️ Yellow means caution - tap for modification options';
+          if (overlay) overlay.style.display = 'block';
+          indicator.textContent = '⚠️ Yellow border means caution - tap to see what can be removed';
           item.style.transform = 'scale(1.02)';
-          setTimeout(() => item.style.transform = 'scale(1)', 300);
-        } else if (currentStep === 3) {
+        } else if (currentStep >= 3) {
           // Click on danger item to show overlay
           const item = items[2];
           const overlay = item.querySelector('.demo-overlay');
@@ -643,10 +681,9 @@
           cursor.style.left = (itemRect.left - demoRect.left + itemRect.width / 2 - 20) + 'px';
           cursor.style.top = (itemRect.top - demoRect.top + itemRect.height / 2 - 20) + 'px';
           cursor.style.opacity = '1';
-          overlay.style.display = 'block';
-          indicator.textContent = '🚫 Red means avoid - contains allergens that cannot be removed';
+          if (overlay) overlay.style.display = 'block';
+          indicator.textContent = '🚫 Red border means avoid - contains allergens that cannot be removed';
           item.style.transform = 'scale(1.02)';
-          setTimeout(() => item.style.transform = 'scale(1)', 300);
         }
       }
     }
@@ -666,48 +703,21 @@
     }, observerOptions);
 
     // Add scroll listener for demo animation
-    let ticking = false;
+    let tickingDemo = false;
     window.addEventListener('scroll', () => {
-      if (!ticking) {
+      if (!tickingDemo) {
         window.requestAnimationFrame(() => {
           animateDemo();
-          ticking = false;
+          tickingDemo = false;
         });
-        ticking = true;
+        tickingDemo = true;
       }
-    });
-
-    // Observe all animated elements
-    document.addEventListener('DOMContentLoaded', () => {
-      // Hero animations
-      setTimeout(() => {
-        document.querySelector('.hero-title').classList.add('visible');
-      }, 300);
-      setTimeout(() => {
-        document.querySelector('.hero-subtitle').classList.add('visible');
-      }, 500);
-
-      // Observe all feature elements
-      const animatedElements = document.querySelectorAll(
-        '.feature-text, .feature-visual, .step-card, .color-card, .icon-item'
-      );
-
-      animatedElements.forEach(el => observer.observe(el));
-
-      // Smooth scroll for indicator
-      document.querySelector('.scroll-indicator').addEventListener('click', () => {
-        window.scrollTo({
-          top: window.innerHeight,
-          behavior: 'smooth'
-        });
-      });
-    });
+    }, { passive: true });
 
     // Parallax effect on scroll
-    let ticking = false;
-
+    let tickingParallax = false;
     window.addEventListener('scroll', () => {
-      if (!ticking) {
+      if (!tickingParallax) {
         window.requestAnimationFrame(() => {
           const scrolled = window.pageYOffset;
           const heroTitle = document.querySelector('.hero-title');
@@ -723,11 +733,44 @@
             heroSubtitle.style.opacity = 1 - (scrolled / window.innerHeight);
           }
 
-          ticking = false;
+          tickingParallax = false;
         });
-
-        ticking = true;
+        tickingParallax = true;
       }
+    }, { passive: true });
+
+    // Observe all animated elements
+    document.addEventListener('DOMContentLoaded', () => {
+      // Hero animations
+      setTimeout(() => {
+        const title = document.querySelector('.hero-title');
+        if (title) title.classList.add('visible');
+      }, 300);
+      setTimeout(() => {
+        const subtitle = document.querySelector('.hero-subtitle');
+        if (subtitle) subtitle.classList.add('visible');
+      }, 500);
+
+      // Observe all feature elements
+      const animatedElements = document.querySelectorAll(
+        '.feature-text, .feature-visual, .step-card, .color-card, .icon-item'
+      );
+
+      animatedElements.forEach(el => observer.observe(el));
+
+      // Smooth scroll for indicator
+      const scrollIndicator = document.querySelector('.scroll-indicator');
+      if (scrollIndicator) {
+        scrollIndicator.addEventListener('click', () => {
+          window.scrollTo({
+            top: window.innerHeight,
+            behavior: 'smooth'
+          });
+        });
+      }
+
+      // Initial animation check
+      animateDemo();
     });
   </script>
 </body>

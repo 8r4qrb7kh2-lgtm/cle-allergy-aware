@@ -32,8 +32,9 @@ IMPORTANT INSTRUCTIONS:
 2. Create a SEPARATE entry for EACH distinct ingredient (e.g., "spinach", "ricotta", "egg", "parsley" should be 4 separate entries, NOT combined)
 3. If you see a recipe with multiple ingredients listed, extract each one individually
 4. For each ingredient, identify allergens from this list: dairy, egg, peanut, tree nut, shellfish, fish, gluten, soy, sesame, wheat
-5. Do NOT guess or infer - only use what you can clearly read
-6. If the image is unclear, indicate that in imageQuality
+5. Also determine which dietary options the overall dish meets from this list: Vegan, Vegetarian, Pescatarian, Kosher, Halal
+6. Do NOT guess or infer - only use what you can clearly read
+7. If the image is unclear, indicate that in imageQuality
 
 Return a JSON object with this exact structure:
 {
@@ -46,22 +47,32 @@ Return a JSON object with this exact structure:
       "imageQuality": "good|poor|unreadable"
     }
   ],
+  "dietaryOptions": ["Vegan", "Vegetarian", "Pescatarian", "Kosher", "Halal"],
   "verifiedFromImage": true
 }
+
+DIETARY OPTIONS RULES:
+- Vegan: No animal products at all (no meat, dairy, eggs, honey, gelatin)
+- Vegetarian: No meat or fish, but may contain dairy/eggs
+- Pescatarian: No meat (except fish/seafood), may contain dairy/eggs
+- Kosher: Meets Jewish dietary laws (no pork/shellfish, no mixing meat/dairy)
+- Halal: Meets Islamic dietary laws (no pork/alcohol)
 
 EXAMPLE: If you see a recipe listing "30 oz spinach, 15 oz cottage cheese, 1 egg, parsley", create 4 separate entries:
 - {"name": "spinach", "allergens": [], ...}
 - {"name": "cottage cheese", "allergens": ["dairy"], ...}
 - {"name": "egg", "allergens": ["egg"], ...}
 - {"name": "parsley", "allergens": [], ...}
+And dietaryOptions would be: ["Vegetarian"] (not vegan due to dairy/egg, not pescatarian since no fish)
 
-Be VERY conservative with allergens - only flag what you can clearly identify.`
+Be VERY conservative with allergens and dietary options - only flag what you can clearly identify.`
       : `You are an ingredient analysis assistant for a restaurant allergen awareness system.
 
 Analyze the dish description and extract:
 1. Individual ingredients
 2. Likely brands (if mentioned)
 3. Potential allergens from this list: dairy, egg, peanut, tree nut, shellfish, fish, gluten, soy, sesame, wheat
+4. Dietary options the dish meets from this list: Vegan, Vegetarian, Pescatarian, Kosher, Halal
 
 Return a JSON object with this exact structure:
 {
@@ -73,10 +84,18 @@ Return a JSON object with this exact structure:
       "ingredientsList": ["raw ingredient from label"]
     }
   ],
+  "dietaryOptions": ["Vegan", "Vegetarian", "Pescatarian", "Kosher", "Halal"],
   "verifiedFromImage": false
 }
 
-Be conservative - only flag allergens you are confident about based on the description.`
+DIETARY OPTIONS RULES:
+- Vegan: No animal products at all (no meat, dairy, eggs, honey, gelatin)
+- Vegetarian: No meat or fish, but may contain dairy/eggs
+- Pescatarian: No meat (except fish/seafood), may contain dairy/eggs
+- Kosher: Meets Jewish dietary laws (no pork/shellfish, no mixing meat/dairy)
+- Halal: Meets Islamic dietary laws (no pork/alcohol)
+
+Be conservative - only flag allergens and dietary options you are confident about based on the description.`
 
     const userPrompt = imageData
       ? `${text ? `Context: ${text}` : ''}
