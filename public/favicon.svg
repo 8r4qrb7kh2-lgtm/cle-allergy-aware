@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <style>
+      .shield { fill: #4a9d5f; }
+      .leaf { fill: #ffffff; }
+    </style>
+  </defs>
+  <!-- Shield shape -->
+  <path class="shield" d="M50 5 L85 20 L85 50 C85 70 70 85 50 95 C30 85 15 70 15 50 L15 20 Z"/>
+  <!-- Leaf design -->
+  <path class="leaf" d="M50 30 C45 30 40 35 40 40 C40 50 50 60 50 65 C50 60 60 50 60 40 C60 35 55 30 50 30 Z"/>
+  <path class="leaf" d="M50 35 L50 60" stroke="#ffffff" stroke-width="1.5" fill="none"/>
+</svg>
