@@ -2,12 +2,30 @@
   <defs>
     <style>
       .shield { fill: #4a9d5f; }
-      .leaf { fill: #ffffff; }
+      .cutout { fill: #1e3a5f; }
     </style>
   </defs>
-  <!-- Shield shape -->
-  <path class="shield" d="M50 5 L85 20 L85 50 C85 70 70 85 50 95 C30 85 15 70 15 50 L15 20 Z"/>
-  <!-- Leaf design -->
-  <path class="leaf" d="M50 30 C45 30 40 35 40 40 C40 50 50 60 50 65 C50 60 60 50 60 40 C60 35 55 30 50 30 Z"/>
-  <path class="leaf" d="M50 35 L50 60" stroke="#ffffff" stroke-width="1.5" fill="none"/>
+
+  <!-- Shield shape with rounded top -->
+  <path class="shield" d="M50 5 C30 5, 15 10, 15 20 L15 50 C15 65, 25 80, 50 95 C75 80, 85 65, 85 50 L85 20 C85 10, 70 5, 50 5 Z"/>
+
+  <!-- Fork cutout -->
+  <g class="cutout">
+    <!-- Fork handle -->
+    <path d="M32 35 L32 70 C32 72, 33 73, 35 73 C37 73, 38 72, 38 70 L38 35"/>
+
+    <!-- Fork tines -->
+    <rect x="30" y="28" width="3" height="12" rx="1.5"/>
+    <rect x="35" y="28" width="3" height="12" rx="1.5"/>
+    <rect x="40" y="28" width="3" height="12" rx="1.5"/>
+  </g>
+
+  <!-- Leaf cutout -->
+  <g class="cutout">
+    <!-- Leaf shape -->
+    <path d="M55 45 Q75 45, 75 60 Q75 70, 65 75 Q60 77, 55 73 Q50 70, 48 65 Q55 65, 60 60 Q63 57, 63 53 Q63 48, 55 45 Z"/>
+
+    <!-- Leaf vein -->
+    <path d="M55 48 Q60 55, 60 65" stroke="#4a9d5f" stroke-width="1.5" fill="none"/>
+  </g>
 </svg>
