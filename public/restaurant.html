@@ -4629,7 +4629,7 @@ function renderEditor(){
     const reader = new FileReader();
     reader.onload = (ev) => {
       const img = new Image();
-      img.onload = () => {
+      img.onload = async () => {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
 
@@ -4642,26 +4642,103 @@ function renderEditor(){
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         const newMenuImageData = canvas.toDataURL('image/jpeg', 0.85);
 
-        // Show confirmation dialog
+        // Analyze the new menu with AI to detect changes
         const oldTitle = document.title;
-        document.title = 'Clarivore';
-        const confirmed = confirm('New menu image loaded. The overlays will stay in their current positions.\n\nPlease verify all overlays are correctly positioned over the right items before saving.\n\nProceed?');
-        document.title = oldTitle;
+        document.title = 'Clarivore - Analyzing menu...';
 
-        if (confirmed) {
-          // Update the menu image
-          rs.menuImage = newMenuImageData;
-          state.restaurant.menuImage = newMenuImageData;
+        // Show a loading message
+        const statusDiv = document.createElement('div');
+        statusDiv.id = 'menuAnalysisStatus';
+        statusDiv.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(17,22,48,0.95);padding:30px;border-radius:12px;z-index:10000;color:#e9ecff;text-align:center;min-width:300px;box-shadow:0 20px 60px rgba(0,0,0,0.5);';
+        statusDiv.innerHTML = '<div style="font-size:1.2rem;margin-bottom:12px">🔍 Analyzing new menu...</div><div style="color:#a8b2d6">Please wait while AI detects menu items</div>';
+        document.body.appendChild(statusDiv);
 
-          // Re-render the menu with new image but same overlays
-          const menuImg = document.querySelector('.menuImg');
-          if (menuImg) {
-            menuImg.src = newMenuImageData;
+        try {
+          // Detect dishes on the new menu
+          const detectedDishes = await detectDishesOnMenu(newMenuImageData);
+
+          // Compare with existing overlays
+          const existingDishNames = new Set(overlays.map(o => (o.id || '').toLowerCase().trim()));
+          const newDishNames = new Set(detectedDishes.map(d => d.name.toLowerCase().trim()));
+
+          // Find differences
+          const addedDishes = detectedDishes.filter(d => !existingDishNames.has(d.name.toLowerCase().trim()));
+          const removedDishes = overlays.filter(o => !newDishNames.has((o.id || '').toLowerCase().trim()));
+          const keptDishes = overlays.filter(o => newDishNames.has((o.id || '').toLowerCase().trim()));
+
+          // Remove status div
+          document.body.removeChild(statusDiv);
+          document.title = oldTitle;
+
+          // Show comparison results
+          let message = 'New menu image analyzed!\n\n';
+
+          if (addedDishes.length > 0) {
+            message += `✅ NEW ITEMS DETECTED (${addedDishes.length}):\n`;
+            addedDishes.forEach(d => message += `   • ${d.name}\n`);
+            message += '\n';
           }
 
-          // Mark as dirty and log the change
-          pendingChanges.push('Uploaded new menu image');
-          setDirty(true);
+          if (removedDishes.length > 0) {
+            message += `❌ ITEMS NO LONGER FOUND (${removedDishes.length}):\n`;
+            removedDishes.forEach(o => message += `   • ${o.id || 'Unnamed'}\n`);
+            message += '\n';
+          }
+
+          if (keptDishes.length > 0) {
+            message += `✓ Existing items found: ${keptDishes.length}\n\n`;
+          }
+
+          message += 'The overlays will stay in their current positions.\n';
+          message += 'You will need to manually add/adjust overlays as needed.\n\n';
+          message += 'Proceed with updating the menu image?';
+
+          const confirmed = confirm(message);
+
+          if (confirmed) {
+            // Update the menu image
+            rs.menuImage = newMenuImageData;
+            state.restaurant.menuImage = newMenuImageData;
+
+            // Re-render the menu with new image but same overlays
+            const menuImg = document.querySelector('.menuImg');
+            if (menuImg) {
+              menuImg.src = newMenuImageData;
+            }
+
+            // Mark as dirty and log the change with details
+            let changeLog = 'Uploaded new menu image';
+            if (addedDishes.length > 0 || removedDishes.length > 0) {
+              changeLog += ` (AI detected: ${addedDishes.length} new items, ${removedDishes.length} removed items)`;
+            }
+            pendingChanges.push(changeLog);
+            setDirty(true);
+
+            // Show alert about new items needing attention
+            if (addedDishes.length > 0) {
+              setTimeout(() => {
+                alert(`⚠️ ATTENTION: ${addedDishes.length} new menu item(s) detected!\n\nPlease add overlays for:\n${addedDishes.map(d => '• ' + d.name).join('\n')}`);
+              }, 500);
+            }
+          }
+        } catch (err) {
+          console.error('Menu analysis failed:', err);
+          document.body.removeChild(statusDiv);
+          document.title = oldTitle;
+
+          // Fall back to simple confirmation if AI fails
+          const confirmed = confirm('Failed to analyze menu changes automatically.\n\nNew menu image loaded. The overlays will stay in their current positions.\n\nPlease verify all overlays are correctly positioned over the right items before saving.\n\nProceed?');
+
+          if (confirmed) {
+            rs.menuImage = newMenuImageData;
+            state.restaurant.menuImage = newMenuImageData;
+            const menuImg = document.querySelector('.menuImg');
+            if (menuImg) {
+              menuImg.src = newMenuImageData;
+            }
+            pendingChanges.push('Uploaded new menu image');
+            setDirty(true);
+          }
         }
 
         // Clear the file input
