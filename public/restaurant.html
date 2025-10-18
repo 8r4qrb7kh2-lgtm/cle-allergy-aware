@@ -1414,6 +1414,8 @@ function ensureAiAssistElements(){
         const data=collectAiTableData();
         data.splice(idx,1);
         renderAiTable(data);
+        // Mark as unsaved when user deletes a row
+        aiAssistState.savedToDish = false;
         return;
       }
       if(event.target.classList.contains('aiBrandSearchBtn') || event.target.closest('.aiBrandSearchBtn')){
@@ -1441,6 +1443,8 @@ function ensureAiAssistElements(){
         // Brand memory loading is now handled in renderAiTable() directly
         // Removed to prevent overwriting brand preview divs
       }
+      // Mark as unsaved when user makes changes
+      aiAssistState.savedToDish = false;
     });
     aiAssistTableBody.addEventListener('change',(event)=>{
       const row=event.target.closest('tr');
@@ -1916,6 +1920,10 @@ function openAiAssistant(context){
     if(aiAssistResultsEl){
       aiAssistResultsEl.classList.add('show');
     }
+    // Mark as saved since we're just loading existing data
+    aiAssistState.savedToDish = true;
+    // Store initial data to detect real changes
+    aiAssistState.initialData = JSON.stringify(existingIngredients);
   } else {
     // New item - show input screen
     if(aiAssistInput){
@@ -1923,6 +1931,8 @@ function openAiAssistant(context){
       setTimeout(()=>{aiAssistInput.focus(); aiAssistInput.selectionStart=aiAssistInput.value.length;},120);
     }
     renderAiTable([]);
+    aiAssistState.savedToDish = false;
+    aiAssistState.initialData = null;
   }
 
   toggleAiAssistBackdrop(true);
@@ -1952,7 +1962,18 @@ function closeAiAssistant(){
   // Check for unsaved changes (don't prompt if already saved to dish)
   const data = collectAiTableData();
   const hasData = data.length > 0 && data.some(item => item.name.trim());
-  const hasUnsavedChanges = hasData && !aiAssistState.savedToDish;
+
+  // Check if data has actually changed from initial state
+  let dataChanged = false;
+  if(aiAssistState.initialData){
+    const currentData = JSON.stringify(data);
+    dataChanged = currentData !== aiAssistState.initialData;
+  } else {
+    // No initial data means this is new work
+    dataChanged = hasData;
+  }
+
+  const hasUnsavedChanges = dataChanged && !aiAssistState.savedToDish;
 
   if(hasUnsavedChanges){
     const confirmClose = confirm(
