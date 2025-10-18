@@ -3985,10 +3985,14 @@ function renderEditor(){
     <div class="note" id="lastConfirmedText" style="text-align:right;font-size:12px;margin-top:4px">Last confirmed: ${rs.lastConfirmed?esc(fmtDateTime(rs.lastConfirmed)):'Never'}</div>
     <div class="note" style="margin-bottom:8px" id="editorNote">Drag to move. Drag any corner to resize. Click ✏️ to edit details.</div>
 
-    <div id="detectedDishesPanel" style="display:none;background:#1a2351;border:1px solid #2a3261;border-radius:12px;padding:16px;margin-bottom:16px">
-      <h3 style="margin:0 0 12px 0;font-size:1.1rem">Detected Menu Items</h3>
-      <div class="note" style="margin-bottom:12px">Tap on each item's location on the menu image below</div>
-      <div id="dishList" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div id="detectedDishesPanel" style="display:none;background:#1a2351;border:1px solid #2a3261;border-radius:12px;padding:20px;margin-bottom:16px;text-align:center">
+      <div style="font-size:1.3rem;font-weight:600;margin-bottom:8px" id="currentDishName"></div>
+      <div class="note" style="margin-bottom:12px">Tap on this item's location on the menu below</div>
+      <div style="display:flex;gap:12px;justify-content:center;align-items:center;font-size:14px;flex-wrap:wrap">
+        <span id="dishProgress" style="color:#a8b2d6"></span>
+        <button class="btn" id="skipDishBtn" style="padding:6px 12px;font-size:13px">Skip this item</button>
+        <button class="btn btnSuccess" id="finishMappingBtn" style="padding:6px 12px;font-size:13px;display:none">✓ Finish Mapping</button>
+      </div>
     </div>
 
     <div class="menuWrap show" id="menu"></div>
@@ -4645,72 +4649,66 @@ function renderEditor(){
 
       // Show the detected dishes panel
       const panel=document.getElementById('detectedDishesPanel');
-      const dishList=document.getElementById('dishList');
+      const currentDishNameEl=document.getElementById('currentDishName');
+      const dishProgressEl=document.getElementById('dishProgress');
+      const skipBtn=document.getElementById('skipDishBtn');
+      const finishBtn=document.getElementById('finishMappingBtn');
       const note=document.getElementById('editorNote');
 
-      panel.style.display='block';
-      note.textContent='Click on a menu item below, then tap its location on the menu image';
-
       let detectedDishes=result.dishes;
-      let currentDishIndex=null;
-      let tapMode=false;
+      let currentDishIndex=0;
+      let tapMode=true;
 
-      // Render the dish list
-      function renderDishList(){
-        dishList.innerHTML='';
-        detectedDishes.forEach((dish,idx)=>{
-          const dishEl=document.createElement('div');
-          dishEl.style.cssText='padding:10px 14px;background:#12183a;border:1px solid #2a3261;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center';
-
-          if(dish.mapped){
-            dishEl.style.background='#1a4d2e';
-            dishEl.style.borderColor='#22c55e';
-          } else if(currentDishIndex===idx){
-            dishEl.style.background='#3a2a1f';
-            dishEl.style.borderColor='#facc15';
-          }
-
-          dishEl.innerHTML=`
-            <span>${esc(dish.name)}</span>
-            <span style="font-size:12px;color:#a8b2d6">
-              ${dish.mapped?'✓ Mapped':'Tap to map'}
-            </span>
-          `;
-
-          dishEl.onclick=()=>{
-            if(dish.mapped) return;
-            currentDishIndex=idx;
-            tapMode=true;
-            renderDishList();
-            note.textContent=`Now tap on "${dish.name}" on the menu image below`;
-            menu.style.cursor='crosshair';
-          };
-
-          dishList.appendChild(dishEl);
-        });
-
-        // Add finish button if all mapped
-        const allMapped=detectedDishes.every(d=>d.mapped);
-        if(allMapped){
-          const finishBtn=document.createElement('button');
-          finishBtn.className='btn btnSuccess';
-          finishBtn.textContent='✓ Finish Mapping';
-          finishBtn.style.marginTop='8px';
-          finishBtn.onclick=()=>{
-            panel.style.display='none';
-            note.textContent='Drag to move. Drag any corner to resize. Click ✏️ to edit details.';
-            menu.style.cursor='';
-            tapMode=false;
-            currentDishIndex=null;
-            drawAll();
-          };
-          dishList.appendChild(finishBtn);
+      // Show current dish and update UI
+      function showCurrentDish(){
+        // Find next unmapped dish
+        while(currentDishIndex<detectedDishes.length && detectedDishes[currentDishIndex].mapped){
+          currentDishIndex++;
         }
+
+        // Check if all done
+        if(currentDishIndex>=detectedDishes.length){
+          currentDishNameEl.textContent='All items mapped!';
+          note.textContent='Great job! All menu items have been mapped.';
+          skipBtn.style.display='none';
+          finishBtn.style.display='inline-flex';
+          menu.style.cursor='';
+          tapMode=false;
+          return;
+        }
+
+        const dish=detectedDishes[currentDishIndex];
+        const mapped=detectedDishes.filter(d=>d.mapped).length;
+        const total=detectedDishes.length;
+
+        currentDishNameEl.textContent=dish.name;
+        dishProgressEl.textContent=`Item ${mapped+1} of ${total} (${mapped} mapped)`;
+        note.textContent=`Tap on "${dish.name}" on the menu image below`;
+        menu.style.cursor='crosshair';
+        panel.style.display='block';
+        tapMode=true;
       }
+
+      // Skip current dish
+      skipBtn.onclick=()=>{
+        currentDishIndex++;
+        showCurrentDish();
+      };
+
+      // Finish mapping
+      finishBtn.onclick=()=>{
+        panel.style.display='none';
+        note.textContent='Drag to move. Drag any corner to resize. Click ✏️ to edit details.';
+        menu.style.cursor='';
+        tapMode=false;
+        drawAll();
+      };
+
+      showCurrentDish();
 
       // Handle tapping on the menu image
       function handleMenuTap(e){
-        if(!tapMode || currentDishIndex===null) return;
+        if(!tapMode || currentDishIndex>=detectedDishes.length) return;
 
         e.preventDefault();
         e.stopPropagation();
@@ -4726,8 +4724,9 @@ function renderEditor(){
       // Analyze the tapped region to create overlay
       async function analyzeTappedRegion(tapX,tapY,dishIndex){
         const dish=detectedDishes[dishIndex];
-        note.textContent=`Analyzing "${dish.name}"...`;
+        currentDishNameEl.textContent=`Analyzing "${dish.name}"...`;
         menu.style.cursor='wait';
+        skipBtn.disabled=true;
 
         try {
           // Create a canvas to extract the region around the tap
@@ -4798,30 +4797,27 @@ function renderEditor(){
           overlays.push(newOverlay);
           pendingChanges.push(`${newOverlay.id}: Added overlay via AI detection`);
 
-          // Mark dish as mapped
+          // Mark dish as mapped and move to next
           dish.mapped=true;
-          tapMode=false;
-          currentDishIndex=null;
-          menu.style.cursor='';
+          currentDishIndex++;
+          skipBtn.disabled=false;
 
-          renderDishList();
           drawAll();
           setDirty(true);
-
-          note.textContent='Overlay created! Click another item to continue mapping.';
+          showCurrentDish();
 
         } catch(err){
           console.error('Region analysis error:',err);
-          alert('Failed to analyze this region. Please try again or add the overlay manually.');
+          alert('Failed to analyze this region. Please try again or skip this item.');
           menu.style.cursor='crosshair';
-          note.textContent=`Tap on "${dish.name}" on the menu image`;
+          skipBtn.disabled=false;
+          showCurrentDish();
         }
       }
 
       // Add click handler to menu for tap mode
       menu.addEventListener('click',handleMenuTap);
 
-      renderDishList();
       btn.textContent='✓ Dishes Detected';
 
     } catch(err){
