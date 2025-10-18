@@ -1898,6 +1898,13 @@ function openAiAssistant(context){
   updateAiAssistMediaPreview();
   aiAssistSetStatus('');
 
+  // Update the title to show the dish name
+  const dishName = context?.getCurrentName ? context.getCurrentName() : 'Dish';
+  const titleEl = document.getElementById('aiAssistTitle');
+  if(titleEl){
+    titleEl.textContent = dishName;
+  }
+
   // Check if there are existing ingredients to edit
   const existingIngredients = context?.existingIngredients;
   const hasExistingData = existingIngredients && Array.isArray(existingIngredients) && existingIngredients.length > 0;
