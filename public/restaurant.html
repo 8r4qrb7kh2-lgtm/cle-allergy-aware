@@ -1897,11 +1897,27 @@ function openAiAssistant(context){
   stopAiCamera();
   updateAiAssistMediaPreview();
   aiAssistSetStatus('');
-  if(aiAssistInput){
-    aiAssistInput.value=context?.seedText||'';
-    setTimeout(()=>{aiAssistInput.focus(); aiAssistInput.selectionStart=aiAssistInput.value.length;},120);
+
+  // Check if there are existing ingredients to edit
+  const existingIngredients = context?.existingIngredients;
+  const hasExistingData = existingIngredients && Array.isArray(existingIngredients) && existingIngredients.length > 0;
+
+  if(hasExistingData){
+    // Skip input screen and go directly to ingredient editing table
+    renderAiTable(existingIngredients);
+    // Show the results section
+    if(aiAssistResultsEl){
+      aiAssistResultsEl.classList.add('show');
+    }
+  } else {
+    // New item - show input screen
+    if(aiAssistInput){
+      aiAssistInput.value=context?.seedText||'';
+      setTimeout(()=>{aiAssistInput.focus(); aiAssistInput.selectionStart=aiAssistInput.value.length;},120);
+    }
+    renderAiTable([]);
   }
-  renderAiTable([]);
+
   toggleAiAssistBackdrop(true);
 }
 
@@ -5152,18 +5168,14 @@ function renderEditor(){
     configureModalClose({visible:false});
     if(mb) mb.onclick=null;
     const body=document.getElementById('modalBody'); document.getElementById('modalTitle').textContent='Edit item';
+
+    // Check if this is a new item or has existing data
+    const hasExistingData = (it.allergens && it.allergens.length > 0) || (it.details && Object.keys(it.details).length > 0);
+
     body.innerHTML=`<div class="algRow" style="grid-template-columns:1fr">
         <input id="itemName" class="algInput" style="font-weight:700" placeholder="Item name" value="${esc(it.id||'')}">
       </div>
-      <div style="margin: 16px 0;">
-        <button class="btn btnPrimary" id="aiAssistBtn" type="button" style="width:100%;padding:12px;font-size:1.05rem">🤖 AI Ingredient Helper (Recommended)</button>
-        <p class="note" style="margin:8px 0 0 0;text-align:center">Use AI to quickly extract ingredients and allergens</p>
-      </div>
-      <div style="margin: 12px 0;">
-        <button class="btn" id="toggleManualBtn" type="button" style="width:100%">✏️ Manual Entry (Not Recommended)</button>
-        <p class="note" style="margin:8px 0 0 0;text-align:center">Manually select allergens and dietary options</p>
-      </div>
-      <div id="manualEntrySection" style="display:none;">
+      <div id="manualEntrySection">
         <div id="algList"></div>
         <div class="note" style="margin:8px 0 4px">Live preview</div>
         <div id="previewBox" style="border:1px solid #2a3466;border-radius:10px;padding:10px"></div>
@@ -5174,8 +5186,11 @@ function renderEditor(){
       </div>`;
     const list=document.getElementById('algList');
     if(list){
-      list.dataset.aiIngredients='';
-      list.dataset.aiIngredientSummary='';
+      // Preserve existing AI ingredients data if available
+      const existingIngredients = it.aiIngredients || '';
+      const existingSummary = it.aiIngredientSummary || '';
+      list.dataset.aiIngredients = existingIngredients;
+      list.dataset.aiIngredientSummary = existingSummary;
     }
     const sel=new Set(it.allergens||[]);
     const details=it.details||{};
@@ -5352,27 +5367,30 @@ function renderEditor(){
       aiAssistSetStatus('Ingredient details applied. Review and save the dish when ready.','success');
     }
     
-    const aiAssistBtn=document.getElementById('aiAssistBtn');
-    if(aiAssistBtn){
-      aiAssistBtn.onclick=()=>{
-        const seedText=Object.values(it.details||{}).join('\n');
-        openAiAssistant({
-          seedText,
-          getCurrentName:()=>document.getElementById('itemName').value||it.id||'Item',
-          onApply:(rows)=>applyIngredientsFromAi(rows)
-        });
-      };
-    }
+    // Auto-open AI assistant
+    // Always auto-open AI assistant after a short delay
+    // For new items: show input screen (photo/upload/describe)
+    // For existing items: show ingredient editing table
+    setTimeout(()=>{
+      const seedText=Object.values(it.details||{}).join('\n');
 
-    const toggleManualBtn=document.getElementById('toggleManualBtn');
-    const manualEntrySection=document.getElementById('manualEntrySection');
-    if(toggleManualBtn && manualEntrySection){
-      toggleManualBtn.onclick=()=>{
-        const isVisible = manualEntrySection.style.display !== 'none';
-        manualEntrySection.style.display = isVisible ? 'none' : 'block';
-        toggleManualBtn.textContent = isVisible ? '✏️ Manual Entry (Not Recommended)' : '✏️ Hide Manual Entry';
-      };
-    }
+      // If there's existing AI ingredients data, parse and pass it to the assistant
+      let existingIngredientRows = null;
+      if(it.aiIngredients && typeof it.aiIngredients === 'string'){
+        try{
+          existingIngredientRows = JSON.parse(it.aiIngredients);
+        }catch(e){
+          console.warn('Failed to parse existing AI ingredients:', e);
+        }
+      }
+
+      openAiAssistant({
+        seedText,
+        getCurrentName:()=>document.getElementById('itemName').value||it.id||'Item',
+        onApply:(rows)=>applyIngredientsFromAi(rows),
+        existingIngredients: existingIngredientRows
+      });
+    }, 300);
 
     document.getElementById('doneBtn').onclick=()=>{
       const oldName=it.id;
@@ -5435,9 +5453,10 @@ function renderEditor(){
       it.removable=final.removable;
       it.crossContamination=final.crossContamination;
       it.diets=final.diets;
+      // Save AI ingredients data for future editing
       if(list){
-        list.dataset.aiIngredients='';
-        list.dataset.aiIngredientSummary='';
+        it.aiIngredients = list.dataset.aiIngredients || '';
+        it.aiIngredientSummary = list.dataset.aiIngredientSummary || '';
       }
       mb.style.display='none'; drawAll(); setDirty(true);
     };
