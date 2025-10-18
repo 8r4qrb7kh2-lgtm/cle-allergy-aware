@@ -3260,8 +3260,7 @@ function renderTopbar(){
     const navWrap=div('','topNav');
     const tabs=div('','tabs');
     const navItems=[
-      {t:'All restaurants',to:'/restaurants'},
-      {t:'How it works',to:'/how-it-works',external:true}
+      {t:'All restaurants',to:'/restaurants'}
     ];
     if(state.user?.loggedIn){
       navItems.push({t:'Favorite restaurants',to:'/favorites'});
