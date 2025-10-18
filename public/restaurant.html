@@ -389,6 +389,12 @@ const qrParam = urlParams.get('qr');
 const isQrVisit = qrParam ? /^(1|true|yes)$/i.test(qrParam) : false;
 window.__qrVisit = isQrVisit;
 
+// Check for editor mode URL parameter
+const editParam = urlParams.get('edit') || urlParams.get('mode');
+const shouldStartInEditor = editParam === 'true' || editParam === 'editor' || editParam === '1';
+window.__startInEditor = shouldStartInEditor;
+if(shouldStartInEditor) console.log('Editor mode requested via URL parameter');
+
 if (!slug) {
   document.body.innerHTML = '<div style="color: #ef4444; text-align: center; padding: 40px;">Error: No restaurant specified</div>';
 } else {
@@ -445,8 +451,10 @@ if (!slug) {
     const restaurantData = normalizeRestaurant(restaurant);
 
     // Send data to the embedded page script
+    // Check if editor mode should be activated via URL parameter
+    const initialPage = (window.__startInEditor && canEdit) ? 'editor' : 'restaurant';
     window.postMessage({
-      page: 'restaurant',
+      page: initialPage,
       restaurant: restaurantData,
       user: user ? { loggedIn: true, email: user.email, id: user.id, name: user.user_metadata?.first_name || null } : { loggedIn: false },
       allergies: allergies,
@@ -5100,6 +5108,46 @@ function renderEditor(){
   };
 
   const mb=document.getElementById('modalBack');
+
+  // Check if there's a pending dish to auto-open (from WordPress deep link)
+  if (window.__pendingDishToOpen) {
+    const pendingDish = window.__pendingDishToOpen;
+    window.__pendingDishToOpen = null; // Clear it
+
+    setTimeout(function() {
+      const matchIndex = overlays.findIndex(item => {
+        if (pendingDish.dishName && (item.id || '').toLowerCase() === pendingDish.dishName.toLowerCase()) {
+          return true;
+        }
+        if (pendingDish.dishId && item.wpPostId && item.wpPostId.toString() === pendingDish.dishId.toString()) {
+          return true;
+        }
+        if (pendingDish.dishName && (item.id || '').toLowerCase().includes(pendingDish.dishName.toLowerCase())) {
+          return true;
+        }
+        return false;
+      });
+
+      if (matchIndex !== -1) {
+        console.log('Auto-opening dish editor for:', overlays[matchIndex].id);
+        openItemEditor(overlays[matchIndex], matchIndex);
+
+        // After opening, click AI button if requested
+        if (pendingDish.openAI) {
+          setTimeout(function() {
+            const aiBtn = document.getElementById('aiAssistBtn');
+            if (aiBtn) {
+              console.log('Auto-clicking AI Ingredient Helper button');
+              aiBtn.click();
+            }
+          }, 500);
+        }
+      } else {
+        console.log('Could not find dish to auto-open:', pendingDish);
+      }
+    }, 500);
+  }
+
   function openItemEditor(it,idx){
     configureModalClose({visible:false});
     if(mb) mb.onclick=null;
@@ -5445,7 +5493,6 @@ window.addEventListener('message',(ev)=>{
   const m=ev.data||{};
   if(!state._hydrated){state._hydrated=true; document.body.style.display='';}
 
-  if(m.page){state.page=m.page;}
   if(m.user){state.user=m.user;}
   if(state.user?.loggedIn){closeQrPromo('login'); hideQrBanner();}
   if(m.allergies){state.allergies=m.allergies;}
@@ -5454,6 +5501,17 @@ window.addEventListener('message',(ev)=>{
   if(m.restaurants){state.restaurants=m.restaurants;}
   if(typeof m.canEdit==='boolean'){state.canEdit=m.canEdit;}
   if(typeof m.qr==='boolean'){state.qr=m.qr;} else if(urlQR){state.qr=true;}
+
+  // Set page - URL parameter for editor mode takes precedence
+  if(m.page){state.page=m.page;}
+  // Auto-activate editor mode if URL parameter is present and user has edit permission
+  // This overrides any incoming page message
+  if(window.__startInEditor && state.canEdit){
+    console.log('Activating editor mode from URL parameter, canEdit:', state.canEdit);
+    state.page='editor';
+  } else if(window.__startInEditor){
+    console.log('Editor mode requested but canEdit is:', state.canEdit);
+  }
   if(m.aiAssistEndpoint){state.aiAssistEndpoint=m.aiAssistEndpoint;}
   if((state.qr||urlQR) && (!state.allergies||!state.allergies.length)){
     try{const s=sessionStorage.getItem('qrAllergies'); if(s) state.allergies=JSON.parse(s)||[];}catch(_){}
@@ -5489,6 +5547,30 @@ window.addEventListener('message',(ev)=>{
   renderTopbar(); render();
   updateFullScreenAllergySummary();
 });
+
+// Auto-open specific dish editor if coming from WordPress
+(function() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const openAI = urlParams.get('openAI');
+  const dishId = urlParams.get('dishId');
+  const dishName = urlParams.get('dishName');
+
+  if (openAI === 'true' && (dishId || dishName)) {
+    console.log('WordPress deep link detected, dishName:', dishName, 'dishId:', dishId);
+
+    // Set flag to auto-start in editor mode
+    window.__startInEditor = true;
+
+    // Set pending dish to open (will be picked up by renderEditor)
+    window.__pendingDishToOpen = {
+      dishId: dishId,
+      dishName: dishName,
+      openAI: openAI === 'true'
+    };
+
+    console.log('Set __startInEditor and __pendingDishToOpen flags');
+  }
+})();
 </script>
 <script type="module" src="js/report-modal.js"></script>
 </body>
