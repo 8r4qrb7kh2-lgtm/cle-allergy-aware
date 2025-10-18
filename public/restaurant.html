@@ -5371,9 +5371,10 @@ function renderEditor(){
     }
     
     // Auto-open AI assistant immediately
-    // For new items: show input screen (photo/upload/describe)
-    // For existing items: show ingredient editing table
+    // For new items (no allergens): show input screen (photo/upload/describe)
+    // For existing items with data: show ingredient editing table
     const seedText=Object.values(it.details||{}).join('\n');
+    const isNewItem = !it.allergens || it.allergens.length === 0;
 
     // If there's existing AI ingredients data, parse and pass it to the assistant
     let existingIngredientRows = null;
@@ -5383,6 +5384,26 @@ function renderEditor(){
       }catch(e){
         console.warn('Failed to parse existing AI ingredients:', e);
       }
+    } else if(!isNewItem && it.details){
+      // Convert existing allergen details into ingredient rows for editing
+      // This handles dishes created before the AI ingredient system
+      existingIngredientRows = [];
+      Object.keys(it.details).forEach(allergen => {
+        if(allergen.startsWith('__')) return; // Skip special fields like __ingredientsSummary
+        const detail = it.details[allergen];
+        if(detail){
+          // Create an ingredient row from the allergen detail
+          const allergens = [allergen];
+          existingIngredientRows.push({
+            name: detail,
+            brand: '',
+            allergens: allergens,
+            diets: it.diets || [],
+            removable: (it.removable || []).some(r => r.allergen === allergen),
+            confirmed: false
+          });
+        }
+      });
     }
 
     // Open AI assistant immediately (no delay)
