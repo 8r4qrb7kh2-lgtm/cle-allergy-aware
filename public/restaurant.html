@@ -4733,9 +4733,9 @@ function renderEditor(){
           const canvas=document.createElement('canvas');
           const ctx=canvas.getContext('2d');
 
-          // Get a region around the tap point (30% width, 10% height centered on tap)
-          const regionWidth=30;
-          const regionHeight=10;
+          // Get a region around the tap point (40% width, 15% height centered on tap)
+          const regionWidth=40;
+          const regionHeight=15;
           const regionX=Math.max(0,tapX-regionWidth/2);
           const regionY=Math.max(0,tapY-regionHeight/2);
 
