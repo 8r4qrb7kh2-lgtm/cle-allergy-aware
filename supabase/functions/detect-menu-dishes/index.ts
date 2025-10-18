@@ -25,55 +25,27 @@ serve(async (req) => {
       throw new Error('No image data provided')
     }
 
-    const systemPrompt = `You are a menu analysis assistant. Your job is to identify dishes and their bounding boxes on menu images.
+    const systemPrompt = `You are a menu analysis assistant. Your job is to identify all dishes on a restaurant menu image.
 
-IMPORTANT: Return coordinates as PIXEL VALUES relative to the image dimensions, NOT percentages.
+Simply list all the menu items you can see. Don't worry about coordinates - just extract the dish names.
 
-For each dish, provide:
-- pixelX: horizontal pixel distance from LEFT edge of image to LEFT edge of dish name
-- pixelY: vertical pixel distance from TOP edge of image to TOP edge of dish name
-- pixelWidth: width of the dish text block in pixels
-- pixelHeight: height of the dish text block in pixels
-- imageWidth: the total width of the image you're analyzing in pixels
-- imageHeight: the total height of the image you're analyzing in pixels
-
-MEASUREMENT GUIDELINES:
-1. Look at the ENTIRE image - measure from the absolute edges of the digital image file
-2. DO NOT measure from menu board edges or decorative borders - use the IMAGE file edges
-3. A dish's bounding box should tightly wrap around: dish name + price + description
-4. Be precise with pixel coordinates - these will be used to draw overlays
-
-Return JSON format:
+Return ONLY a JSON object in this exact format:
 {
-  "imageWidth": 1920,
-  "imageHeight": 2560,
   "dishes": [
-    {
-      "id": "exact dish name",
-      "pixelX": 120,
-      "pixelY": 450,
-      "pixelWidth": 380,
-      "pixelHeight": 95,
-      "allergens": [],
-      "removable": [],
-      "crossContamination": [],
-      "diets": [],
-      "details": {}
-    }
+    {"name": "Dish Name 1"},
+    {"name": "Dish Name 2"},
+    {"name": "Dish Name 3"}
   ]
 }
 
-CRITICAL: Report the actual pixel dimensions you observe in the image.`
+Rules:
+- Include EVERY menu item you can see
+- Use the exact name as it appears on the menu
+- Don't include section headers (like "Appetizers", "Entrees")
+- Don't include prices or descriptions, just the dish name
+- Return ONLY the JSON, no other text`
 
-    const userPrompt = `Analyze this menu image and identify all dishes.
-
-For each dish, provide:
-1. The exact dish name
-2. Pixel coordinates (pixelX, pixelY) from the top-left corner of the IMAGE FILE
-3. Pixel dimensions (pixelWidth, pixelHeight) of the dish text block
-4. The total image dimensions (imageWidth, imageHeight) that you're observing
-
-Remember: Measure from the absolute edges of the digital image file, not from menu board edges.`
+    const userPrompt = `Analyze this restaurant menu image and list ALL menu items you can see. Return only a JSON object with a "dishes" array containing objects with "name" properties.`
 
     // Extract base64 data from data URL
     const base64Data = imageData.split(',')[1] || imageData
@@ -133,46 +105,33 @@ Remember: Measure from the absolute edges of the digital image file, not from me
     let parsed
     try {
       // Try to extract JSON from markdown code blocks if present
-      const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/) ||
-                       responseText.match(/```\n([\s\S]*?)\n```/)
-      const jsonText = jsonMatch ? jsonMatch[1] : responseText
+      let jsonText = responseText.trim()
+
+      // Remove markdown code blocks
+      if (jsonText.startsWith('```json')) {
+        jsonText = jsonText.replace(/```json\n?/g, '').replace(/```\n?$/g, '')
+      } else if (jsonText.startsWith('```')) {
+        jsonText = jsonText.replace(/```\n?/g, '')
+      }
+
       parsed = JSON.parse(jsonText)
       console.log('Parsed dishes count:', parsed.dishes?.length || 0)
     } catch (e) {
-      console.error('Failed to parse JSON:', responseText)
+      console.error('Failed to parse JSON:', responseText.substring(0, 500))
       console.error('Parse error:', e)
       throw new Error(`Failed to parse AI response as JSON: ${e.message}`)
     }
 
-    // Convert pixel coordinates to percentages
-    const imageWidth = parsed.imageWidth || 1920
-    const imageHeight = parsed.imageHeight || 2560
-
-    const convertedDishes = (parsed.dishes || []).map(dish => {
-      // Convert pixel values to percentages
-      const x = ((dish.pixelX || 0) / imageWidth) * 100
-      const y = ((dish.pixelY || 0) / imageHeight) * 100
-      const w = ((dish.pixelWidth || 0) / imageWidth) * 100
-      const h = ((dish.pixelHeight || 0) / imageHeight) * 100
-
-      return {
-        id: dish.id,
-        x: Math.max(0, Math.min(100, x)),
-        y: Math.max(0, Math.min(100, y)),
-        w: Math.max(0, Math.min(100 - x, w)),
-        h: Math.max(0, Math.min(100 - y, h)),
-        allergens: dish.allergens || [],
-        removable: dish.removable || [],
-        crossContamination: dish.crossContamination || [],
-        diets: dish.diets || [],
-        details: dish.details || {}
-      }
-    })
+    // Return the simple dish list
+    const dishes = (parsed.dishes || []).map(dish => ({
+      name: dish.name,
+      mapped: false  // Will be set to true when user maps it
+    }))
 
     return new Response(
       JSON.stringify({
         success: true,
-        dishes: convertedDishes
+        dishes: dishes
       }),
       {
         headers: {
