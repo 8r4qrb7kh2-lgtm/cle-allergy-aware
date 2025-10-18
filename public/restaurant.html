@@ -4563,29 +4563,29 @@ function renderEditor(){
           if(corner==='sw'){w=st.w-dx;h=st.h+dy;x=st.left+dx;}
           if(corner==='nw'){w=st.w-dx;h=st.h-dy;x=st.left+dx;y=st.top+dy;}
           
-          w=Math.max(3,Math.min(100,w)); 
-          h=Math.max(2,Math.min(100,h));
-          x=Math.max(0,Math.min(100-w,x)); 
+          w=Math.max(1,Math.min(100,w));
+          h=Math.max(0.5,Math.min(100,h));
+          x=Math.max(0,Math.min(100-w,x));
           y=Math.max(0,Math.min(100-h,y));
-          
+
           const snapTargets=getSnapTargets();
           const right=x+w;
           const bottom=y+h;
-          
+
           if(corner==='se'){
             const snappedRight=snapValue(right,snapTargets.xEdges,snapThreshold);
             const snappedBottom=snapValue(bottom,snapTargets.yEdges,snapThreshold);
-            if(snappedRight!==right) w=Math.max(3,snappedRight-x);
-            if(snappedBottom!==bottom) h=Math.max(2,snappedBottom-y);
+            if(snappedRight!==right) w=Math.max(1,snappedRight-x);
+            if(snappedBottom!==bottom) h=Math.max(0.5,snappedBottom-y);
           }
           else if(corner==='ne'){
             const snappedRight=snapValue(right,snapTargets.xEdges,snapThreshold);
             const snappedTop=snapValue(y,snapTargets.yEdges,snapThreshold);
-            if(snappedRight!==right) w=Math.max(3,snappedRight-x);
+            if(snappedRight!==right) w=Math.max(1,snappedRight-x);
             if(snappedTop!==y){
               const oldBottom=y+h;
               y=snappedTop;
-              h=Math.max(2,oldBottom-y);
+              h=Math.max(0.5,oldBottom-y);
             }
           }
           else if(corner==='sw'){
@@ -4594,9 +4594,9 @@ function renderEditor(){
             if(snappedLeft!==x){
               const oldRight=x+w;
               x=snappedLeft;
-              w=Math.max(3,oldRight-x);
+              w=Math.max(1,oldRight-x);
             }
-            if(snappedBottom!==bottom) h=Math.max(2,snappedBottom-y);
+            if(snappedBottom!==bottom) h=Math.max(0.5,snappedBottom-y);
           }
           else if(corner==='nw'){
             const snappedLeft=snapValue(x,snapTargets.xEdges,snapThreshold);
@@ -4604,17 +4604,17 @@ function renderEditor(){
             if(snappedLeft!==x){
               const oldRight=x+w;
               x=snappedLeft;
-              w=Math.max(3,oldRight-x);
+              w=Math.max(1,oldRight-x);
             }
             if(snappedTop!==y){
               const oldBottom=y+h;
               y=snappedTop;
-              h=Math.max(2,oldBottom-y);
+              h=Math.max(0.5,oldBottom-y);
             }
           }
-          
-          w=Math.max(3,Math.min(100,w)); 
-          h=Math.max(2,Math.min(100,h));
+
+          w=Math.max(1,Math.min(100,w));
+          h=Math.max(0.5,Math.min(100,h));
           x=Math.max(0,Math.min(100-w,x)); 
           y=Math.max(0,Math.min(100-h,y));
           
