@@ -3996,10 +3996,11 @@ function renderEditor(){
 
     <div id="detectedDishesPanel" style="display:none;background:#1a2351;border:1px solid #2a3261;border-radius:12px;padding:20px;margin-bottom:16px;text-align:center">
       <div style="font-size:1.3rem;font-weight:600;margin-bottom:8px" id="currentDishName"></div>
-      <div class="note" style="margin-bottom:12px">Tap on this item's location on the menu below</div>
+      <div class="note" style="margin-bottom:12px">Press and drag on the menu to create an overlay for this item</div>
       <div style="display:flex;gap:12px;justify-content:center;align-items:center;font-size:14px;flex-wrap:wrap">
+        <button class="btn" id="prevDishBtn" style="padding:6px 12px;font-size:13px">← Previous</button>
         <span id="dishProgress" style="color:#a8b2d6"></span>
-        <button class="btn" id="skipDishBtn" style="padding:6px 12px;font-size:13px">Skip this item</button>
+        <button class="btn" id="nextDishBtn" style="padding:6px 12px;font-size:13px">Next →</button>
         <button class="btn btnSuccess" id="finishMappingBtn" style="padding:6px 12px;font-size:13px;display:none">✓ Finish Mapping</button>
       </div>
     </div>
@@ -4660,177 +4661,170 @@ function renderEditor(){
       const panel=document.getElementById('detectedDishesPanel');
       const currentDishNameEl=document.getElementById('currentDishName');
       const dishProgressEl=document.getElementById('dishProgress');
-      const skipBtn=document.getElementById('skipDishBtn');
+      const prevBtn=document.getElementById('prevDishBtn');
+      const nextBtn=document.getElementById('nextDishBtn');
       const finishBtn=document.getElementById('finishMappingBtn');
-      const note=document.getElementById('editorNote');
 
       let detectedDishes=result.dishes;
       let currentDishIndex=0;
-      let tapMode=true;
+      let dragMode=true;
+      let dragStart=null;
+      let dragPreview=null;
 
       // Show current dish and update UI
       function showCurrentDish(){
-        // Find next unmapped dish
-        while(currentDishIndex<detectedDishes.length && detectedDishes[currentDishIndex].mapped){
-          currentDishIndex++;
-        }
+        const mapped=detectedDishes.filter(d=>d.mapped).length;
+        const total=detectedDishes.length;
 
         // Check if all done
-        if(currentDishIndex>=detectedDishes.length){
+        if(mapped>=total){
           currentDishNameEl.textContent='All items mapped!';
-          note.textContent='Great job! All menu items have been mapped.';
-          skipBtn.style.display='none';
+          dishProgressEl.textContent=`${mapped} of ${total} items mapped`;
+          prevBtn.style.display='none';
+          nextBtn.style.display='none';
           finishBtn.style.display='inline-flex';
           menu.style.cursor='';
-          tapMode=false;
+          dragMode=false;
           return;
         }
 
         const dish=detectedDishes[currentDishIndex];
-        const mapped=detectedDishes.filter(d=>d.mapped).length;
-        const total=detectedDishes.length;
-
         currentDishNameEl.textContent=dish.name;
-        dishProgressEl.textContent=`Item ${mapped+1} of ${total} (${mapped} mapped)`;
-        note.textContent=`Tap on "${dish.name}" on the menu image below`;
+        dishProgressEl.textContent=`Item ${currentDishIndex+1} of ${total} (${mapped} mapped)`;
+
+        // Update button states
+        prevBtn.disabled=currentDishIndex<=0;
+        nextBtn.disabled=currentDishIndex>=total-1;
+        finishBtn.style.display=mapped>0?'inline-flex':'none';
+
         menu.style.cursor='crosshair';
         panel.style.display='block';
-        tapMode=true;
+        dragMode=true;
       }
 
-      // Skip current dish
-      skipBtn.onclick=()=>{
-        currentDishIndex++;
-        showCurrentDish();
+      // Previous dish
+      prevBtn.onclick=()=>{
+        if(currentDishIndex>0){
+          currentDishIndex--;
+          showCurrentDish();
+        }
+      };
+
+      // Next dish
+      nextBtn.onclick=()=>{
+        if(currentDishIndex<detectedDishes.length-1){
+          currentDishIndex++;
+          showCurrentDish();
+        }
       };
 
       // Finish mapping
       finishBtn.onclick=()=>{
         panel.style.display='none';
-        note.textContent='Drag to move. Drag any corner to resize. Click ✏️ to edit details.';
         menu.style.cursor='';
-        tapMode=false;
+        dragMode=false;
         drawAll();
       };
 
       showCurrentDish();
 
-      // Handle tapping on the menu image
-      function handleMenuTap(e){
-        if(!tapMode || currentDishIndex>=detectedDishes.length) return;
-
-        e.preventDefault();
-        e.stopPropagation();
+      // Handle drag-to-create overlay
+      function handleDragStart(e){
+        if(!dragMode) return;
 
         const rect=img.getBoundingClientRect();
         const x=((e.clientX-rect.left)/rect.width)*100;
         const y=((e.clientY-rect.top)/rect.height)*100;
 
-        // Analyze this region with AI to get precise bounds
-        analyzeTappedRegion(x,y,currentDishIndex);
+        dragStart={x,y};
+
+        // Create preview element
+        dragPreview=document.createElement('div');
+        dragPreview.style.cssText='position:absolute;border:2px dashed #4CAF50;background:rgba(76,175,80,0.2);pointer-events:none;z-index:1000';
+        inner.appendChild(dragPreview);
+
+        e.preventDefault();
       }
 
-      // Analyze the tapped region to create overlay
-      async function analyzeTappedRegion(tapX,tapY,dishIndex){
-        const dish=detectedDishes[dishIndex];
-        currentDishNameEl.textContent=`Analyzing "${dish.name}"...`;
-        menu.style.cursor='wait';
-        skipBtn.disabled=true;
+      function handleDragMove(e){
+        if(!dragStart || !dragPreview) return;
 
-        try {
-          // Create a canvas to extract the region around the tap
-          const canvas=document.createElement('canvas');
-          const ctx=canvas.getContext('2d');
+        const rect=img.getBoundingClientRect();
+        const x=((e.clientX-rect.left)/rect.width)*100;
+        const y=((e.clientY-rect.top)/rect.height)*100;
 
-          // Get a region around the tap point (40% width, 15% height centered on tap)
-          const regionWidth=40;
-          const regionHeight=15;
-          const regionX=Math.max(0,tapX-regionWidth/2);
-          const regionY=Math.max(0,tapY-regionHeight/2);
+        const minX=Math.min(dragStart.x,x);
+        const minY=Math.min(dragStart.y,y);
+        const maxX=Math.max(dragStart.x,x);
+        const maxY=Math.max(dragStart.y,y);
 
-          // Draw the full menu image to canvas
-          canvas.width=img.naturalWidth;
-          canvas.height=img.naturalHeight;
-          ctx.drawImage(img,0,0);
+        dragPreview.style.left=minX+'%';
+        dragPreview.style.top=minY+'%';
+        dragPreview.style.width=(maxX-minX)+'%';
+        dragPreview.style.height=(maxY-minY)+'%';
 
-          // Extract the region
-          const rx=(regionX/100)*img.naturalWidth;
-          const ry=(regionY/100)*img.naturalHeight;
-          const rw=(regionWidth/100)*img.naturalWidth;
-          const rh=(regionHeight/100)*img.naturalHeight;
+        e.preventDefault();
+      }
 
-          const regionCanvas=document.createElement('canvas');
-          regionCanvas.width=rw;
-          regionCanvas.height=rh;
-          const regionCtx=regionCanvas.getContext('2d');
-          regionCtx.drawImage(canvas,rx,ry,rw,rh,0,0,rw,rh);
-          const regionImageData=regionCanvas.toDataURL('image/jpeg',0.9);
+      function handleDragEnd(e){
+        if(!dragStart || !dragPreview) return;
 
-          // Call AI to analyze this specific region
-          console.log('Analyzing region:',{dishName:dish.name,tapX,tapY,regionX,regionY,regionWidth,regionHeight});
+        const rect=img.getBoundingClientRect();
+        const x=((e.clientX-rect.left)/rect.width)*100;
+        const y=((e.clientY-rect.top)/rect.height)*100;
 
-          const response=await fetch('https://fgoiyycctnwnghrvsilt.supabase.co/functions/v1/analyze-menu-region',{
-            method:'POST',
-            headers:{
-              'Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnb2l5eWNjdG53bmdocnZzaWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0MzY1MjYsImV4cCI6MjA3NjAxMjUyNn0.xlSSXr0Gl7j-vsckrj-2anpPmp4BG2SUIdN-_dquSA8',
-              'Content-Type':'application/json'
-            },
-            body:JSON.stringify({
-              regionImage:regionImageData,
-              dishName:dish.name,
-              tapX:tapX-regionX,
-              tapY:tapY-regionY,
-              regionX,
-              regionY,
-              regionWidth,
-              regionHeight
-            })
-          });
+        const minX=Math.min(dragStart.x,x);
+        const minY=Math.min(dragStart.y,y);
+        const maxX=Math.max(dragStart.x,x);
+        const maxY=Math.max(dragStart.y,y);
 
-          const analysis=await response.json();
-          console.log('Region analysis response:',analysis);
+        const w=maxX-minX;
+        const h=maxY-minY;
 
-          if(!response.ok || !analysis.success){
-            throw new Error(analysis.error||'Failed to analyze region');
-          }
+        // Only create overlay if drag was meaningful (at least 1% width/height)
+        if(w>1 && h>1){
+          const dish=detectedDishes[currentDishIndex];
 
-          // Create overlay from analysis
+          // Create new overlay
           const newOverlay={
-            id:analysis.dishName||dish.name,
-            x:analysis.x||regionX,
-            y:analysis.y||regionY,
-            w:analysis.w||regionWidth,
-            h:analysis.h||regionHeight,
-            allergens:analysis.allergens||[],
-            removable:analysis.removable||[],
-            crossContamination:analysis.crossContamination||[],
-            diets:analysis.diets||[],
-            details:analysis.details||{}
+            id:dish.name,
+            x:minX,
+            y:minY,
+            w:w,
+            h:h,
+            allergens:[],
+            removable:[],
+            crossContamination:[],
+            diets:[],
+            details:{}
           };
 
           overlays.push(newOverlay);
-          pendingChanges.push(`${newOverlay.id}: Added overlay via AI detection`);
+          pendingChanges.push(`${newOverlay.id}: Added overlay manually`);
 
-          // Mark dish as mapped and move to next
+          // Mark dish as mapped
           dish.mapped=true;
-          currentDishIndex++;
-          skipBtn.disabled=false;
 
           drawAll();
           setDirty(true);
           showCurrentDish();
-
-        } catch(err){
-          console.error('Region analysis error:',err);
-          alert('Failed to analyze this region. Please try again or skip this item.');
-          menu.style.cursor='crosshair';
-          skipBtn.disabled=false;
-          showCurrentDish();
         }
+
+        // Clean up
+        if(dragPreview && dragPreview.parentNode){
+          dragPreview.parentNode.removeChild(dragPreview);
+        }
+        dragPreview=null;
+        dragStart=null;
+
+        e.preventDefault();
       }
 
-      // Add click handler to menu for tap mode
-      menu.addEventListener('click',handleMenuTap);
+      // Add drag handlers to menu image
+      img.addEventListener('mousedown',handleDragStart);
+      img.addEventListener('mousemove',handleDragMove);
+      img.addEventListener('mouseup',handleDragEnd);
+      img.addEventListener('mouseleave',handleDragEnd);
 
       btn.textContent='✓ Dishes Detected';
 
