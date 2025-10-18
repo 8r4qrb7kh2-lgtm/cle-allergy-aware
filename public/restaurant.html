@@ -4533,7 +4533,7 @@ function renderEditor(){
       function startResize(e,corner){
         e.stopPropagation(); e.preventDefault(); box.setPointerCapture(e.pointerId);
         const rect=inner.getBoundingClientRect(); const st={x:e.clientX,y:e.clientY,left:+it.x,top:+it.y,w:+it.w,h:+it.h};
-        const snapThreshold=0.8;
+        const snapThreshold=0.3;
         
         function getSnapTargets(){
           const targets={xEdges:[],yEdges:[]};
