@@ -5378,9 +5378,12 @@ function renderEditor(){
 
     // If there's existing AI ingredients data, parse and pass it to the assistant
     let existingIngredientRows = null;
+    console.log('Opening editor for:', it.id, 'isNewItem:', isNewItem, 'allergens:', it.allergens, 'details:', it.details);
+
     if(it.aiIngredients && typeof it.aiIngredients === 'string'){
       try{
         existingIngredientRows = JSON.parse(it.aiIngredients);
+        console.log('Found saved AI ingredients:', existingIngredientRows);
       }catch(e){
         console.warn('Failed to parse existing AI ingredients:', e);
       }
@@ -5388,6 +5391,7 @@ function renderEditor(){
       // Convert existing allergen details into ingredient rows for editing
       // This handles dishes created before the AI ingredient system
       existingIngredientRows = [];
+      console.log('Converting legacy allergen data to ingredients, details:', it.details);
       Object.keys(it.details).forEach(allergen => {
         if(allergen.startsWith('__')) return; // Skip special fields like __ingredientsSummary
         const detail = it.details[allergen];
@@ -5404,7 +5408,10 @@ function renderEditor(){
           });
         }
       });
+      console.log('Converted to ingredient rows:', existingIngredientRows);
     }
+
+    console.log('Final existingIngredientRows:', existingIngredientRows);
 
     // Open AI assistant immediately (no delay)
     setTimeout(()=>{
