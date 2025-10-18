@@ -3975,6 +3975,7 @@ function renderEditor(){
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <button class="btn" id="viewLogBtn">📋 View log of changes</button>
         <button class="btn" id="uploadMenuBtn">📷 Upload new menu image</button>
+        <button class="btn btnSuccess" id="detectDishesBtn">🎯 Detect & Map Dishes</button>
         <button class="btn btnDanger" id="confirmBtn">Confirm allergen information is up-to-date</button>
         <button class="btn" id="addBox">Add overlay</button>
         <button class="btn btnPrimary" id="saveBtn" style="display:none">Save to site</button>
@@ -3982,7 +3983,14 @@ function renderEditor(){
     </div>
     <input type="file" id="menuImageInput" accept="image/*" style="display:none">
     <div class="note" id="lastConfirmedText" style="text-align:right;font-size:12px;margin-top:4px">Last confirmed: ${rs.lastConfirmed?esc(fmtDateTime(rs.lastConfirmed)):'Never'}</div>
-    <div class="note" style="margin-bottom:8px">Drag to move. Drag any corner to resize. Click ✏️ to edit details.</div>
+    <div class="note" style="margin-bottom:8px" id="editorNote">Drag to move. Drag any corner to resize. Click ✏️ to edit details.</div>
+
+    <div id="detectedDishesPanel" style="display:none;background:#1a2351;border:1px solid #2a3261;border-radius:12px;padding:16px;margin-bottom:16px">
+      <h3 style="margin:0 0 12px 0;font-size:1.1rem">Detected Menu Items</h3>
+      <div class="note" style="margin-bottom:12px">Tap on each item's location on the menu image below</div>
+      <div id="dishList" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+
     <div class="menuWrap show" id="menu"></div>
   `;
   const menu=document.getElementById('menu');
@@ -4615,6 +4623,213 @@ function renderEditor(){
     pendingChanges.push(`${newOverlay.id}: Added overlay`);
     drawAll();
     setDirty(true);
+  };
+
+  // Detect & Map Dishes - AI-assisted overlay creation
+  document.getElementById('detectDishesBtn').onclick=async()=>{
+    const btn=document.getElementById('detectDishesBtn');
+    const originalText=btn.textContent;
+    btn.disabled=true;
+    btn.textContent='🔍 Detecting dishes...';
+
+    try {
+      // Detect all dishes on the menu
+      const result=await detectDishesOnMenu(rs.menuImage);
+
+      if(!result.success || !result.dishes || result.dishes.length===0){
+        alert('Could not detect any dishes on the menu. Please try adding overlays manually.');
+        btn.disabled=false;
+        btn.textContent=originalText;
+        return;
+      }
+
+      // Show the detected dishes panel
+      const panel=document.getElementById('detectedDishesPanel');
+      const dishList=document.getElementById('dishList');
+      const note=document.getElementById('editorNote');
+
+      panel.style.display='block';
+      note.textContent='Click on a menu item below, then tap its location on the menu image';
+
+      let detectedDishes=result.dishes;
+      let currentDishIndex=null;
+      let tapMode=false;
+
+      // Render the dish list
+      function renderDishList(){
+        dishList.innerHTML='';
+        detectedDishes.forEach((dish,idx)=>{
+          const dishEl=document.createElement('div');
+          dishEl.style.cssText='padding:10px 14px;background:#12183a;border:1px solid #2a3261;border-radius:8px;cursor:pointer;display:flex;justify-content:space-between;align-items:center';
+
+          if(dish.mapped){
+            dishEl.style.background='#1a4d2e';
+            dishEl.style.borderColor='#22c55e';
+          } else if(currentDishIndex===idx){
+            dishEl.style.background='#3a2a1f';
+            dishEl.style.borderColor='#facc15';
+          }
+
+          dishEl.innerHTML=`
+            <span>${esc(dish.name)}</span>
+            <span style="font-size:12px;color:#a8b2d6">
+              ${dish.mapped?'✓ Mapped':'Tap to map'}
+            </span>
+          `;
+
+          dishEl.onclick=()=>{
+            if(dish.mapped) return;
+            currentDishIndex=idx;
+            tapMode=true;
+            renderDishList();
+            note.textContent=`Now tap on "${dish.name}" on the menu image below`;
+            menu.style.cursor='crosshair';
+          };
+
+          dishList.appendChild(dishEl);
+        });
+
+        // Add finish button if all mapped
+        const allMapped=detectedDishes.every(d=>d.mapped);
+        if(allMapped){
+          const finishBtn=document.createElement('button');
+          finishBtn.className='btn btnSuccess';
+          finishBtn.textContent='✓ Finish Mapping';
+          finishBtn.style.marginTop='8px';
+          finishBtn.onclick=()=>{
+            panel.style.display='none';
+            note.textContent='Drag to move. Drag any corner to resize. Click ✏️ to edit details.';
+            menu.style.cursor='';
+            tapMode=false;
+            currentDishIndex=null;
+            drawAll();
+          };
+          dishList.appendChild(finishBtn);
+        }
+      }
+
+      // Handle tapping on the menu image
+      function handleMenuTap(e){
+        if(!tapMode || currentDishIndex===null) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const rect=img.getBoundingClientRect();
+        const x=((e.clientX-rect.left)/rect.width)*100;
+        const y=((e.clientY-rect.top)/rect.height)*100;
+
+        // Analyze this region with AI to get precise bounds
+        analyzeTappedRegion(x,y,currentDishIndex);
+      }
+
+      // Analyze the tapped region to create overlay
+      async function analyzeTappedRegion(tapX,tapY,dishIndex){
+        const dish=detectedDishes[dishIndex];
+        note.textContent=`Analyzing "${dish.name}"...`;
+        menu.style.cursor='wait';
+
+        try {
+          // Create a canvas to extract the region around the tap
+          const canvas=document.createElement('canvas');
+          const ctx=canvas.getContext('2d');
+
+          // Get a region around the tap point (30% width, 10% height centered on tap)
+          const regionWidth=30;
+          const regionHeight=10;
+          const regionX=Math.max(0,tapX-regionWidth/2);
+          const regionY=Math.max(0,tapY-regionHeight/2);
+
+          // Draw the full menu image to canvas
+          canvas.width=img.naturalWidth;
+          canvas.height=img.naturalHeight;
+          ctx.drawImage(img,0,0);
+
+          // Extract the region
+          const rx=(regionX/100)*img.naturalWidth;
+          const ry=(regionY/100)*img.naturalHeight;
+          const rw=(regionWidth/100)*img.naturalWidth;
+          const rh=(regionHeight/100)*img.naturalHeight;
+
+          const regionCanvas=document.createElement('canvas');
+          regionCanvas.width=rw;
+          regionCanvas.height=rh;
+          const regionCtx=regionCanvas.getContext('2d');
+          regionCtx.drawImage(canvas,rx,ry,rw,rh,0,0,rw,rh);
+          const regionImageData=regionCanvas.toDataURL('image/jpeg',0.9);
+
+          // Call AI to analyze this specific region
+          const response=await fetch('https://fgoiyycctnwnghrvsilt.supabase.co/functions/v1/analyze-menu-region',{
+            method:'POST',
+            headers:{
+              'Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnb2l5eWNjdG53bmdocnZzaWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0MzY1MjYsImV4cCI6MjA3NjAxMjUyNn0.xlSSXr0Gl7j-vsckrj-2anpPmp4BG2SUIdN-_dquSA8',
+              'Content-Type':'application/json'
+            },
+            body:JSON.stringify({
+              regionImage:regionImageData,
+              dishName:dish.name,
+              tapX:tapX-regionX,
+              tapY:tapY-regionY,
+              regionX,
+              regionY,
+              regionWidth,
+              regionHeight
+            })
+          });
+
+          if(!response.ok) throw new Error('Failed to analyze region');
+
+          const analysis=await response.json();
+
+          // Create overlay from analysis
+          const newOverlay={
+            id:analysis.dishName||dish.name,
+            x:analysis.x||regionX,
+            y:analysis.y||regionY,
+            w:analysis.w||regionWidth,
+            h:analysis.h||regionHeight,
+            allergens:analysis.allergens||[],
+            removable:analysis.removable||[],
+            crossContamination:analysis.crossContamination||[],
+            diets:analysis.diets||[],
+            details:analysis.details||{}
+          };
+
+          overlays.push(newOverlay);
+          pendingChanges.push(`${newOverlay.id}: Added overlay via AI detection`);
+
+          // Mark dish as mapped
+          dish.mapped=true;
+          tapMode=false;
+          currentDishIndex=null;
+          menu.style.cursor='';
+
+          renderDishList();
+          drawAll();
+          setDirty(true);
+
+          note.textContent='Overlay created! Click another item to continue mapping.';
+
+        } catch(err){
+          console.error('Region analysis error:',err);
+          alert('Failed to analyze this region. Please try again or add the overlay manually.');
+          menu.style.cursor='crosshair';
+          note.textContent=`Tap on "${dish.name}" on the menu image`;
+        }
+      }
+
+      // Add click handler to menu for tap mode
+      menu.addEventListener('click',handleMenuTap);
+
+      renderDishList();
+      btn.textContent='✓ Dishes Detected';
+
+    } catch(err){
+      console.error('Detect dishes error:',err);
+      alert('Failed to detect dishes: '+err.message);
+      btn.disabled=false;
+      btn.textContent=originalText;
+    }
   };
 
   // Upload new menu image
