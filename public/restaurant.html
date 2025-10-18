@@ -5172,10 +5172,13 @@ function renderEditor(){
     // Check if this is a new item or has existing data
     const hasExistingData = (it.allergens && it.allergens.length > 0) || (it.details && Object.keys(it.details).length > 0);
 
+    // Hide the modal initially - AI assistant will open on top
+    if(mb) mb.style.display='none';
+
     body.innerHTML=`<div class="algRow" style="grid-template-columns:1fr">
         <input id="itemName" class="algInput" style="font-weight:700" placeholder="Item name" value="${esc(it.id||'')}">
       </div>
-      <div id="manualEntrySection">
+      <div id="manualEntrySection" style="display:none;">
         <div id="algList"></div>
         <div class="note" style="margin:8px 0 4px">Live preview</div>
         <div id="previewBox" style="border:1px solid #2a3466;border-radius:10px;padding:10px"></div>
@@ -5367,30 +5370,30 @@ function renderEditor(){
       aiAssistSetStatus('Ingredient details applied. Review and save the dish when ready.','success');
     }
     
-    // Auto-open AI assistant
-    // Always auto-open AI assistant after a short delay
+    // Auto-open AI assistant immediately
     // For new items: show input screen (photo/upload/describe)
     // For existing items: show ingredient editing table
-    setTimeout(()=>{
-      const seedText=Object.values(it.details||{}).join('\n');
+    const seedText=Object.values(it.details||{}).join('\n');
 
-      // If there's existing AI ingredients data, parse and pass it to the assistant
-      let existingIngredientRows = null;
-      if(it.aiIngredients && typeof it.aiIngredients === 'string'){
-        try{
-          existingIngredientRows = JSON.parse(it.aiIngredients);
-        }catch(e){
-          console.warn('Failed to parse existing AI ingredients:', e);
-        }
+    // If there's existing AI ingredients data, parse and pass it to the assistant
+    let existingIngredientRows = null;
+    if(it.aiIngredients && typeof it.aiIngredients === 'string'){
+      try{
+        existingIngredientRows = JSON.parse(it.aiIngredients);
+      }catch(e){
+        console.warn('Failed to parse existing AI ingredients:', e);
       }
+    }
 
+    // Open AI assistant immediately (no delay)
+    setTimeout(()=>{
       openAiAssistant({
         seedText,
         getCurrentName:()=>document.getElementById('itemName').value||it.id||'Item',
         onApply:(rows)=>applyIngredientsFromAi(rows),
         existingIngredients: existingIngredientRows
       });
-    }, 300);
+    }, 100);
 
     document.getElementById('doneBtn').onclick=()=>{
       const oldName=it.id;
