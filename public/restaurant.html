@@ -1272,17 +1272,7 @@ function ensureAiAssistElements(){
             <button type="button" class="btn" id="aiAssistAddRowBtn">Add ingredient</button>
             <div class="aiAssistSpacer"></div>
             <button type="button" class="btn" id="aiAssistSaveDraftBtn" style="background:#4c5ad4;border-color:#6b7ce6">💾 Save Draft</button>
-            <button type="button" class="btn" id="aiAssistConfirmAllBtn" style="background:#2d7d46;border-color:#3a9d5a">✓ Confirm All Ingredients</button>
-          </div>
-          <div id="aiAssistFinalConfirmation" class="aiAssistHidden" style="margin-top:20px;padding:20px;background:rgba(76,90,212,0.1);border:1px solid rgba(76,90,212,0.3);border-radius:12px;">
-            <h4 style="margin:0 0 12px 0;color:#4c5ad4">Final Confirmation</h4>
-            <p style="margin:0 0 16px 0;font-size:0.95rem;line-height:1.5">
-              Please confirm that all ingredients for this recipe have been added and their allergens are correct.
-            </p>
-            <div style="display:flex;gap:12px">
-              <button type="button" class="btn btnPrimary" id="aiAssistApplyBtn">✓ Save to Dish</button>
-              <button type="button" class="btn" id="aiAssistEditMoreBtn" style="background:#301424;border-color:#4c2138">← Edit Ingredients</button>
-            </div>
+            <button type="button" class="btn btnPrimary" id="aiAssistApplyBtn">✓ Save to Dish</button>
           </div>
           <div class="aiAssistBrandResults" id="aiAssistBrandResults" aria-live="polite"></div>
         </div>
@@ -1367,20 +1357,8 @@ function ensureAiAssistElements(){
 
     // New confirmation workflow buttons
     const saveDraftBtn = aiAssistBackdrop.querySelector('#aiAssistSaveDraftBtn');
-    const confirmAllBtn = aiAssistBackdrop.querySelector('#aiAssistConfirmAllBtn');
-    const editMoreBtn = aiAssistBackdrop.querySelector('#aiAssistEditMoreBtn');
-    const finalConfirmation = aiAssistBackdrop.querySelector('#aiAssistFinalConfirmation');
-
     if(saveDraftBtn){
       saveDraftBtn.addEventListener('click', ()=>saveAiDraft());
-    }
-    if(confirmAllBtn){
-      confirmAllBtn.addEventListener('click', ()=>confirmAllIngredients());
-    }
-    if(editMoreBtn){
-      editMoreBtn.addEventListener('click', ()=>{
-        finalConfirmation.classList.add('aiAssistHidden');
-      });
     }
 
     aiAssistApplyBtn.addEventListener('click',()=>applyAiIngredientsToOverlay());
@@ -1449,9 +1427,27 @@ function ensureAiAssistElements(){
     aiAssistTableBody.addEventListener('change',(event)=>{
       const row=event.target.closest('tr');
       if(!row) return;
-      // NOTE: .aiIngredientBrand field no longer exists in the new multi-brand UI
-      // Brand management is now handled through the brand search modal and confirmation workflow
-      // This event listener is kept for backwards compatibility but does nothing
+
+      // Handle confirmed checkbox changes
+      if(event.target.classList.contains('aiConfirmCheckbox')){
+        const confirmCell = row.querySelector('.aiConfirmCell');
+        if(confirmCell){
+          const isChecked = event.target.checked;
+          // Find and update the status text
+          const statusDiv = confirmCell.querySelector('div');
+          if(statusDiv){
+            if(isChecked){
+              statusDiv.style.color = '#4caf50';
+              statusDiv.innerHTML = '✓ Confirmed';
+            } else {
+              statusDiv.style.color = '#f59e0b';
+              statusDiv.innerHTML = '⚠ Not confirmed';
+            }
+          }
+        }
+        // Mark as unsaved when confirmation status changes
+        aiAssistState.savedToDish = false;
+      }
     });
     aiAssistBrandResults.addEventListener('click',(event)=>{
       const card=event.target.closest('.aiBrandSuggestion');
