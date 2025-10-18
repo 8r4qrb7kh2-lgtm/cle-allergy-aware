@@ -3983,7 +3983,16 @@ function renderEditor(){
     </div>
     <input type="file" id="menuImageInput" accept="image/*" style="display:none">
     <div class="note" id="lastConfirmedText" style="text-align:right;font-size:12px;margin-top:4px">Last confirmed: ${rs.lastConfirmed?esc(fmtDateTime(rs.lastConfirmed)):'Never'}</div>
-    <div class="note" style="margin-bottom:8px" id="editorNote">Drag to move. Drag any corner to resize. Click ✏️ to edit details.</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div class="note" id="editorNote">Drag to move. Drag any corner to resize. Click ✏️ to edit details.</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span class="note" style="font-size:12px">Zoom:</span>
+        <button class="btn" id="zoomOutBtn" style="padding:4px 12px;font-size:18px;line-height:1">−</button>
+        <span id="zoomLevel" style="font-size:13px;min-width:45px;text-align:center;color:#a8b2d6">100%</span>
+        <button class="btn" id="zoomInBtn" style="padding:4px 12px;font-size:18px;line-height:1">+</button>
+        <button class="btn" id="zoomResetBtn" style="padding:4px 8px;font-size:11px">Reset</button>
+      </div>
+    </div>
 
     <div id="detectedDishesPanel" style="display:none;background:#1a2351;border:1px solid #2a3261;border-radius:12px;padding:20px;margin-bottom:16px;text-align:center">
       <div style="font-size:1.3rem;font-weight:600;margin-bottom:8px" id="currentDishName"></div>
@@ -4832,6 +4841,62 @@ function renderEditor(){
       btn.textContent=originalText;
     }
   };
+
+  // Zoom controls
+  let zoomScale = 1.0;
+  const zoomStep = 0.25;
+  const minZoom = 0.5;
+  const maxZoom = 3.0;
+
+  function updateZoom() {
+    const inner = menu.querySelector('.menuInner');
+    const zoomLevelEl = document.getElementById('zoomLevel');
+
+    inner.style.transform = `scale(${zoomScale})`;
+    inner.style.transformOrigin = 'top left';
+
+    // Adjust container to accommodate scaled content
+    const naturalWidth = img.naturalWidth || img.width;
+    const naturalHeight = img.naturalHeight || img.height;
+    menu.style.width = `${naturalWidth * zoomScale}px`;
+    menu.style.height = `${naturalHeight * zoomScale}px`;
+    menu.style.overflow = 'auto';
+
+    zoomLevelEl.textContent = `${Math.round(zoomScale * 100)}%`;
+
+    // Update button states
+    document.getElementById('zoomOutBtn').disabled = zoomScale <= minZoom;
+    document.getElementById('zoomInBtn').disabled = zoomScale >= maxZoom;
+  }
+
+  document.getElementById('zoomInBtn').onclick = () => {
+    if (zoomScale < maxZoom) {
+      zoomScale = Math.min(maxZoom, zoomScale + zoomStep);
+      updateZoom();
+    }
+  };
+
+  document.getElementById('zoomOutBtn').onclick = () => {
+    if (zoomScale > minZoom) {
+      zoomScale = Math.max(minZoom, zoomScale - zoomStep);
+      updateZoom();
+    }
+  };
+
+  document.getElementById('zoomResetBtn').onclick = () => {
+    zoomScale = 1.0;
+    updateZoom();
+  };
+
+  // Initialize zoom on image load
+  img.onload = () => {
+    updateZoom();
+  };
+
+  // If image already loaded, update now
+  if (img.complete) {
+    updateZoom();
+  }
 
   // Upload new menu image
   document.getElementById('uploadMenuBtn').onclick=()=>{
