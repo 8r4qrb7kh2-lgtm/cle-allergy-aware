@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "npx http-server public -p 8080 -o",
-    "deploy": "vercel --prod"
+    "deploy": "vercel --prod",
+    "test": "node browser-extension/menu-change-monitor/test/contentScript.test.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0"
