@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Mama Santa's Menu - Manager View (Test)</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Noto+Sans:wght@400;700&family=Sanchez&display=swap" rel="stylesheet">
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans', Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      background-color: #A0C0C9;
+      color: #222;
+    }
+
+    .page-inner {
+      background-color: #A0C0C9;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    header {
+      background-color: #B21422;
+      padding: 24px;
+      margin-bottom: 40px;
+      text-align: center;
+    }
+
+    .logo {
+      font-family: 'Great Vibes', Georgia, serif;
+      font-size: 38px;
+      color: #fff;
+      text-decoration: none;
+      font-weight: 400;
+    }
+
+    .container {
+      max-width: 1160px;
+      margin: 0 auto;
+      background-color: #000;
+      padding: 40px 24px;
+    }
+
+    h1 {
+      font-family: 'Sanchez', Rockwell, Georgia, serif;
+      font-size: 38px;
+      color: #E2E2E2;
+      text-align: left;
+      margin-bottom: 40px;
+      line-height: 1.2;
+    }
+
+    h1 hr {
+      border: 0;
+      border-bottom: 1px solid #fff;
+      margin-top: 16px;
+    }
+
+    .menu-category {
+      margin-bottom: 40px;
+    }
+
+    h3 {
+      font-family: 'Sanchez', Rockwell, Georgia, serif;
+      font-size: 30px;
+      color: #ACC8D8;
+      margin-bottom: 24px;
+      line-height: 1.25;
+    }
+
+    .menu-item {
+      display: block;
+      width: 100%;
+      padding: 24px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .menu-item:last-child {
+      border-bottom: none;
+    }
+
+    .menu-item h4 {
+      font-family: 'Sanchez', Rockwell, Georgia, serif;
+      font-size: 22px;
+      color: #E2E2E2;
+      font-weight: 400;
+      margin-bottom: 8px;
+    }
+
+    .menu-item-price {
+      font-size: 18px;
+      color: #E2E2E2;
+      margin-bottom: 8px;
+    }
+
+    .menu-item-description {
+      color: #919191;
+      font-size: 16px;
+      margin-bottom: 8px;
+    }
+
+    @media (min-width: 768px) {
+      .menu-category {
+        margin-left: 16.666666666666664%;
+        width: 66.66666666666666%;
+      }
+    }
+  </style>
+
+  <!-- LOAD CLARIVORE MANAGER OVERLAY SCRIPT -->
+  <script src="clarivore-godaddy-manager.js"></script>
+</head>
+
+<body>
+  <div class="page-inner">
+    <!-- Header -->
+    <header>
+      <a href="/" class="logo">Mama Santa's Restaurant &amp; Pizzeria</a>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container">
+      <h1>
+        <span>Menu</span>
+        <hr/>
+      </h1>
+
+      <!-- HOMEMADE PIZZA CATEGORY -->
+      <div class="menu-category">
+        <h3>Homemade Pizza</h3>
+
+        <!-- Large Pizza -->
+        <div class="menu-item" data-aid="MENU_ITEM_LARGEPIZZA">
+          <h4 data-aid="MENU_SECTION0_ITEM0_TITLE">Large Pizza</h4>
+          <div class="menu-item-price" data-aid="MENU_SECTION0_ITEM0_PRICE">$13.95</div>
+          <div class="menu-item-description" data-aid="MENU_SECTION0_ITEM0_DESC">
+            15 inch, 12 cut
+          </div>
+        </div>
+
+        <!-- Medium Pizza -->
+        <div class="menu-item" data-aid="MENU_ITEM_MEDIUMPIZZA">
+          <h4 data-aid="MENU_SECTION0_ITEM1_TITLE">Medium Pizza</h4>
+          <div class="menu-item-price" data-aid="MENU_SECTION0_ITEM1_PRICE">$12.45</div>
+          <div class="menu-item-description" data-aid="MENU_SECTION0_ITEM1_DESC">
+            13 inch, 8 cut
+          </div>
+        </div>
+
+        <!-- Small Pizza -->
+        <div class="menu-item" data-aid="MENU_ITEM_SMALLPIZZA">
+          <h4 data-aid="MENU_SECTION0_ITEM2_TITLE">Small Pizza</h4>
+          <div class="menu-item-price" data-aid="MENU_SECTION0_ITEM2_PRICE">$10.95</div>
+          <div class="menu-item-description" data-aid="MENU_SECTION0_ITEM2_DESC">
+            11 inch, 4 cut
+          </div>
+        </div>
+      </div>
+
+      <!-- FINE SICILIAN DISHES CATEGORY -->
+      <div class="menu-category">
+        <h3>Fine Sicilian Dishes</h3>
+
+        <!-- Penne with Meat Balls -->
+        <div class="menu-item" data-aid="MENU_ITEM_PENNEWITHMEAT">
+          <h4 data-aid="MENU_SECTION1_ITEM0_TITLE">Penne with Meat Balls</h4>
+          <div class="menu-item-price" data-aid="MENU_SECTION1_ITEM0_PRICE">$14.95</div>
+          <div class="menu-item-description" data-aid="MENU_SECTION1_ITEM0_DESC">
+            Homemade pasta with delicious meatballs
+          </div>
+        </div>
+
+        <!-- Fettuccini with Sausage -->
+        <div class="menu-item" data-aid="MENU_ITEM_FETTUCCINISAUSAGE">
+          <h4 data-aid="MENU_SECTION1_ITEM1_TITLE">Fettuccini with Sausage</h4>
+          <div class="menu-item-price" data-aid="MENU_SECTION1_ITEM1_PRICE">$14.95</div>
+          <div class="menu-item-description" data-aid="MENU_SECTION1_ITEM1_DESC">
+            Fresh fettuccini with Italian sausage
+          </div>
+        </div>
+
+        <!-- Cavatelli with Meat Balls -->
+        <div class="menu-item" data-aid="MENU_ITEM_CAVATELLIMEAT">
+          <h4 data-aid="MENU_SECTION1_ITEM2_TITLE">Cavatelli with Meat Balls</h4>
+          <div class="menu-item-price" data-aid="MENU_SECTION1_ITEM2_PRICE">$15.95</div>
+          <div class="menu-item-description" data-aid="MENU_SECTION1_ITEM2_DESC">
+            Traditional Sicilian pasta
+          </div>
+        </div>
+      </div>
+
+      <!-- APPETIZERS CATEGORY -->
+      <div class="menu-category">
+        <h3>Appetizers</h3>
+
+        <!-- Large Antipasto -->
+        <div class="menu-item" data-aid="MENU_ITEM_LARGEANTIPASTO">
+          <h4 data-aid="MENU_SECTION2_ITEM0_TITLE">Large Antipasto</h4>
+          <div class="menu-item-price" data-aid="MENU_SECTION2_ITEM0_PRICE">$12.95</div>
+          <div class="menu-item-description" data-aid="MENU_SECTION2_ITEM0_DESC">
+            Meats, cheese, olives, and pepperoncini
+          </div>
+        </div>
+
+        <!-- Chicken Soup -->
+        <div class="menu-item" data-aid="MENU_ITEM_CHICKENSOUP">
+          <h4 data-aid="MENU_SECTION2_ITEM1_TITLE">Chicken Soup</h4>
+          <div class="menu-item-price" data-aid="MENU_SECTION2_ITEM1_PRICE">$4.95</div>
+          <div class="menu-item-description" data-aid="MENU_SECTION2_ITEM1_DESC">
+            Homemade with fresh vegetables
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

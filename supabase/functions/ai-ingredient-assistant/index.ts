@@ -17,24 +17,36 @@ serve(async (req) => {
   try {
     const { text, dishName, imageData } = await req.json()
 
+    console.log('Request received:', {
+      hasImageData: !!imageData,
+      imageDataLength: imageData ? imageData.length : 0,
+      hasText: !!text,
+      dishName: dishName || 'none'
+    })
+
     if (!ANTHROPIC_API_KEY) {
+      console.error('ANTHROPIC_API_KEY is not set!')
       throw new Error('Anthropic API key not configured')
     }
+
+    console.log('API key is configured, proceeding with Claude API call...')
 
     // Build the prompt based on whether we have an image
     const systemPrompt = imageData
       ? `You are an ingredient analysis assistant for a restaurant allergen awareness system.
 
-CRITICAL: You have been provided an ingredient label or recipe card image. Read the ACTUAL ingredients from the image.
+CRITICAL: You MUST respond with ONLY valid JSON. No explanations, no markdown, no text outside the JSON structure.
 
 IMPORTANT INSTRUCTIONS:
-1. Read ALL ingredients from the image - whether it's a product label or a recipe card
-2. Create a SEPARATE entry for EACH distinct ingredient (e.g., "spinach", "ricotta", "egg", "parsley" should be 4 separate entries, NOT combined)
-3. If you see a recipe with multiple ingredients listed, extract each one individually
+1. Read ALL ingredients from the image - whether it's a product label, recipe card, or preparation instructions
+2. If the image shows preparation instructions (like "arrange cheese, add salami, etc."), extract each mentioned food item as a separate ingredient
+3. Create a SEPARATE entry for EACH distinct ingredient (e.g., "spinach", "ricotta", "egg", "parsley" should be 4 separate entries, NOT combined)
 4. For each ingredient, identify allergens from this list: dairy, egg, peanut, tree nut, shellfish, fish, gluten, soy, sesame, wheat
 5. Also determine which dietary options the overall dish meets from this list: Vegan, Vegetarian, Pescatarian, Kosher, Halal
-6. Do NOT guess or infer - only use what you can clearly read
-7. If the image is unclear, indicate that in imageQuality
+6. Even if the image format is unexpected, extract food items mentioned and return valid JSON
+7. If the image is unclear, indicate that in imageQuality but STILL return valid JSON
+
+CRITICAL: You MUST respond with ONLY the JSON object below. No other text before or after.
 
 Return a JSON object with this exact structure:
 {
@@ -146,6 +158,13 @@ Please analyze this dish.`
       text: userPrompt
     })
 
+    console.log('Calling Claude API with:', {
+      model: 'claude-3-haiku-20240307',
+      contentItems: content.length,
+      hasImage: content.some(c => c.type === 'image'),
+      systemPromptLength: systemPrompt.length
+    })
+
     // Call Claude API
     const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -168,7 +187,9 @@ Please analyze this dish.`
     if (!claudeResponse.ok) {
       const error = await claudeResponse.text()
       console.error('Claude API error:', error)
-      throw new Error(`Claude API error: ${error}`)
+      console.error('Claude API status:', claudeResponse.status)
+      console.error('Claude API headers:', JSON.stringify(Object.fromEntries(claudeResponse.headers)))
+      throw new Error(`Claude API error (${claudeResponse.status}): ${error.substring(0, 500)}`)
     }
 
     const aiResult = await claudeResponse.json()
@@ -179,12 +200,32 @@ Please analyze this dish.`
     try {
       // Try to extract JSON from markdown code blocks if present
       const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/) ||
-                       responseText.match(/```\n([\s\S]*?)\n```/)
-      const jsonText = jsonMatch ? jsonMatch[1] : responseText
+                       responseText.match(/```\n([\s\S]*?)\n```/) ||
+                       responseText.match(/\{[\s\S]*\}/)  // Try to find any JSON object
+
+      const jsonText = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : responseText
+      console.log('Attempting to parse JSON, length:', jsonText.length)
       parsed = JSON.parse(jsonText)
     } catch (e) {
-      console.error('Failed to parse JSON:', responseText)
-      throw new Error('Failed to parse AI response as JSON')
+      console.error('Failed to parse JSON from Claude response')
+      console.error('Response text (first 500 chars):', responseText.substring(0, 500))
+      console.error('Parse error:', e.message)
+
+      // Return a helpful error with empty ingredients rather than crashing
+      return new Response(
+        JSON.stringify({
+          error: 'AI returned invalid format. Please try again or describe ingredients in text.',
+          ingredients: [],
+          raw_response: responseText.substring(0, 200)
+        }),
+        {
+          status: 200,  // Return 200 so WordPress doesn't show generic error
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          }
+        }
+      )
     }
 
     return new Response(

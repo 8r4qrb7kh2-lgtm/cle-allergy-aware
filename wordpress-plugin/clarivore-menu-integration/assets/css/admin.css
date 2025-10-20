@@ -1,0 +1,279 @@
+/**
+ * Clarivore Menu Integration - Admin Styles
+ */
+
+/* Meta Box Container */
+.clarivore-meta-box {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+/* Sections */
+.clarivore-section {
+    transition: background-color 0.3s ease;
+}
+
+.clarivore-section h3 {
+    color: #1d2327;
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 10px 0;
+    padding: 0;
+}
+
+.clarivore-section p.description {
+    color: #646970;
+    font-size: 13px;
+    margin: 5px 0;
+}
+
+/* Checkbox Labels */
+.clarivore-section label {
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 3px;
+    transition: background-color 0.2s ease;
+}
+
+.clarivore-section label:hover {
+    background-color: #f6f7f7;
+}
+
+.clarivore-section input[type="checkbox"] {
+    margin: 0 8px 0 0;
+    cursor: pointer;
+}
+
+.clarivore-section input[type="checkbox"]:checked + span {
+    font-weight: 600;
+}
+
+/* AI Analysis Button */
+.clarivore-analyze-btn {
+    background: #2271b1 !important;
+    border-color: #2271b1 !important;
+    color: #fff !important;
+    font-weight: 500;
+    padding: 8px 16px;
+    height: auto;
+    text-shadow: none;
+    box-shadow: 0 1px 0 #2271b1;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+.clarivore-analyze-btn .dashicons {
+    margin: 0 !important;
+    line-height: 1 !important;
+    vertical-align: middle !important;
+}
+
+.clarivore-analyze-btn .dashicons-spin {
+    animation: rotation 1s infinite linear;
+}
+
+@keyframes rotation {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(359deg); }
+}
+
+.clarivore-analyze-btn:hover,
+.clarivore-analyze-btn:focus {
+    background: #135e96 !important;
+    border-color: #135e96 !important;
+    color: #fff !important;
+}
+
+.clarivore-analyze-btn:disabled {
+    background: #8c8f94 !important;
+    border-color: #8c8f94 !important;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Image Upload Section */
+#clarivore-upload-image-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#clarivore-upload-image-btn .dashicons {
+    margin: 0;
+    line-height: 1;
+}
+
+#clarivore-image-preview img {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* AI Input Fields */
+#clarivore-ai-description {
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#clarivore-ai-description:focus {
+    border-color: #2271b1 !important;
+    box-shadow: 0 0 0 1px #2271b1 !important;
+    outline: none !important;
+}
+
+/* Status Messages */
+#clarivore-analysis-status {
+    margin-top: 10px;
+}
+
+#clarivore-analysis-status p {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 3px;
+    font-size: 13px;
+}
+
+.clarivore-analysis-loading {
+    background: #e7f5fe;
+    color: #2271b1;
+    border-left: 4px solid #2271b1;
+}
+
+.clarivore-analysis-success {
+    background: #edfaef;
+    color: #00a32a;
+    border-left: 4px solid #00a32a;
+}
+
+.clarivore-analysis-error {
+    background: #fcf0f1;
+    color: #d63638;
+    border-left: 4px solid #d63638;
+}
+
+/* Textarea Styling */
+.clarivore-section textarea {
+    width: 100%;
+    max-width: 600px;
+    border: 1px solid #8c8f94;
+    border-radius: 3px;
+    padding: 8px;
+    font-family: inherit;
+    font-size: 13px;
+}
+
+.clarivore-section textarea:focus {
+    border-color: #2271b1;
+    box-shadow: 0 0 0 1px #2271b1;
+    outline: none;
+}
+
+/* Grid Layout for Checkboxes */
+.clarivore-section > div[style*="grid"] {
+    margin-top: 10px;
+}
+
+/* Settings Page Specific */
+.wrap .form-table th {
+    padding: 20px 10px 20px 0;
+    font-weight: 600;
+}
+
+.wrap .form-table td {
+    padding: 15px 10px;
+}
+
+.wrap .form-table input[type="text"],
+.wrap .form-table input[type="url"] {
+    padding: 8px;
+    font-size: 14px;
+}
+
+.wrap .form-table .description {
+    margin-top: 8px;
+    color: #646970;
+}
+
+/* Sync Status Badge */
+.clarivore-section > p > span {
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+/* Responsive */
+@media screen and (max-width: 782px) {
+    .clarivore-section > div[style*="grid"] {
+        grid-template-columns: 1fr !important;
+    }
+
+    .clarivore-analyze-btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* Animation for highlighting changes */
+@keyframes highlight {
+    0% { background-color: #fffbcc; }
+    100% { background-color: transparent; }
+}
+
+.clarivore-highlight {
+    animation: highlight 2s ease;
+}
+
+/* Validation Warning */
+#clarivore-validation-warning {
+    background: #fcf8e3;
+    border-left: 4px solid #f0ad4e;
+    padding: 12px;
+    margin: 15px 0;
+    border-radius: 0 3px 3px 0;
+}
+
+#clarivore-validation-warning strong {
+    color: #856404;
+}
+
+/* Menu Item List Column */
+.column-allergens,
+.column-diets {
+    max-width: 200px;
+}
+
+.allergen-badge,
+.diet-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    margin: 2px;
+    background: #f0f0f1;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.allergen-badge {
+    background: #fcf0f1;
+    color: #d63638;
+}
+
+.diet-badge {
+    background: #edfaef;
+    color: #00a32a;
+}
+
+/* Help Section */
+.wrap > div[style*="background"] {
+    box-shadow: 0 1px 1px rgba(0,0,0,0.04);
+}
+
+.wrap > div[style*="background"] h2,
+.wrap > div[style*="background"] h3 {
+    margin-top: 0;
+}
+
+.wrap > div[style*="background"] a {
+    text-decoration: none;
+}
+
+.wrap > div[style*="background"] a:hover {
+    text-decoration: underline;
+}

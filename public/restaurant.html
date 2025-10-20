@@ -1271,7 +1271,6 @@ function ensureAiAssistElements(){
           <div class="aiAssistTableActions">
             <button type="button" class="btn" id="aiAssistAddRowBtn">Add ingredient</button>
             <div class="aiAssistSpacer"></div>
-            <button type="button" class="btn" id="aiAssistSaveDraftBtn" style="background:#4c5ad4;border-color:#6b7ce6">💾 Save Draft</button>
             <button type="button" class="btn btnPrimary" id="aiAssistApplyBtn">✓ Save to Dish</button>
           </div>
           <div class="aiAssistBrandResults" id="aiAssistBrandResults" aria-live="polite"></div>
@@ -1356,10 +1355,7 @@ function ensureAiAssistElements(){
     });
 
     // New confirmation workflow buttons
-    const saveDraftBtn = aiAssistBackdrop.querySelector('#aiAssistSaveDraftBtn');
-    if(saveDraftBtn){
-      saveDraftBtn.addEventListener('click', ()=>saveAiDraft());
-    }
+    // Save Draft button removed per user request
 
     aiAssistApplyBtn.addEventListener('click',()=>applyAiIngredientsToOverlay());
     if(aiAssistUploadBtn && aiAssistFileInput){
@@ -3263,9 +3259,7 @@ function tooltipBodyHTML(item,sel,userDiets){
       html+=`<div class="note tooltipNeutralText">${crossList}</div>`;
     }
 
-    if(details && details.__ingredientsSummary){
-      html+=`<div class="note tooltipNeutralText"><strong>Ingredients</strong><br>${esc(details.__ingredientsSummary)}</div>`;
-    }
+    // Ingredients list removed per user request - not needed in tooltip
   }
 
   // Display dietary preferences section - show status for each user preference
@@ -5296,9 +5290,11 @@ function renderEditor(){
       aiAssistSetStatus('No ingredients to apply.', 'warn');
       return;
     }
+      // Save AI ingredients data to the overlay object immediately
       if(list){
         list.dataset.aiIngredients = JSON.stringify(rows);
       }
+      it.aiIngredients = JSON.stringify(rows);
       const allergenDetailsMap={};
       const activeAllergens=new Set();
       const activeDiets=new Set();
@@ -5346,6 +5342,10 @@ function renderEditor(){
         const uniqueAggregated=[...new Set(aggregatedIngredientNames.map(item=>(item||'').trim()).filter(Boolean))];
         list.dataset.aiIngredientSummary = JSON.stringify(uniqueAggregated);
       }
+      // Also save ingredient summary to overlay object
+      const uniqueAggregated=[...new Set(aggregatedIngredientNames.map(item=>(item||'').trim()).filter(Boolean))];
+      it.aiIngredientSummary = JSON.stringify(uniqueAggregated);
+
       list.querySelectorAll('.algRow').forEach(row=>{
         const btn=row.querySelector('.algBtn');
         const allergen=btn.dataset.a;
@@ -5389,9 +5389,31 @@ function renderEditor(){
           btn.classList.toggle('active',isActive);
         }
       });
+
+      // Update the overlay object with the new allergen data
+      it.allergens = Array.from(activeAllergens);
+      it.diets = Array.from(activeDiets);
+      it.details = {};
+      Object.keys(allergenDetailsMap).forEach(key => {
+        const explanations = allergenDetailsMap[key] || [];
+        if(explanations.length){
+          it.details[key] = `Contains ${explanations.join(', ')}`;
+        }
+      });
+      // Add ingredient summary to details
+      if(uniqueAggregated && uniqueAggregated.length){
+        it.details.__ingredientsSummary = uniqueAggregated.join(', ');
+      }
+      // Update removable ingredients
+      it.removable = [];
+      removableIngredients.forEach(allergen => {
+        const detail = it.details[allergen] || allergen;
+        it.removable.push({allergen, component: detail});
+      });
+
       updatePreview();
       setDirty(true);
-      aiAssistSetStatus('Ingredient details applied. Review and save the dish when ready.','success');
+      aiAssistSetStatus('Ingredient details applied and saved to dish!','success');
     }
     
     // Auto-open AI assistant immediately

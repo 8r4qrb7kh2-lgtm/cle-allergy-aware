@@ -1,0 +1,245 @@
+/* Clarivore Menu Manager - Safety-Critical UI */
+
+#clarivore-bubble {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  z-index: 2147483647 !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+  pointer-events: auto !important;
+}
+
+#clarivore-bubble.visible {
+  opacity: 1;
+}
+
+/* ========================================
+   COMPACT BUBBLE MODE (default)
+   ======================================== */
+
+#clarivore-bubble.compact .clarivore-bubble-icon {
+  display: flex;
+}
+
+#clarivore-bubble.compact .clarivore-banner {
+  display: none;
+}
+
+.clarivore-bubble-icon {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.clarivore-bubble-icon:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 24px rgba(102, 126, 234, 0.5);
+}
+
+.clarivore-bubble-icon .shield {
+  font-size: 32px;
+  line-height: 1;
+}
+
+.clarivore-bubble-icon .badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 24px;
+  height: 24px;
+  background: #ff4757;
+  border-radius: 12px;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  box-shadow: 0 2px 8px rgba(255, 71, 87, 0.4);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* ========================================
+   EXPANDED BANNER MODE
+   ======================================== */
+
+#clarivore-bubble.expanded {
+  bottom: 0;
+  right: 0;
+  left: 0;
+  width: 100%;
+}
+
+#clarivore-bubble.expanded .clarivore-bubble-icon {
+  display: none;
+}
+
+#clarivore-bubble.expanded .clarivore-banner {
+  display: block;
+}
+
+.clarivore-banner {
+  display: none;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  color: white;
+}
+
+.banner-content {
+  padding: 20px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.banner-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.banner-left .icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.banner-left .text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.banner-left .title {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.banner-left .subtitle {
+  font-size: 14px;
+  opacity: 0.95;
+}
+
+.banner-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.change-count {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 12px 20px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.change-count .label {
+  font-size: 12px;
+  opacity: 0.9;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.change-count .value {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.btn-update {
+  background: white;
+  color: #667eea;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.btn-update:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  line-height: 1;
+  transition: background 0.2s;
+  padding: 0;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+
+.btn-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .banner-content {
+    flex-wrap: wrap;
+    padding: 16px 20px;
+  }
+
+  .banner-right {
+    width: 100%;
+    justify-content: space-between;
+    margin-top: 8px;
+  }
+
+  .change-count {
+    padding: 10px 16px;
+  }
+
+  .btn-update {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
+
+  #clarivore-bubble.compact {
+    bottom: 16px;
+    right: 16px;
+  }
+
+  .clarivore-bubble-icon {
+    width: 56px;
+    height: 56px;
+  }
+
+  .clarivore-bubble-icon .shield {
+    font-size: 28px;
+  }
+}
