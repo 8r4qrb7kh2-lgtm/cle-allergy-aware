@@ -89,7 +89,11 @@ You MUST respond with ONLY valid JSON in this exact format:
           role: 'user',
           content: userPrompt
         }],
-        betas: ["web-search-20250411"]
+        tools: [{
+          type: "web_search_20250410",
+          name: "web_search",
+          max_uses: 5
+        }]
       })
     })
 
