@@ -2156,7 +2156,11 @@ async function fetchBrandSuggestions(query, ingredientName){
   let searchQuery = query;
 
   // Strategy 0: Use AI to correct spelling if Supabase client is available
-  if(window.supabaseClient){
+  // But only for single-word queries (not when user added a brand filter)
+  const queryTerms = query.trim().split(/\s+/);
+  const hasMultipleTerms = queryTerms.length > 1;
+
+  if(window.supabaseClient && !hasMultipleTerms){
     try {
       const corrected = await correctSpellingWithAI(query, ingredientName);
       if(corrected && corrected !== query){
