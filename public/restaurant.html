@@ -2149,165 +2149,83 @@ async function correctSpellingWithAI(query, ingredientName){
 
 async function fetchBrandSuggestions(query, ingredientName){
   ensureAiAssistElements();
-  if(!query) return [];
+  if(!ingredientName) return [];
 
-  // Try multiple search strategies for better results with misspellings
-  let products = [];
-  let searchQuery = query;
+  // Extract brand filter from query if present
+  const brandQuery = query !== ingredientName ? query.replace(ingredientName, '').trim() : '';
 
-  // Strategy 0: Use AI to correct spelling if Supabase client is available
-  // But only for single-word queries (not when user added a brand filter)
-  const queryTerms = query.trim().split(/\s+/);
-  const hasMultipleTerms = queryTerms.length > 1;
+  console.log('Fetching brand suggestions:', { ingredientName, brandQuery });
 
-  if(window.supabaseClient && !hasMultipleTerms){
-    try {
-      const corrected = await correctSpellingWithAI(query, ingredientName);
-      if(corrected && corrected !== query){
-        console.log(`AI corrected "${query}" to "${corrected}"`);
-        searchQuery = corrected;
-      }
-    } catch(err) {
-      console.warn('AI spelling correction failed, continuing with original query', err);
-    }
-  }
-
-  // Strategy 1: Exact search (with potentially corrected spelling)
   try {
-    const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(searchQuery)}&search_simple=1&action=process&json=1&page_size=${AI_BRAND_LIMIT * 2}`;
-    const res=await fetch(url);
-    if(res.ok){
-      const data=await res.json();
-      products=Array.isArray(data.products)?data.products:[];
-    }
-  } catch(err) {
-    console.warn('Exact search failed', err);
-  }
-
-  // Strategy 2: If no results, try fuzzy search by removing last letter and adding wildcard
-  if(products.length === 0 && searchQuery.length > 4){
-    try {
-      const fuzzyQuery = searchQuery.substring(0, searchQuery.length - 1) + '*';
-      const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(fuzzyQuery)}&search_simple=1&action=process&json=1&page_size=${AI_BRAND_LIMIT * 2}`;
-      const res=await fetch(url);
-      if(res.ok){
-        const data=await res.json();
-        products=Array.isArray(data.products)?data.products:[];
+    // Call the new AI-powered brand search Supabase edge function
+    const response = await window.supabaseClient.functions.invoke('ai-brand-search', {
+      body: {
+        ingredientName,
+        brandQuery
       }
-    } catch(err) {
-      console.warn('Fuzzy search failed', err);
-    }
-  }
-
-  // Strategy 3: If still no results, try without brand constraint
-  if(products.length === 0){
-    try {
-      const url=`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(searchQuery)}&action=process&json=1&page_size=${AI_BRAND_LIMIT * 2}`;
-      const res=await fetch(url);
-      if(res.ok){
-        const data=await res.json();
-        products=Array.isArray(data.products)?data.products:[];
-      }
-    } catch(err) {
-      console.warn('Broad search failed', err);
-    }
-  }
-
-  if(!products.length) return [];
-
-  // Filter for English language products only
-  products = products.filter(product => {
-    const productName = (product.product_name || '').toLowerCase();
-    const productNameEn = product.product_name_en || '';
-
-    // Reject if contains common French words
-    const frenchWords = ['de', 'du', 'le', 'la', 'les', 'moutarde', 'fromage', 'beurre', 'sucre', 'farine'];
-    const hasFrenchWord = frenchWords.some(word => {
-      const regex = new RegExp(`\\b${word}\\b`, 'i');
-      return regex.test(productName);
     });
 
-    if (hasFrenchWord) return false;
-
-    // Accept only if has English product name or lang is explicitly 'en'
-    return productNameEn.length > 0 || product.lang === 'en';
-  });
-
-  // Filter products to match ingredient name (e.g., "italian seasoning" should only show products with BOTH words)
-  // But only if ingredientName is multi-word (for single words, trust the API search results)
-  if(ingredientName){
-    const ingredientTerms = ingredientName.toLowerCase().split(/\s+/).filter(term => term.length > 2);
-    // Only apply strict filtering for multi-word ingredients
-    if(ingredientTerms.length > 1){
-      products = products.filter(product => {
-        const productName = (product.product_name || '').toLowerCase();
-        const productCategories = (product.categories || '').toLowerCase();
-        const combinedText = `${productName} ${productCategories}`;
-        // Check if ALL ingredient terms appear in product name or categories (not just any one)
-        return ingredientTerms.every(term => combinedText.includes(term));
-      });
+    if (response.error) {
+      console.error('AI brand search error:', response.error);
+      return [];
     }
-  }
 
-  if(!products.length) return [];
+    const { products, aiReasoning, searchCount, totalFound, withImages } = response.data || {};
 
-  // Fetch full product details for first few products to get ingredient images
-  const detailedProducts = await Promise.all(
-    products.slice(0, Math.min(products.length, AI_BRAND_LIMIT)).map(async (product) => {
-      if(!product.code) return product;
-      try {
-        const detailRes = await fetch(`https://world.openfoodfacts.org/api/v2/product/${product.code}.json`);
-        if(detailRes.ok){
-          const detailData = await detailRes.json();
-          if(detailData.product){
-            return {...product, ...detailData.product};
+    console.log('AI Brand Search Results:', {
+      aiReasoning,
+      searchCount,
+      totalFound,
+      withImages,
+      productsReturned: products?.length || 0
+    });
+
+    if (aiReasoning) {
+      console.log('AI reasoning:', aiReasoning);
+    }
+
+    if (!products || products.length === 0) {
+      console.log('No brand products found with required images');
+      return [];
+    }
+
+    // Products are already filtered and formatted by the edge function
+    // They all have both brand image and ingredients image
+    return products.map(product => {
+      const allergens = [];
+      if (Array.isArray(product.allergens)) {
+        product.allergens.forEach(tag => {
+          const key = norm(tag.replace(/^en:/, '').replace(/-/g, ' '));
+          const mapped = ALLERGEN_ALIASES[key] || key;
+          if (mapped && ALLERGENS.some(a => norm(a) === mapped)) {
+            allergens.push(cap(mapped));
           }
-        }
-      } catch(err) {
-        console.warn('Failed to fetch product details for', product.code, err);
+        });
       }
-      return product;
-    })
-  );
 
-  return detailedProducts.map(product=>{
-    const allergens=[];
-    if(Array.isArray(product.allergens_tags)){
-      product.allergens_tags.forEach(tag=>{
-        const key=norm(tag.replace(/^en:/,'').replace(/-/g,' '));
-        const mapped=ALLERGEN_ALIASES[key] || key;
-        if(mapped && ALLERGENS.some(a=>norm(a)===mapped)) allergens.push(cap(mapped));
-      });
-    }
-    const ingredientsText = product.ingredients_text_en || product.ingredients_text || product.ingredients_original || '';
-    let ingredientsList=[];
-    if(ingredientsText){
-      ingredientsList=ingredientsText.split(/[,;\n]/).map(part=>part.replace(/\(.+?\)/g,'').trim()).filter(Boolean).map(cap);
-      detectAllergensInText(ingredientsText).forEach(a=>{
-        if(!allergens.includes(cap(a))) allergens.push(cap(a));
-      });
-    }
-
-    // Get ingredients image from multiple possible sources
-    let ingredientsImage = product.image_ingredients_url || '';
-    if(!ingredientsImage && product.selected_images?.ingredients){
-      // Try different language variants
-      const ingredImgs = product.selected_images.ingredients.display || product.selected_images.ingredients.small;
-      if(ingredImgs){
-        ingredientsImage = ingredImgs.en || ingredImgs.fr || ingredImgs.es || ingredImgs.de || Object.values(ingredImgs)[0] || '';
+      // Also detect allergens from ingredients text
+      if (product.ingredientsList && product.ingredientsList.length > 0) {
+        const ingredientsText = product.ingredientsList.join(', ');
+        detectAllergensInText(ingredientsText).forEach(a => {
+          if (!allergens.includes(cap(a))) allergens.push(cap(a));
+        });
       }
-    }
 
-    return {
-      name:product.product_name || product.brands || query,
-      brand:product.brands || '',
-      image:product.image_front_small_url || product.image_front_url || '',
-      ingredientsImage,
-      ingredientsList,
-      allergens,
-      productUrl:product.url || ''
-    };
-  }).filter(item=>item.name);
+      return {
+        name: product.name || '',
+        brand: product.brand || '',
+        image: product.image || '',
+        ingredientsImage: product.ingredientsImage || '',
+        ingredientsList: product.ingredientsList || [],
+        allergens,
+        productUrl: product.productUrl || ''
+      };
+    });
+
+  } catch (err) {
+    console.error('Failed to fetch brand suggestions:', err);
+    return [];
+  }
 }
 
 async function openAiBrandSearch(rowIdx){
