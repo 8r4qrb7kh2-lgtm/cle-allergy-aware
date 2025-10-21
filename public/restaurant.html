@@ -4887,6 +4887,7 @@ function renderEditor(){
 
   // Zoom controls
   let zoomScale = 1.0;
+  let baseScale = 1.0; // The scale factor to fit the image to viewport
   const zoomStep = 0.25;
   const minZoom = 0.5;
   const maxZoom = 3.0;
@@ -4895,14 +4896,16 @@ function renderEditor(){
     const inner = menu.querySelector('.menuInner');
     const zoomLevelEl = document.getElementById('zoomLevel');
 
-    inner.style.transform = `scale(${zoomScale})`;
+    // Apply both base scale (to fit viewport) and user zoom
+    const totalScale = baseScale * zoomScale;
+    inner.style.transform = `scale(${totalScale})`;
     inner.style.transformOrigin = 'top left';
 
     // Adjust container to accommodate scaled content
     const naturalWidth = img.naturalWidth || img.width;
     const naturalHeight = img.naturalHeight || img.height;
-    menu.style.width = `${naturalWidth * zoomScale}px`;
-    menu.style.height = `${naturalHeight * zoomScale}px`;
+    menu.style.width = `${naturalWidth * totalScale}px`;
+    menu.style.height = `${naturalHeight * totalScale}px`;
     menu.style.overflow = 'auto';
 
     zoomLevelEl.textContent = `${Math.round(zoomScale * 100)}%`;
@@ -4910,6 +4913,16 @@ function renderEditor(){
     // Update button states
     document.getElementById('zoomOutBtn').disabled = zoomScale <= minZoom;
     document.getElementById('zoomInBtn').disabled = zoomScale >= maxZoom;
+  }
+
+  function initializeZoom() {
+    // Calculate base scale to fit the image width to the viewport
+    const naturalWidth = img.naturalWidth || img.width;
+    const viewportWidth = window.innerWidth;
+    const maxDisplayWidth = Math.min(viewportWidth * 0.9, 1200); // Max 90% of viewport or 1200px
+
+    baseScale = naturalWidth > maxDisplayWidth ? maxDisplayWidth / naturalWidth : 1.0;
+    updateZoom();
   }
 
   document.getElementById('zoomInBtn').onclick = () => {
@@ -4933,12 +4946,13 @@ function renderEditor(){
 
   // Initialize zoom on image load
   img.onload = () => {
-    updateZoom();
+    initializeZoom();
+    drawAll();
   };
 
-  // If image already loaded, update now
+  // If image already loaded, initialize now
   if (img.complete) {
-    updateZoom();
+    initializeZoom();
   }
 
   // Upload new menu image
