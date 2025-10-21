@@ -5149,14 +5149,29 @@ function renderEditor(){
     window.__pendingDishToOpen = null; // Clear it
 
     setTimeout(function() {
+      console.log('Looking for dish:', pendingDish.dishName);
+      console.log('Available dishes:', overlays.map(o => o.id));
+
       const matchIndex = overlays.findIndex(item => {
-        if (pendingDish.dishName && (item.id || '').toLowerCase() === pendingDish.dishName.toLowerCase()) {
+        const itemId = (item.id || '').toLowerCase().trim();
+        const searchName = (pendingDish.dishName || '').toLowerCase().trim();
+
+        // Exact match
+        if (searchName && itemId === searchName) {
           return true;
         }
+        // WordPress ID match
         if (pendingDish.dishId && item.wpPostId && item.wpPostId.toString() === pendingDish.dishId.toString()) {
           return true;
         }
-        if (pendingDish.dishName && (item.id || '').toLowerCase().includes(pendingDish.dishName.toLowerCase())) {
+        // Contains match (either direction)
+        if (searchName && (itemId.includes(searchName) || searchName.includes(itemId))) {
+          return true;
+        }
+        // Fuzzy match - remove spaces and special chars
+        const normalizedItem = itemId.replace(/[^a-z0-9]/g, '');
+        const normalizedSearch = searchName.replace(/[^a-z0-9]/g, '');
+        if (normalizedItem && normalizedSearch && normalizedItem === normalizedSearch) {
           return true;
         }
         return false;
@@ -5178,6 +5193,7 @@ function renderEditor(){
         }
       } else {
         console.log('Could not find dish to auto-open:', pendingDish);
+        console.log('Tried to match:', pendingDish.dishName);
       }
     }, 500);
   }
