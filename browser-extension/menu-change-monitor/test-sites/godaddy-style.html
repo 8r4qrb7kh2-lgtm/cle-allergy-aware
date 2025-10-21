@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maria's Mexican Kitchen - GoDaddy Website Builder</title>
+    <style>
+        /* GoDaddy Website Builder style (simpler, template-based) */
+        body {
+            margin: 0;
+            font-family: 'Montserrat', 'Open Sans', sans-serif;
+            color: #333333;
+            background: #ffffff;
+        }
+        .gd-container {
+            max-width: 1140px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+        .gd-section {
+            padding: 50px 0;
+        }
+        .gd-section-bg {
+            background: #fff9f0;
+        }
+        .gd-header {
+            background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+            color: white;
+            text-align: center;
+            padding: 80px 20px;
+        }
+        .gd-header h1 {
+            font-size: 52px;
+            font-weight: 700;
+            margin: 0 0 16px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .gd-header p {
+            font-size: 22px;
+            margin: 0;
+        }
+        .gd-section-title {
+            text-align: center;
+            font-size: 36px;
+            font-weight: 700;
+            color: #ff6b35;
+            margin-bottom: 40px;
+        }
+        .gd-menu-row {
+            margin-bottom: 30px;
+        }
+        .gd-menu-item {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            transition: border-color 0.3s;
+        }
+        .gd-menu-item:hover {
+            border-color: #ff6b35;
+        }
+        .gd-menu-item-info {
+            flex: 1;
+        }
+        .gd-menu-item-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333333;
+            margin: 0 0 8px 0;
+        }
+        .gd-menu-item-desc {
+            font-size: 14px;
+            color: #666666;
+            line-height: 1.5;
+            margin: 0 0 12px 0;
+        }
+        .gd-menu-item-tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .gd-tag {
+            background: #fff3e0;
+            color: #e65100;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .gd-menu-item-price {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ff6b35;
+            white-space: nowrap;
+            margin-left: 20px;
+        }
+        .gd-edit-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e3a5f;
+            padding: 16px 24px;
+            border-radius: 50px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+            display: flex;
+            gap: 12px;
+            z-index: 1000;
+        }
+        .gd-edit-btn {
+            background: #ff6b35;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 25px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .gd-edit-btn:hover {
+            background: #f7931e;
+        }
+    </style>
+</head>
+<body>
+    <div class="gd-edit-bar">
+        <button class="gd-edit-btn" onclick="gdAddItem()">➕ Add</button>
+        <button class="gd-edit-btn" onclick="gdRemoveItem()">➖ Remove</button>
+        <button class="gd-edit-btn" onclick="gdChangeAllergen()">⚠️ Allergen</button>
+        <button class="gd-edit-btn" onclick="gdEditText()">✏️ Edit</button>
+    </div>
+
+    <div class="gd-header">
+        <h1>Maria's Mexican Kitchen</h1>
+        <p>Authentic Mexican Flavors</p>
+    </div>
+
+    <div class="gd-section">
+        <div class="gd-container">
+            <h2 class="gd-section-title">🌮 Tacos & Appetizers</h2>
+
+            <div class="gd-menu-row" id="appetizers">
+                <div class="gd-menu-item" data-gd-id="app1">
+                    <div class="gd-menu-item-info">
+                        <h3 class="gd-menu-item-title">Guacamole & Chips</h3>
+                        <p class="gd-menu-item-desc">Fresh avocado mashed with lime, cilantro, onions, and tomatoes. Served with crispy tortilla chips.</p>
+                        <div class="gd-menu-item-tags">
+                            <span class="gd-tag">Vegan</span>
+                            <span class="gd-tag">Gluten-free</span>
+                        </div>
+                    </div>
+                    <div class="gd-menu-item-price">$7.00</div>
+                </div>
+
+                <div class="gd-menu-item" data-gd-id="app2">
+                    <div class="gd-menu-item-info">
+                        <h3 class="gd-menu-item-title">Queso Fundido</h3>
+                        <p class="gd-menu-item-desc">Melted Oaxaca cheese with chorizo and jalapeños, served with warm flour tortillas.</p>
+                        <div class="gd-menu-item-tags">
+                            <span class="gd-tag">Contains: Dairy</span>
+                            <span class="gd-tag">Contains: Gluten</span>
+                        </div>
+                    </div>
+                    <div class="gd-menu-item-price">$9.50</div>
+                </div>
+
+                <div class="gd-menu-item" data-gd-id="app3">
+                    <div class="gd-menu-item-info">
+                        <h3 class="gd-menu-item-title">Street Tacos (3)</h3>
+                        <p class="gd-menu-item-desc">Corn tortillas with your choice of carne asada, al pastor, or grilled chicken. Topped with onions and cilantro.</p>
+                        <div class="gd-menu-item-tags">
+                            <span class="gd-tag">Gluten-free</span>
+                        </div>
+                    </div>
+                    <div class="gd-menu-item-price">$11.00</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="gd-section gd-section-bg">
+        <div class="gd-container">
+            <h2 class="gd-section-title">🍛 Main Dishes</h2>
+
+            <div class="gd-menu-row" id="mains">
+                <div class="gd-menu-item" data-gd-id="main1">
+                    <div class="gd-menu-item-info">
+                        <h3 class="gd-menu-item-title">Enchiladas Verdes</h3>
+                        <p class="gd-menu-item-desc">Corn tortillas filled with chicken, topped with tomatillo sauce, sour cream, and queso fresco. Served with rice and beans.</p>
+                        <div class="gd-menu-item-tags">
+                            <span class="gd-tag">Contains: Dairy</span>
+                            <span class="gd-tag">Gluten-free</span>
+                        </div>
+                    </div>
+                    <div class="gd-menu-item-price">$14.50</div>
+                </div>
+
+                <div class="gd-menu-item" data-gd-id="main2">
+                    <div class="gd-menu-item-info">
+                        <h3 class="gd-menu-item-title">Carne Asada Plate</h3>
+                        <p class="gd-menu-item-desc">Grilled marinated steak with grilled onions, served with rice, beans, and warm tortillas.</p>
+                        <div class="gd-menu-item-tags">
+                            <span class="gd-tag">Contains: Gluten</span>
+                        </div>
+                    </div>
+                    <div class="gd-menu-item-price">$18.00</div>
+                </div>
+
+                <div class="gd-menu-item" data-gd-id="main3">
+                    <div class="gd-menu-item-info">
+                        <h3 class="gd-menu-item-title">Chile Relleno</h3>
+                        <p class="gd-menu-item-desc">Poblano pepper stuffed with cheese, battered and fried, topped with ranchera sauce.</p>
+                        <div class="gd-menu-item-tags">
+                            <span class="gd-tag">Contains: Dairy</span>
+                            <span class="gd-tag">Contains: Eggs</span>
+                            <span class="gd-tag">Contains: Gluten</span>
+                            <span class="gd-tag">Vegetarian</span>
+                        </div>
+                    </div>
+                    <div class="gd-menu-item-price">$13.00</div>
+                </div>
+
+                <div class="gd-menu-item" data-gd-id="main4">
+                    <div class="gd-menu-item-info">
+                        <h3 class="gd-menu-item-title">Shrimp Fajitas</h3>
+                        <p class="gd-menu-item-desc">Sizzling shrimp with bell peppers and onions, served with rice, beans, and flour tortillas.</p>
+                        <div class="gd-menu-item-tags">
+                            <span class="gd-tag">Contains: Shellfish</span>
+                            <span class="gd-tag">Contains: Gluten</span>
+                        </div>
+                    </div>
+                    <div class="gd-menu-item-price">$17.00</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="gd-section">
+        <div class="gd-container">
+            <h2 class="gd-section-title">🍮 Desserts</h2>
+
+            <div class="gd-menu-row" id="desserts">
+                <div class="gd-menu-item" data-gd-id="des1">
+                    <div class="gd-menu-item-info">
+                        <h3 class="gd-menu-item-title">Churros</h3>
+                        <p class="gd-menu-item-desc">Fried dough pastries rolled in cinnamon sugar, served with chocolate dipping sauce.</p>
+                        <div class="gd-menu-item-tags">
+                            <span class="gd-tag">Contains: Gluten</span>
+                            <span class="gd-tag">Contains: Eggs</span>
+                            <span class="gd-tag">Contains: Dairy</span>
+                        </div>
+                    </div>
+                    <div class="gd-menu-item-price">$6.00</div>
+                </div>
+
+                <div class="gd-menu-item" data-gd-id="des2">
+                    <div class="gd-menu-item-info">
+                        <h3 class="gd-menu-item-title">Tres Leches Cake</h3>
+                        <p class="gd-menu-item-desc">Light sponge cake soaked in three kinds of milk, topped with whipped cream.</p>
+                        <div class="gd-menu-item-tags">
+                            <span class="gd-tag">Contains: Dairy</span>
+                            <span class="gd-tag">Contains: Eggs</span>
+                            <span class="gd-tag">Contains: Gluten</span>
+                        </div>
+                    </div>
+                    <div class="gd-menu-item-price">$7.50</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let gdCounter = 200;
+
+        function gdAddItem() {
+            const section = document.getElementById('mains');
+            const newItem = document.createElement('div');
+            newItem.className = 'gd-menu-item';
+            newItem.setAttribute('data-gd-id', 'main' + gdCounter++);
+            newItem.innerHTML = `
+                <div class="gd-menu-item-info">
+                    <h3 class="gd-menu-item-title">Fish Tacos</h3>
+                    <p class="gd-menu-item-desc">Grilled tilapia with cabbage slaw, pico de gallo, and chipotle mayo in corn tortillas.</p>
+                    <div class="gd-menu-item-tags">
+                        <span class="gd-tag">Contains: Fish</span>
+                        <span class="gd-tag">Contains: Eggs</span>
+                        <span class="gd-tag">Gluten-free</span>
+                    </div>
+                </div>
+                <div class="gd-menu-item-price">$15.00</div>
+            `;
+            section.appendChild(newItem);
+            console.log('GoDaddy: Added menu item');
+        }
+
+        function gdRemoveItem() {
+            const items = document.querySelectorAll('.gd-menu-item');
+            if (items.length > 0) {
+                items[items.length - 1].remove();
+                console.log('GoDaddy: Removed menu item');
+            }
+        }
+
+        function gdChangeAllergen() {
+            const tagContainers = document.querySelectorAll('.gd-menu-item-tags');
+            const randomContainer = tagContainers[Math.floor(Math.random() * tagContainers.length)];
+
+            // Add a new allergen tag
+            const newTag = document.createElement('span');
+            newTag.className = 'gd-tag';
+            newTag.textContent = 'Contains: Tree Nuts';
+            randomContainer.appendChild(newTag);
+            console.log('GoDaddy: Changed allergen info');
+        }
+
+        function gdEditText() {
+            const descriptions = document.querySelectorAll('.gd-menu-item-desc');
+            const randomDesc = descriptions[Math.floor(Math.random() * descriptions.length)];
+            randomDesc.textContent += ' Made fresh daily.';
+            console.log('GoDaddy: Edited description');
+        }
+    </script>
+</body>
+</html>

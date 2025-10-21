@@ -1,527 +1,651 @@
+/**
+ * Content Script for AI Menu Change Monitor
+ * Real-time change detection using MutationObserver
+ * Works universally across all website platforms (WordPress, Wix, GoDaddy, Squarespace, etc.)
+ */
+
 (function () {
-  const KEYWORDS = [
-    'menu',
-    'dish',
-    'dishes',
-    'ingredient',
-    'ingredients',
-    'allergen',
-    'allergens',
-    'allergy',
-    'entree',
-    'entrée',
-    'appetizer',
-    'starter',
-    'main course',
-    'special',
-    'beverage',
-    'drink',
-    'dessert',
-    'soup',
-    'salad',
-    'sauce',
-    'side',
-    'chef',
-    'combo',
-    'plate'
-  ];
+  'use strict';
 
-  const keywordRegex = new RegExp(`\\b(${KEYWORDS.map(escapeRegex).join('|')})\\b`, 'i');
-  const observedTextMap = new WeakMap();
-  const notifiedChanges = new Set();
-  const elementContextMap = new WeakMap();
-  const NOTIFICATION_LIFETIME = 12000;
-  const HIGHLIGHT_CLASS = 'menu-change-monitor__highlight';
-  let notificationContainer = null;
+  // Configuration
+  const CONFIG = {
+    DEBOUNCE_DELAY: 2000, // Wait 2 seconds after last change before analyzing
+    MIN_CHANGE_THRESHOLD: 10, // Minimum characters changed to trigger
+    CHECK_COOLDOWN: 30000, // Don't check more than once per 30 seconds
+    STORAGE_KEY: 'menuSnapshot'
+  };
 
-  injectStyles();
-  scanForExistingElements();
-  startMutationObserver();
-  listenForFormEvents();
+  // State
+  let isMonitoring = false;
+  let mutationObserver = null;
+  let debounceTimer = null;
+  let lastCheckTime = 0;
+  let initialMenuSnapshot = null;
+  let changeBuffer = [];
 
-  function escapeRegex(value) {
-    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }
+  // Initialize
+  init();
 
-  function listenForFormEvents() {
-    document.addEventListener('input', event => {
-      handlePotentialChange(event.target);
-    }, true);
+  async function init() {
+    console.log('[AI Menu Monitor] Content script initialized');
 
-    document.addEventListener('change', event => {
-      handlePotentialChange(event.target);
-    }, true);
-  }
-
-  function scanForExistingElements() {
-    const selectorParts = KEYWORDS.map(keyword => {
-      const attrSelector = `[class*="${keyword}" i], [id*="${keyword}" i], [name*="${keyword}" i], [data-type*="${keyword}" i], [data-section*="${keyword}" i], [data-category*="${keyword}" i], [aria-label*="${keyword}" i]`;
-      return attrSelector;
-    });
-
-    const keywordSelectors = selectorParts.join(', ');
-    if (keywordSelectors.trim().length > 0) {
-      document.querySelectorAll(keywordSelectors).forEach(element => {
-        if (element.nodeType === Node.ELEMENT_NODE) {
-          cacheElementValue(element);
-        }
-      });
+    // Check if this site is being monitored
+    const settings = await getSettings();
+    if (settings.autoMonitor) {
+      await startMonitoring();
     }
 
-    document.querySelectorAll('input, textarea, [contenteditable=""], [contenteditable="true"], [contenteditable="plaintext-only"]').forEach(element => {
-      cacheElementValue(element);
-    });
+    // Listen for messages from background/popup
+    chrome.runtime.onMessage.addListener(handleMessage);
   }
 
-  function startMutationObserver() {
-    const observer = new MutationObserver(mutations => {
-      mutations.forEach(mutation => {
-        if (mutation.type === 'characterData') {
-          const parent = mutation.target.parentElement;
-          handlePotentialChange(parent);
-        }
+  /**
+   * Handle messages from extension
+   */
+  function handleMessage(message, sender, sendResponse) {
+    (async () => {
+      switch (message.type) {
+        case 'getPageData':
+          sendResponse(getPageData());
+          break;
 
-        if (mutation.type === 'attributes') {
-          handlePotentialChange(mutation.target);
-        }
+        case 'startMonitoring':
+          await startMonitoring();
+          sendResponse({ success: true });
+          break;
 
-        if (mutation.type === 'childList') {
-          mutation.addedNodes.forEach(node => {
-            if (node.nodeType === Node.ELEMENT_NODE) {
-              cacheElementValue(node, { deep: true });
-              handlePotentialChange(node);
-            } else if (node.nodeType === Node.TEXT_NODE) {
-              handlePotentialChange(node.parentElement);
-            }
-          });
+        case 'stopMonitoring':
+          stopMonitoring();
+          sendResponse({ success: true });
+          break;
 
-          mutation.removedNodes.forEach(node => {
-            if (node.nodeType === Node.ELEMENT_NODE) {
-              notifyIfRemoved(node);
-            }
-          });
-        }
-      });
-    });
+        case 'highlightChanges':
+          highlightChangedElements(message.changes);
+          sendResponse({ success: true });
+          break;
 
-    observer.observe(document.documentElement || document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      characterData: true
-    });
+        case 'analyzeNow':
+          const analysis = await captureAndAnalyzeMenu();
+          sendResponse({ success: true, analysis });
+          break;
+
+        default:
+          sendResponse({ success: false, error: 'Unknown message type' });
+      }
+    })();
+
+    return true; // Keep channel open for async response
   }
 
-  function notifyIfRemoved(element) {
-    if (!element) return;
+  /**
+   * Start real-time monitoring with MutationObserver
+   */
+  async function startMonitoring() {
+    if (isMonitoring) return;
 
-    const previousValue = observedTextMap.get(element);
-    if (previousValue === undefined) return;
+    console.log('[AI Menu Monitor] Starting real-time monitoring...');
+    isMonitoring = true;
 
-    const context = elementContextMap.get(element) || getElementContext(element);
-    elementContextMap.set(element, context);
+    // Capture initial state
+    initialMenuSnapshot = await captureMenuSnapshot();
 
-    observedTextMap.delete(element);
-    notifyChange({
-      type: 'removed',
-      element,
-      previousValue,
-      currentValue: '',
-      context
+    // Save to storage for persistence
+    await saveSnapshot(initialMenuSnapshot);
+
+    // Set up MutationObserver to detect DOM changes
+    mutationObserver = new MutationObserver(handleMutations);
+
+    // Observe the entire document body with comprehensive options
+    mutationObserver.observe(document.body, {
+      childList: true,      // Watch for added/removed elements
+      subtree: true,        // Watch all descendants
+      characterData: true,  // Watch text content changes
+      attributes: false,    // Ignore attribute changes (styling, etc.)
+      characterDataOldValue: true
     });
+
+    console.log('[AI Menu Monitor] Real-time monitoring active');
   }
 
-  function handlePotentialChange(node) {
-    const element = normalizeNode(node);
-    if (!element) return;
+  /**
+   * Stop monitoring
+   */
+  function stopMonitoring() {
+    if (mutationObserver) {
+      mutationObserver.disconnect();
+      mutationObserver = null;
+    }
+    isMonitoring = false;
+    changeBuffer = [];
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+    console.log('[AI Menu Monitor] Monitoring stopped');
+  }
 
-    const context = getElementContext(element);
-    elementContextMap.set(element, context);
-    if (!context.matches) return;
+  /**
+   * Handle DOM mutations
+   */
+  function handleMutations(mutations) {
+    // Filter for meaningful changes (skip scripts, styles, ads, etc.)
+    const meaningfulMutations = mutations.filter(mutation => {
+      const target = mutation.target;
 
-    const currentValue = getElementValue(element);
-    const previousValue = observedTextMap.get(element);
+      // Ignore script and style changes
+      if (target.nodeName === 'SCRIPT' || target.nodeName === 'STYLE') {
+        return false;
+      }
 
-    if (typeof currentValue !== 'string') return;
+      // Ignore common ad/tracking containers
+      const ignoredClasses = ['ad', 'advertisement', 'tracking', 'analytics', 'cookie-banner', 'popup', 'modal'];
+      if (target.className && typeof target.className === 'string') {
+        const classes = target.className.toLowerCase();
+        if (ignoredClasses.some(cls => classes.includes(cls))) {
+          return false;
+        }
+      }
 
-    if (previousValue === undefined) {
-      observedTextMap.set(element, currentValue);
+      return true;
+    });
+
+    if (meaningfulMutations.length === 0) return;
+
+    // Add to change buffer
+    changeBuffer.push(...meaningfulMutations);
+
+    // Debounce: wait for changes to settle before analyzing
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+
+    debounceTimer = setTimeout(() => {
+      analyzeChanges();
+    }, CONFIG.DEBOUNCE_DELAY);
+  }
+
+  /**
+   * Analyze accumulated changes
+   */
+  async function analyzeChanges() {
+    // Cooldown check - don't spam the AI
+    const now = Date.now();
+    if (now - lastCheckTime < CONFIG.CHECK_COOLDOWN) {
+      console.log('[AI Menu Monitor] Cooldown active, skipping check');
+      changeBuffer = [];
       return;
     }
 
-    if (normalizeWhitespace(previousValue) === normalizeWhitespace(currentValue)) {
+    // Check if changes meet threshold
+    const changeText = extractChangedText();
+    if (changeText.length < CONFIG.MIN_CHANGE_THRESHOLD) {
+      console.log('[AI Menu Monitor] Changes below threshold');
+      changeBuffer = [];
       return;
     }
 
-    observedTextMap.set(element, currentValue);
-    notifyChange({
-      type: 'changed',
-      element,
-      previousValue,
-      currentValue,
-      context
+    console.log('[AI Menu Monitor] Significant changes detected, analyzing...');
+
+    // Capture new snapshot
+    const newSnapshot = await captureMenuSnapshot();
+
+    // Send to background for AI analysis
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'analyzeMenuChange',
+        oldSnapshot: initialMenuSnapshot,
+        newSnapshot: newSnapshot,
+        changedText: changeText
+      });
+
+      if (response.success && response.hasChanges) {
+        // Show notification popup
+        await showChangeNotification(response.changes);
+
+        // Update initial snapshot for next comparison
+        initialMenuSnapshot = newSnapshot;
+        await saveSnapshot(newSnapshot);
+      }
+
+      lastCheckTime = now;
+    } catch (error) {
+      console.error('[AI Menu Monitor] Analysis error:', error);
+    }
+
+    changeBuffer = [];
+  }
+
+  /**
+   * Extract text from changed mutations
+   */
+  function extractChangedText() {
+    const texts = changeBuffer.map(mutation => {
+      if (mutation.type === 'characterData') {
+        return mutation.target.textContent;
+      } else if (mutation.type === 'childList') {
+        const addedText = Array.from(mutation.addedNodes)
+          .map(node => node.textContent)
+          .join(' ');
+        return addedText;
+      }
+      return '';
+    });
+
+    return texts.join(' ').trim();
+  }
+
+  /**
+   * Capture current menu snapshot
+   */
+  async function captureMenuSnapshot() {
+    return {
+      html: extractMenuContent(),
+      text: extractMenuText(),
+      url: window.location.href,
+      title: document.title,
+      timestamp: Date.now()
+    };
+  }
+
+  /**
+   * Extract likely menu content from page (platform-agnostic)
+   */
+  function extractMenuContent() {
+    // Try to find menu sections intelligently
+    const menuCandidates = [];
+
+    // Strategy 1: Look for semantic HTML
+    const sections = document.querySelectorAll('section, article, main, div[class*="menu"], div[id*="menu"]');
+
+    sections.forEach(section => {
+      const text = section.textContent.toLowerCase();
+      const html = section.outerHTML;
+
+      // Check for food/menu keywords
+      const menuKeywords = ['appetizer', 'entree', 'dessert', 'main course', 'salad', 'sandwich',
+                           'burger', 'pizza', 'pasta', 'dish', 'price', '$', 'gluten', 'dairy',
+                           'vegan', 'vegetarian', 'contains', 'allergen'];
+
+      const keywordMatches = menuKeywords.filter(keyword => text.includes(keyword)).length;
+
+      if (keywordMatches >= 2) {
+        menuCandidates.push({
+          element: section,
+          html: html,
+          score: keywordMatches,
+          length: html.length
+        });
+      }
+    });
+
+    // Return the most likely menu section
+    if (menuCandidates.length > 0) {
+      menuCandidates.sort((a, b) => b.score - a.score);
+      return menuCandidates[0].html;
+    }
+
+    // Fallback: return body if no menu section found
+    return document.body.innerHTML;
+  }
+
+  /**
+   * Extract plain text from likely menu areas
+   */
+  function extractMenuText() {
+    const menuHtml = extractMenuContent();
+    const temp = document.createElement('div');
+    temp.innerHTML = menuHtml;
+    return temp.textContent.trim();
+  }
+
+  /**
+   * Show notification when changes detected
+   */
+  async function showChangeNotification(changes) {
+    // Create overlay notification
+    const notification = createNotificationElement(changes);
+    document.body.appendChild(notification);
+
+    // Auto-remove after 30 seconds
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.remove();
+      }
+    }, 30000);
+  }
+
+  /**
+   * Create notification DOM element
+   */
+  function createNotificationElement(changes) {
+    const overlay = document.createElement('div');
+    overlay.id = 'ai-menu-monitor-notification';
+    overlay.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px 24px;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      z-index: 2147483647;
+      max-width: 400px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      animation: slideInRight 0.4s ease-out;
+    `;
+
+    const criticalCount = changes.criticalChanges?.length || 0;
+    const icon = criticalCount > 0 ? '⚠️' : '🔔';
+
+    overlay.innerHTML = `
+      <style>
+        @keyframes slideInRight {
+          from {
+            transform: translateX(400px);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        #ai-menu-monitor-notification h3 {
+          margin: 0 0 12px 0;
+          font-size: 18px;
+          font-weight: 600;
+        }
+        #ai-menu-monitor-notification p {
+          margin: 0 0 16px 0;
+          font-size: 14px;
+          line-height: 1.5;
+          opacity: 0.95;
+        }
+        #ai-menu-monitor-notification .btn {
+          display: inline-block;
+          background: white;
+          color: #667eea;
+          padding: 10px 20px;
+          border-radius: 6px;
+          text-decoration: none;
+          font-weight: 600;
+          font-size: 14px;
+          margin-right: 8px;
+          cursor: pointer;
+          border: none;
+          transition: transform 0.2s;
+        }
+        #ai-menu-monitor-notification .btn:hover {
+          transform: scale(1.05);
+        }
+        #ai-menu-monitor-notification .btn-secondary {
+          background: rgba(255, 255, 255, 0.2);
+          color: white;
+        }
+        #ai-menu-monitor-notification .close-btn {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          background: none;
+          border: none;
+          color: white;
+          font-size: 24px;
+          cursor: pointer;
+          opacity: 0.8;
+          line-height: 1;
+          padding: 0;
+          width: 24px;
+          height: 24px;
+        }
+        #ai-menu-monitor-notification .close-btn:hover {
+          opacity: 1;
+        }
+      </style>
+      <button class="close-btn" onclick="this.parentElement.remove()">×</button>
+      <h3>${icon} Menu Change Detected!</h3>
+      <p>${changes.changesSummary || 'Changes were detected on your menu that may affect customers with dietary restrictions.'}</p>
+      <div>
+        <a href="${getAllergyWebsiteUrl()}" target="_blank" class="btn">
+          Update Allergy Info
+        </a>
+        <button class="btn btn-secondary" onclick="this.parentElement.parentElement.remove()">
+          Dismiss
+        </button>
+      </div>
+    `;
+
+    return overlay;
+  }
+
+  /**
+   * Get URL to the allergy website editing page
+   * TODO: Update this URL to your actual website
+   */
+  function getAllergyWebsiteUrl() {
+    // Extract restaurant name or use current URL
+    const restaurantId = encodeURIComponent(window.location.hostname);
+
+    // TODO: Replace with your actual allergy website URL
+    return `https://your-allergy-website.com/update-menu?restaurant=${restaurantId}`;
+  }
+
+  /**
+   * Save snapshot to storage
+   */
+  async function saveSnapshot(snapshot) {
+    try {
+      await chrome.storage.local.set({
+        [CONFIG.STORAGE_KEY + '_' + window.location.hostname]: snapshot
+      });
+    } catch (error) {
+      console.error('[AI Menu Monitor] Failed to save snapshot:', error);
+    }
+  }
+
+  /**
+   * Get settings from storage
+   */
+  async function getSettings() {
+    try {
+      const result = await chrome.storage.local.get('settings');
+      return result.settings || { autoMonitor: false };
+    } catch (error) {
+      return { autoMonitor: false };
+    }
+  }
+
+  /**
+   * Extract page data for analysis
+   */
+  function getPageData() {
+    return {
+      html: document.documentElement.outerHTML,
+      url: window.location.href,
+      title: document.title,
+      meta: extractMetaData(),
+      timestamp: Date.now()
+    };
+  }
+
+  /**
+   * Extract useful metadata from the page
+   */
+  function extractMetaData() {
+    const meta = {
+      description: document.querySelector('meta[name="description"]')?.content || '',
+      keywords: document.querySelector('meta[name="keywords"]')?.content || '',
+      ogTitle: document.querySelector('meta[property="og:title"]')?.content || '',
+      ogDescription: document.querySelector('meta[property="og:description"]')?.content || ''
+    };
+
+    return meta;
+  }
+
+  /**
+   * Highlight changed elements on the page (optional visual feedback)
+   */
+  function highlightChangedElements(changes) {
+    if (!changes || !changes.criticalChanges) return;
+
+    injectHighlightStyles();
+
+    // Try to find and highlight changed items
+    changes.criticalChanges.forEach(change => {
+      const itemName = change.itemName;
+      if (!itemName) return;
+
+      // Find elements containing the item name
+      const elements = findElementsContainingText(itemName);
+      elements.forEach(element => {
+        element.classList.add('ai-menu-monitor__highlight');
+
+        // Add tooltip with change description
+        const tooltip = createTooltip(change);
+        element.appendChild(tooltip);
+
+        // Remove highlight after 10 seconds
+        setTimeout(() => {
+          element.classList.remove('ai-menu-monitor__highlight');
+          tooltip.remove();
+        }, 10000);
+      });
     });
   }
 
-  function cacheElementValue(element, options = {}) {
-    const targetElements = options.deep ? collectRelevantDescendants(element) : [element];
-    targetElements.forEach(target => {
-      const context = getElementContext(target);
-      elementContextMap.set(target, context);
-      if (!context.matches) return;
-      const value = getElementValue(target);
-      if (typeof value === 'string') {
-        observedTextMap.set(target, value);
-      }
-    });
-  }
+  /**
+   * Find elements containing specific text
+   */
+  function findElementsContainingText(text) {
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT,
+      null,
+      false
+    );
 
-  function collectRelevantDescendants(root) {
-    const elements = [root];
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, {
-      acceptNode(node) {
-        return NodeFilter.FILTER_ACCEPT;
-      }
-    });
+    const elements = [];
+    const searchText = text.toLowerCase();
 
-    while (walker.nextNode()) {
-      elements.push(walker.currentNode);
+    let node;
+    while (node = walker.nextNode()) {
+      if (node.textContent.toLowerCase().includes(searchText)) {
+        const element = node.parentElement;
+        if (element && !elements.includes(element)) {
+          elements.push(element);
+        }
+      }
     }
 
     return elements;
   }
 
-  function normalizeNode(node) {
-    if (!node) return null;
-    if (node.nodeType === Node.TEXT_NODE) {
-      return node.parentElement;
-    }
+  /**
+   * Create tooltip for change
+   */
+  function createTooltip(change) {
+    const tooltip = document.createElement('div');
+    tooltip.className = 'ai-menu-monitor__tooltip';
 
-    if (node.nodeType === Node.ELEMENT_NODE) {
-      return node;
-    }
+    const severityIcon = {
+      'critical': '⚠️',
+      'important': 'ℹ️',
+      'minor': '📝'
+    }[change.severity] || 'ℹ️';
 
-    return null;
+    tooltip.innerHTML = `
+      <div class="ai-menu-monitor__tooltip-header">
+        <span class="ai-menu-monitor__tooltip-icon">${severityIcon}</span>
+        <span class="ai-menu-monitor__tooltip-title">${change.type.replace('_', ' ')}</span>
+      </div>
+      <div class="ai-menu-monitor__tooltip-body">
+        ${change.description}
+      </div>
+    `;
+
+    return tooltip;
   }
 
-  function getElementValue(element) {
-    if (!element) return null;
-    if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
-      return element.value || '';
-    }
+  /**
+   * Inject CSS for highlighting
+   */
+  function injectHighlightStyles() {
+    // Check if already injected
+    if (document.getElementById('ai-menu-monitor-styles')) return;
 
-    if (element instanceof HTMLSelectElement) {
-      return Array.from(element.selectedOptions || []).map(option => option.textContent || '').join(', ');
-    }
-
-    if (element.isContentEditable) {
-      return element.textContent || '';
-    }
-
-    return (element.textContent || '').trim();
-  }
-
-  function normalizeWhitespace(value) {
-    return (value || '').replace(/\s+/g, ' ').trim();
-  }
-
-  function getElementContext(element) {
-    if (!element) return { matches: false, contextStrings: [] };
-    if (element === document.body || element === document.documentElement) {
-      return { matches: false, contextStrings: [] };
-    }
-
-    if (element.dataset && element.dataset.menuChangeIgnore === 'true') {
-      return { matches: false, contextStrings: [] };
-    }
-
-    if (typeof element.closest === 'function') {
-      const ignoredAncestor = element.closest('[data-menu-change-ignore="true"]');
-      if (ignoredAncestor && ignoredAncestor !== element) {
-        return { matches: false, contextStrings: [] };
-      }
-    }
-
-    const contextStrings = new Set();
-
-    addContextString(contextStrings, element.tagName);
-
-    const attributesToCheck = ['id', 'name', 'placeholder', 'aria-label', 'aria-description', 'title', 'data-type', 'data-section', 'data-category', 'data-name'];
-    attributesToCheck.forEach(attribute => {
-      const value = element.getAttribute && element.getAttribute(attribute);
-      addContextString(contextStrings, value);
-    });
-
-    if (element.classList && element.classList.length) {
-      element.classList.forEach(className => addContextString(contextStrings, className));
-    }
-
-    if (element.dataset) {
-      Object.values(element.dataset).forEach(value => addContextString(contextStrings, value));
-    }
-
-    if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
-      if (element.labels) {
-        Array.from(element.labels).forEach(label => addContextString(contextStrings, label && label.textContent));
-      }
-
-      addContextString(contextStrings, element.placeholder);
-    }
-
-    if (element.parentElement) {
-      addContextString(contextStrings, element.parentElement.textContent);
-    }
-
-    let ancestor = element.parentElement;
-    let depth = 0;
-    while (ancestor && depth < 3) {
-      addContextString(contextStrings, ancestor.id);
-      if (ancestor.classList) {
-        ancestor.classList.forEach(className => addContextString(contextStrings, className));
-      }
-      if (ancestor.getAttribute) {
-        ['data-section', 'data-group', 'data-block', 'aria-label'].forEach(attribute => {
-          addContextString(contextStrings, ancestor.getAttribute(attribute));
-        });
-      }
-      ancestor = ancestor.parentElement;
-      depth += 1;
-    }
-
-    const aggregated = Array.from(contextStrings);
-    const matches = aggregated.some(value => keywordRegex.test(value));
-
-    return {
-      matches,
-      contextStrings: aggregated
-    };
-  }
-
-  function addContextString(container, value) {
-    if (!value) return;
-    const normalized = String(value).trim().toLowerCase();
-    if (!normalized) return;
-    const truncated = normalized.length > 260 ? normalized.slice(0, 260) : normalized;
-    container.add(truncated);
-  }
-
-  function notifyChange({ type, element, previousValue, currentValue, context }) {
-    if (!context || !context.matches) {
-      return;
-    }
-
-    const messageKey = `${type}:${normalizeWhitespace(previousValue)}=>${normalizeWhitespace(currentValue)}`;
-    if (notifiedChanges.has(messageKey)) {
-      return;
-    }
-
-    notifiedChanges.add(messageKey);
-    setTimeout(() => notifiedChanges.delete(messageKey), NOTIFICATION_LIFETIME * 2);
-
-    highlightElement(element);
-
-    const message = buildMessage(type, previousValue, currentValue, context);
-    renderNotification(message);
-  }
-
-  function buildMessage(type, previousValue, currentValue, context) {
-    const summary = type === 'removed' ? 'Menu item removed' : 'Menu content updated';
-    const changeDetail = type === 'removed'
-      ? truncate(`Removed: ${previousValue}`)
-      : truncate(`Updated: ${previousValue || '[empty]'} → ${currentValue || '[empty]'}`);
-
-    return {
-      title: summary,
-      detail: changeDetail,
-      location: describeContext(context),
-      reminder: 'Please update the external allergen information to match this change.'
-    };
-  }
-
-  function describeContext(context) {
-    if (!context || !Array.isArray(context.contextStrings)) return '';
-
-    const interesting = context.contextStrings.find(entry => {
-      return KEYWORDS.some(keyword => entry.includes(keyword));
-    });
-
-    const fallback = context.contextStrings.find(entry => entry.trim().length > 0);
-    return truncate(interesting || fallback || '', 80);
-  }
-
-  function truncate(text, length = 160) {
-    if (!text) return '';
-    if (text.length <= length) return text;
-    return `${text.slice(0, length - 1)}…`;
-  }
-
-  function highlightElement(element) {
-    if (!element || !element.classList) return;
-    if (!document.contains(element)) return;
-
-    element.classList.add(HIGHLIGHT_CLASS);
-    setTimeout(() => {
-      element.classList.remove(HIGHLIGHT_CLASS);
-    }, NOTIFICATION_LIFETIME);
-  }
-
-  function renderNotification(content) {
-    ensureNotificationContainer();
-
-    const notification = document.createElement('div');
-    notification.className = 'menu-change-monitor__notification';
-
-    const title = document.createElement('div');
-    title.className = 'menu-change-monitor__title';
-    title.textContent = content.title;
-
-    const detail = document.createElement('div');
-    detail.className = 'menu-change-monitor__detail';
-    detail.textContent = content.detail;
-
-    const reminder = document.createElement('div');
-    reminder.className = 'menu-change-monitor__reminder';
-    reminder.textContent = content.reminder;
-
-    const dismiss = document.createElement('button');
-    dismiss.type = 'button';
-    dismiss.className = 'menu-change-monitor__dismiss';
-    dismiss.textContent = 'Dismiss';
-    dismiss.addEventListener('click', () => {
-      notification.remove();
-    });
-
-    notification.appendChild(dismiss);
-    notification.appendChild(title);
-    notification.appendChild(detail);
-    if (content.location) {
-      const location = document.createElement('div');
-      location.className = 'menu-change-monitor__context';
-      location.textContent = `Detected near: ${content.location}`;
-      notification.appendChild(location);
-    }
-    notification.appendChild(reminder);
-
-    notificationContainer.appendChild(notification);
-
-    setTimeout(() => {
-      notification.remove();
-    }, NOTIFICATION_LIFETIME);
-  }
-
-  function ensureNotificationContainer() {
-    if (notificationContainer) return;
-
-    notificationContainer = document.createElement('div');
-    notificationContainer.className = 'menu-change-monitor__container';
-    document.body.appendChild(notificationContainer);
-  }
-
-  function injectStyles() {
     const style = document.createElement('style');
+    style.id = 'ai-menu-monitor-styles';
     style.textContent = `
-      .menu-change-monitor__container {
-        position: fixed;
-        top: 16px;
-        right: 16px;
-        z-index: 2147483647;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        max-width: min(360px, 80vw);
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      }
-
-      .menu-change-monitor__notification {
-        background: rgba(18, 57, 166, 0.95);
-        color: #fff;
-        padding: 16px;
-        border-radius: 12px;
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+      .ai-menu-monitor__highlight {
         position: relative;
-        overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.25);
-        animation: menu-change-monitor__fade-in 200ms ease-out;
+        animation: ai-menu-monitor-pulse 2s ease-in-out infinite;
+        outline: 3px solid #ff6b6b;
+        outline-offset: 2px;
+        border-radius: 4px;
+        background-color: rgba(255, 107, 107, 0.1) !important;
       }
 
-      .menu-change-monitor__notification::before {
-        content: '';
+      @keyframes ai-menu-monitor-pulse {
+        0%, 100% {
+          outline-color: #ff6b6b;
+        }
+        50% {
+          outline-color: #ff8787;
+        }
+      }
+
+      .ai-menu-monitor__tooltip {
         position: absolute;
-        inset: 0;
-        background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0));
+        top: -60px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.95);
+        color: white;
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-family: system-ui, -apple-system, sans-serif;
+        z-index: 999999;
+        min-width: 200px;
+        max-width: 300px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         pointer-events: none;
       }
 
-      .menu-change-monitor__title {
-        font-weight: 700;
-        margin-bottom: 4px;
-        font-size: 15px;
+      .ai-menu-monitor__tooltip-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 6px;
+        font-weight: 600;
+        text-transform: capitalize;
       }
 
-      .menu-change-monitor__detail {
-        font-size: 13px;
-        margin-bottom: 8px;
+      .ai-menu-monitor__tooltip-icon {
+        font-size: 16px;
+      }
+
+      .ai-menu-monitor__tooltip-body {
+        font-size: 12px;
+        line-height: 1.4;
         opacity: 0.9;
       }
 
-      .menu-change-monitor__context {
-        font-size: 12px;
-        margin-bottom: 6px;
-        opacity: 0.85;
-      }
-
-      .menu-change-monitor__reminder {
-        font-size: 12px;
-        opacity: 0.85;
-      }
-
-      .menu-change-monitor__dismiss {
+      .ai-menu-monitor__tooltip::after {
+        content: '';
         position: absolute;
-        top: 8px;
-        right: 8px;
-        background: rgba(0, 0, 0, 0.25);
-        color: #fff;
-        border: none;
-        border-radius: 9999px;
-        padding: 4px 10px;
-        font-size: 11px;
-        cursor: pointer;
-      }
-
-      .menu-change-monitor__dismiss:hover {
-        background: rgba(0, 0, 0, 0.4);
-      }
-
-      .menu-change-monitor__highlight {
-        outline: 3px solid rgba(18, 57, 166, 0.65);
-        outline-offset: 2px;
-        transition: outline 120ms ease-out;
-      }
-
-      @keyframes menu-change-monitor__fade-in {
-        from {
-          opacity: 0;
-          transform: translateY(-8px);
-        }
-
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+        bottom: -6px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-top: 6px solid rgba(0, 0, 0, 0.95);
       }
     `;
 
     document.head.appendChild(style);
   }
 
-  if (typeof window !== 'undefined') {
-    window.__MENU_CHANGE_MONITOR_TEST_HOOKS__ = {
-      buildMessage: (type, previousValue, currentValue, context) =>
-        buildMessage(type, previousValue, currentValue, context),
-      describeContext: context => describeContext(context),
-      truncate: (text, length) => truncate(text, length),
-      normalizeWhitespace: value => normalizeWhitespace(value),
-      keywordRegex
-    };
-  }
+  // Signal that content script is ready
+  console.log('[AI Menu Monitor] Content script loaded');
 })();

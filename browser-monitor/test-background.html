@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Background Script</title>
+</head>
+<body>
+  <h1>Background Script Test</h1>
+  <button id="testBtn">Test Background Communication</button>
+  <pre id="output"></pre>
+  
+  <script>
+    const output = document.getElementById('output');
+    
+    document.getElementById('testBtn').addEventListener('click', () => {
+      output.textContent = 'Sending message to background...\n';
+      
+      chrome.runtime.sendMessage({
+        type: 'ANALYZE_MENU',
+        prompt: 'Test prompt'
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          output.textContent += 'ERROR: ' + chrome.runtime.lastError.message + '\n';
+        } else {
+          output.textContent += 'SUCCESS: ' + JSON.stringify(response, null, 2) + '\n';
+        }
+      });
+    });
+  </script>
+</body>
+</html>

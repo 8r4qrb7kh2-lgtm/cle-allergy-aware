@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Direct Test</title>
+</head>
+<body>
+  <h1>Direct Background Communication Test</h1>
+  <button id="testBtn">Test Background Script</button>
+  <pre id="output"></pre>
+  
+  <script>
+    const output = document.getElementById('output');
+    
+    document.getElementById('testBtn').addEventListener('click', () => {
+      output.textContent = 'Sending ANALYZE_MENU message...\n';
+      
+      const testPrompt = 'This is a test prompt';
+      
+      chrome.runtime.sendMessage({
+        type: 'ANALYZE_MENU',
+        prompt: testPrompt
+      }, (response) => {
+        if (chrome.runtime.lastError) {
+          output.textContent += 'ERROR: ' + chrome.runtime.lastError.message + '\n';
+        } else {
+          output.textContent += 'SUCCESS!\n';
+          output.textContent += JSON.stringify(response, null, 2) + '\n';
+        }
+      });
+      
+      output.textContent += 'Message sent, waiting for response...\n';
+    });
+    
+    console.log('Test page loaded. Click button to test background communication.');
+  </script>
+</body>
+</html>

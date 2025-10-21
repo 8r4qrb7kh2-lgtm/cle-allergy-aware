@@ -1,8 +1,8 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "cd clarivore-menu-monitor && npm install --omit=dev"
+watchPatterns = ["clarivore-menu-monitor/**"]
 
 [deploy]
-startCommand = "cd clarivore-menu-monitor && npm start"
+startCommand = "node clarivore-menu-monitor/src/index.js"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10

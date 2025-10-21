@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menu Change Detected - <%= restaurantName %></title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      background-color: white;
+      border-radius: 8px;
+      padding: 30px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .header {
+      border-bottom: 3px solid #4CAF50;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+    .header.critical {
+      border-bottom-color: #f44336;
+    }
+    h1 {
+      margin: 0;
+      color: #2c3e50;
+      font-size: 24px;
+    }
+    .alert-badge {
+      display: inline-block;
+      background-color: #f44336;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-left: 10px;
+      text-transform: uppercase;
+    }
+    .restaurant-name {
+      color: #4CAF50;
+      font-weight: 600;
+    }
+    .section {
+      margin: 30px 0;
+    }
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    .section-title.added {
+      color: #4CAF50;
+      border-bottom-color: #4CAF50;
+    }
+    .section-title.removed {
+      color: #f44336;
+      border-bottom-color: #f44336;
+    }
+    .section-title.modified {
+      color: #ff9800;
+      border-bottom-color: #ff9800;
+    }
+    .item-card {
+      background-color: #f9f9f9;
+      border-left: 4px solid #4CAF50;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 4px;
+    }
+    .item-card.removed {
+      border-left-color: #f44336;
+    }
+    .item-card.modified {
+      border-left-color: #ff9800;
+    }
+    .item-card.critical {
+      background-color: #fff3e0;
+      border-left-color: #f44336;
+      border-left-width: 6px;
+    }
+    .item-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #2c3e50;
+      margin-bottom: 8px;
+    }
+    .item-description {
+      color: #555;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .item-details {
+      font-size: 13px;
+      color: #666;
+      margin: 5px 0;
+    }
+    .allergen-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 8px 0;
+    }
+    .allergen-tag {
+      background-color: #ffebee;
+      color: #c62828;
+      padding: 3px 8px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .change-detail {
+      background-color: white;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+      font-size: 13px;
+    }
+    .change-label {
+      font-weight: 600;
+      color: #555;
+    }
+    .old-value {
+      text-decoration: line-through;
+      color: #999;
+    }
+    .new-value {
+      color: #4CAF50;
+      font-weight: 500;
+    }
+    .critical-badge {
+      background-color: #f44336;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: bold;
+      margin-left: 8px;
+    }
+    .button {
+      display: inline-block;
+      background-color: #4CAF50;
+      color: white;
+      padding: 12px 24px;
+      text-decoration: none;
+      border-radius: 5px;
+      font-weight: 600;
+      margin-top: 10px;
+      transition: background-color 0.3s;
+    }
+    .button:hover {
+      background-color: #45a049;
+    }
+    .button.critical {
+      background-color: #f44336;
+    }
+    .button.critical:hover {
+      background-color: #da190b;
+    }
+    .footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #e0e0e0;
+      font-size: 12px;
+      color: #999;
+      text-align: center;
+    }
+    .summary-box {
+      background-color: #e3f2fd;
+      border-left: 4px solid #2196F3;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    .summary-box.critical {
+      background-color: #ffebee;
+      border-left-color: #f44336;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header <%= hasCriticalChanges ? 'critical' : '' %>">
+      <h1>
+        Menu Changes Detected
+        <% if (hasCriticalChanges) { %>
+          <span class="alert-badge">🚨 Urgent</span>
+        <% } %>
+      </h1>
+      <p style="margin: 10px 0 0 0; color: #666;">
+        Hi <%= managerName %>, changes were detected at <span class="restaurant-name"><%= restaurantName %></span>
+      </p>
+    </div>
+
+    <div class="summary-box <%= hasCriticalChanges ? 'critical' : '' %>">
+      <strong>Summary:</strong>
+      <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+        <% if (changes.added?.length > 0) { %>
+          <li><%= changes.added.length %> new item<%= changes.added.length > 1 ? 's' : '' %> added</li>
+        <% } %>
+        <% if (changes.removed?.length > 0) { %>
+          <li><%= changes.removed.length %> item<%= changes.removed.length > 1 ? 's' : '' %> removed</li>
+        <% } %>
+        <% if (changes.modified?.length > 0) { %>
+          <li><%= changes.modified.length %> item<%= changes.modified.length > 1 ? 's' : '' %> modified</li>
+        <% } %>
+      </ul>
+      <% if (hasCriticalChanges) { %>
+        <p style="margin-top: 10px; color: #c62828; font-weight: 600;">
+          ⚠️ This includes allergen-related changes that require immediate attention!
+        </p>
+      <% } %>
+    </div>
+
+    <!-- Added Items -->
+    <% if (changes.added?.length > 0) { %>
+      <div class="section">
+        <div class="section-title added">✨ New Items Added (<%= changes.added.length %>)</div>
+        <% editorLinks.added.forEach((link) => { %>
+          <div class="item-card">
+            <div class="item-name"><%= link.item.name %></div>
+            <% if (link.item.description) { %>
+              <div class="item-description"><%= link.item.description %></div>
+            <% } %>
+            <% if (link.item.allergens?.length > 0) { %>
+              <div class="allergen-list">
+                <% link.item.allergens.forEach((allergen) => { %>
+                  <span class="allergen-tag"><%= allergen %></span>
+                <% }) %>
+              </div>
+            <% } %>
+            <% if (link.item.price) { %>
+              <div class="item-details">Price: <%= link.item.price %></div>
+            <% } %>
+            <% if (link.item.category) { %>
+              <div class="item-details">Category: <%= link.item.category %></div>
+            <% } %>
+            <a href="<%= link.url %>" class="button">Add to Clarivore →</a>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+
+    <!-- Modified Items -->
+    <% if (changes.modified?.length > 0) { %>
+      <div class="section">
+        <div class="section-title modified">📝 Items Modified (<%= changes.modified.length %>)</div>
+        <% editorLinks.modified.forEach((link) => { %>
+          <div class="item-card modified <%= link.change.criticalChange ? 'critical' : '' %>">
+            <div class="item-name">
+              <%= link.change.name %>
+              <% if (link.change.criticalChange) { %>
+                <span class="critical-badge">CRITICAL</span>
+              <% } %>
+            </div>
+            <div class="change-detail">
+              <span class="change-label">Changed field:</span> <%= link.change.field %>
+            </div>
+            <div class="change-detail">
+              <span class="change-label">Previous:</span>
+              <span class="old-value"><%= link.change.oldValue %></span>
+            </div>
+            <div class="change-detail">
+              <span class="change-label">New:</span>
+              <span class="new-value"><%= link.change.newValue %></span>
+            </div>
+            <a href="<%= link.url %>" class="button <%= link.change.criticalChange ? 'critical' : '' %>">
+              Update in Clarivore →
+            </a>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+
+    <!-- Removed Items -->
+    <% if (changes.removed?.length > 0) { %>
+      <div class="section">
+        <div class="section-title removed">❌ Items Removed (<%= changes.removed.length %>)</div>
+        <% editorLinks.removed.forEach((link) => { %>
+          <div class="item-card removed">
+            <div class="item-name"><%= link.item.name %></div>
+            <a href="<%= link.url %>" class="button">Remove from Clarivore →</a>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+
+    <div style="margin-top: 30px; padding: 20px; background-color: #f5f5f5; border-radius: 8px;">
+      <p style="margin: 0 0 15px 0; font-weight: 600;">Quick Actions:</p>
+      <a href="<%= reviewUrl %>" class="button" style="display: block; text-align: center; margin-bottom: 10px;">
+        Review All Changes in Dashboard
+      </a>
+      <p style="margin: 15px 0 0 0; font-size: 13px; color: #666;">
+        Original menu: <a href="<%= menuUrl %>" style="color: #4CAF50;"><%= menuUrl %></a>
+      </p>
+    </div>
+
+    <div class="footer">
+      <p>This is an automated notification from Clarivore Menu Monitor.</p>
+      <p>Please review and update your allergen information to ensure customer safety.</p>
+      <p style="margin-top: 15px;">Change ID: <%= changeId %></p>
+    </div>
+  </div>
+</body>
+</html>

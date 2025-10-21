@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Menu Change Monitor</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 400px;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+    }
+
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    h1 {
+      font-size: 22px;
+      margin-bottom: 8px;
+      color: #667eea;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    .section {
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #333;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+
+    .status-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #ccc;
+    }
+
+    .status-indicator.active {
+      background: #4CAF50;
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+    }
+
+    .status-text {
+      flex: 1;
+      font-size: 14px;
+    }
+
+    .current-site {
+      font-size: 13px;
+      color: #666;
+      padding: 8px 12px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      word-break: break-all;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 8px;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #45a049;
+    }
+
+    .btn-secondary {
+      background: #667eea;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #5568d3;
+    }
+
+    .btn-danger {
+      background: #f44336;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #da190b;
+    }
+
+    .btn-outline {
+      background: white;
+      color: #667eea;
+      border: 2px solid #667eea;
+    }
+
+    .btn-outline:hover {
+      background: #667eea;
+      color: white;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 8px;
+      transition: border-color 0.2s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      margin-bottom: 6px;
+      display: block;
+    }
+
+    .help-text {
+      font-size: 11px;
+      color: #999;
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    .history-item {
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      font-size: 12px;
+    }
+
+    .history-domain {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .history-time {
+      color: #999;
+      font-size: 11px;
+    }
+
+    .no-history {
+      text-align: center;
+      color: #999;
+      font-size: 13px;
+      padding: 20px;
+    }
+
+    .settings-saved {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: #4CAF50;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .settings-saved.show {
+      opacity: 1;
+    }
+
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .toggle-label {
+      font-size: 14px;
+      color: #333;
+    }
+
+    .toggle {
+      position: relative;
+      width: 50px;
+      height: 26px;
+      background: #ccc;
+      border-radius: 13px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .toggle.active {
+      background: #4CAF50;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.3s;
+    }
+
+    .toggle.active .toggle-slider {
+      transform: translateX(24px);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>
+      <span>🍽️</span>
+      Menu Monitor
+    </h1>
+    <p class="subtitle">Detect menu changes for dietary safety</p>
+
+    <div class="section">
+      <div class="section-title">Current Page</div>
+      <div class="current-site" id="currentSite">Loading...</div>
+
+      <div class="toggle-container">
+        <span class="toggle-label">Monitor this website</span>
+        <div class="toggle" id="monitorToggle">
+          <div class="toggle-slider"></div>
+        </div>
+      </div>
+
+      <button class="btn-secondary" id="testNowBtn">Test Detection Now</button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Configuration</div>
+
+      <label class="label" for="apiKeyInput">Claude API Key</label>
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-...">
+      <p class="help-text">Get your API key from console.anthropic.com</p>
+
+      <label class="label" for="websiteUrlInput">Your Allergy Website URL</label>
+      <input type="text" id="websiteUrlInput" placeholder="https://your-site.com/edit">
+      <p class="help-text">Where managers should update menu info</p>
+
+      <button class="btn-primary" id="saveSettingsBtn">Save Settings</button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Recent Changes</div>
+      <div id="historyContainer">
+        <div class="no-history">No changes detected yet</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <button class="btn-outline" id="clearDataBtn">Clear All Data</button>
+    </div>
+  </div>
+
+  <div class="settings-saved" id="settingsSaved">Settings saved!</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

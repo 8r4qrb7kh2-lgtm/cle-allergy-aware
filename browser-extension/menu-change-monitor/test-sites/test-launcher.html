@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Menu Monitor - Test Launcher</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 42px;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 18px;
+            margin-bottom: 40px;
+        }
+        .status {
+            background: #f0f9ff;
+            border-left: 4px solid #0ea5e9;
+            padding: 16px;
+            margin-bottom: 30px;
+            border-radius: 4px;
+        }
+        .status.success {
+            background: #f0fdf4;
+            border-left-color: #10b981;
+        }
+        .status.warning {
+            background: #fffbeb;
+            border-left-color: #f59e0b;
+        }
+        .test-section {
+            margin: 30px 0;
+            padding: 24px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .test-section h2 {
+            margin-top: 0;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .platform-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-wordpress {
+            background: #0073aa;
+            color: white;
+        }
+        .badge-wix {
+            background: #0c6efd;
+            color: white;
+        }
+        .badge-godaddy {
+            background: #ff6b35;
+            color: white;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin-right: 12px;
+            margin-top: 12px;
+            cursor: pointer;
+            border: none;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .test-info {
+            background: white;
+            padding: 16px;
+            border-radius: 6px;
+            margin-top: 16px;
+            border: 1px solid #e0e0e0;
+        }
+        .test-info p {
+            margin: 8px 0;
+            color: #666;
+            font-size: 14px;
+        }
+        .test-info code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+            color: #e83e8c;
+        }
+        .checklist {
+            margin-top: 20px;
+        }
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px;
+            margin: 4px 0;
+        }
+        .checklist-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        .instructions {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #ffc107;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .instructions ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin: 8px 0;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI Menu Monitor Test Launcher</h1>
+        <p class="subtitle">Comprehensive testing for universal restaurant menu change detection</p>
+
+        <div id="extensionStatus" class="status warning">
+            <strong>⚠️ Extension Status:</strong> Checking...
+        </div>
+
+        <div class="instructions">
+            <h3>📋 Before You Start Testing</h3>
+            <ol>
+                <li><strong>Install the extension:</strong> Go to <code>chrome://extensions/</code>, enable Developer Mode, click "Load unpacked", select the extension folder</li>
+                <li><strong>Verify Demo Mode:</strong> Extension should have <code>DEMO_MODE = true</code> in background.js (default)</li>
+                <li><strong>Open Extension Popup:</strong> Click the extension icon in Chrome toolbar</li>
+                <li><strong>Start Monitoring:</strong> On each test site, click "Start Monitoring" and enter the restaurant name</li>
+                <li><strong>Make Changes:</strong> Use the editor buttons on each test page to simulate menu changes</li>
+                <li><strong>Watch for Notifications:</strong> Popup should appear in top-right within 2-3 seconds of changes</li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h2>
+                <span class="platform-badge badge-wordpress">WordPress</span>
+                Test 1: WordPress Block Editor Style
+            </h2>
+            <p>Tests menu detection on WordPress block-based themes (Twenty Twenty-Three, Kadence, etc.)</p>
+            <div>
+                <a href="wordpress-style.html" target="_blank" class="btn">🚀 Launch WordPress Test</a>
+                <button class="btn btn-secondary" onclick="runAutoTest('wordpress')">🤖 Run Auto Test</button>
+            </div>
+            <div class="test-info">
+                <p><strong>Restaurant:</strong> Luigi's Trattoria</p>
+                <p><strong>Menu Items:</strong> Italian cuisine with pasta, seafood, and vegetarian options</p>
+                <p><strong>Test Actions:</strong></p>
+                <ul>
+                    <li>Add new dish (Lasagna)</li>
+                    <li>Remove last dish</li>
+                    <li>Change allergen information</li>
+                    <li>Edit item description</li>
+                </ul>
+            </div>
+            <div class="checklist">
+                <div class="checklist-item">
+                    <input type="checkbox" id="wp-open">
+                    <label for="wp-open">Opened WordPress test site</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="wp-monitor">
+                    <label for="wp-monitor">Started monitoring</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="wp-add">
+                    <label for="wp-add">Tested adding dish - notification appeared</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="wp-allergen">
+                    <label for="wp-allergen">Tested allergen change - CRITICAL notification</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="wp-edit">
+                    <label for="wp-edit">Tested description edit - notification appeared</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>
+                <span class="platform-badge badge-wix">Wix</span>
+                Test 2: Wix Website Builder Style
+            </h2>
+            <p>Tests menu detection on Wix drag-and-drop builder layouts</p>
+            <div>
+                <a href="wix-style.html" target="_blank" class="btn">🚀 Launch Wix Test</a>
+                <button class="btn btn-secondary" onclick="runAutoTest('wix')">🤖 Run Auto Test</button>
+            </div>
+            <div class="test-info">
+                <p><strong>Restaurant:</strong> The Coastal Grill</p>
+                <p><strong>Menu Items:</strong> Seafood specialties, fresh catch, signature dishes</p>
+                <p><strong>Test Actions:</strong></p>
+                <ul>
+                    <li>Add menu item (Blackened Mahi Mahi)</li>
+                    <li>Remove menu item</li>
+                    <li>Update allergen badges</li>
+                    <li>Change price (should NOT trigger - price-only change)</li>
+                </ul>
+            </div>
+            <div class="checklist">
+                <div class="checklist-item">
+                    <input type="checkbox" id="wix-open">
+                    <label for="wix-open">Opened Wix test site</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="wix-monitor">
+                    <label for="wix-monitor">Started monitoring</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="wix-add">
+                    <label for="wix-add">Tested adding item - notification appeared</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="wix-allergen">
+                    <label for="wix-allergen">Tested allergen update - notification appeared</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="wix-price">
+                    <label for="wix-price">Tested price change - NO notification (correct!)</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>
+                <span class="platform-badge badge-godaddy">GoDaddy</span>
+                Test 3: GoDaddy Website Builder Style
+            </h2>
+            <p>Tests menu detection on GoDaddy template-based websites</p>
+            <div>
+                <a href="godaddy-style.html" target="_blank" class="btn">🚀 Launch GoDaddy Test</a>
+                <button class="btn btn-secondary" onclick="runAutoTest('godaddy')">🤖 Run Auto Test</button>
+            </div>
+            <div class="test-info">
+                <p><strong>Restaurant:</strong> Maria's Mexican Kitchen</p>
+                <p><strong>Menu Items:</strong> Mexican cuisine with tacos, enchiladas, and traditional dishes</p>
+                <p><strong>Test Actions:</strong></p>
+                <ul>
+                    <li>Add item (Fish Tacos)</li>
+                    <li>Remove item</li>
+                    <li>Change allergen tag</li>
+                    <li>Edit description text</li>
+                </ul>
+            </div>
+            <div class="checklist">
+                <div class="checklist-item">
+                    <input type="checkbox" id="gd-open">
+                    <label for="gd-open">Opened GoDaddy test site</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="gd-monitor">
+                    <label for="gd-monitor">Started monitoring</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="gd-add">
+                    <label for="gd-add">Tested adding item - notification appeared</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="gd-allergen">
+                    <label for="gd-allergen">Tested allergen change - notification appeared</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="gd-edit">
+                    <label for="gd-edit">Tested text edit - notification appeared</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🎯 Final Validation</h2>
+            <div class="checklist">
+                <div class="checklist-item">
+                    <input type="checkbox" id="final-all-platforms">
+                    <label for="final-all-platforms">All 3 platforms detect changes successfully</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="final-no-code-changes">
+                    <label for="final-no-code-changes">No extension code changes needed between platforms</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="final-notifications">
+                    <label for="final-notifications">Notifications appear within 2-3 seconds</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="final-link">
+                    <label for="final-link">Notification link to allergy website works</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="final-history">
+                    <label for="final-history">Changes logged in extension history</label>
+                </div>
+                <div class="checklist-item">
+                    <input type="checkbox" id="final-no-errors">
+                    <label for="final-no-errors">No JavaScript errors in console</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="status success" id="completionStatus" style="display: none;">
+            <strong>✅ All Tests Complete!</strong> The extension is working correctly and is ready for deployment.
+        </div>
+
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+            <h3>📚 Additional Resources</h3>
+            <ul>
+                <li><a href="../COMPREHENSIVE_TEST_GUIDE.md">Comprehensive Test Guide</a> - Detailed testing instructions</li>
+                <li><a href="../README.md">README</a> - Extension overview and features</li>
+                <li><a href="../DEMO_MODE_GUIDE.md">Demo Mode Guide</a> - Testing without API key</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Check extension status
+        async function checkExtensionStatus() {
+            const statusDiv = document.getElementById('extensionStatus');
+            try {
+                // Try to detect if extension is installed
+                // This is a simplified check - in real scenario you'd use extension messaging
+                statusDiv.innerHTML = '<strong>✅ Extension Status:</strong> Please verify extension is installed at <code>chrome://extensions/</code>';
+                statusDiv.className = 'status success';
+            } catch (error) {
+                statusDiv.innerHTML = '<strong>❌ Extension Status:</strong> Extension not detected. Please install it first.';
+                statusDiv.className = 'status warning';
+            }
+        }
+
+        // Auto-test runner (simulated)
+        function runAutoTest(platform) {
+            alert(`Auto-test for ${platform}:\n\n1. Opening test page...\n2. Please manually click "Start Monitoring" in extension\n3. Then click the test buttons on the page\n4. Verify notifications appear\n\nThis helps validate the extension works correctly!`);
+            window.open(`${platform}-style.html`, '_blank');
+        }
+
+        // Check completion
+        function checkCompletion() {
+            const allCheckboxes = document.querySelectorAll('input[type="checkbox"]');
+            const checkedBoxes = document.querySelectorAll('input[type="checkbox"]:checked');
+
+            if (checkedBoxes.length === allCheckboxes.length) {
+                document.getElementById('completionStatus').style.display = 'block';
+            }
+        }
+
+        // Add listeners to all checkboxes
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', checkCompletion);
+        });
+
+        // Initialize
+        window.addEventListener('DOMContentLoaded', () => {
+            checkExtensionStatus();
+        });
+    </script>
+</body>
+</html>

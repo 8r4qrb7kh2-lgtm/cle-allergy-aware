@@ -1,39 +1,35 @@
 {
   "manifest_version": 3,
-  "name": "AI Menu Change Monitor",
-  "description": "Uses Claude AI to intelligently detect menu changes on any restaurant website and identify dietary/allergen impacts.",
-  "version": "2.0.0",
+  "name": "Menu Change Monitor",
+  "version": "1.0.0",
+  "description": "Detects menu changes on restaurant websites and prompts managers to update allergy information",
   "permissions": [
     "storage",
     "activeTab",
-    "tabs",
     "scripting",
-    "notifications",
-    "alarms"
+    "notifications"
   ],
   "host_permissions": [
     "<all_urls>"
   ],
   "background": {
-    "service_worker": "background.js",
-    "type": "module"
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["contentScript.js"],
+      "js": ["content.js"],
       "run_at": "document_idle"
     }
   ],
   "action": {
-    "default_popup": "popup/popup.html",
+    "default_popup": "popup.html",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     }
   },
-  "options_page": "options/options.html",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",

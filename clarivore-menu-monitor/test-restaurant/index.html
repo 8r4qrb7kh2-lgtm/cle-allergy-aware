@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Coastal Kitchen - Fresh Seafood & More</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.2em;
+            font-style: italic;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        .hero {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 40px;
+            text-align: center;
+        }
+
+        .hero h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .menu-section {
+            background: white;
+            padding: 30px;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .menu-section h2 {
+            color: #667eea;
+            font-size: 2em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .menu-item {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            transition: transform 0.2s;
+        }
+
+        .menu-item:hover {
+            transform: translateX(5px);
+            background: #e9ecef;
+        }
+
+        .menu-item h3 {
+            font-size: 1.4em;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .menu-item .price {
+            color: #667eea;
+            font-weight: bold;
+            font-size: 1.2em;
+            float: right;
+        }
+
+        .menu-item .description {
+            color: #555;
+            margin-bottom: 10px;
+            clear: both;
+        }
+
+        .allergen-info {
+            display: inline-flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .allergen-tag {
+            background: #fff3cd;
+            color: #856404;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 600;
+            border: 1px solid #ffc107;
+        }
+
+        .allergen-tag.critical {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .dietary-tag {
+            background: #d4edda;
+            color: #155724;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: 600;
+            border: 1px solid #c3e6cb;
+        }
+
+        footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+            margin-top: 50px;
+        }
+
+        .hours {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .hours h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🌊 The Coastal Kitchen</h1>
+        <p>Fresh Seafood, Sustainable Sourcing, Coastal Vibes</p>
+    </header>
+
+    <div class="container">
+        <div class="hero">
+            <h2>Welcome to The Coastal Kitchen</h2>
+            <p>Experience the finest coastal cuisine with locally-sourced ingredients and ocean-fresh seafood. Our menu changes with the seasons to bring you the best flavors year-round.</p>
+            <div class="hours">
+                <h3>Hours</h3>
+                <p>Monday - Thursday: 11:30 AM - 9:00 PM</p>
+                <p>Friday - Saturday: 11:30 AM - 10:00 PM</p>
+                <p>Sunday: 12:00 PM - 8:00 PM</p>
+            </div>
+        </div>
+
+        <!-- Appetizers Section -->
+        <div class="menu-section">
+            <h2>🥗 Appetizers</h2>
+
+            <div class="menu-item">
+                <h3>Crispy Calamari</h3>
+                <span class="price">$14.99</span>
+                <p class="description">Lightly battered squid rings served with marinara sauce and lemon aioli</p>
+                <div class="allergen-info">
+                    <span class="allergen-tag critical">Contains: Gluten</span>
+                    <span class="allergen-tag critical">Contains: Shellfish</span>
+                    <span class="allergen-tag">Contains: Eggs</span>
+                </div>
+            </div>
+
+            <div class="menu-item">
+                <h3>Shrimp Cocktail</h3>
+                <span class="price">$16.99</span>
+                <p class="description">Jumbo gulf shrimp served chilled with cocktail sauce and horseradish</p>
+                <div class="allergen-info">
+                    <span class="allergen-tag critical">Contains: Shellfish</span>
+                    <span class="dietary-tag">Gluten-Free</span>
+                </div>
+            </div>
+
+            <div class="menu-item">
+                <h3>Caprese Salad</h3>
+                <span class="price">$12.99</span>
+                <p class="description">Fresh mozzarella, heirloom tomatoes, basil, balsamic reduction</p>
+                <div class="allergen-info">
+                    <span class="allergen-tag">Contains: Dairy</span>
+                    <span class="dietary-tag">Vegetarian</span>
+                    <span class="dietary-tag">Gluten-Free</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Courses Section -->
+        <div class="menu-section">
+            <h2>🍽️ Main Courses</h2>
+
+            <div class="menu-item">
+                <h3>Grilled Atlantic Salmon</h3>
+                <span class="price">$28.99</span>
+                <p class="description">Fresh Atlantic salmon with lemon butter, served with roasted vegetables and wild rice</p>
+                <div class="allergen-info">
+                    <span class="allergen-tag critical">Contains: Fish</span>
+                    <span class="allergen-tag">Contains: Dairy</span>
+                    <span class="dietary-tag">Gluten-Free</span>
+                </div>
+            </div>
+
+            <div class="menu-item">
+                <h3>Lobster Linguine with cheddar dressing</h3>
+                <span class="price">$34.99</span>
+                <p class="description">Fresh Maine lobster, garlic cream sauce, cherry tomatoes, fresh basil</p>
+                <div class="allergen-info">
+                    <span class="allergen-tag critical">Contains: Shellfish</span>
+                    <span class="allergen-tag critical">Contains: Gluten</span>
+                    <span class="allergen-tag">Contains: Dairy</span>
+                </div>
+            </div>
+
+            <div class="menu-item">
+                <h3>Seared Scallops</h3>
+                <span class="price">$32.99</span>
+                <p class="description">Pan-seared sea scallops with cauliflower and almond puree, crispy pancetta, microgreens</p>
+                <div class="allergen-info">
+                    <span class="allergen-tag critical">Contains: Shellfish</span>
+                    <span class="dietary-tag">Gluten-Free</span>
+                </div>
+            </div>
+
+            <div class="menu-item">
+                <h3>Ribeye Steak (12oz)</h3>
+                <span class="price">$38.99</span>
+                <p class="description">Prime ribeye with garlic herb butter, roasted potatoes, seasonal vegetables</p>
+                <div class="allergen-info">
+                    <span class="allergen-tag">Contains: Dairy</span>
+                    <span class="dietary-tag">Gluten-Free</span>
+                </div>
+            </div>
+
+            <div class="menu-item">
+                <h3>Vegetable Risotto</h3>
+                <span class="price">$22.99</span>
+                <p class="description">Creamy arborio rice with seasonal vegetables, peanut dressing, parmesan, truffle oil</p>
+                <div class="allergen-info">
+                    <span class="allergen-tag">Contains: Dairy</span>
+                    <span class="dietary-tag">Vegetarian</span>
+                    <span class="dietary-tag">Gluten-Free</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Desserts Section -->
+        <div class="menu-section">
+            <h2>🍰 Desserts</h2>
+
+            <div class="menu-item">
+                <h3>Key Lime Pie</h3>
+                <span class="price">$8.99</span>
+                <p class="description">Classic Florida key lime pie with graham cracker crust and whipped cream</p>
+                <div class="allergen-info">
+                    <span class="allergen-tag">Contains: Dairy</span>
+                    <span class="allergen-tag">Contains: Gluten</span>
+                    <span class="allergen-tag">Contains: Eggs</span>
+                    <span class="dietary-tag">Vegetarian</span>
+                </div>
+            </div>
+
+            <div class="menu-item">
+                <h3>Chocolate hazelnut Lava Cake</h3>
+                <span class="price">$9.99</span>
+                <p class="description">Warm chocolate cake with molten center, vanilla ice cream, raspberry coulis</p>
+                <div class="allergen-info">
+                    <span class="allergen-tag">Contains: Dairy</span>
+                    <span class="allergen-tag">Contains: Gluten</span>
+                    <span class="allergen-tag">Contains: Eggs</span>
+                    <span class="dietary-tag">Vegetarian</span>
+                </div>
+            </div>
+
+            <div class="menu-item">
+                <h3>Seasonal Sorbet Trio</h3>
+                <span class="price">$7.99</span>
+                <p class="description">Three flavors of house-made sorbet: mango, raspberry, and lemon</p>
+                <div class="allergen-info">
+                    <span class="dietary-tag">Vegan</span>
+                    <span class="dietary-tag">Gluten-Free</span>
+                    <span class="dietary-tag">Dairy-Free</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Beverages Section -->
+        <div class="menu-section">
+            <h2>🍹 Beverages</h2>
+
+            <div class="menu-item">
+                <h3>Coastal Breeze</h3>
+                <span class="price">$12.00</span>
+                <p class="description">Vodka, cranberry, grapefruit, lime, fresh mint</p>
+            </div>
+
+            <div class="menu-item">
+                <h3>House Wine Selection</h3>
+                <span class="price">$9.00 - $14.00</span>
+                <p class="description">Ask your server for our rotating selection of white, red, and rosé wines</p>
+                <div class="allergen-info">
+                    <span class="allergen-tag">May contain: Sulfites</span>
+                </div>
+            </div>
+
+            <div class="menu-item">
+                <h3>Fresh Squeezed Lemonade</h3>
+                <span class="price">$4.99</span>
+                <p class="description">House-made with organic lemons and cane sugar</p>
+                <div class="allergen-info">
+                    <span class="dietary-tag">Vegan</span>
+                    <span class="dietary-tag">Gluten-Free</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 The Coastal Kitchen | 123 Ocean Boulevard, Seaside, CA 90210</p>
+        <p>Phone: (555) 123-4567 | Email: info@coastalkitchen.com</p>
+        <p style="margin-top: 15px; font-size: 0.9em;">
+            Please inform your server of any food allergies or dietary restrictions.<br>
+            We take allergen safety seriously and can accommodate most dietary needs.
+        </p>
+    </footer>
+</body>
+</html>

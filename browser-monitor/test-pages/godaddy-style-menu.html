@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bella's Italian Restaurant - Menu | GoDaddy Style</title>
+  <style>
+    /* GoDaddy-style websites often use basic templates with simple layouts */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Open Sans', Arial, sans-serif;
+      background-color: #f4f4f4;
+      color: #333;
+    }
+
+    header {
+      background-color: #8B0000;
+      color: white;
+      padding: 30px 0;
+      text-align: center;
+    }
+
+    header h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+
+    nav {
+      background-color: #333;
+      padding: 15px 0;
+    }
+
+    nav ul {
+      list-style: none;
+      text-align: center;
+    }
+
+    nav ul li {
+      display: inline-block;
+      margin: 0 20px;
+    }
+
+    nav ul li a {
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 40px auto;
+      background: white;
+      padding: 40px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .menu-section {
+      margin-bottom: 50px;
+    }
+
+    .menu-section h2 {
+      color: #8B0000;
+      border-bottom: 3px solid #8B0000;
+      padding-bottom: 10px;
+      margin-bottom: 25px;
+      font-size: 2em;
+    }
+
+    .menu-item {
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .menu-item:last-child {
+      border-bottom: none;
+    }
+
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 10px;
+    }
+
+    .item-name {
+      font-size: 1.3em;
+      font-weight: 700;
+      color: #222;
+    }
+
+    .item-price {
+      font-size: 1.2em;
+      font-weight: 600;
+      color: #8B0000;
+    }
+
+    .item-description {
+      color: #666;
+      line-height: 1.6;
+      font-size: 0.95em;
+    }
+
+    footer {
+      background-color: #333;
+      color: white;
+      text-align: center;
+      padding: 20px;
+      margin-top: 50px;
+    }
+
+    .test-controls {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #fff;
+      border: 2px solid #333;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 10000;
+    }
+
+    .test-controls h3 {
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+
+    .test-controls button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: #8B0000;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .test-controls button:hover {
+      background: #660000;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Bella's Italian Restaurant</h1>
+    <p>Authentic Italian Cuisine Since 1985</p>
+  </header>
+
+  <nav>
+    <ul>
+      <li><a href="#home">Home</a></li>
+      <li><a href="#menu">Menu</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+
+  <div class="container" id="mainContent">
+    <div class="menu-section" id="appetizers">
+      <h2>Appetizers</h2>
+
+      <div class="menu-item" data-item-id="app-1">
+        <div class="item-header">
+          <span class="item-name">Bruschetta</span>
+          <span class="item-price">$8.95</span>
+        </div>
+        <p class="item-description">
+          Toasted bread topped with fresh tomatoes, garlic, basil, and olive oil
+        </p>
+      </div>
+
+      <div class="menu-item" data-item-id="app-2">
+        <div class="item-header">
+          <span class="item-name">Calamari Fritti</span>
+          <span class="item-price">$12.95</span>
+        </div>
+        <p class="item-description">
+          Lightly breaded and fried squid served with marinara sauce. Contains gluten.
+        </p>
+      </div>
+
+      <div class="menu-item" data-item-id="app-3">
+        <div class="item-header">
+          <span class="item-name">Caprese Salad</span>
+          <span class="item-price">$10.95</span>
+        </div>
+        <p class="item-description">
+          Fresh mozzarella, tomatoes, and basil drizzled with balsamic glaze. Contains dairy.
+        </p>
+      </div>
+    </div>
+
+    <div class="menu-section" id="pasta">
+      <h2>Pasta Dishes</h2>
+
+      <div class="menu-item" data-item-id="pasta-1">
+        <div class="item-header">
+          <span class="item-name">Spaghetti Carbonara</span>
+          <span class="item-price">$16.95</span>
+        </div>
+        <p class="item-description">
+          Classic Roman pasta with eggs, pecorino cheese, pancetta, and black pepper. Contains gluten, dairy, and eggs.
+        </p>
+      </div>
+
+      <div class="menu-item" data-item-id="pasta-2">
+        <div class="item-header">
+          <span class="item-name">Fettuccine Alfredo</span>
+          <span class="item-price">$15.95</span>
+        </div>
+        <p class="item-description">
+          Creamy parmesan sauce over fettuccine pasta. Contains gluten and dairy.
+        </p>
+      </div>
+
+      <div class="menu-item" data-item-id="pasta-3">
+        <div class="item-header">
+          <span class="item-name">Penne Arrabbiata</span>
+          <span class="item-price">$14.95</span>
+        </div>
+        <p class="item-description">
+          Spicy tomato sauce with garlic and red chili peppers. Contains gluten.
+        </p>
+      </div>
+    </div>
+
+    <div class="menu-section" id="main">
+      <h2>Main Courses</h2>
+
+      <div class="menu-item" data-item-id="main-1">
+        <div class="item-header">
+          <span class="item-name">Chicken Parmigiana</span>
+          <span class="item-price">$18.95</span>
+        </div>
+        <p class="item-description">
+          Breaded chicken breast topped with marinara and mozzarella, served with spaghetti. Contains gluten and dairy.
+        </p>
+      </div>
+
+      <div class="menu-item" data-item-id="main-2">
+        <div class="item-header">
+          <span class="item-name">Osso Buco</span>
+          <span class="item-price">$26.95</span>
+        </div>
+        <p class="item-description">
+          Braised veal shanks in white wine and vegetable sauce, served with risotto. Contains dairy.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2024 Bella's Italian Restaurant. All rights reserved.</p>
+  </footer>
+
+  <!-- Test Controls -->
+  <div class="test-controls">
+    <h3>Test Menu Changes</h3>
+    <button onclick="addNewItem()">Add New Dish</button>
+    <button onclick="removeItem()">Remove Item</button>
+    <button onclick="modifyDescription()">Modify Description</button>
+    <button onclick="changePrice()">Change Price</button>
+    <button onclick="resetMenu()">Reset Menu</button>
+  </div>
+
+  <script>
+    // Test functions to simulate menu changes
+    let changeCounter = 0;
+    let originalContent = null;
+
+    // Save original content
+    window.addEventListener('DOMContentLoaded', () => {
+      originalContent = document.getElementById('mainContent').innerHTML;
+    });
+
+    function addNewItem() {
+      changeCounter++;
+      const pastaSection = document.getElementById('pasta');
+      const newItem = document.createElement('div');
+      newItem.className = 'menu-item';
+      newItem.setAttribute('data-item-id', `pasta-new-${changeCounter}`);
+      newItem.innerHTML = `
+        <div class="item-header">
+          <span class="item-name">Linguine alle Vongole (NEW!)</span>
+          <span class="item-price">$19.95</span>
+        </div>
+        <p class="item-description">
+          Fresh clams with white wine, garlic, and parsley over linguine. Contains shellfish and gluten.
+        </p>
+      `;
+      pastaSection.appendChild(newItem);
+      console.log('Added new menu item');
+    }
+
+    function removeItem() {
+      const items = document.querySelectorAll('.menu-item');
+      if (items.length > 0) {
+        items[items.length - 1].remove();
+        console.log('Removed menu item');
+      }
+    }
+
+    function modifyDescription() {
+      const item = document.querySelector('[data-item-id="pasta-1"] .item-description');
+      if (item) {
+        item.textContent = 'Classic Roman pasta with eggs, pecorino cheese, pancetta, and black pepper. NOW CONTAINS NUTS! Contains gluten, dairy, eggs, and tree nuts.';
+        console.log('Modified description - ADDED ALLERGEN WARNING');
+      }
+    }
+
+    function changePrice() {
+      const price = document.querySelector('[data-item-id="pasta-2"] .item-price');
+      if (price) {
+        price.textContent = '$17.95';
+        console.log('Changed price');
+      }
+    }
+
+    function resetMenu() {
+      if (originalContent) {
+        document.getElementById('mainContent').innerHTML = originalContent;
+        console.log('Menu reset to original state');
+      }
+    }
+  </script>
+</body>
+</html>

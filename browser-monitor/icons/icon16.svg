@@ -1,0 +1,15 @@
+<svg width="16" height="16" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad16" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="16" height="16" fill="url(#grad16)" rx="3.2"/>
+  <circle cx="8" cy="8" r="5.333333333333333" fill="none" stroke="white" stroke-width="0.8"/>
+  <line x1="5.714285714285714" y1="4.444444444444445" x2="5.714285714285714" y2="8.88888888888889" stroke="white" stroke-width="0.5333333333333333"/>
+  <line x1="5" y1="4.444444444444445" x2="5" y2="5.714285714285714" stroke="white" stroke-width="0.4"/>
+  <line x1="6.4" y1="4.444444444444445" x2="6.4" y2="5.714285714285714" stroke="white" stroke-width="0.4"/>
+  <line x1="10.666666666666666" y1="4.444444444444445" x2="10.666666666666666" y2="8.88888888888889" stroke="white" stroke-width="0.5333333333333333"/>
+  <path d="M 9.411764705882353 4.444444444444445 L 11.428571428571429 4.444444444444445 L 10.666666666666666 5.714285714285714 Z" fill="white"/>
+</svg>

@@ -158,6 +158,8 @@ function createTestContext() {
     HTMLSelectElement,
     setTimeout,
     clearTimeout,
+    setInterval,
+    clearInterval,
     console
   };
 
@@ -171,6 +173,8 @@ function createTestContext() {
   context.window.HTMLSelectElement = HTMLSelectElement;
   context.window.setTimeout = setTimeout;
   context.window.clearTimeout = clearTimeout;
+  context.window.setInterval = setInterval;
+  context.window.clearInterval = clearInterval;
   context.document = document;
 
   return context;

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Menu Monitor - Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>🤖 AI Menu Monitor Settings</h1>
+      <p>Configure your intelligent menu change detection</p>
+    </header>
+
+    <main class="main">
+      <section class="section">
+        <h2 class="section-title">🔑 API Configuration</h2>
+        <div class="form-group">
+          <label for="apiKey">Claude API Key</label>
+          <input
+            type="password"
+            id="apiKey"
+            placeholder="sk-ant-..."
+            class="input"
+          />
+          <p class="help-text">
+            Get your API key from
+            <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a>
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label for="model">AI Model</label>
+          <select id="model" class="select">
+            <option value="claude-sonnet-4-5">Claude Sonnet 4.5 (Recommended - Latest & Best)</option>
+            <option value="claude-opus-4-20250514">Claude Opus 4 (Highest accuracy, more expensive)</option>
+            <option value="claude-3-haiku-20240307">Claude 3 Haiku (Fastest, cheapest)</option>
+          </select>
+          <p class="help-text">
+            Claude Sonnet 4.5 is the latest model with best performance for menu analysis
+          </p>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">⚙️ Monitoring Settings</h2>
+
+        <div class="form-group">
+          <label for="checkFrequency">Check Frequency</label>
+          <select id="checkFrequency" class="select">
+            <option value="manual">Manual only</option>
+            <option value="hourly">Every hour</option>
+            <option value="daily">Daily (Recommended)</option>
+            <option value="weekly">Weekly</option>
+          </select>
+          <p class="help-text">
+            How often to automatically check monitored sites for changes
+          </p>
+        </div>
+
+        <div class="form-group">
+          <label for="sensitivity">Change Detection Sensitivity</label>
+          <select id="sensitivity" class="select">
+            <option value="low">Low - Only critical allergen changes</option>
+            <option value="medium">Medium - Recommended</option>
+            <option value="high">High - All menu modifications</option>
+          </select>
+        </div>
+
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="notifyOnChange" />
+            <span>Send notifications when changes detected</span>
+          </label>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">🔍 Analysis Options</h2>
+
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="useVisualAnalysis" />
+            <span>Use visual (screenshot) analysis</span>
+          </label>
+          <p class="help-text">
+            Analyzes page screenshots - better for image-based menus, uses more API credits
+          </p>
+        </div>
+
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="useHtmlAnalysis" />
+            <span>Use HTML content analysis</span>
+          </label>
+          <p class="help-text">
+            Analyzes page HTML - faster and cheaper, works for most sites
+          </p>
+        </div>
+
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="cacheResults" />
+            <span>Cache analysis results</span>
+          </label>
+          <p class="help-text">
+            Reduces API costs by caching results for 24 hours
+          </p>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">💰 Cost Optimization</h2>
+        <div class="info-box">
+          <h3>Estimated API Costs</h3>
+          <p id="costEstimate" class="cost-estimate">
+            Configure settings to see cost estimate
+          </p>
+          <p class="help-text" style="margin-top: 12px;">
+            Costs vary based on page complexity and analysis frequency.
+            <br>
+            <strong>Tip:</strong> Use HTML-only analysis and daily checks to minimize costs.
+          </p>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">📊 Usage Stats</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="sitesMonitored">0</div>
+            <div class="stat-label">Sites Monitored</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="changesDetected">0</div>
+            <div class="stat-label">Changes Detected</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="lastCheck">Never</div>
+            <div class="stat-label">Last Check</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">🗑️ Data Management</h2>
+        <div class="button-group">
+          <button id="clearCache" class="btn btn-secondary">Clear Cache</button>
+          <button id="clearHistory" class="btn btn-secondary">Clear History</button>
+          <button id="resetSettings" class="btn btn-danger">Reset All Settings</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <button id="saveBtn" class="btn btn-primary btn-large">
+        💾 Save Settings
+      </button>
+      <div id="saveStatus" class="save-status hidden"></div>
+    </footer>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

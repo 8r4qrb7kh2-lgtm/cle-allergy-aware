@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Coastal Grill - Wix Style Menu</title>
+    <style>
+        /* Wix-style design with sections and containers */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background: #ffffff;
+        }
+        .wix-page {
+            width: 100%;
+        }
+        .wix-section {
+            padding: 60px 0;
+            position: relative;
+        }
+        .wix-section--alt {
+            background: #f7f8f9;
+        }
+        .wix-container {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        .wix-header {
+            text-align: center;
+            margin-bottom: 60px;
+            padding: 80px 20px;
+            background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23667eea" width="100" height="100"/></svg>');
+            background-size: cover;
+            color: white;
+        }
+        .wix-header h1 {
+            font-size: 56px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+        }
+        .wix-header p {
+            font-size: 20px;
+            opacity: 0.95;
+        }
+        .wix-text-block {
+            margin-bottom: 40px;
+        }
+        .wix-text-block h2 {
+            font-size: 38px;
+            font-weight: 700;
+            margin-bottom: 30px;
+            color: #2b5672;
+            text-align: center;
+        }
+        .wix-menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+        .wix-menu-item {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .wix-menu-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+        .wix-menu-item-content {
+            padding: 24px;
+        }
+        .wix-menu-item h3 {
+            font-size: 22px;
+            margin-bottom: 12px;
+            color: #2b5672;
+            font-weight: 600;
+        }
+        .wix-menu-item p {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #616161;
+            margin-bottom: 16px;
+        }
+        .wix-price-tag {
+            font-size: 20px;
+            font-weight: 700;
+            color: #ff6b6b;
+            margin-bottom: 12px;
+        }
+        .wix-badge-container {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .wix-badge {
+            background: #ffeaa7;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #8b6914;
+        }
+        .wix-editor-panel {
+            position: fixed;
+            left: 20px;
+            top: 20px;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 1000;
+            width: 250px;
+        }
+        .wix-editor-panel h3 {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: #2b5672;
+        }
+        .wix-button {
+            display: block;
+            width: 100%;
+            padding: 10px 16px;
+            margin-bottom: 10px;
+            background: #3899ec;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .wix-button:hover {
+            background: #2b7bc1;
+        }
+    </style>
+</head>
+<body>
+    <div class="wix-editor-panel">
+        <h3>Wix Editor Simulator</h3>
+        <button class="wix-button" onclick="wixAddDish()">➕ Add Menu Item</button>
+        <button class="wix-button" onclick="wixRemoveDish()">➖ Remove Item</button>
+        <button class="wix-button" onclick="wixUpdateAllergen()">⚠️ Update Allergens</button>
+        <button class="wix-button" onclick="wixEditPrice()">💲 Change Price</button>
+    </div>
+
+    <div class="wix-page">
+        <div class="wix-header">
+            <h1>The Coastal Grill</h1>
+            <p>Fresh Seafood & Coastal Cuisine</p>
+        </div>
+
+        <div class="wix-section">
+            <div class="wix-container">
+                <div class="wix-text-block">
+                    <h2>🦞 Seafood Starters</h2>
+                </div>
+                <div class="wix-menu-grid" id="seafood-starters">
+                    <div class="wix-menu-item" data-item-id="s1">
+                        <div class="wix-menu-item-content">
+                            <h3>New England Clam Chowder</h3>
+                            <p>Creamy soup with fresh clams, potatoes, bacon, and herbs.</p>
+                            <div class="wix-price-tag">$8.00</div>
+                            <div class="wix-badge-container">
+                                <span class="wix-badge">Contains: Dairy</span>
+                                <span class="wix-badge">Contains: Shellfish</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wix-menu-item" data-item-id="s2">
+                        <div class="wix-menu-item-content">
+                            <h3>Shrimp Cocktail</h3>
+                            <p>Jumbo shrimp served chilled with tangy cocktail sauce and lemon.</p>
+                            <div class="wix-price-tag">$12.00</div>
+                            <div class="wix-badge-container">
+                                <span class="wix-badge">Contains: Shellfish</span>
+                                <span class="wix-badge">Gluten-free</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="wix-section wix-section--alt">
+            <div class="wix-container">
+                <div class="wix-text-block">
+                    <h2>🐟 Fresh Catch</h2>
+                </div>
+                <div class="wix-menu-grid" id="fresh-catch">
+                    <div class="wix-menu-item" data-item-id="m1">
+                        <div class="wix-menu-item-content">
+                            <h3>Grilled Salmon Fillet</h3>
+                            <p>Wild-caught salmon with lemon butter sauce, served with seasonal vegetables and rice pilaf.</p>
+                            <div class="wix-price-tag">$26.00</div>
+                            <div class="wix-badge-container">
+                                <span class="wix-badge">Contains: Fish</span>
+                                <span class="wix-badge">Contains: Dairy</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wix-menu-item" data-item-id="m2">
+                        <div class="wix-menu-item-content">
+                            <h3>Fish & Chips</h3>
+                            <p>Beer-battered cod with hand-cut fries and tartar sauce.</p>
+                            <div class="wix-price-tag">$18.00</div>
+                            <div class="wix-badge-container">
+                                <span class="wix-badge">Contains: Fish</span>
+                                <span class="wix-badge">Contains: Gluten</span>
+                                <span class="wix-badge">Contains: Eggs</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wix-menu-item" data-item-id="m3">
+                        <div class="wix-menu-item-content">
+                            <h3>Seared Tuna Steak</h3>
+                            <p>Sesame-crusted ahi tuna, served rare with wasabi aioli and Asian slaw.</p>
+                            <div class="wix-price-tag">$29.00</div>
+                            <div class="wix-badge-container">
+                                <span class="wix-badge">Contains: Fish</span>
+                                <span class="wix-badge">Contains: Sesame</span>
+                                <span class="wix-badge">Contains: Soy</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="wix-section">
+            <div class="wix-container">
+                <div class="wix-text-block">
+                    <h2>🦐 Signature Dishes</h2>
+                </div>
+                <div class="wix-menu-grid" id="signature">
+                    <div class="wix-menu-item" data-item-id="sig1">
+                        <div class="wix-menu-item-content">
+                            <h3>Lobster Roll</h3>
+                            <p>Fresh lobster meat on a toasted brioche bun with butter and celery.</p>
+                            <div class="wix-price-tag">$24.00</div>
+                            <div class="wix-badge-container">
+                                <span class="wix-badge">Contains: Shellfish</span>
+                                <span class="wix-badge">Contains: Dairy</span>
+                                <span class="wix-badge">Contains: Gluten</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wix-menu-item" data-item-id="sig2">
+                        <div class="wix-menu-item-content">
+                            <h3>Seafood Paella</h3>
+                            <p>Saffron rice with shrimp, mussels, clams, and chorizo.</p>
+                            <div class="wix-price-tag">$32.00</div>
+                            <div class="wix-badge-container">
+                                <span class="wix-badge">Contains: Shellfish</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let wixItemCounter = 100;
+
+        function wixAddDish() {
+            const grid = document.getElementById('fresh-catch');
+            const newItem = document.createElement('div');
+            newItem.className = 'wix-menu-item';
+            newItem.setAttribute('data-item-id', 'm' + wixItemCounter++);
+            newItem.innerHTML = `
+                <div class="wix-menu-item-content">
+                    <h3>Blackened Mahi Mahi</h3>
+                    <p>Cajun-spiced mahi mahi with mango salsa and coconut rice.</p>
+                    <div class="wix-price-tag">$25.00</div>
+                    <div class="wix-badge-container">
+                        <span class="wix-badge">Contains: Fish</span>
+                        <span class="wix-badge">Gluten-free</span>
+                    </div>
+                </div>
+            `;
+            grid.appendChild(newItem);
+            console.log('Wix: Added new menu item');
+        }
+
+        function wixRemoveDish() {
+            const items = document.querySelectorAll('.wix-menu-item');
+            if (items.length > 0) {
+                items[items.length - 1].remove();
+                console.log('Wix: Removed menu item');
+            }
+        }
+
+        function wixUpdateAllergen() {
+            const badgeContainers = document.querySelectorAll('.wix-badge-container');
+            const randomContainer = badgeContainers[Math.floor(Math.random() * badgeContainers.length)];
+            const newBadge = document.createElement('span');
+            newBadge.className = 'wix-badge';
+            newBadge.textContent = 'Contains: Tree Nuts';
+            randomContainer.appendChild(newBadge);
+            console.log('Wix: Updated allergen info');
+        }
+
+        function wixEditPrice() {
+            const prices = document.querySelectorAll('.wix-price-tag');
+            const randomPrice = prices[Math.floor(Math.random() * prices.length)];
+            const currentPrice = parseFloat(randomPrice.textContent.replace('$', ''));
+            randomPrice.textContent = '$' + (currentPrice + 2.00).toFixed(2);
+            console.log('Wix: Changed price');
+        }
+    </script>
+</body>
+</html>

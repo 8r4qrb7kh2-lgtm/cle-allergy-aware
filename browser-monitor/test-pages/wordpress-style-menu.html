@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Green Garden Café - Our Menu | WordPress Style</title>
+  <style>
+    /* WordPress-style sites often use themes like Astra, GeneratePress, or custom themes */
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Roboto:wght@300;400;500&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background-color: #f9f9f9;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    /* WordPress Header */
+    .wp-header {
+      background: white;
+      border-bottom: 3px solid #6fbd44;
+      padding: 20px 0;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .wp-header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .wp-logo {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.8em;
+      font-weight: 700;
+      color: #6fbd44;
+      text-decoration: none;
+    }
+
+    .wp-menu ul {
+      list-style: none;
+      display: flex;
+      gap: 30px;
+    }
+
+    .wp-menu a {
+      text-decoration: none;
+      color: #333;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+
+    .wp-menu a:hover {
+      color: #6fbd44;
+    }
+
+    /* Page Header */
+    .wp-page-header {
+      background: linear-gradient(135deg, #6fbd44, #4a9d2f);
+      color: white;
+      padding: 60px 20px;
+      text-align: center;
+    }
+
+    .wp-page-header h1 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 2.8em;
+      margin-bottom: 10px;
+    }
+
+    .wp-breadcrumb {
+      font-size: 0.9em;
+      opacity: 0.9;
+    }
+
+    /* Content Area */
+    .wp-content {
+      max-width: 1200px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    article.wp-post {
+      background: white;
+      padding: 40px;
+      margin-bottom: 30px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .entry-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 2.2em;
+      margin-bottom: 10px;
+      color: #2c3e50;
+    }
+
+    .entry-meta {
+      color: #999;
+      font-size: 0.9em;
+      margin-bottom: 30px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .entry-content {
+      font-size: 1.05em;
+      color: #555;
+    }
+
+    /* Menu Sections */
+    .wp-menu-section {
+      margin-bottom: 50px;
+    }
+
+    .wp-menu-section h3 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.8em;
+      color: #6fbd44;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #6fbd44;
+    }
+
+    .wp-menu-items {
+      display: flex;
+      flex-direction: column;
+      gap: 25px;
+    }
+
+    .wp-menu-item {
+      background: #f9f9f9;
+      padding: 25px;
+      border-left: 4px solid #6fbd44;
+      transition: all 0.3s;
+    }
+
+    .wp-menu-item:hover {
+      background: #f0f0f0;
+      border-left-width: 8px;
+    }
+
+    .wp-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 12px;
+    }
+
+    .wp-item-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.4em;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+
+    .wp-item-price {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.3em;
+      color: #6fbd44;
+      font-weight: 700;
+    }
+
+    .wp-item-description {
+      color: #666;
+      line-height: 1.7;
+      margin-bottom: 10px;
+    }
+
+    .wp-dietary-info {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .dietary-tag {
+      background: #e8f5e0;
+      color: #4a9d2f;
+      padding: 5px 12px;
+      border-radius: 4px;
+      font-size: 0.85em;
+      font-weight: 500;
+    }
+
+    .dietary-tag.warning {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    /* Sidebar (WordPress typical layout) */
+    .wp-layout {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 40px;
+      margin-top: 40px;
+    }
+
+    .wp-sidebar {
+      background: white;
+      padding: 25px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      height: fit-content;
+      position: sticky;
+      top: 120px;
+    }
+
+    .widget {
+      margin-bottom: 30px;
+    }
+
+    .widget-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.2em;
+      margin-bottom: 15px;
+      color: #2c3e50;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #6fbd44;
+    }
+
+    .widget ul {
+      list-style: none;
+    }
+
+    .widget li {
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .widget a {
+      text-decoration: none;
+      color: #555;
+      transition: color 0.3s;
+    }
+
+    .widget a:hover {
+      color: #6fbd44;
+    }
+
+    /* Footer */
+    .wp-footer {
+      background: #2c3e50;
+      color: white;
+      padding: 40px 20px 20px;
+      margin-top: 60px;
+    }
+
+    .wp-footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    /* Test Controls */
+    .wp-test-controls {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      background: white;
+      border: 3px solid #6fbd44;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 10000;
+      max-width: 250px;
+    }
+
+    .wp-test-controls h4 {
+      font-family: 'Montserrat', sans-serif;
+      margin-bottom: 15px;
+      color: #6fbd44;
+    }
+
+    .wp-test-controls button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 8px;
+      background: #6fbd44;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-family: 'Montserrat', sans-serif;
+      transition: background 0.3s;
+    }
+
+    .wp-test-controls button:hover {
+      background: #4a9d2f;
+    }
+
+    @media (max-width: 768px) {
+      .wp-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .wp-sidebar {
+        position: static;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="wp-header">
+    <div class="wp-header-inner">
+      <a href="#" class="wp-logo">🌱 Green Garden Café</a>
+      <nav class="wp-menu">
+        <ul>
+          <li><a href="#home">Home</a></li>
+          <li><a href="#menu">Menu</a></li>
+          <li><a href="#about">About</a></li>
+          <li><a href="#blog">Blog</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <div class="wp-page-header">
+    <h1>Our Menu</h1>
+    <div class="wp-breadcrumb">Home » Menu</div>
+  </div>
+
+  <div class="wp-content">
+    <div class="wp-layout">
+      <main class="wp-main">
+        <article class="wp-post" id="wpMenuPost">
+          <header class="entry-header">
+            <h2 class="entry-title">Fresh, Organic, Delicious</h2>
+            <div class="entry-meta">
+              <span>Posted on January 15, 2024</span> |
+              <span>Updated: January 20, 2024</span> |
+              <span>By Chef Maria</span>
+            </div>
+          </header>
+
+          <div class="entry-content" id="wpMenuContent">
+            <p style="margin-bottom: 30px;">
+              Welcome to Green Garden Café! All our dishes are prepared with locally-sourced,
+              organic ingredients. We cater to various dietary needs - just ask your server!
+            </p>
+
+            <div class="wp-menu-section" id="breakfast">
+              <h3>Breakfast & Brunch</h3>
+              <div class="wp-menu-items">
+                <div class="wp-menu-item" data-menu-id="breakfast-1">
+                  <div class="wp-item-header">
+                    <span class="wp-item-title">Avocado Toast</span>
+                    <span class="wp-item-price">$12</span>
+                  </div>
+                  <p class="wp-item-description">
+                    Smashed avocado on artisan sourdough with cherry tomatoes, radish, and hemp seeds
+                  </p>
+                  <div class="wp-dietary-info">
+                    <span class="dietary-tag">Vegan</span>
+                    <span class="dietary-tag warning">Contains Gluten</span>
+                  </div>
+                </div>
+
+                <div class="wp-menu-item" data-menu-id="breakfast-2">
+                  <div class="wp-item-header">
+                    <span class="wp-item-title">Quinoa Breakfast Bowl</span>
+                    <span class="wp-item-price">$14</span>
+                  </div>
+                  <p class="wp-item-description">
+                    Warm quinoa with almond milk, seasonal berries, honey, and crushed almonds
+                  </p>
+                  <div class="wp-dietary-info">
+                    <span class="dietary-tag">Vegetarian</span>
+                    <span class="dietary-tag">Gluten-Free</span>
+                    <span class="dietary-tag warning">Contains Nuts</span>
+                  </div>
+                </div>
+
+                <div class="wp-menu-item" data-menu-id="breakfast-3">
+                  <div class="wp-item-header">
+                    <span class="wp-item-title">Green Goddess Smoothie Bowl</span>
+                    <span class="wp-item-price">$11</span>
+                  </div>
+                  <p class="wp-item-description">
+                    Spinach, banana, mango, and spirulina topped with granola and coconut flakes
+                  </p>
+                  <div class="wp-dietary-info">
+                    <span class="dietary-tag">Vegan</span>
+                    <span class="dietary-tag">Gluten-Free</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="wp-menu-section" id="lunch">
+              <h3>Lunch Specials</h3>
+              <div class="wp-menu-items">
+                <div class="wp-menu-item" data-menu-id="lunch-1">
+                  <div class="wp-item-header">
+                    <span class="wp-item-title">Buddha Bowl</span>
+                    <span class="wp-item-price">$16</span>
+                  </div>
+                  <p class="wp-item-description">
+                    Roasted vegetables, chickpeas, quinoa, kale, and tahini dressing
+                  </p>
+                  <div class="wp-dietary-info">
+                    <span class="dietary-tag">Vegan</span>
+                    <span class="dietary-tag">Gluten-Free</span>
+                    <span class="dietary-tag warning">Contains Sesame</span>
+                  </div>
+                </div>
+
+                <div class="wp-menu-item" data-menu-id="lunch-2">
+                  <div class="wp-item-header">
+                    <span class="wp-item-title">Grilled Salmon Salad</span>
+                    <span class="wp-item-price">$19</span>
+                  </div>
+                  <p class="wp-item-description">
+                    Wild-caught salmon over mixed greens with beets, goat cheese, and citrus vinaigrette
+                  </p>
+                  <div class="wp-dietary-info">
+                    <span class="dietary-tag">Gluten-Free</span>
+                    <span class="dietary-tag warning">Contains Fish</span>
+                    <span class="dietary-tag warning">Contains Dairy</span>
+                  </div>
+                </div>
+
+                <div class="wp-menu-item" data-menu-id="lunch-3">
+                  <div class="wp-item-header">
+                    <span class="wp-item-title">Lentil & Sweet Potato Curry</span>
+                    <span class="wp-item-price">$15</span>
+                  </div>
+                  <p class="wp-item-description">
+                    Red lentils and sweet potato in coconut curry sauce, served with brown rice
+                  </p>
+                  <div class="wp-dietary-info">
+                    <span class="dietary-tag">Vegan</span>
+                    <span class="dietary-tag">Gluten-Free</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </main>
+
+      <aside class="wp-sidebar">
+        <div class="widget">
+          <h3 class="widget-title">Menu Categories</h3>
+          <ul>
+            <li><a href="#breakfast">Breakfast & Brunch</a></li>
+            <li><a href="#lunch">Lunch Specials</a></li>
+            <li><a href="#drinks">Beverages</a></li>
+            <li><a href="#desserts">Desserts</a></li>
+          </ul>
+        </div>
+
+        <div class="widget">
+          <h3 class="widget-title">Dietary Options</h3>
+          <ul>
+            <li><a href="#vegan">Vegan Options</a></li>
+            <li><a href="#gf">Gluten-Free</a></li>
+            <li><a href="#vegetarian">Vegetarian</a></li>
+            <li><a href="#allergens">Allergen Info</a></li>
+          </ul>
+        </div>
+
+        <div class="widget">
+          <h3 class="widget-title">Hours</h3>
+          <p style="color: #666; font-size: 0.95em; line-height: 1.8;">
+            Mon-Fri: 7am - 8pm<br>
+            Sat-Sun: 8am - 9pm
+          </p>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <footer class="wp-footer">
+    <div class="wp-footer-inner">
+      <p>&copy; 2024 Green Garden Café. Powered by WordPress.</p>
+      <p style="font-size: 0.9em; margin-top: 10px; opacity: 0.8;">
+        Nourishing body and soul with organic goodness
+      </p>
+    </div>
+  </footer>
+
+  <div class="wp-test-controls">
+    <h4>Test Panel</h4>
+    <button onclick="wpAddItem()">Add Menu Item</button>
+    <button onclick="wpRemoveItem()">Remove Item</button>
+    <button onclick="wpModifyAllergen()">Add Allergen</button>
+    <button onclick="wpChangeDescription()">Modify Description</button>
+    <button onclick="wpReset()">Reset Menu</button>
+  </div>
+
+  <script>
+    let wpOriginalContent = null;
+    let wpCounter = 0;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      wpOriginalContent = document.getElementById('wpMenuContent').innerHTML;
+    });
+
+    function wpAddItem() {
+      wpCounter++;
+      const section = document.querySelector('#breakfast .wp-menu-items');
+      const newItem = document.createElement('div');
+      newItem.className = 'wp-menu-item';
+      newItem.setAttribute('data-menu-id', `breakfast-new-${wpCounter}`);
+      newItem.innerHTML = `
+        <div class="wp-item-header">
+          <span class="wp-item-title">Chia Seed Pudding (NEW!)</span>
+          <span class="wp-item-price">$10</span>
+        </div>
+        <p class="wp-item-description">
+          Organic chia seeds soaked in almond milk with vanilla and maple syrup, topped with fresh fruit
+        </p>
+        <div class="wp-dietary-info">
+          <span class="dietary-tag">Vegan</span>
+          <span class="dietary-tag">Gluten-Free</span>
+          <span class="dietary-tag warning">Contains Nuts</span>
+        </div>
+      `;
+      section.appendChild(newItem);
+      console.log('WordPress: Added new menu item');
+    }
+
+    function wpRemoveItem() {
+      const items = document.querySelectorAll('.wp-menu-item');
+      if (items.length > 0) {
+        items[items.length - 1].remove();
+        console.log('WordPress: Removed item');
+      }
+    }
+
+    function wpModifyAllergen() {
+      const item = document.querySelector('[data-menu-id="lunch-3"]');
+      if (item) {
+        const tags = item.querySelector('.wp-dietary-info');
+        const newTag = document.createElement('span');
+        newTag.className = 'dietary-tag warning';
+        newTag.textContent = 'Contains Peanuts';
+        tags.appendChild(newTag);
+
+        const desc = item.querySelector('.wp-item-description');
+        desc.textContent += ' (Recipe updated: now includes peanut garnish)';
+        console.log('WordPress: Added allergen warning');
+      }
+    }
+
+    function wpChangeDescription() {
+      const desc = document.querySelector('[data-menu-id="breakfast-2"] .wp-item-description');
+      if (desc) {
+        desc.textContent = 'Warm quinoa with almond milk, seasonal berries, honey, crushed almonds, and CASHEW BUTTER';
+        console.log('WordPress: Modified description');
+      }
+    }
+
+    function wpReset() {
+      if (wpOriginalContent) {
+        document.getElementById('wpMenuContent').innerHTML = wpOriginalContent;
+        console.log('WordPress: Reset to original');
+      }
+    }
+  </script>
+</body>
+</html>
