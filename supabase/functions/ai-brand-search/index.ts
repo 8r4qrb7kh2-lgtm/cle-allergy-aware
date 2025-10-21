@@ -40,39 +40,36 @@ serve(async (req) => {
       )
     }
 
-    // Step 1: Use Claude with web search to find relevant products
-    console.log('Calling Claude API with web search...')
+    // Step 1: Use Claude to generate smart search queries
+    console.log('Calling Claude API to generate search queries...')
 
-    const searchQuery = brandQuery
-      ? `${ingredientName} ${brandQuery} brand products`
-      : `${ingredientName} brand products`;
-
-    const systemPrompt = `You are a food product research assistant. Your task is to search the web for food products and identify specific brand names and product names that would be available in Open Food Facts database.
+    const systemPrompt = `You are a food product research assistant. Your task is to generate intelligent search queries for finding food products in the Open Food Facts database.
 
 When given an ingredient name and optional brand filter, you should:
-1. Search the web for relevant products
-2. If the initial search doesn't find good results, try related terms (e.g., "capicola" -> "capocollo", "gabagool", "coppa")
-3. Extract specific brand names and product names from your search results
-4. Return a list of products to search for in Open Food Facts
+1. Consider alternative spellings and terms (e.g., "capicola" -> also try "capocollo", "coppa", "gabagool")
+2. Think about common brands that sell this ingredient
+3. Generate 5-10 specific search queries that would find relevant products in Open Food Facts
+4. Focus on products that would likely have detailed ingredient labels
 
 IMPORTANT:
-- Focus on products that would likely have detailed ingredient labels
-- Prefer well-known brands that are likely to be in Open Food Facts database
-- Return specific product names, not generic descriptions
-- If you find multiple spellings or variants, include all of them
+- Include the ingredient name variations
+- If a brand is specified, include it in searches
+- Also include searches without the brand to find alternatives
+- Think about what consumers actually search for
 
 You MUST respond with ONLY valid JSON in this exact format:
 {
   "searchQueries": [
-    "brand name product name",
-    "another brand product"
+    "search term 1",
+    "search term 2",
+    "search term 3"
   ],
-  "reasoning": "Brief explanation of search strategy and any term variations tried"
+  "reasoning": "Brief explanation of search strategy and variations"
 }`
 
     const userPrompt = brandQuery
-      ? `Find specific brand products for: "${ingredientName}" with brand filter: "${brandQuery}". Search the web and return specific product names to look up in Open Food Facts.`
-      : `Find specific brand products for: "${ingredientName}". Search the web and return specific product names to look up in Open Food Facts.`
+      ? `Generate search queries for: "${ingredientName}" with brand preference: "${brandQuery}". Include variations of the ingredient name, the specified brand, and other popular brands that make this product.`
+      : `Generate search queries for: "${ingredientName}". Include variations of the ingredient name and popular brands that make this product.`
 
     const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -83,16 +80,11 @@ You MUST respond with ONLY valid JSON in this exact format:
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 4096,
+        max_tokens: 2000,
         system: systemPrompt,
         messages: [{
           role: 'user',
           content: userPrompt
-        }],
-        tools: [{
-          type: "web_search_20250410",
-          name: "web_search",
-          max_uses: 5
         }]
       })
     })
@@ -105,9 +97,8 @@ You MUST respond with ONLY valid JSON in this exact format:
 
     const claudeData = await claudeResponse.json()
     console.log('Claude API response received')
-    console.log('Response content blocks:', claudeData.content?.length || 0)
 
-    // Extract the final text response from Claude
+    // Extract the text response from Claude
     let aiResponseText = ''
     for (const block of claudeData.content || []) {
       if (block.type === 'text') {
@@ -120,7 +111,6 @@ You MUST respond with ONLY valid JSON in this exact format:
     // Parse the JSON response from Claude
     let aiResult
     try {
-      // Try to extract JSON from markdown code blocks if present
       const jsonMatch = aiResponseText.match(/```json\n([\s\S]*?)\n```/) ||
                        aiResponseText.match(/```\n([\s\S]*?)\n```/) ||
                        aiResponseText.match(/\{[\s\S]*\}/)
@@ -129,7 +119,7 @@ You MUST respond with ONLY valid JSON in this exact format:
       aiResult = JSON.parse(jsonText)
     } catch (e) {
       console.error('Failed to parse JSON from Claude:', e)
-      console.error('Raw response:', aiResponseText.substring(0, 500))
+      console.error('Raw response:', aiResponseText)
       throw new Error('Invalid JSON response from AI')
     }
 
@@ -141,7 +131,7 @@ You MUST respond with ONLY valid JSON in this exact format:
       return new Response(
         JSON.stringify({
           products: [],
-          message: 'No products found',
+          message: 'No search queries generated',
           aiReasoning: aiResult.reasoning
         }),
         {
@@ -159,7 +149,7 @@ You MUST respond with ONLY valid JSON in this exact format:
     const allProducts = []
     const seenCodes = new Set()
 
-    for (const query of searchQueries.slice(0, 10)) { // Limit to 10 queries
+    for (const query of searchQueries.slice(0, 10)) {
       try {
         const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=5`
         console.log('Searching Open Food Facts:', query)
@@ -169,7 +159,6 @@ You MUST respond with ONLY valid JSON in this exact format:
           const data = await res.json()
           const products = Array.isArray(data.products) ? data.products : []
 
-          // Add products we haven't seen yet
           for (const product of products) {
             if (product.code && !seenCodes.has(product.code)) {
               seenCodes.add(product.code)
@@ -184,7 +173,7 @@ You MUST respond with ONLY valid JSON in this exact format:
 
     console.log(`Found ${allProducts.length} unique products from Open Food Facts`)
 
-    // Step 3: Fetch detailed product info and filter for required images
+    // Step 3: Fetch detailed product info
     const detailedProducts = await Promise.all(
       allProducts.slice(0, 20).map(async (product) => {
         if (!product.code) return null
@@ -209,14 +198,12 @@ You MUST respond with ONLY valid JSON in this exact format:
     const validProducts = detailedProducts.filter(product => {
       if (!product) return false
 
-      // Check for brand/front image
       const hasBrandImage = !!(
         product.image_front_url ||
         product.image_front_small_url ||
         product.image_url
       )
 
-      // Check for ingredients image
       let hasIngredientsImage = !!product.image_ingredients_url
 
       if (!hasIngredientsImage && product.selected_images?.ingredients) {
@@ -267,7 +254,6 @@ You MUST respond with ONLY valid JSON in this exact format:
           .filter(Boolean)
       }
 
-      // Get ingredients image from multiple possible sources
       let ingredientsImage = product.image_ingredients_url || ''
       if (!ingredientsImage && product.selected_images?.ingredients) {
         const ingredImgs = product.selected_images.ingredients.display ||
@@ -292,13 +278,13 @@ You MUST respond with ONLY valid JSON in this exact format:
         productUrl: product.url || `https://world.openfoodfacts.org/product/${product.code}`,
         code: product.code
       }
-    }).filter(item => item.name && item.image && item.ingredientsImage) // Final safety check
+    }).filter(item => item.name && item.image && item.ingredientsImage)
 
     console.log(`Returning ${formattedProducts.length} formatted products`)
 
     return new Response(
       JSON.stringify({
-        products: formattedProducts.slice(0, 6), // Return max 6 products
+        products: formattedProducts.slice(0, 6),
         aiReasoning: aiResult.reasoning,
         searchCount: searchQueries.length,
         totalFound: allProducts.length,
@@ -322,7 +308,7 @@ You MUST respond with ONLY valid JSON in this exact format:
         products: []
       }),
       {
-        status: 200, // Return 200 to avoid breaking the UI
+        status: 200,
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
