@@ -4887,7 +4887,6 @@ function renderEditor(){
 
   // Zoom controls
   let zoomScale = 1.0;
-  let baseScale = 1.0; // The scale factor to fit the image to viewport
   const zoomStep = 0.25;
   const minZoom = 0.5;
   const maxZoom = 3.0;
@@ -4896,16 +4895,20 @@ function renderEditor(){
     const inner = menu.querySelector('.menuInner');
     const zoomLevelEl = document.getElementById('zoomLevel');
 
-    // Apply both base scale (to fit viewport) and user zoom
-    const totalScale = baseScale * zoomScale;
-    inner.style.transform = `scale(${totalScale})`;
+    inner.style.transform = `scale(${zoomScale})`;
     inner.style.transformOrigin = 'top left';
 
-    // Adjust container to accommodate scaled content
-    const naturalWidth = img.naturalWidth || img.width;
-    const naturalHeight = img.naturalHeight || img.height;
-    menu.style.width = `${naturalWidth * totalScale}px`;
-    menu.style.height = `${naturalHeight * totalScale}px`;
+    // Don't set explicit width/height on menu container
+    // Let it size naturally based on image and transform
+    if (zoomScale !== 1.0) {
+      const displayWidth = img.clientWidth;
+      const displayHeight = img.clientHeight;
+      menu.style.width = `${displayWidth * zoomScale}px`;
+      menu.style.height = `${displayHeight * zoomScale}px`;
+    } else {
+      menu.style.width = '';
+      menu.style.height = '';
+    }
     menu.style.overflow = 'auto';
 
     zoomLevelEl.textContent = `${Math.round(zoomScale * 100)}%`;
@@ -4916,12 +4919,8 @@ function renderEditor(){
   }
 
   function initializeZoom() {
-    // Calculate base scale to fit the image width to the viewport
-    const naturalWidth = img.naturalWidth || img.width;
-    const viewportWidth = window.innerWidth;
-    const maxDisplayWidth = Math.min(viewportWidth * 0.9, 1200); // Max 90% of viewport or 1200px
-
-    baseScale = naturalWidth > maxDisplayWidth ? maxDisplayWidth / naturalWidth : 1.0;
+    // Just set zoom to 1.0 and update
+    zoomScale = 1.0;
     updateZoom();
   }
 
