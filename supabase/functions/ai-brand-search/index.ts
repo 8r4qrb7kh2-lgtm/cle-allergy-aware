@@ -79,8 +79,7 @@ You MUST respond with ONLY valid JSON in this exact format:
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'web-search-2025-04-11'
+        'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
@@ -90,11 +89,7 @@ You MUST respond with ONLY valid JSON in this exact format:
           role: 'user',
           content: userPrompt
         }],
-        tools: [{
-          type: "web_search_tool",
-          name: "web_search",
-          max_searches: 5
-        }]
+        betas: ["web-search-20250411"]
       })
     })
 
