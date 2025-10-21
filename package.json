@@ -4,7 +4,12 @@
   "scripts": {
     "dev": "npx http-server public -p 8080 -o",
     "deploy": "vercel --prod",
-    "test": "node browser-extension/menu-change-monitor/test/contentScript.test.js"
+    "test": "node browser-extension/menu-change-monitor/test/contentScript.test.js",
+    "start": "cd clarivore-menu-monitor && npm start",
+    "install:backend": "cd clarivore-menu-monitor && npm install"
+  },
+  "engines": {
+    "node": "20.x"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0"
