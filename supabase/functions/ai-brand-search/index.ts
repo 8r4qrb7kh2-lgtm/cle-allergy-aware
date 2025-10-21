@@ -40,36 +40,31 @@ serve(async (req) => {
       )
     }
 
-    // Step 1: Use Claude to generate smart search queries
-    console.log('Calling Claude API to generate search queries...')
+    // Step 1: Use Claude to generate specific US brand product names
+    console.log('Calling Claude API to generate US brand product names...')
 
-    const systemPrompt = `You are a food product research assistant. Your task is to generate intelligent search queries for finding food products in the Open Food Facts database.
+    const systemPrompt = `You are a US grocery product expert. Generate specific product search queries for Open Food Facts.
 
-When given an ingredient name and optional brand filter, you should:
-1. Consider alternative spellings and terms (e.g., "capicola" -> also try "capocollo", "coppa", "gabagool")
-2. Think about common brands that sell this ingredient
-3. Generate 5-10 specific search queries that would find relevant products in Open Food Facts
-4. Focus on products that would likely have detailed ingredient labels
+Rules:
+1. ONLY suggest products from major US brands commonly found in American grocery stores
+2. Use FULL brand names + product type (e.g., "Boar's Head Hard Salami", "Oscar Mayer Turkey")
+3. Common US brands: Boar's Head, Oscar Mayer, Hormel, Applegate, Columbus, Hillshire Farm, Buddig, Land O'Lakes, Kraft, Private Selection
+4. If a brand is specified, prioritize it but also include 2-3 other major US brands
+5. Include alternative spellings of the ingredient if relevant
+6. Return 8-10 specific product names
 
-IMPORTANT:
-- Include the ingredient name variations
-- If a brand is specified, include it in searches
-- Also include searches without the brand to find alternatives
-- Think about what consumers actually search for
-
-You MUST respond with ONLY valid JSON in this exact format:
+Respond with ONLY valid JSON:
 {
   "searchQueries": [
-    "search term 1",
-    "search term 2",
-    "search term 3"
+    "Boar's Head Hard Salami",
+    "Oscar Mayer Hard Salami"
   ],
-  "reasoning": "Brief explanation of search strategy and variations"
+  "reasoning": "Brief explanation"
 }`
 
     const userPrompt = brandQuery
-      ? `Generate search queries for: "${ingredientName}" with brand preference: "${brandQuery}". Include variations of the ingredient name, the specified brand, and other popular brands that make this product.`
-      : `Generate search queries for: "${ingredientName}". Include variations of the ingredient name and popular brands that make this product.`
+      ? `Generate US brand product searches for: "${ingredientName}" with brand preference: "${brandQuery}"`
+      : `Generate US brand product searches for: "${ingredientName}"`
 
     const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -80,7 +75,7 @@ You MUST respond with ONLY valid JSON in this exact format:
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
+        max_tokens: 1500,
         system: systemPrompt,
         messages: [{
           role: 'user',
@@ -98,7 +93,6 @@ You MUST respond with ONLY valid JSON in this exact format:
     const claudeData = await claudeResponse.json()
     console.log('Claude API response received')
 
-    // Extract the text response from Claude
     let aiResponseText = ''
     for (const block of claudeData.content || []) {
       if (block.type === 'text') {
@@ -108,7 +102,6 @@ You MUST respond with ONLY valid JSON in this exact format:
 
     console.log('AI response text:', aiResponseText.substring(0, 500))
 
-    // Parse the JSON response from Claude
     let aiResult
     try {
       const jsonMatch = aiResponseText.match(/```json\n([\s\S]*?)\n```/) ||
@@ -124,14 +117,14 @@ You MUST respond with ONLY valid JSON in this exact format:
     }
 
     const searchQueries = aiResult.searchQueries || []
-    console.log('AI suggested search queries:', searchQueries)
+    console.log('AI suggested US brand products:', searchQueries)
     console.log('AI reasoning:', aiResult.reasoning)
 
     if (searchQueries.length === 0) {
       return new Response(
         JSON.stringify({
           products: [],
-          message: 'No search queries generated',
+          message: 'No US brand products found',
           aiReasoning: aiResult.reasoning
         }),
         {
@@ -144,14 +137,14 @@ You MUST respond with ONLY valid JSON in this exact format:
       )
     }
 
-    // Step 2: Search Open Food Facts for each suggested query
-    console.log('Searching Open Food Facts for suggested products...')
+    // Step 2: Search Open Food Facts for each specific US brand product
+    console.log('Searching Open Food Facts for US brand products...')
     const allProducts = []
     const seenCodes = new Set()
 
-    for (const query of searchQueries.slice(0, 10)) {
+    for (const query of searchQueries) {
       try {
-        const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=5`
+        const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=3`
         console.log('Searching Open Food Facts:', query)
 
         const res = await fetch(url)
@@ -173,9 +166,26 @@ You MUST respond with ONLY valid JSON in this exact format:
 
     console.log(`Found ${allProducts.length} unique products from Open Food Facts`)
 
+    if (allProducts.length === 0) {
+      return new Response(
+        JSON.stringify({
+          products: [],
+          message: 'No products found in Open Food Facts',
+          aiReasoning: aiResult.reasoning
+        }),
+        {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          }
+        }
+      )
+    }
+
     // Step 3: Fetch detailed product info
     const detailedProducts = await Promise.all(
-      allProducts.slice(0, 20).map(async (product) => {
+      allProducts.map(async (product) => {
         if (!product.code) return null
 
         try {
@@ -194,7 +204,7 @@ You MUST respond with ONLY valid JSON in this exact format:
       })
     )
 
-    // Step 4: Filter to only products with BOTH brand image and ingredients image
+    // Step 4: Filter for products with BOTH images
     const validProducts = detailedProducts.filter(product => {
       if (!product) return false
 
@@ -231,82 +241,8 @@ You MUST respond with ONLY valid JSON in this exact format:
 
     console.log(`Filtered to ${validProducts.length} products with both required images`)
 
-    // Step 5: Use Claude to filter for English products and rank by relevance
-    let rankedProducts = validProducts
-    if (validProducts.length > 0) {
-      const productsForRanking = validProducts.map((p, idx) => ({
-        index: idx,
-        name: p.product_name || '',
-        brand: p.brands || '',
-        categories: p.categories || '',
-        ingredients_text: p.ingredients_text_en || p.ingredients_text || p.ingredients_original || ''
-      }))
-
-      const rankingPrompt = `You are filtering products for a US restaurant. ONLY return products sold in US grocery stores with ENGLISH ingredient labels.
-
-Ingredient: "${ingredientName}"${brandQuery ? `\nPreferred Brand: "${brandQuery}"` : ''}
-
-For EACH product below, you must:
-1. Check if ingredients_text contains ENGLISH words (e.g., "water", "salt", "contains", "may contain")
-2. If ingredients_text is empty, missing, or contains non-English words (Italian: "senza", German: "mit", French: "avec"), REJECT it
-3. If product name contains non-English brand names from Europe (Primo Taglio=Italian, Edeka=German), REJECT it
-4. ONLY accept products clearly sold in US stores (Boar's Head, Oscar Mayer, Hormel, Applegate, Columbus)
-
-Products:
-${JSON.stringify(productsForRanking, null, 2)}
-
-Respond with valid JSON. For each product, evaluate if it's English/US, then return ONLY the indices of English products:
-{
-  "selectedIndices": [0, 1, 2],
-  "reasoning": "Rejected products X, Y, Z because [language]. Kept products A, B, C because [English evidence]"
-}`
-
-      try {
-        const rankResponse = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': ANTHROPIC_API_KEY,
-            'anthropic-version': '2023-06-01'
-          },
-          body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 1000,
-            messages: [{
-              role: 'user',
-              content: rankingPrompt
-            }]
-          })
-        })
-
-        if (rankResponse.ok) {
-          const rankData = await rankResponse.json()
-          let rankText = ''
-          for (const block of rankData.content || []) {
-            if (block.type === 'text') rankText += block.text
-          }
-
-          const jsonMatch = rankText.match(/```json\n([\s\S]*?)\n```/) ||
-                           rankText.match(/```\n([\s\S]*?)\n```/) ||
-                           rankText.match(/\{[\s\S]*\}/)
-          const rankResult = JSON.parse(jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : rankText)
-
-          console.log('AI ranking reasoning:', rankResult.reasoning)
-
-          // Reorder products based on AI selection
-          const selectedIndices = rankResult.selectedIndices || []
-          rankedProducts = selectedIndices
-            .filter((idx: number) => idx < validProducts.length)
-            .map((idx: number) => validProducts[idx])
-          console.log(`AI filtered and ranked to ${rankedProducts.length} English products`)
-        }
-      } catch (err) {
-        console.warn('AI ranking failed, returning all products:', err)
-      }
-    }
-
-    // Step 7: Format products for frontend
-    const formattedProducts = rankedProducts.map(product => {
+    // Step 5: Format products
+    const formattedProducts = validProducts.map(product => {
       const allergens = []
       if (Array.isArray(product.allergens_tags)) {
         product.allergens_tags.forEach((tag: string) => {
