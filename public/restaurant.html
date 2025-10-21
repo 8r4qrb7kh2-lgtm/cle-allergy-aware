@@ -2230,15 +2230,19 @@ async function fetchBrandSuggestions(query, ingredientName){
   });
 
   // Filter products to match ingredient name (e.g., "italian seasoning" should only show products with BOTH words)
+  // But only if ingredientName is multi-word (for single words, trust the API search results)
   if(ingredientName){
     const ingredientTerms = ingredientName.toLowerCase().split(/\s+/).filter(term => term.length > 2);
-    products = products.filter(product => {
-      const productName = (product.product_name || '').toLowerCase();
-      const productCategories = (product.categories || '').toLowerCase();
-      const combinedText = `${productName} ${productCategories}`;
-      // Check if ALL ingredient terms appear in product name or categories (not just any one)
-      return ingredientTerms.every(term => combinedText.includes(term));
-    });
+    // Only apply strict filtering for multi-word ingredients
+    if(ingredientTerms.length > 1){
+      products = products.filter(product => {
+        const productName = (product.product_name || '').toLowerCase();
+        const productCategories = (product.categories || '').toLowerCase();
+        const combinedText = `${productName} ${productCategories}`;
+        // Check if ALL ingredient terms appear in product name or categories (not just any one)
+        return ingredientTerms.every(term => combinedText.includes(term));
+      });
+    }
   }
 
   if(!products.length) return [];
