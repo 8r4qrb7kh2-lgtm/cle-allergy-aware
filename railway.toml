@@ -1,6 +1,7 @@
 [build]
 builder = "nixpacks"
-buildCommand = "cd clarivore-menu-monitor && npm install --omit=dev"
+buildCommand = "npm install --omit=dev"
 
 [deploy]
-startCommand = "cd clarivore-menu-monitor && npm start"
+startCommand = "npm start"
+workingDirectory = "clarivore-menu-monitor"
