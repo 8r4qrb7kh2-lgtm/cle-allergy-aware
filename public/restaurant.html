@@ -4690,7 +4690,9 @@ function renderEditor(){
   };
 
   // Detect & Map Dishes - AI-assisted overlay creation
-  document.getElementById('detectDishesBtn').onclick=async()=>{
+  const detectDishesBtn = document.getElementById('detectDishesBtn');
+  if (detectDishesBtn) {
+    detectDishesBtn.onclick=async()=>{
     const btn=document.getElementById('detectDishesBtn');
     const originalText=btn.textContent;
     btn.disabled=true;
@@ -4885,6 +4887,7 @@ function renderEditor(){
       btn.textContent=originalText;
     }
   };
+  }
 
   // Zoom controls
   let zoomScale = 1.0;
