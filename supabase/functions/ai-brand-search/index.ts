@@ -231,7 +231,76 @@ You MUST respond with ONLY valid JSON in this exact format:
 
     console.log(`Filtered to ${validProducts.length} products with both required images`)
 
-    // Step 5: Format products for frontend
+    // Step 5: Use Claude to filter for English products and rank by relevance
+    if (validProducts.length > 0) {
+      const productsForRanking = validProducts.map((p, idx) => ({
+        index: idx,
+        name: p.product_name || '',
+        brand: p.brands || '',
+        categories: p.categories || '',
+        ingredients_text: p.ingredients_text_en || p.ingredients_text || ''
+      }))
+
+      const rankingPrompt = `Filter and rank these products for relevance to "${ingredientName}"${brandQuery ? ` from brand "${brandQuery}"` : ''}.
+
+IMPORTANT:
+1. ONLY include products with ENGLISH ingredient labels
+2. Reject products with non-English text (German, French, Italian, etc.)
+3. Rank by: brand match (if specified) > ingredient match > product quality
+4. Return maximum 6 products
+
+Products:
+${JSON.stringify(productsForRanking, null, 2)}
+
+Respond with ONLY valid JSON:
+{
+  "selectedIndices": [0, 2, 5],
+  "reasoning": "Brief explanation"
+}`
+
+      try {
+        const rankResponse = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': ANTHROPIC_API_KEY,
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 1000,
+            messages: [{
+              role: 'user',
+              content: rankingPrompt
+            }]
+          })
+        })
+
+        if (rankResponse.ok) {
+          const rankData = await rankResponse.json()
+          let rankText = ''
+          for (const block of rankData.content || []) {
+            if (block.type === 'text') rankText += block.text
+          }
+
+          const jsonMatch = rankText.match(/```json\n([\s\S]*?)\n```/) ||
+                           rankText.match(/```\n([\s\S]*?)\n```/) ||
+                           rankText.match(/\{[\s\S]*\}/)
+          const rankResult = JSON.parse(jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : rankText)
+
+          console.log('AI ranking reasoning:', rankResult.reasoning)
+
+          // Filter products based on AI selection
+          const selectedIndices = new Set(rankResult.selectedIndices || [])
+          validProducts = validProducts.filter((_, idx) => selectedIndices.has(idx))
+          console.log(`AI filtered to ${validProducts.length} relevant English products`)
+        }
+      } catch (err) {
+        console.warn('AI ranking failed, returning all products:', err)
+      }
+    }
+
+    // Step 6: Format products for frontend
     const formattedProducts = validProducts.map(product => {
       const allergens = []
       if (Array.isArray(product.allergens_tags)) {
