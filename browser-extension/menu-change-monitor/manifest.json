@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Universal Menu Change Monitor",
+  "description": "Detects edits to restaurant menu content and reminds editors to update allergen information on external sites.",
+  "version": "1.0.0",
+  "permissions": ["storage"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["contentScript.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
