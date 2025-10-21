@@ -231,23 +231,50 @@ You MUST respond with ONLY valid JSON in this exact format:
 
     console.log(`Filtered to ${validProducts.length} products with both required images`)
 
-    // Step 5: Use Claude to filter for English products and rank by relevance
-    if (validProducts.length > 0) {
-      const productsForRanking = validProducts.map((p, idx) => ({
+    // Step 5: Filter for English products first, then use Claude to rank
+    // Filter out products with non-English text in name or ingredients
+    const englishProducts = validProducts.filter(p => {
+      const productName = (p.product_name || '').toLowerCase()
+      const ingredientsText = (p.ingredients_text_en || p.ingredients_text || '').toLowerCase()
+      const combinedText = productName + ' ' + ingredientsText
+
+      // Check for common non-English words
+      const germanWords = ['mühlen', 'rügenwalder', 'klassisch', 'mit', 'ohne', 'und', 'von', 'der', 'die', 'das']
+      const frenchWords = ['avec', 'sans', 'fromage', 'viande', 'de', 'du', 'le', 'la', 'les']
+      const italianWords = ['con', 'senza', 'formaggio', 'carne', 'della', 'degli']
+
+      const hasGerman = germanWords.some(word => new RegExp(`\\b${word}\\b`, 'i').test(combinedText))
+      const hasFrench = frenchWords.some(word => new RegExp(`\\b${word}\\b`, 'i').test(combinedText))
+      const hasItalian = italianWords.some(word => new RegExp(`\\b${word}\\b`, 'i').test(combinedText))
+
+      if (hasGerman || hasFrench || hasItalian) {
+        console.log(`Filtered out non-English product: ${p.product_name}`)
+        return false
+      }
+
+      return true
+    })
+
+    console.log(`Filtered to ${englishProducts.length} English products`)
+
+    // Step 6: Use Claude to rank by relevance
+    let rankedProducts = englishProducts
+    if (englishProducts.length > 0) {
+      const productsForRanking = englishProducts.map((p, idx) => ({
         index: idx,
         name: p.product_name || '',
         brand: p.brands || '',
-        categories: p.categories || '',
-        ingredients_text: p.ingredients_text_en || p.ingredients_text || ''
+        categories: p.categories || ''
       }))
 
-      const rankingPrompt = `Filter and rank these products for relevance to "${ingredientName}"${brandQuery ? ` from brand "${brandQuery}"` : ''}.
+      const rankingPrompt = `Rank these products by relevance to "${ingredientName}"${brandQuery ? ` from brand "${brandQuery}"` : ''}.
 
-IMPORTANT:
-1. ONLY include products with ENGLISH ingredient labels
-2. Reject products with non-English text (German, French, Italian, etc.)
-3. Rank by: brand match (if specified) > ingredient match > product quality
-4. Return maximum 6 products
+Rank by:
+1. Exact brand match (if brand specified)
+2. Ingredient/product name match
+3. Product quality/popularity
+
+Return maximum 6 products, best matches first
 
 Products:
 ${JSON.stringify(productsForRanking, null, 2)}
@@ -290,18 +317,20 @@ Respond with ONLY valid JSON:
 
           console.log('AI ranking reasoning:', rankResult.reasoning)
 
-          // Filter products based on AI selection
-          const selectedIndices = new Set(rankResult.selectedIndices || [])
-          validProducts = validProducts.filter((_, idx) => selectedIndices.has(idx))
-          console.log(`AI filtered to ${validProducts.length} relevant English products`)
+          // Reorder products based on AI selection
+          const selectedIndices = rankResult.selectedIndices || []
+          rankedProducts = selectedIndices
+            .filter((idx: number) => idx < englishProducts.length)
+            .map((idx: number) => englishProducts[idx])
+          console.log(`AI ranked ${rankedProducts.length} products`)
         }
       } catch (err) {
         console.warn('AI ranking failed, returning all products:', err)
       }
     }
 
-    // Step 6: Format products for frontend
-    const formattedProducts = validProducts.map(product => {
+    // Step 7: Format products for frontend
+    const formattedProducts = rankedProducts.map(product => {
       const allergens = []
       if (Array.isArray(product.allergens_tags)) {
         product.allergens_tags.forEach((tag: string) => {
