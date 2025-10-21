@@ -1,0 +1,6 @@
+[build]
+builder = "NIXPACKS"
+nixpacksPlan = { providers = ["node"] }
+
+[deploy]
+startCommand = "npm start"
