@@ -4549,6 +4549,8 @@ function renderEditor(){
     }
   };
 
+  const mb=document.getElementById('modalBack');
+
   function drawAll(){
     [...inner.querySelectorAll('.editBox')].forEach(n=>n.remove());
     const iw=img.clientWidth, ih=img.clientHeight;
@@ -5152,8 +5154,6 @@ function renderEditor(){
       state.page='restaurant'; renderRestaurant();
     }
   };
-
-  const mb=document.getElementById('modalBack');
 
   // Check if there's a pending dish to auto-open (from WordPress deep link)
   if (window.__pendingDishToOpen) {
