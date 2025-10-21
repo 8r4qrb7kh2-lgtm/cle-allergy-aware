@@ -1,0 +1,8 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "cd clarivore-menu-monitor && npm install --omit=dev"
+
+[deploy]
+startCommand = "cd clarivore-menu-monitor && npm start"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
