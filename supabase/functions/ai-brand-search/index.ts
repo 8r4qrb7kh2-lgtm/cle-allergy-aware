@@ -242,29 +242,23 @@ You MUST respond with ONLY valid JSON in this exact format:
         ingredients_text: p.ingredients_text_en || p.ingredients_text || p.ingredients_original || ''
       }))
 
-      const rankingPrompt = `You are filtering and ranking products for a US-based restaurant ingredient search.
+      const rankingPrompt = `You are filtering products for a US restaurant. ONLY return products sold in US grocery stores with ENGLISH ingredient labels.
 
 Ingredient: "${ingredientName}"${brandQuery ? `\nPreferred Brand: "${brandQuery}"` : ''}
 
-Products to evaluate:
-${JSON.stringify(productsForRanking, null, 2)}
-
-CRITICAL REQUIREMENTS:
-1. ONLY select products with ENGLISH ingredient labels
-2. Reject ANY product with non-English text in the product name or ingredients
-3. Look for English words in the ingredients_text field
-4. If ingredients_text is empty or in another language, REJECT the product
-5. Prioritize: brand match (if specified) > ingredient relevance > US availability
-
-Return ONLY English-language products, ranked by relevance. Maximum 6 products
+For EACH product below, you must:
+1. Check if ingredients_text contains ENGLISH words (e.g., "water", "salt", "contains", "may contain")
+2. If ingredients_text is empty, missing, or contains non-English words (Italian: "senza", German: "mit", French: "avec"), REJECT it
+3. If product name contains non-English brand names from Europe (Primo Taglio=Italian, Edeka=German), REJECT it
+4. ONLY accept products clearly sold in US stores (Boar's Head, Oscar Mayer, Hormel, Applegate, Columbus)
 
 Products:
 ${JSON.stringify(productsForRanking, null, 2)}
 
-Respond with ONLY valid JSON:
+Respond with valid JSON. For each product, evaluate if it's English/US, then return ONLY the indices of English products:
 {
-  "selectedIndices": [0, 2, 5],
-  "reasoning": "Brief explanation"
+  "selectedIndices": [0, 1, 2],
+  "reasoning": "Rejected products X, Y, Z because [language]. Kept products A, B, C because [English evidence]"
 }`
 
       try {
