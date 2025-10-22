@@ -123,8 +123,8 @@ serve(async (req) => {
           // Detect what changed
           const changes = detectChanges(previousSnapshot.menu_text, menuText)
 
-          // Try to extract dish name from detected dishes
-          const dishName = await extractDishNameFromChanges(detectedDishes, changes)
+          // Try to extract all dish names from detected dishes
+          const dishNames = await extractDishNameFromChanges(detectedDishes, changes)
 
           // Send notification
           const emailSent = await sendNotification({
@@ -132,7 +132,7 @@ serve(async (req) => {
             restaurantName: restaurant.name,
             restaurantUrl: restaurant.menu_url,
             changes,
-            dishName,
+            dishNames,
             previousText: previousSnapshot.menu_text,
             currentText: menuText
           })
@@ -290,7 +290,7 @@ function extractDishesWithPattern(html: string): Array<{ name: string; descripti
   }))
 }
 
-async function extractDishNameFromChanges(dishes: Array<{ name: string; description: string }>, changes: string[]): Promise<string | null> {
+async function extractDishNameFromChanges(dishes: Array<{ name: string; description: string }>, changes: string[]): Promise<string[]> {
   // Parse all changed words (both added and removed)
   const allChangedWords: string[] = []
 
@@ -304,28 +304,38 @@ async function extractDishNameFromChanges(dishes: Array<{ name: string; descript
     }
   }
 
-  if (allChangedWords.length === 0) return null
+  if (allChangedWords.length === 0) return []
 
-  let bestMatch: { name: string; score: number } | null = null
+  const matchedDishes: Array<{ name: string; score: number }> = []
 
   for (const dish of dishes) {
+    const dishName = dish.name.toLowerCase()
     const description = dish.description.toLowerCase()
 
-    // Count how many changed words appear in this dish's description
+    // Count how many changed words appear in this dish's name or description
     let score = 0
     for (const word of allChangedWords) {
-      if (word.length > 2 && description.includes(word)) {
-        score++
+      if (word.length > 2) {
+        // Give higher weight to matches in the dish name
+        if (dishName.includes(word)) {
+          score += 3
+        } else if (description.includes(word)) {
+          score += 1
+        }
       }
     }
 
-    // Track the dish with the most matching changed words
-    if (score > 0 && (!bestMatch || score > bestMatch.score)) {
-      bestMatch = { name: dish.name, score }
+    // Include any dish with at least one matching word
+    if (score > 0) {
+      matchedDishes.push({ name: dish.name, score })
     }
   }
 
-  return bestMatch ? bestMatch.name : null
+  // Sort by score (highest first) and return all dishes with scores
+  matchedDishes.sort((a, b) => b.score - a.score)
+
+  // Return all matched dish names
+  return matchedDishes.map(d => d.name)
 }
 
 function detectChanges(oldText: string, newText: string): string[] {
@@ -359,7 +369,7 @@ async function sendNotification(params: {
   restaurantName: string
   restaurantUrl: string
   changes: string[]
-  dishName?: string | null
+  dishNames: string[]
   previousText: string
   currentText: string
 }): Promise<boolean> {
@@ -386,11 +396,14 @@ async function sendNotification(params: {
       restaurantSlug = 'falafel-cafe'
     }
 
-    // Create Clarivore editor link with dish name and AI assistant if available
-    let clarivoreLink = `https://clarivore.org/restaurant.html?slug=${restaurantSlug}&edit=1`
-    if (params.dishName) {
-      clarivoreLink += `&dishName=${encodeURIComponent(params.dishName)}&openAI=true`
-    }
+    // Create Clarivore editor links for each changed dish
+    const clarivoreLinks = params.dishNames.map(dishName => ({
+      dishName,
+      link: `https://clarivore.org/restaurant.html?slug=${restaurantSlug}&edit=1&dishName=${encodeURIComponent(dishName)}&openAI=true`
+    }))
+
+    // Create a general editor link without specific dish
+    const generalLink = `https://clarivore.org/restaurant.html?slug=${restaurantSlug}&edit=1`
 
     // Check if changes include allergen-related terms
     const allergenKeywords = ['allergen', 'allergy', 'nut', 'dairy', 'gluten', 'soy', 'egg', 'fish', 'shellfish', 'wheat', 'sesame', 'cheese', 'cream', 'pepper']
@@ -410,7 +423,11 @@ async function sendNotification(params: {
           .summary-box { background: ${hasCriticalChanges ? '#ffebee' : '#e8f5e9'}; padding: 15px; margin: 20px 0; border-left: 4px solid ${hasCriticalChanges ? '#c62828' : '#2e7d32'}; }
           .changes-list { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 4px; }
           .change-item { margin: 8px 0; padding: 8px; background: white; border-radius: 4px; }
-          .btn { display: inline-block; padding: 12px 24px; background: #1976d2; color: white; text-decoration: none; border-radius: 4px; margin: 10px 0; }
+          .dish-list { background: #fff3e0; padding: 15px; margin: 20px 0; border-left: 4px solid #ff9800; border-radius: 4px; }
+          .dish-item { margin: 12px 0; padding: 12px; background: white; border-radius: 4px; border: 1px solid #e0e0e0; }
+          .dish-name { font-weight: 600; font-size: 16px; color: #1976d2; margin-bottom: 8px; }
+          .btn { display: inline-block; padding: 12px 24px; background: #1976d2; color: white; text-decoration: none; border-radius: 4px; margin: 10px 5px 10px 0; }
+          .btn-small { display: inline-block; padding: 8px 16px; background: #1976d2; color: white; text-decoration: none; border-radius: 4px; margin: 5px 0; font-size: 14px; }
         </style>
       </head>
       <body>
@@ -422,7 +439,6 @@ async function sendNotification(params: {
             </h1>
             <p style="margin: 10px 0 0 0;">
               Changes detected at <strong>${params.restaurantName}</strong>
-              ${params.dishName ? `<br><span style="font-size: 18px; margin-top: 8px; display: block;">Dish: <strong>${params.dishName}</strong></span>` : ''}
             </p>
           </div>
 
@@ -430,22 +446,37 @@ async function sendNotification(params: {
             <strong>Summary:</strong>
             <ul>
               <li>${params.changes.length} change${params.changes.length > 1 ? 's' : ''} detected</li>
+              ${params.dishNames.length > 0 ? `<li>${params.dishNames.length} dish${params.dishNames.length > 1 ? 'es' : ''} affected</li>` : ''}
             </ul>
             ${hasCriticalChanges ? '<p style="margin-top: 10px; color: #c62828; font-weight: 600;">⚠️ This includes allergen-related changes that require immediate attention!</p>' : ''}
           </div>
 
+          ${params.dishNames.length > 0 ? `
+          <div class="dish-list">
+            <strong>🍽️ Dishes That May Need Updates:</strong>
+            ${clarivoreLinks.map(({ dishName, link }) => `
+              <div class="dish-item">
+                <div class="dish-name">${dishName}</div>
+                <a href="${link}" class="btn-small" style="background: #1976d2; color: white; text-decoration: none; display: inline-block;">Update Allergen Info for ${dishName}</a>
+              </div>
+            `).join('')}
+          </div>
+          ` : ''}
+
           <div class="changes-list">
             <strong>Changes Detected:</strong>
             ${params.changes.map(change => {
-              // Extract dish context from changes
-              const dishMatch = change.match(/Added: (\w+)|Removed: (\w+)/)
               return `<div class="change-item"><strong>${change}</strong></div>`
             }).join('')}
           </div>
 
           <p><strong>Action Required:</strong> Please review the menu changes and update allergen information in the Clarivore system.</p>
 
-          <a href="${clarivoreLink}" class="btn" style="background: #1976d2; color: white; text-decoration: none; display: inline-block;">Update in Clarivore</a>
+          ${params.dishNames.length === 0 ? `
+            <a href="${generalLink}" class="btn" style="background: #1976d2; color: white; text-decoration: none; display: inline-block;">Update in Clarivore</a>
+          ` : `
+            <a href="${generalLink}" class="btn" style="background: #666; color: white; text-decoration: none; display: inline-block;">Open Full Menu Editor</a>
+          `}
 
           <p style="margin-top: 15px; font-size: 14px;">
             <a href="${params.restaurantUrl}" style="color: #666;">View Original Menu</a>
@@ -476,18 +507,26 @@ async function sendNotification(params: {
 Menu Changes Detected ${hasCriticalChanges ? '🚨 URGENT' : ''}
 
 Restaurant: ${params.restaurantName}
-${params.dishName ? `Dish: ${params.dishName}` : ''}
 
 Summary:
 - ${params.changes.length} change${params.changes.length > 1 ? 's' : ''} detected
+${params.dishNames.length > 0 ? `- ${params.dishNames.length} dish${params.dishNames.length > 1 ? 'es' : ''} affected` : ''}
 ${hasCriticalChanges ? '\n⚠️ This includes allergen-related changes that require immediate attention!' : ''}
+
+${params.dishNames.length > 0 ? `
+🍽️ Dishes That May Need Updates:
+${clarivoreLinks.map(({ dishName, link }) => `
+- ${dishName}
+  Update link: ${link}
+`).join('')}
+` : ''}
 
 Changes Detected:
 ${params.changes.map(change => `- ${change}`).join('\n')}
 
 Action Required: Please review the menu changes and update allergen information in the Clarivore system.
 
-Update in Clarivore: ${clarivoreLink}
+${params.dishNames.length === 0 ? `Update in Clarivore: ${generalLink}` : `Open Full Menu Editor: ${generalLink}`}
 View Original Menu: ${params.restaurantUrl}
 
 ---
