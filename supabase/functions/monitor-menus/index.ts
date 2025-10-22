@@ -498,7 +498,7 @@ Visit Clarivore: https://clarivore.org
 Unsubscribe: mailto:clarivoretesting@gmail.com?subject=Unsubscribe
     `.trim()
 
-    await fetch('https://api.sendgrid.com/v3/mail/send', {
+    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${sendgridApiKey}`,
@@ -508,8 +508,7 @@ Unsubscribe: mailto:clarivoretesting@gmail.com?subject=Unsubscribe
         personalizations: [{
           to: [{ email: 'clarivoretesting@gmail.com' }]
         }],
-        from: { email: 'noreply@clarivore.org', name: 'Clarivore Menu Monitor' },
-        reply_to: { email: 'clarivoretesting@gmail.com' },
+        from: { email: 'clarivoretesting@gmail.com', name: 'Clarivore Menu Monitor' },
         subject: subject,
         content: [
           { type: 'text/plain', value: emailText },
@@ -518,7 +517,15 @@ Unsubscribe: mailto:clarivoretesting@gmail.com?subject=Unsubscribe
       })
     })
 
-    console.log(`Notification sent for ${params.restaurantName}`)
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`SendGrid error (${response.status}):`, errorText)
+      console.error('IMPORTANT: If error mentions "unverified sender", you need to verify noreply@clarivore.org in SendGrid')
+      console.error('Go to: https://app.sendgrid.com/settings/sender_auth/senders')
+      return false
+    }
+
+    console.log(`Notification sent successfully for ${params.restaurantName}`)
     return true
   }
 

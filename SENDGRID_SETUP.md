@@ -2,17 +2,17 @@
 
 ## What I've Already Done For You
 
-✅ **Updated the code** to use `noreply@clarivore.org` as the sender email instead of `clarivoretesting@gmail.com`
+✅ **Added error handling** to show why emails aren't sending
 ✅ **Deployed the fix** to Supabase - the new code is live
 ✅ **Set up automatic monitoring** using GitHub Actions (runs every 6 hours)
 
-## What You Need To Do (5-10 minutes)
+## What You Need To Do (2 minutes)
 
-Your emails are going to spam because Gmail detects that `clarivoretesting@gmail.com` is being sent from SendGrid servers (not Gmail servers), which looks like spoofing. To fix this, you need to verify `noreply@clarivore.org` in SendGrid.
+Your emails are NOT being sent because `clarivoretesting@gmail.com` is not verified in SendGrid. SendGrid requires you to verify any email address you want to send from.
 
-### Option 1: Quick Single Sender Verification (Recommended - 5 minutes)
+### Quick Single Sender Verification (Takes 2 minutes)
 
-This is the fastest way to get your emails out of spam:
+Follow these exact steps:
 
 1. **Go to SendGrid**: https://app.sendgrid.com/settings/sender_auth/senders
 
@@ -20,7 +20,7 @@ This is the fastest way to get your emails out of spam:
 
 3. **Fill in the form**:
    - **From Name**: `Clarivore Menu Monitor`
-   - **From Email Address**: `noreply@clarivore.org`
+   - **From Email Address**: `clarivoretesting@gmail.com`
    - **Reply To**: `clarivoretesting@gmail.com`
    - **Company Address**: (Your address)
    - **City**: (Your city)
@@ -34,7 +34,7 @@ This is the fastest way to get your emails out of spam:
 
 6. **Click the verification link** in that email
 
-7. **Done!** Your emails will now go to inbox instead of spam
+7. **Done!** Emails will now be sent (they may still go to spam until you do domain authentication)
 
 ### Option 2: Domain Authentication (Better Long-Term - 15-20 minutes)
 
