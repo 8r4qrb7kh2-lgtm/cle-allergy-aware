@@ -17,7 +17,6 @@
       --warn: #facc15;
       --bad: #ef4444;
       --border: #2a3261;
-      --hover: #4c5ad4;
     }
 
     * {
@@ -75,7 +74,6 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      position: relative;
       background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 100%);
     }
 
@@ -93,11 +91,10 @@
       padding: 0 20px;
       max-width: 800px;
       color: rgba(255,255,255,0.9);
+      margin-bottom: 40px;
     }
 
     .scroll-indicator {
-      position: absolute;
-      bottom: 40px;
       font-size: 2rem;
       animation: bounce 2s infinite;
       opacity: 0.7;
@@ -109,12 +106,11 @@
       50% { transform: translateY(10px); }
     }
 
-    /* Showcase Section */
+    /* Main Showcase */
     .showcase-section {
-      min-height: 500vh;
+      min-height: 600vh;
       position: relative;
       background: var(--bg);
-      padding: 0;
     }
 
     .showcase-sticky {
@@ -124,105 +120,91 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
+      padding: 80px 20px 20px;
     }
 
     .showcase-container {
-      max-width: 1400px;
+      max-width: 1600px;
       width: 100%;
-      padding: 40px 20px;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 60px;
-      align-items: center;
+      grid-template-columns: 400px 1fr;
+      gap: 40px;
+      align-items: start;
     }
 
-    @media (max-width: 968px) {
+    @media (max-width: 1200px) {
       .showcase-container {
         grid-template-columns: 1fr;
-        gap: 30px;
+        gap: 20px;
+      }
+      .info-panel {
+        max-width: 600px;
+        margin: 0 auto;
       }
     }
 
-    .showcase-info {
-      padding: 20px;
+    .info-panel {
+      padding: 30px;
+      background: var(--panel);
+      border-radius: 16px;
+      border: 1px solid var(--border);
     }
 
-    .showcase-info h2 {
-      font-size: clamp(2rem, 4vw, 3rem);
-      margin-bottom: 20px;
+    .info-panel h2 {
+      font-size: 2rem;
       color: var(--brand);
-    }
-
-    .showcase-info p {
-      font-size: clamp(1rem, 2vw, 1.2rem);
-      line-height: 1.6;
-      color: var(--muted);
       margin-bottom: 16px;
     }
 
-    .feature-list {
-      list-style: none;
-      margin-top: 20px;
-    }
-
-    .feature-list li {
-      padding: 12px 0;
+    .info-panel p {
       font-size: 1.1rem;
+      line-height: 1.6;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .info-panel strong {
       color: var(--ink);
-      display: flex;
-      align-items: center;
-      gap: 12px;
     }
 
-    .feature-list li::before {
-      content: "✓";
-      color: var(--ok);
-      font-weight: bold;
-      font-size: 1.3rem;
-    }
-
-    /* Demo Area */
-    .demo-area {
+    /* Menu Container - mimics restaurant.html */
+    .menu-container {
       position: relative;
       background: var(--panel);
-      border-radius: 20px;
-      padding: 30px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      border-radius: 16px;
       border: 1px solid var(--border);
-      min-height: 600px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      overflow: hidden;
     }
 
-    /* Allergen Selector */
+    /* Allergen Selector - from restaurant.html */
     .allergen-selector {
-      margin-bottom: 24px;
-      padding: 16px;
+      padding: 20px;
       background: rgba(124,156,255,0.05);
-      border: 1px dashed rgba(124,156,255,0.3);
-      border-radius: 12px;
+      border-bottom: 1px solid var(--border);
     }
 
     .allergen-selector-title {
       font-weight: 600;
       color: var(--brand);
-      margin-bottom: 12px;
-      font-size: 0.95rem;
+      margin-bottom: 10px;
+      font-size: 0.9rem;
     }
 
     .allergen-chips {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+      margin-bottom: 16px;
     }
 
     .allergen-chip {
       background: rgba(168, 178, 214, 0.1);
       color: var(--muted);
-      padding: 8px 14px;
-      border-radius: 20px;
-      font-size: 0.9rem;
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 0.85rem;
       border: 1px solid rgba(168, 178, 214, 0.2);
-      cursor: pointer;
       transition: all 0.3s;
       user-select: none;
     }
@@ -233,117 +215,99 @@
       border-color: rgba(239,68,68,0.3);
     }
 
-    .diet-chip {
-      background: rgba(168, 178, 214, 0.1);
-      color: var(--muted);
-      padding: 8px 14px;
-      border-radius: 20px;
-      font-size: 0.9rem;
-      border: 1px solid rgba(168, 178, 214, 0.2);
-      cursor: pointer;
-      transition: all 0.3s;
-      user-select: none;
-    }
-
     .diet-chip.selected {
       background: rgba(76,200,90,0.15);
       color: #4cc85a;
       border-color: rgba(76,200,90,0.3);
     }
 
-    /* Menu Demo */
-    .menu-demo {
+    /* Demo Menu Image */
+    .menu-wrapper {
       position: relative;
-      background: rgba(255,255,255,0.02);
-      border-radius: 12px;
       padding: 20px;
-      min-height: 400px;
+      background: #1a1a1a;
     }
 
-    .menu-item {
-      background: rgba(255,255,255,0.03);
-      border: 2px solid rgba(255,255,255,0.1);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 12px;
+    #demoMenu {
+      width: 100%;
+      height: 700px;
+      background: linear-gradient(to bottom, #2a2a2a 0%, #1a1a1a 100%);
+      border-radius: 8px;
       position: relative;
-      cursor: pointer;
-      transition: all 0.3s;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
     }
 
-    .menu-item:hover {
-      transform: translateX(4px);
-    }
-
-    .menu-item.status-safe {
-      border-color: var(--ok);
-      background: rgba(34,197,94,0.05);
-    }
-
-    .menu-item.status-removable {
-      border-color: var(--warn);
-      background: rgba(250,204,21,0.05);
-    }
-
-    .menu-item.status-unsafe {
-      border-color: var(--bad);
-      background: rgba(239,68,68,0.05);
-    }
-
-    .menu-item.status-neutral {
-      border-color: rgba(255,255,255,0.1);
-    }
-
-    .item-name {
-      font-weight: 600;
-      font-size: 1.1rem;
-      margin-bottom: 4px;
-      color: var(--ink);
-    }
-
-    .item-desc {
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-
-    .item-badge {
+    /* Menu Title Overlay */
+    .menu-title-overlay {
       position: absolute;
-      top: 16px;
-      right: 16px;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.1);
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      pointer-events: none;
+    }
+
+    /* Overlay Layer - from restaurant.html */
+    #overlayLayer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .overlay {
+      position: absolute;
+      border: 3px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      transition: all 0.3s;
+      pointer-events: all;
+      cursor: pointer;
+      background: rgba(0,0,0,0.3);
+      backdrop-filter: blur(2px);
+    }
+
+    .overlay:hover {
+      background: rgba(0,0,0,0.5);
+      transform: scale(1.02);
+    }
+
+    /* Badges - from restaurant.html */
+    .ovBadge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
       width: 32px;
       height: 32px;
+      background: rgba(124,156,255,0.9);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
+      color: white;
       font-weight: bold;
-      font-size: 1.1rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
     }
 
-    .status-safe .item-badge {
-      background: var(--ok);
-      color: white;
+    .ovBadge:hover {
+      transform: scale(1.1);
+      background: var(--brand);
     }
 
-    .status-removable .item-badge {
-      background: var(--warn);
-      color: #000;
-    }
-
-    .status-unsafe .item-badge {
-      background: var(--bad);
-      color: white;
-    }
-
-    .status-neutral .item-badge {
-      background: rgba(255,255,255,0.2);
-      color: var(--muted);
-    }
-
-    .warning-badge {
+    .ovWarning {
       position: absolute;
-      top: 16px;
-      left: 16px;
+      top: 8px;
+      left: 8px;
       width: 28px;
       height: 28px;
       background: var(--warn);
@@ -351,17 +315,17 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1rem;
+      font-size: 0.9rem;
       animation: pulse 2s infinite;
     }
 
     @keyframes pulse {
-      0%, 100% { transform: scale(1); opacity: 1; }
-      50% { transform: scale(1.1); opacity: 0.8; }
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.05); }
     }
 
-    /* Tooltip */
-    .demo-tooltip {
+    /* Tooltip - from restaurant.html */
+    #pageTip {
       position: absolute;
       background: rgba(11, 16, 32, 0.98);
       backdrop-filter: blur(14px);
@@ -370,106 +334,90 @@
       padding: 16px;
       max-width: 320px;
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s;
-      z-index: 100;
+      display: none;
+      z-index: 1000;
       font-size: 0.9rem;
     }
 
-    .demo-tooltip.visible {
-      opacity: 1;
+    .tipHead {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
     }
 
-    .tooltip-title {
+    .tTitle {
       font-weight: 600;
       color: var(--ink);
-      margin-bottom: 12px;
       font-size: 1rem;
     }
 
-    .tooltip-section {
-      margin-bottom: 12px;
-    }
-
-    .tooltip-section:last-child {
-      margin-bottom: 0;
-    }
-
-    .tooltip-section strong {
-      display: block;
-      margin-bottom: 8px;
+    .tClose {
+      background: rgba(255,255,255,0.1);
+      border: none;
       color: var(--ink);
-      font-size: 0.95rem;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
     }
 
-    .tooltip-allergen {
+    .note {
+      background: rgba(124,156,255,0.1);
       padding: 10px;
       border-radius: 8px;
       margin-bottom: 8px;
       font-size: 0.9rem;
     }
 
-    .tooltip-allergen.danger {
+    .tooltipDangerText {
       background: rgba(239,68,68,0.15);
       border-left: 3px solid var(--bad);
       color: var(--ink);
     }
 
-    .tooltip-allergen.warning {
+    .tooltipWarnText {
       background: rgba(250,204,21,0.15);
       border-left: 3px solid var(--warn);
       color: var(--ink);
     }
 
-    .tooltip-allergen.safe {
+    .tooltipNeutralText {
       background: rgba(34,197,94,0.15);
       border-left: 3px solid var(--ok);
       color: var(--ink);
     }
 
-    .tooltip-diet {
-      margin-bottom: 6px;
-      font-size: 0.9rem;
-    }
-
-    .tooltip-diet.met {
-      color: #4cc85a;
-    }
-
-    .tooltip-diet.not-met {
-      color: #e85d5d;
-    }
-
     /* Virtual Cursor */
-    .virtual-cursor {
+    #virtualCursor {
       position: absolute;
       width: 40px;
       height: 40px;
       pointer-events: none;
       opacity: 0;
       transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-      z-index: 200;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+      z-index: 2000;
+      filter: drop-shadow(0 2px 8px rgba(124,156,255,0.5));
     }
 
-    .virtual-cursor.visible {
+    #virtualCursor.visible {
       opacity: 1;
     }
 
-    .virtual-cursor svg {
-      width: 100%;
-      height: 100%;
-    }
-
     /* Progress Indicator */
-    .progress-text {
-      text-align: center;
-      margin-top: 20px;
+    .progress-indicator {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(11, 16, 32, 0.9);
+      padding: 12px 24px;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      font-size: 0.9rem;
       color: var(--muted);
-      font-size: 0.95rem;
-      min-height: 48px;
-      line-height: 1.5;
+      text-align: center;
+      max-width: 90%;
     }
 
     /* CTA Section */
@@ -515,52 +463,6 @@
       transform: scale(1.05);
       box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     }
-
-    /* Mobile Bottom Sheet Demo */
-    .mobile-sheet {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: rgba(11, 16, 32, 0.98);
-      backdrop-filter: blur(14px);
-      border-radius: 20px 20px 0 0;
-      padding: 24px;
-      border-top: 1px solid var(--border);
-      transform: translateY(100%);
-      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .mobile-sheet.visible {
-      transform: translateY(0);
-    }
-
-    .mobile-sheet-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-
-    .mobile-sheet-title {
-      font-weight: 600;
-      font-size: 1.1rem;
-      color: var(--ink);
-    }
-
-    .mobile-sheet-close {
-      background: rgba(255,255,255,0.1);
-      border: none;
-      color: var(--ink);
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 1.2rem;
-    }
   </style>
 </head>
 <body>
@@ -570,65 +472,57 @@
         <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt="Clarivore logo">
         <span>Clarivore</span>
       </a>
-      <div class="simple-nav">
-        <!-- Navigation populated by shared-nav.js -->
-      </div>
+      <div class="simple-nav"></div>
     </div>
   </header>
 
   <!-- Hero Section -->
   <section class="hero-section">
-    <h1 class="hero-title">Dine with Confidence</h1>
-    <p class="hero-subtitle">Discover how Clarivore makes dining safer for people with food allergies and dietary restrictions</p>
+    <h1 class="hero-title">How Clarivore Works</h1>
+    <p class="hero-subtitle">Experience the complete allergen-aware dining system. Scroll to see every feature in action.</p>
     <div class="scroll-indicator">↓</div>
   </section>
 
-  <!-- Interactive Showcase Section -->
+  <!-- Interactive Showcase -->
   <section class="showcase-section">
     <div class="showcase-sticky">
       <div class="showcase-container">
         <!-- Info Panel -->
-        <div class="showcase-info">
-          <h2 id="sceneTitle">Welcome to Clarivore</h2>
-          <div id="sceneDescription">
-            <p>Scroll down to see how Clarivore helps you find safe menu options based on your allergens and dietary preferences.</p>
-          </div>
+        <div class="info-panel">
+          <h2 id="sceneTitle">Loading...</h2>
+          <div id="sceneDescription"></div>
         </div>
 
-        <!-- Demo Panel -->
-        <div class="demo-area">
-          <!-- Virtual Cursor -->
-          <div class="virtual-cursor" id="virtualCursor">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-              <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#7c9cff" stroke="#fff" stroke-width="1.5"/>
-            </svg>
-          </div>
-
+        <!-- Menu Demo -->
+        <div class="menu-container">
           <!-- Allergen Selector -->
-          <div class="allergen-selector" id="allergenSelector">
+          <div class="allergen-selector">
             <div class="allergen-selector-title">Your Saved Allergens</div>
             <div class="allergen-chips" id="allergenChips"></div>
-            <div class="allergen-selector-title" style="margin-top: 16px;">Your Saved Dietary Preferences</div>
+            <div class="allergen-selector-title">Your Saved Dietary Preferences</div>
             <div class="allergen-chips" id="dietChips"></div>
           </div>
 
-          <!-- Menu Demo -->
-          <div class="menu-demo" id="menuDemo"></div>
-
-          <!-- Demo Tooltip -->
-          <div class="demo-tooltip" id="demoTooltip"></div>
-
-          <!-- Mobile Bottom Sheet -->
-          <div class="mobile-sheet" id="mobileSheet">
-            <div class="mobile-sheet-header">
-              <div class="mobile-sheet-title" id="sheetTitle">Item Details</div>
-              <button class="mobile-sheet-close">×</button>
+          <!-- Menu Display -->
+          <div class="menu-wrapper">
+            <div id="demoMenu">
+              <div class="menu-title-overlay">DEMO MENU</div>
+              <div id="overlayLayer"></div>
             </div>
-            <div id="sheetContent"></div>
+
+            <!-- Virtual Cursor -->
+            <div id="virtualCursor">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+                <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#7c9cff" stroke="#fff" stroke-width="2"/>
+              </svg>
+            </div>
+
+            <!-- Tooltip -->
+            <div id="pageTip"></div>
           </div>
 
-          <!-- Progress Text -->
-          <div class="progress-text" id="progressText"></div>
+          <!-- Progress Indicator -->
+          <div class="progress-indicator" id="progressText">Scroll to begin</div>
         </div>
       </div>
     </div>
@@ -637,7 +531,7 @@
   <!-- CTA Section -->
   <section class="cta-section">
     <h2>Ready to Get Started?</h2>
-    <p>Join Clarivore and discover safe dining options across Cleveland</p>
+    <p>Join Clarivore and discover safe dining options tailored to your needs</p>
     <a href="account.html" class="cta-button">Create Your Profile</a>
   </section>
 
@@ -649,9 +543,7 @@
     async function initNav() {
       const { data: { user } } = await supabaseClient.auth.getUser();
       setupNav('how-it-works', user);
-      if (user) {
-        attachSignOutHandler(supabaseClient);
-      }
+      if (user) attachSignOutHandler(supabaseClient);
     }
     initNav();
   </script>
@@ -660,92 +552,108 @@
     const ALLERGENS = ["dairy", "egg", "peanut", "tree nut", "shellfish", "fish", "soy", "sesame", "wheat"];
     const DIETS = ["Vegan", "Vegetarian", "Pescatarian", "Kosher", "Halal"];
     const ALLERGEN_EMOJI = {
-      'dairy': '🥛',
-      'egg': '🥚',
-      'peanut': '🥜',
-      'tree nut': '🌰',
-      'shellfish': '🦐',
-      'fish': '🐟',
-      'soy': '🫛',
-      'sesame': '🫘',
-      'wheat': '🌾'
+      'dairy': '🥛', 'egg': '🥚', 'peanut': '🥜', 'tree nut': '🌰',
+      'shellfish': '🦐', 'fish': '🐟', 'soy': '🫛', 'sesame': '🫘', 'wheat': '🌾'
     };
     const DIET_EMOJI = {
-      'Vegan': '🌱',
-      'Vegetarian': '🥬',
-      'Pescatarian': '🐟',
-      'Kosher': '✡️',
-      'Halal': '☪️'
+      'Vegan': '🌱', 'Vegetarian': '🥬', 'Pescatarian': '🐟', 'Kosher': '✡️', 'Halal': '☪️'
     };
 
-    // Demo menu items with comprehensive allergen data
+    // Demo menu items with overlay positions (as percentages)
     const DEMO_ITEMS = [
       {
         id: "Garden Salad",
-        emoji: "🥗",
-        desc: "Fresh mixed greens, tomatoes, cucumber, balsamic vinaigrette",
+        x: 10, y: 8, w: 35, h: 12,
         allergens: [],
         removable: [],
         crossContamination: [],
         diets: ["Vegan", "Vegetarian", "Pescatarian"]
       },
       {
-        id: "Grilled Chicken",
-        emoji: "🍗",
-        desc: "Herb-marinated chicken breast with roasted vegetables",
+        id: "Grilled Chicken Breast",
+        x: 55, y: 8, w: 35, h: 12,
         allergens: [],
         removable: [],
         crossContamination: ["soy"],
-        diets: ["Pescatarian"]
+        diets: []
       },
       {
         id: "Pasta Primavera",
-        emoji: "🍝",
-        desc: "Seasonal vegetables, olive oil, parmesan cheese",
+        x: 10, y: 25, w: 35, h: 12,
         allergens: ["dairy"],
         removable: [{allergen: "dairy"}],
         crossContamination: [],
-        diets: ["Vegetarian", "Pescatarian"]
+        diets: ["Vegetarian"]
       },
       {
         id: "Thai Peanut Noodles",
-        emoji: "🥜",
-        desc: "Rice noodles, peanut sauce, vegetables, sesame oil",
+        x: 55, y: 25, w: 35, h: 12,
         allergens: ["peanut", "sesame"],
         removable: [],
         crossContamination: [],
-        diets: ["Vegan", "Vegetarian", "Pescatarian"]
+        diets: ["Vegan", "Vegetarian"]
       },
       {
         id: "Seafood Linguine",
-        emoji: "🦐",
-        desc: "Shrimp, scallops, white wine cream sauce",
+        x: 10, y: 42, w: 35, h: 12,
         allergens: ["shellfish", "fish", "dairy"],
         removable: [],
         crossContamination: [],
-        diets: ["Pescatarian"]
+        diets: []
       },
       {
         id: "Margherita Pizza",
-        emoji: "🍕",
-        desc: "Fresh mozzarella, basil, tomato sauce",
+        x: 55, y: 42, w: 35, h: 12,
         allergens: ["dairy", "wheat"],
         removable: [{allergen: "dairy"}],
         crossContamination: [],
-        diets: ["Vegetarian", "Pescatarian"]
+        diets: ["Vegetarian"]
+      },
+      {
+        id: "Caesar Salad",
+        x: 10, y: 59, w: 35, h: 12,
+        allergens: ["dairy", "egg", "fish"],
+        removable: [{allergen: "dairy"}],
+        crossContamination: [],
+        diets: []
+      },
+      {
+        id: "Vegetable Stir Fry",
+        x: 55, y: 59, w: 35, h: 12,
+        allergens: ["soy"],
+        removable: [],
+        crossContamination: [],
+        diets: ["Vegan", "Vegetarian"]
+      },
+      {
+        id: "Chocolate Cake",
+        x: 10, y: 76, w: 35, h: 12,
+        allergens: ["dairy", "egg", "wheat"],
+        removable: [],
+        crossContamination: [],
+        diets: ["Vegetarian"]
+      },
+      {
+        id: "Fresh Fruit Plate",
+        x: 55, y: 76, w: 35, h: 12,
+        allergens: [],
+        removable: [],
+        crossContamination: [],
+        diets: ["Vegan", "Vegetarian", "Pescatarian", "Kosher", "Halal"]
       }
     ];
 
     // State
-    let selectedAllergens = [];
-    let selectedDiets = [];
-    let currentScene = 0;
+    let state = {
+      allergens: [],
+      diets: [],
+      currentScene: 0
+    };
 
     // Core logic from restaurant.html
     function computeStatus(item, allergens, diets) {
       const hasAllergenReqs = allergens && allergens.length > 0;
       const hasDietReqs = diets && diets.length > 0;
-
       if (!hasAllergenReqs && !hasDietReqs) return 'neutral';
 
       const allergenHits = (item.allergens || []).filter(a => allergens.includes(a));
@@ -759,73 +667,66 @@
       if (!meetsDietReqs) return 'unsafe';
       if (hasAllergenIssues && !allergenRemovableAll) return 'unsafe';
       if (hasAllergenIssues && allergenRemovableAll) return 'removable';
-
       return 'safe';
     }
 
     function hasCrossContamination(item, allergens) {
       if (!allergens || !allergens.length) return false;
-      const crossContam = item.crossContamination || [];
-      return crossContam.some(a => allergens.includes(a));
+      return (item.crossContamination || []).some(a => allergens.includes(a));
     }
 
-    function generateTooltipHTML(item, allergens, diets) {
+    function tooltipBodyHTML(item, allergens, diets) {
       if (!allergens.length && !diets.length) {
-        return '<div style="color: var(--muted);">Select allergens or dietary preferences to see details</div>';
+        return '<div class="note">Select allergens or dietary preferences to see safety information</div>';
       }
 
       let html = '';
-
       if (allergens.length) {
-        html += '<div class="tooltip-section"><strong>Allergen Information</strong>';
-
+        html += '<strong style="display:block;margin-bottom:8px;color:var(--ink)">Allergen Information</strong>';
         const hits = (item.allergens || []).filter(a => allergens.includes(a));
         const removableSet = new Set((item.removable || []).map(r => r.allergen));
         const unsafeHits = hits.filter(a => !removableSet.has(a));
         const removableHits = hits.filter(a => removableSet.has(a));
 
         if (unsafeHits.length) {
-          unsafeHits.forEach(a => {
+          const list = unsafeHits.map(a => {
             const emoji = ALLERGEN_EMOJI[a] || '⚠️';
-            html += `<div class="tooltip-allergen danger">${emoji} Contains <strong>${a}</strong> (cannot be substituted out)</div>`;
-          });
+            return `<div style="margin-bottom:4px">${emoji} Contains <strong>${a}</strong> (cannot be substituted)</div>`;
+          }).join('');
+          html += `<div class="note tooltipDangerText">${list}</div>`;
         }
-
         if (removableHits.length) {
-          removableHits.forEach(a => {
+          const list = removableHits.map(a => {
             const emoji = ALLERGEN_EMOJI[a] || '⚠️';
-            html += `<div class="tooltip-allergen warning">${emoji} Contains <strong>${a}</strong> (can be substituted out)</div>`;
-          });
+            return `<div style="margin-bottom:4px">${emoji} Contains <strong>${a}</strong> (can be substituted)</div>`;
+          }).join('');
+          html += `<div class="note tooltipWarnText">${list}</div>`;
+        }
+        if (!hits.length && !hasCrossContamination(item, allergens)) {
+          html += '<div class="note tooltipNeutralText">✓ None of your allergens found</div>';
         }
 
-        if (!hits.length) {
-          html += '<div class="tooltip-allergen safe">✓ None of your selected allergens found</div>';
-        }
-
-        const hasCross = hasCrossContamination(item, allergens);
-        if (hasCross) {
+        if (hasCrossContamination(item, allergens)) {
           const crossHits = (item.crossContamination || []).filter(a => allergens.includes(a));
-          crossHits.forEach(a => {
+          const crossList = crossHits.map(a => {
             const emoji = ALLERGEN_EMOJI[a] || '⚠️';
-            html += `<div class="tooltip-allergen warning">${emoji} Cross-contamination risk: <strong>${a}</strong></div>`;
-          });
+            return `<div style="margin-bottom:4px">${emoji} Cross-contamination risk: <strong>${a}</strong></div>`;
+          }).join('');
+          html += `<div class="note tooltipWarnText">${crossList}</div>`;
         }
-
-        html += '</div>';
       }
 
       if (diets.length) {
-        html += '<div class="tooltip-section"><strong>Dietary Options</strong>';
+        html += '<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(124,156,255,0.2)">';
+        html += '<strong style="display:block;margin-bottom:8px;color:var(--ink)">Dietary Options</strong>';
         const itemDietSet = new Set(item.diets || []);
-
         diets.forEach(diet => {
           const isDietMet = itemDietSet.has(diet);
+          const color = isDietMet ? '#4cc85a' : '#e85d5d';
           const emoji = DIET_EMOJI[diet] || '✓';
           const status = isDietMet ? 'is' : 'is not';
-          const className = isDietMet ? 'met' : 'not-met';
-          html += `<div class="tooltip-diet ${className}">${emoji} This dish ${status} <strong>${diet.toLowerCase()}</strong></div>`;
+          html += `<div style="margin-bottom:6px;color:${color};font-size:0.9rem">${emoji} This dish ${status} <strong>${diet.toLowerCase()}</strong></div>`;
         });
-
         html += '</div>';
       }
 
@@ -837,264 +738,275 @@
       const allergenChips = document.getElementById('allergenChips');
       allergenChips.innerHTML = ALLERGENS.map(allergen => {
         const emoji = ALLERGEN_EMOJI[allergen] || '';
-        const selected = selectedAllergens.includes(allergen);
-        return `<div class="allergen-chip ${selected ? 'selected' : ''}" data-allergen="${allergen}">
-          ${emoji} ${allergen.charAt(0).toUpperCase() + allergen.slice(1)}
-        </div>`;
+        const selected = state.allergens.includes(allergen);
+        return `<div class="allergen-chip ${selected ? 'selected' : ''}">${emoji} ${allergen.charAt(0).toUpperCase() + allergen.slice(1)}</div>`;
       }).join('');
 
       const dietChips = document.getElementById('dietChips');
       dietChips.innerHTML = DIETS.map(diet => {
         const emoji = DIET_EMOJI[diet] || '';
-        const selected = selectedDiets.includes(diet);
-        return `<div class="diet-chip ${selected ? 'selected' : ''}" data-diet="${diet}">
-          ${emoji} ${diet}
-        </div>`;
+        const selected = state.diets.includes(diet);
+        return `<div class="allergen-chip diet-chip ${selected ? 'selected' : ''}">${emoji} ${diet}</div>`;
       }).join('');
     }
 
-    function renderMenu() {
-      const menuDemo = document.getElementById('menuDemo');
-      menuDemo.innerHTML = DEMO_ITEMS.map(item => {
-        const status = computeStatus(item, selectedAllergens, selectedDiets);
-        const hasCross = hasCrossContamination(item, selectedAllergens);
+    function renderLayer() {
+      const layer = document.getElementById('overlayLayer');
+      const menu = document.getElementById('demoMenu');
+      layer.innerHTML = '';
 
-        const badgeContent = status === 'safe' ? '✓' :
-                            status === 'removable' ? '!' :
-                            status === 'unsafe' ? '✕' : 'i';
+      const colors = {
+        safe: 'var(--ok)',
+        removable: 'var(--warn)',
+        unsafe: 'var(--bad)',
+        neutral: 'rgba(255,255,255,0.2)'
+      };
 
-        return `
-          <div class="menu-item status-${status}" data-item="${item.id}">
-            ${hasCross ? '<div class="warning-badge">⚠</div>' : ''}
-            <div class="item-name">${item.emoji} ${item.id}</div>
-            <div class="item-desc">${item.desc}</div>
-            <div class="item-badge">${badgeContent}</div>
-          </div>
-        `;
-      }).join('');
+      DEMO_ITEMS.forEach(item => {
+        const box = document.createElement('div');
+        box.className = 'overlay';
+        box.dataset.itemId = item.id;
+
+        const status = computeStatus(item, state.allergens, state.diets);
+        box.style.borderColor = colors[status];
+        box.style.left = item.x + '%';
+        box.style.top = item.y + '%';
+        box.style.width = item.w + '%';
+        box.style.height = item.h + '%';
+
+        // Add item label
+        const label = document.createElement('div');
+        label.style.cssText = 'position:absolute;bottom:8px;left:8px;color:rgba(255,255,255,0.9);font-size:0.85rem;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,0.8);';
+        label.textContent = item.id;
+        box.appendChild(label);
+
+        // Cross-contamination warning
+        if (hasCrossContamination(item, state.allergens)) {
+          const warning = document.createElement('div');
+          warning.className = 'ovWarning';
+          warning.textContent = '⚠';
+          box.appendChild(warning);
+        }
+
+        // Info badge
+        const badge = document.createElement('div');
+        badge.className = 'ovBadge';
+        badge.textContent = 'i';
+        box.appendChild(badge);
+
+        // Hover tooltip
+        box.addEventListener('mouseenter', (e) => {
+          showTooltip(item, e);
+        });
+        box.addEventListener('mouseleave', hideTooltip);
+
+        layer.appendChild(box);
+      });
+    }
+
+    function showTooltip(item, event) {
+      const tip = document.getElementById('pageTip');
+      const html = tooltipBodyHTML(item, state.allergens, state.diets);
+
+      tip.innerHTML = `
+        <div class="tipHead">
+          <div class="tTitle">${item.id}</div>
+          <button class="tClose" onclick="document.getElementById('pageTip').style.display='none'">×</button>
+        </div>
+        ${html}
+      `;
+
+      tip.style.display = 'block';
+
+      // Position tooltip
+      const rect = event.currentTarget.getBoundingClientRect();
+      const menuWrapper = document.querySelector('.menu-wrapper');
+      const wrapperRect = menuWrapper.getBoundingClientRect();
+
+      tip.style.left = (rect.right - wrapperRect.left + 10) + 'px';
+      tip.style.top = (rect.top - wrapperRect.top) + 'px';
+    }
+
+    function hideTooltip() {
+      document.getElementById('pageTip').style.display = 'none';
     }
 
     // Scene definitions
     const SCENES = [
       {
         title: "Welcome to Clarivore",
-        description: "<p>Scroll down to see how Clarivore helps you find safe menu options based on your allergens and dietary preferences.</p>",
+        description: "<p>This is an interactive demo showing exactly how Clarivore works with real menus.</p><p><strong>Scroll down</strong> to see the virtual cursor navigate through all features.</p>",
         allergens: [],
         diets: [],
         cursorTarget: null,
         tooltipItem: null,
-        progressText: "Scroll down to begin the demo →"
+        progressText: "Scroll down to begin the interactive demo"
       },
       {
-        title: "Select Your Allergens",
-        description: "<p>First, choose your allergens. Watch as we select some common allergens.</p><p>The system supports 9 major allergens including dairy, eggs, peanuts, tree nuts, shellfish, fish, soy, sesame, and wheat.</p>",
-        allergens: [],
-        diets: [],
-        cursorTarget: "allergen:dairy",
-        tooltipItem: null,
-        progressText: "Selecting allergens: dairy, peanut..."
-      },
-      {
-        title: "Allergens Selected",
-        description: "<p>Now we've selected dairy and peanut as allergens.</p><p>Notice how the menu items haven't changed yet? That's because we haven't applied any filters.</p>",
+        title: "Step 1: Select Your Allergens",
+        description: "<p>First, you select your allergens from the top panel.</p><p>Watch as we automatically select <strong>dairy</strong> and <strong>peanut</strong> allergens.</p><p>The menu overlays will instantly update to show which items are safe.</p>",
         allergens: ["dairy", "peanut"],
         diets: [],
         cursorTarget: null,
         tooltipItem: null,
-        progressText: "Allergens saved: 🥛 Dairy, 🥜 Peanut"
+        progressText: "Allergens selected: 🥛 Dairy, 🥜 Peanut"
       },
       {
-        title: "Color-Coded Menu Items",
-        description: "<p>Watch how menu items are automatically color-coded:</p><ul class='feature-list'><li>Green = Safe to eat</li><li>Yellow = Can be accommodated</li><li>Red = Contains allergens</li></ul>",
+        title: "Step 2: Color-Coded Safety Status",
+        description: "<p>Notice how each menu item now has a colored border:</p><p>🟢 <strong>Green</strong> = Safe to eat</p><p>🟡 <strong>Yellow</strong> = Can be accommodated</p><p>🔴 <strong>Red</strong> = Contains allergens</p>",
         allergens: ["dairy", "peanut"],
         diets: [],
-        cursorTarget: "item:Garden Salad",
+        cursorTarget: "Garden Salad",
         tooltipItem: null,
-        progressText: "✓ Green = Safe - no allergens detected"
+        progressText: "Green borders indicate safe items with no allergens"
       },
       {
-        title: "Interactive Tooltips",
-        description: "<p>Hover over any item to see detailed allergen information.</p><p>The tooltip shows exactly which allergens are present and whether they can be removed.</p>",
+        title: "Step 3: Hover for Details",
+        description: "<p>Hover over any menu item to see detailed allergen information.</p><p>The <strong>Pasta Primavera</strong> contains dairy, but it can be substituted.</p><p>This is why it has a yellow border instead of red.</p>",
         allergens: ["dairy", "peanut"],
         diets: [],
-        cursorTarget: "item:Pasta Primavera",
+        cursorTarget: "Pasta Primavera",
         tooltipItem: "Pasta Primavera",
-        progressText: "⚠️ Yellow = Caution - tap to see what can be removed"
+        progressText: "Yellow = allergen can be removed or substituted"
       },
       {
-        title: "Unsafe Items",
-        description: "<p>Items marked in red contain allergens that cannot be removed.</p><p>This dish contains peanuts which are integral to the recipe.</p>",
+        title: "Step 4: Unsafe Items",
+        description: "<p>Items with red borders contain allergens that cannot be removed.</p><p><strong>Thai Peanut Noodles</strong> has peanuts as a core ingredient.</p><p>The tooltip shows clearly that it cannot be substituted.</p>",
         allergens: ["dairy", "peanut"],
         diets: [],
-        cursorTarget: "item:Thai Peanut Noodles",
+        cursorTarget: "Thai Peanut Noodles",
         tooltipItem: "Thai Peanut Noodles",
-        progressText: "🚫 Red = Avoid - contains allergens that cannot be removed"
+        progressText: "Red = contains allergens that cannot be removed"
       },
       {
-        title: "Cross-Contamination Warnings",
-        description: "<p>The yellow warning badge indicates potential cross-contamination risks.</p><p>This helps you make informed decisions even for items that don't directly contain your allergens.</p>",
+        title: "Step 5: Cross-Contamination Warnings",
+        description: "<p>The yellow ⚠️ badge indicates cross-contamination risk.</p><p><strong>Grilled Chicken</strong> doesn't contain soy, but it's prepared in an area with soy cross-contamination.</p><p>This helps you make fully informed decisions.</p>",
         allergens: ["soy"],
         diets: [],
-        cursorTarget: "item:Grilled Chicken",
-        tooltipItem: "Grilled Chicken",
-        progressText: "⚠️ Yellow badge = Cross-contamination warning"
+        cursorTarget: "Grilled Chicken Breast",
+        tooltipItem: "Grilled Chicken Breast",
+        progressText: "⚠️ Yellow badge = cross-contamination warning"
       },
       {
-        title: "Dietary Preferences",
-        description: "<p>Add dietary preferences like Vegan, Vegetarian, Pescatarian, Kosher, or Halal.</p><p>Menu items will be filtered to match both allergens AND dietary requirements.</p>",
+        title: "Step 6: Dietary Preferences",
+        description: "<p>You can also filter by dietary preferences like Vegan, Vegetarian, Pescatarian, Kosher, or Halal.</p><p>Let's add <strong>Vegan</strong> to see which items meet that requirement.</p>",
         allergens: [],
         diets: ["Vegan"],
-        cursorTarget: "diet:Vegan",
-        tooltipItem: null,
-        progressText: "Selecting dietary preference: 🌱 Vegan"
+        cursorTarget: "Fresh Fruit Plate",
+        tooltipItem: "Fresh Fruit Plate",
+        progressText: "Dietary preference selected: 🌱 Vegan"
       },
       {
-        title: "Combined Filtering",
-        description: "<p>Combine allergens and dietary preferences for precise filtering.</p><p>Items must meet ALL your requirements to be marked as safe.</p>",
+        title: "Step 7: Combined Filtering",
+        description: "<p>Combine allergens and dietary preferences for precise filtering.</p><p>With dairy allergy + vegan diet, items must pass BOTH requirements to be green.</p><p>Items like <strong>Vegetable Stir Fry</strong> are vegan but contain soy.</p>",
         allergens: ["dairy"],
         diets: ["Vegan"],
-        cursorTarget: "item:Garden Salad",
-        tooltipItem: "Garden Salad",
-        progressText: "✓ Filters both allergens and dietary preferences"
+        cursorTarget: "Vegetable Stir Fry",
+        tooltipItem: "Vegetable Stir Fry",
+        progressText: "Filtering by both allergens AND dietary preferences"
       },
       {
-        title: "Complete Safety Information",
-        description: "<p>Every menu item shows:</p><ul class='feature-list'><li>Allergen presence</li><li>Removal possibility</li><li>Cross-contamination risks</li><li>Dietary compatibility</li></ul>",
+        title: "Step 8: The Info Badge",
+        description: "<p>Every menu item has an info badge (ⓘ) you can click.</p><p>This shows complete allergen and dietary information.</p><p>All tooltips work exactly as they do in the real menu viewer.</p>",
+        allergens: ["dairy", "wheat"],
+        diets: [],
+        cursorTarget: "Margherita Pizza",
+        tooltipItem: "Margherita Pizza",
+        progressText: "Click the ⓘ badge on any item for full details"
+      },
+      {
+        title: "Complete Feature Set",
+        description: "<p>Clarivore gives you:</p><p>✓ Visual color-coding at a glance</p><p>✓ Detailed allergen information</p><p>✓ Removable vs. non-removable indicators</p><p>✓ Cross-contamination warnings</p><p>✓ Dietary preference filtering</p><p><strong>All working together</strong> to help you dine safely.</p>",
         allergens: ["dairy", "peanut"],
         diets: [],
-        cursorTarget: "item:Margherita Pizza",
-        tooltipItem: "Margherita Pizza",
-        progressText: "Tap any item to see complete allergen information"
+        cursorTarget: null,
+        tooltipItem: null,
+        progressText: "Scroll down to create your profile"
       }
     ];
 
     // Animation and scroll handling
     let currentSceneIndex = 0;
-    let sceneProgress = 0;
 
     function updateScene() {
       const showcaseSection = document.querySelector('.showcase-section');
       const rect = showcaseSection.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
 
-      // Calculate overall progress through the showcase section
-      let overallProgress = 0;
+      let progress = 0;
       if (rect.top > 0) {
-        overallProgress = 0;
+        progress = 0;
       } else if (rect.bottom < viewportHeight) {
-        overallProgress = 1;
+        progress = 1;
       } else {
-        overallProgress = Math.abs(rect.top) / (rect.height - viewportHeight);
+        progress = Math.abs(rect.top) / (rect.height - viewportHeight);
       }
 
-      // Determine current scene
       const sceneIndex = Math.min(
-        Math.floor(overallProgress * SCENES.length),
+        Math.floor(progress * SCENES.length),
         SCENES.length - 1
       );
-
-      const sceneStart = sceneIndex / SCENES.length;
-      const sceneEnd = (sceneIndex + 1) / SCENES.length;
-      sceneProgress = (overallProgress - sceneStart) / (sceneEnd - sceneStart);
-      sceneProgress = Math.max(0, Math.min(1, sceneProgress));
 
       if (sceneIndex !== currentSceneIndex) {
         currentSceneIndex = sceneIndex;
         applyScene(SCENES[currentSceneIndex]);
       }
 
-      // Update cursor position based on scene progress
       updateCursor();
     }
 
     function applyScene(scene) {
-      // Update title and description
       document.getElementById('sceneTitle').textContent = scene.title;
       document.getElementById('sceneDescription').innerHTML = scene.description;
       document.getElementById('progressText').textContent = scene.progressText;
 
-      // Update state
-      selectedAllergens = [...scene.allergens];
-      selectedDiets = [...scene.diets];
+      state.allergens = [...scene.allergens];
+      state.diets = [...scene.diets];
 
-      // Re-render
       renderAllergenSelector();
-      renderMenu();
-
-      // Hide tooltip initially
-      document.getElementById('demoTooltip').classList.remove('visible');
+      renderLayer();
+      hideTooltip();
     }
 
     function updateCursor() {
       const scene = SCENES[currentSceneIndex];
       const cursor = document.getElementById('virtualCursor');
-      const tooltip = document.getElementById('demoTooltip');
 
-      if (!scene.cursorTarget && !scene.tooltipItem) {
+      if (!scene.cursorTarget) {
         cursor.classList.remove('visible');
-        tooltip.classList.remove('visible');
+        if (!scene.tooltipItem) hideTooltip();
         return;
       }
 
-      // Show cursor
       cursor.classList.add('visible');
 
-      // Find target element
-      let targetElement = null;
-      if (scene.cursorTarget) {
-        if (scene.cursorTarget.startsWith('allergen:')) {
-          const allergen = scene.cursorTarget.split(':')[1];
-          targetElement = document.querySelector(`[data-allergen="${allergen}"]`);
-        } else if (scene.cursorTarget.startsWith('diet:')) {
-          const diet = scene.cursorTarget.split(':')[1];
-          targetElement = document.querySelector(`[data-diet="${diet}"]`);
-        } else if (scene.cursorTarget.startsWith('item:')) {
-          const itemName = scene.cursorTarget.split(':')[1];
-          targetElement = document.querySelector(`[data-item="${itemName}"]`);
-        }
+      const targetOverlay = document.querySelector(`[data-item-id="${scene.cursorTarget}"]`);
+      if (targetOverlay) {
+        const rect = targetOverlay.getBoundingClientRect();
+        const menuWrapper = document.querySelector('.menu-wrapper');
+        const wrapperRect = menuWrapper.getBoundingClientRect();
+
+        cursor.style.left = (rect.left - wrapperRect.left + rect.width / 2 - 20) + 'px';
+        cursor.style.top = (rect.top - wrapperRect.top + rect.height / 2 - 20) + 'px';
       }
 
-      if (targetElement) {
-        const rect = targetElement.getBoundingClientRect();
-        const demoArea = document.querySelector('.demo-area');
-        const demoRect = demoArea.getBoundingClientRect();
-
-        cursor.style.left = (rect.left - demoRect.left + rect.width / 2 - 20) + 'px';
-        cursor.style.top = (rect.top - demoRect.top + rect.height / 2 - 20) + 'px';
-      }
-
-      // Show tooltip if specified
-      if (scene.tooltipItem && sceneProgress > 0.3) {
+      if (scene.tooltipItem) {
         const item = DEMO_ITEMS.find(i => i.id === scene.tooltipItem);
         if (item) {
-          tooltip.innerHTML = `
-            <div class="tooltip-title">${item.emoji} ${item.id}</div>
-            ${generateTooltipHTML(item, selectedAllergens, selectedDiets)}
-          `;
-
-          const itemElement = document.querySelector(`[data-item="${item.id}"]`);
-          if (itemElement) {
-            const rect = itemElement.getBoundingClientRect();
-            const demoArea = document.querySelector('.demo-area');
-            const demoRect = demoArea.getBoundingClientRect();
-
-            tooltip.style.left = (rect.right - demoRect.left + 10) + 'px';
-            tooltip.style.top = (rect.top - demoRect.top) + 'px';
-            tooltip.classList.add('visible');
+          const overlay = document.querySelector(`[data-item-id="${item.id}"]`);
+          if (overlay) {
+            showTooltip(item, { currentTarget: overlay });
           }
         }
-      } else {
-        tooltip.classList.remove('visible');
       }
     }
 
     // Initialize
     function init() {
       renderAllergenSelector();
-      renderMenu();
+      renderLayer();
       applyScene(SCENES[0]);
 
-      // Scroll listener
       let ticking = false;
       window.addEventListener('scroll', () => {
         if (!ticking) {
@@ -1106,22 +1018,16 @@
         }
       }, { passive: true });
 
-      // Scroll indicator
       const scrollIndicator = document.querySelector('.scroll-indicator');
       if (scrollIndicator) {
         scrollIndicator.addEventListener('click', () => {
-          window.scrollTo({
-            top: window.innerHeight,
-            behavior: 'smooth'
-          });
+          window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
         });
       }
 
-      // Initial update
       updateScene();
     }
 
-    // Start when DOM is ready
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', init);
     } else {
