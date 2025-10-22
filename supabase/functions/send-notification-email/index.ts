@@ -32,10 +32,17 @@ serve(async (req) => {
     const hasChanges = (addedItems?.length || 0) + (removedItems?.length || 0) > 0
 
     let htmlContent = `
-      <h2>🍽️ Menu Update at ${restaurantName}</h2>
-      <p>A restaurant has uploaded a new menu image with detected changes.</p>
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2 style="color: #333;">Menu Update at ${restaurantName}</h2>
+        <p>Your restaurant monitoring system detected a menu change.</p>
 
-      ${hasChanges ? '<h3 style="color: #dc5252;">⚠️ Changes Detected - Approval Needed</h3>' : '<h3 style="color: #4caf50;">✓ No Changes Detected</h3>'}
+        ${hasChanges ? '<h3 style="color: #dc5252;">Changes Detected - Review Required</h3>' : '<h3 style="color: #4caf50;">No Changes Detected</h3>'}
     `
 
     if (addedItems?.length > 0) {
@@ -61,12 +68,17 @@ serve(async (req) => {
     }
 
     htmlContent += `
-      <hr style="margin: 20px 0;">
-      <p><strong>Action Required:</strong> Please review the menu changes at:</p>
-      <p><a href="https://clarivore.org/restaurant.html?slug=${restaurantSlug}" style="background: #4c5ad4; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Review Restaurant Menu</a></p>
+        <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+        <p><strong>Review Changes:</strong></p>
+        <p><a href="https://clarivore.org/restaurant.html?slug=${restaurantSlug}" style="background: #4c5ad4; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">View Menu</a></p>
 
-      <hr style="margin: 20px 0;">
-      <p style="color: #666; font-size: 12px;">This notification was sent because menu changes were detected during a confirmation update.</p>
+        <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+        <p style="color: #666; font-size: 12px;">
+          Sent by Clarivore Menu Monitor<br>
+          <a href="https://clarivore.org" style="color: #4c5ad4;">clarivore.org</a>
+        </p>
+      </body>
+      </html>
     `
 
     // Send email via Resend

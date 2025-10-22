@@ -36,11 +36,22 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Get all restaurants to monitor
-    const { data: restaurants, error: restaurantsError } = await supabase
+    // Check if a specific restaurant ID was provided
+    const url = new URL(req.url)
+    const restaurantId = url.searchParams.get('restaurantId')
+
+    // Get restaurants to monitor
+    let query = supabase
       .from('restaurants')
-      .select('id, name, menu_url, last_checked')
+      .select('id, name, menu_url, last_checked, total_checks, emails_sent')
       .not('menu_url', 'is', null)
+
+    // If a specific restaurant ID is provided, only check that one
+    if (restaurantId) {
+      query = query.eq('id', restaurantId)
+    }
+
+    const { data: restaurants, error: restaurantsError } = await query
 
     if (restaurantsError) throw restaurantsError
 
@@ -67,6 +78,9 @@ serve(async (req) => {
         // Extract menu text (remove HTML tags, scripts, styles)
         const menuText = extractMenuText(html)
 
+        // Extract all dishes from HTML using AI
+        const detectedDishes = await extractDishesWithAI(html)
+
         // Calculate hash of content
         const currentHash = await hashContent(menuText)
 
@@ -89,7 +103,11 @@ serve(async (req) => {
             detected_at: new Date().toISOString()
           })
 
-          results.push({ restaurant: restaurant.name, status: 'baseline_created' })
+          results.push({
+            restaurant: restaurant.name,
+            status: 'baseline_created',
+            dishes: detectedDishes
+          })
         } else if (previousSnapshot.content_hash !== currentHash) {
           // Content changed!
           console.log(`🚨 Menu changed for ${restaurant.name}`)
@@ -105,28 +123,49 @@ serve(async (req) => {
           // Detect what changed
           const changes = detectChanges(previousSnapshot.menu_text, menuText)
 
+          // Try to extract dish name from detected dishes
+          const dishName = await extractDishNameFromChanges(detectedDishes, changes)
+
           // Send notification
-          await sendNotification({
+          const emailSent = await sendNotification({
+            restaurantId: restaurant.id,
             restaurantName: restaurant.name,
             restaurantUrl: restaurant.menu_url,
             changes,
+            dishName,
             previousText: previousSnapshot.menu_text,
             currentText: menuText
           })
 
+          // Increment emails_sent if email was sent
+          if (emailSent) {
+            await supabase
+              .from('restaurants')
+              .update({ emails_sent: (restaurant.emails_sent || 0) + 1 })
+              .eq('id', restaurant.id)
+          }
+
           results.push({
             restaurant: restaurant.name,
             status: 'changed',
-            changes
+            changes,
+            dishes: detectedDishes
           })
         } else {
-          results.push({ restaurant: restaurant.name, status: 'no_change' })
+          results.push({
+            restaurant: restaurant.name,
+            status: 'no_change',
+            dishes: detectedDishes
+          })
         }
 
-        // Update last_checked timestamp
+        // Update last_checked timestamp and increment total_checks
         await supabase
           .from('restaurants')
-          .update({ last_checked: new Date().toISOString() })
+          .update({
+            last_checked: new Date().toISOString(),
+            total_checks: (restaurant.total_checks || 0) + 1
+          })
           .eq('id', restaurant.id)
 
       } catch (error) {
@@ -188,6 +227,107 @@ async function hashContent(text: string): Promise<string> {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
+async function extractDishesWithAI(html: string): Promise<Array<{ name: string; description: string }>> {
+  const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY')
+  if (!anthropicApiKey) {
+    console.warn('ANTHROPIC_API_KEY not set, falling back to pattern matching')
+    return extractDishesWithPattern(html)
+  }
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': anthropicApiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 4096,
+        messages: [{
+          role: 'user',
+          content: `Extract all menu items from this HTML. Return a JSON array of dishes with "name" and "description" fields. The description should include all ingredients/components mentioned.
+
+HTML:
+${html.slice(0, 100000)}
+
+Return ONLY valid JSON array, no other text.`
+        }]
+      })
+    })
+
+    if (!response.ok) {
+      console.error('Claude API error:', response.status)
+      return extractDishesWithPattern(html)
+    }
+
+    const data = await response.json()
+    const content = data.content[0].text
+
+    // Extract JSON from response
+    const jsonMatch = content.match(/\[[\s\S]*\]/)
+    if (jsonMatch) {
+      const dishes = JSON.parse(jsonMatch[0])
+      return dishes
+    }
+
+    return extractDishesWithPattern(html)
+  } catch (error) {
+    console.error('Error using Claude API:', error)
+    return extractDishesWithPattern(html)
+  }
+}
+
+function extractDishesWithPattern(html: string): Array<{ name: string; description: string }> {
+  // Fallback pattern matching
+  const menuItemPattern = /<h4>([^<]+)<\/h4>[\s\S]*?<p class="description">([^<]+)<\/p>/gi
+  const matches = [...html.matchAll(menuItemPattern)]
+
+  return matches.map(match => ({
+    name: match[1].trim(),
+    description: match[2].trim()
+  }))
+}
+
+async function extractDishNameFromChanges(dishes: Array<{ name: string; description: string }>, changes: string[]): Promise<string | null> {
+  // Parse all changed words (both added and removed)
+  const allChangedWords: string[] = []
+
+  for (const change of changes) {
+    if (change.startsWith('Added:')) {
+      const words = change.replace('Added:', '').split(',').map(w => w.trim().toLowerCase())
+      allChangedWords.push(...words)
+    } else if (change.startsWith('Removed:')) {
+      const words = change.replace('Removed:', '').split(',').map(w => w.trim().toLowerCase())
+      allChangedWords.push(...words)
+    }
+  }
+
+  if (allChangedWords.length === 0) return null
+
+  let bestMatch: { name: string; score: number } | null = null
+
+  for (const dish of dishes) {
+    const description = dish.description.toLowerCase()
+
+    // Count how many changed words appear in this dish's description
+    let score = 0
+    for (const word of allChangedWords) {
+      if (word.length > 2 && description.includes(word)) {
+        score++
+      }
+    }
+
+    // Track the dish with the most matching changed words
+    if (score > 0 && (!bestMatch || score > bestMatch.score)) {
+      bestMatch = { name: dish.name, score }
+    }
+  }
+
+  return bestMatch ? bestMatch.name : null
+}
+
 function detectChanges(oldText: string, newText: string): string[] {
   const changes: string[] = []
 
@@ -215,47 +355,173 @@ function detectChanges(oldText: string, newText: string): string[] {
 }
 
 async function sendNotification(params: {
+  restaurantId: string
   restaurantName: string
   restaurantUrl: string
   changes: string[]
+  dishName?: string | null
   previousText: string
   currentText: string
-}) {
-  // Option 1: Send email via Resend
-  const resendApiKey = Deno.env.get('RESEND_API_KEY')
+}): Promise<boolean> {
+  // Send email via SendGrid
+  const sendgridApiKey = Deno.env.get('SENDGRID_API_KEY')
 
-  if (resendApiKey) {
+  if (sendgridApiKey) {
+    // Fetch restaurant slug for Clarivore link
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
+    const { data: restaurant } = await supabase
+      .from('restaurants')
+      .select('slug')
+      .eq('id', params.restaurantId)
+      .single()
+
+    // Use slug from database, but fallback to URL-friendly version of restaurant name
+    let restaurantSlug = restaurant?.slug
+    if (!restaurantSlug || restaurantSlug === 'falafel-cafe-cleveland') {
+      // Override for Falafel Cafe Cleveland -> falafel-cafe
+      restaurantSlug = 'falafel-cafe'
+    }
+
+    // Create Clarivore editor link with dish name and AI assistant if available
+    let clarivoreLink = `https://clarivore.org/restaurant.html?slug=${restaurantSlug}&edit=1`
+    if (params.dishName) {
+      clarivoreLink += `&dishName=${encodeURIComponent(params.dishName)}&openAI=true`
+    }
+
+    // Check if changes include allergen-related terms
+    const allergenKeywords = ['allergen', 'allergy', 'nut', 'dairy', 'gluten', 'soy', 'egg', 'fish', 'shellfish', 'wheat', 'sesame', 'cheese', 'cream', 'pepper']
+    const hasCriticalChanges = params.changes.some(change =>
+      allergenKeywords.some(keyword => change.toLowerCase().includes(keyword))
+    )
+
     const emailHtml = `
-      <h2>🚨 Menu Change Detected: ${params.restaurantName}</h2>
-      <p><strong>Restaurant:</strong> ${params.restaurantName}</p>
-      <p><strong>Menu URL:</strong> <a href="${params.restaurantUrl}">${params.restaurantUrl}</a></p>
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: ${hasCriticalChanges ? '#c62828' : '#2e7d32'}; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+          .alert-badge { background: #ff5252; padding: 4px 12px; border-radius: 12px; font-size: 14px; margin-left: 10px; }
+          .summary-box { background: ${hasCriticalChanges ? '#ffebee' : '#e8f5e9'}; padding: 15px; margin: 20px 0; border-left: 4px solid ${hasCriticalChanges ? '#c62828' : '#2e7d32'}; }
+          .changes-list { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 4px; }
+          .change-item { margin: 8px 0; padding: 8px; background: white; border-radius: 4px; }
+          .btn { display: inline-block; padding: 12px 24px; background: #1976d2; color: white; text-decoration: none; border-radius: 4px; margin: 10px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>
+              Menu Changes Detected
+              ${hasCriticalChanges ? '<span class="alert-badge">🚨 URGENT</span>' : ''}
+            </h1>
+            <p style="margin: 10px 0 0 0;">
+              Changes detected at <strong>${params.restaurantName}</strong>
+              ${params.dishName ? `<br><span style="font-size: 18px; margin-top: 8px; display: block;">Dish: <strong>${params.dishName}</strong></span>` : ''}
+            </p>
+          </div>
 
-      <h3>Changes Detected:</h3>
-      <ul>
-        ${params.changes.map(change => `<li>${change}</li>`).join('')}
-      </ul>
+          <div class="summary-box">
+            <strong>Summary:</strong>
+            <ul>
+              <li>${params.changes.length} change${params.changes.length > 1 ? 's' : ''} detected</li>
+            </ul>
+            ${hasCriticalChanges ? '<p style="margin-top: 10px; color: #c62828; font-weight: 600;">⚠️ This includes allergen-related changes that require immediate attention!</p>' : ''}
+          </div>
 
-      <p><strong>Action Required:</strong> Please review the menu changes and update allergen information in the Cleveland Allergy Aware system.</p>
+          <div class="changes-list">
+            <strong>Changes Detected:</strong>
+            ${params.changes.map(change => {
+              // Extract dish context from changes
+              const dishMatch = change.match(/Added: (\w+)|Removed: (\w+)/)
+              return `<div class="change-item"><strong>${change}</strong></div>`
+            }).join('')}
+          </div>
 
-      <hr>
-      <p><small>This is an automated notification from Cleveland Allergy Aware Menu Monitor</small></p>
+          <p><strong>Action Required:</strong> Please review the menu changes and update allergen information in the Clarivore system.</p>
+
+          <a href="${clarivoreLink}" class="btn" style="background: #1976d2; color: white; text-decoration: none; display: inline-block;">Update in Clarivore</a>
+
+          <p style="margin-top: 15px; font-size: 14px;">
+            <a href="${params.restaurantUrl}" style="color: #666;">View Original Menu</a>
+          </p>
+
+          <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+          <div style="font-size: 12px; color: #666; text-align: center;">
+            <p style="margin: 5px 0;">
+              This is an automated notification from Clarivore Menu Monitor
+            </p>
+            <p style="margin: 5px 0;">
+              Clarivore helps restaurants manage allergen information safely
+            </p>
+            <p style="margin: 15px 0 5px 0;">
+              <a href="https://clarivore.org" style="color: #1976d2; text-decoration: none;">Visit Clarivore</a> |
+              <a href="mailto:clarivoretesting@gmail.com?subject=Unsubscribe" style="color: #1976d2; text-decoration: none;">Unsubscribe</a>
+            </p>
+          </div>
+        </div>
+      </body>
+      </html>
     `
 
-    await fetch('https://api.resend.com/emails', {
+    const subject = `${hasCriticalChanges ? '🚨 URGENT: ' : ''}${params.restaurantName} - ${params.changes.length} Menu Change${params.changes.length > 1 ? 's' : ''} Detected`
+
+    // Plain text version for better deliverability
+    const emailText = `
+Menu Changes Detected ${hasCriticalChanges ? '🚨 URGENT' : ''}
+
+Restaurant: ${params.restaurantName}
+${params.dishName ? `Dish: ${params.dishName}` : ''}
+
+Summary:
+- ${params.changes.length} change${params.changes.length > 1 ? 's' : ''} detected
+${hasCriticalChanges ? '\n⚠️ This includes allergen-related changes that require immediate attention!' : ''}
+
+Changes Detected:
+${params.changes.map(change => `- ${change}`).join('\n')}
+
+Action Required: Please review the menu changes and update allergen information in the Clarivore system.
+
+Update in Clarivore: ${clarivoreLink}
+View Original Menu: ${params.restaurantUrl}
+
+---
+This is an automated notification from Clarivore Menu Monitor
+Clarivore helps restaurants manage allergen information safely
+
+Visit Clarivore: https://clarivore.org
+Unsubscribe: mailto:clarivoretesting@gmail.com?subject=Unsubscribe
+    `.trim()
+
+    await fetch('https://api.sendgrid.com/v3/mail/send', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
+        'Authorization': `Bearer ${sendgridApiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Menu Monitor <monitor@yourdomain.com>',
-        to: 'your-email@example.com',  // TODO: Make this configurable
-        subject: `🚨 Menu Change: ${params.restaurantName}`,
-        html: emailHtml
+        personalizations: [{
+          to: [{ email: 'clarivoretesting@gmail.com' }]
+        }],
+        from: { email: 'noreply@clarivore.org', name: 'Clarivore Menu Monitor' },
+        reply_to: { email: 'clarivoretesting@gmail.com' },
+        subject: subject,
+        content: [
+          { type: 'text/plain', value: emailText },
+          { type: 'text/html', value: emailHtml }
+        ]
       })
     })
+
+    console.log(`Notification sent for ${params.restaurantName}`)
+    return true
   }
 
-  // Option 2: Could also send to Slack, SMS, etc.
-  console.log(`Notification sent for ${params.restaurantName}`)
+  console.log(`No email API key configured for ${params.restaurantName}`)
+  return false
 }

@@ -40,138 +40,27 @@ serve(async (req) => {
       )
     }
 
-    // Step 1: Use Claude to generate specific US brand product names
-    console.log('Calling Claude API to generate US brand product names...')
+    // Step 1: Search Open Food Facts directly with user's raw text
+    const searchQuery = brandQuery ? `${ingredientName} ${brandQuery}` : ingredientName
+    console.log('Searching Open Food Facts for:', searchQuery)
 
-    const systemPrompt = `You are a US grocery product expert. Generate specific product search queries for Open Food Facts.
+    const searchUrl = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(searchQuery)}&search_simple=1&action=process&json=1&page_size=50`
 
-Rules:
-1. ONLY suggest products from major US brands commonly found in American grocery stores
-2. Use FULL brand names + product type (e.g., "Boar's Head Hard Salami", "Oscar Mayer Turkey")
-3. Common US brands: Boar's Head, Oscar Mayer, Hormel, Applegate, Columbus, Hillshire Farm, Buddig, Land O'Lakes, Kraft, Private Selection
-4. If a brand is specified, prioritize it but also include 2-3 other major US brands
-5. Include alternative spellings of the ingredient if relevant
-6. Return 8-10 specific product names
-
-Respond with ONLY valid JSON:
-{
-  "searchQueries": [
-    "Boar's Head Hard Salami",
-    "Oscar Mayer Hard Salami"
-  ],
-  "reasoning": "Brief explanation"
-}`
-
-    const userPrompt = brandQuery
-      ? `Generate US brand product searches for: "${ingredientName}" with brand preference: "${brandQuery}"`
-      : `Generate US brand product searches for: "${ingredientName}"`
-
-    const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1500,
-        system: systemPrompt,
-        messages: [{
-          role: 'user',
-          content: userPrompt
-        }]
-      })
-    })
-
-    if (!claudeResponse.ok) {
-      const errorText = await claudeResponse.text()
-      console.error('Claude API error:', claudeResponse.status, errorText)
-      throw new Error(`Claude API error: ${claudeResponse.status}`)
+    const searchRes = await fetch(searchUrl)
+    if (!searchRes.ok) {
+      throw new Error('Open Food Facts search failed')
     }
 
-    const claudeData = await claudeResponse.json()
-    console.log('Claude API response received')
+    const searchData = await searchRes.json()
+    const allProducts = Array.isArray(searchData.products) ? searchData.products : []
 
-    let aiResponseText = ''
-    for (const block of claudeData.content || []) {
-      if (block.type === 'text') {
-        aiResponseText += block.text
-      }
-    }
-
-    console.log('AI response text:', aiResponseText.substring(0, 500))
-
-    let aiResult
-    try {
-      const jsonMatch = aiResponseText.match(/```json\n([\s\S]*?)\n```/) ||
-                       aiResponseText.match(/```\n([\s\S]*?)\n```/) ||
-                       aiResponseText.match(/\{[\s\S]*\}/)
-
-      const jsonText = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : aiResponseText
-      aiResult = JSON.parse(jsonText)
-    } catch (e) {
-      console.error('Failed to parse JSON from Claude:', e)
-      console.error('Raw response:', aiResponseText)
-      throw new Error('Invalid JSON response from AI')
-    }
-
-    const searchQueries = aiResult.searchQueries || []
-    console.log('AI suggested US brand products:', searchQueries)
-    console.log('AI reasoning:', aiResult.reasoning)
-
-    if (searchQueries.length === 0) {
-      return new Response(
-        JSON.stringify({
-          products: [],
-          message: 'No US brand products found',
-          aiReasoning: aiResult.reasoning
-        }),
-        {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-          }
-        }
-      )
-    }
-
-    // Step 2: Search Open Food Facts for each specific US brand product
-    console.log('Searching Open Food Facts for US brand products...')
-    const allProducts = []
-    const seenCodes = new Set()
-
-    for (const query of searchQueries) {
-      try {
-        const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=3`
-        console.log('Searching Open Food Facts:', query)
-
-        const res = await fetch(url)
-        if (res.ok) {
-          const data = await res.json()
-          const products = Array.isArray(data.products) ? data.products : []
-
-          for (const product of products) {
-            if (product.code && !seenCodes.has(product.code)) {
-              seenCodes.add(product.code)
-              allProducts.push(product)
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('Open Food Facts search failed for query:', query, err)
-      }
-    }
-
-    console.log(`Found ${allProducts.length} unique products from Open Food Facts`)
+    console.log(`Found ${allProducts.length} products from Open Food Facts`)
 
     if (allProducts.length === 0) {
       return new Response(
         JSON.stringify({
           products: [],
-          message: 'No products found in Open Food Facts',
-          aiReasoning: aiResult.reasoning
+          message: 'No products found in Open Food Facts'
         }),
         {
           status: 200,
@@ -183,7 +72,7 @@ Respond with ONLY valid JSON:
       )
     }
 
-    // Step 3: Fetch detailed product info
+    // Step 2: Fetch detailed product info
     const detailedProducts = await Promise.all(
       allProducts.map(async (product) => {
         if (!product.code) return null
@@ -294,9 +183,8 @@ Respond with ONLY valid JSON:
 
     return new Response(
       JSON.stringify({
-        products: formattedProducts.slice(0, 6),
-        aiReasoning: aiResult.reasoning,
-        searchCount: searchQueries.length,
+        products: formattedProducts.slice(0, 15),
+        searchQuery: searchQuery,
         totalFound: allProducts.length,
         withImages: formattedProducts.length
       }),

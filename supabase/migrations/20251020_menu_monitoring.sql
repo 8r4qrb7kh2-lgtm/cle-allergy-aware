@@ -55,15 +55,31 @@ WHERE r.monitor_enabled = true;
 ALTER TABLE menu_snapshots ENABLE ROW LEVEL SECURITY;
 
 -- RLS Policies
-CREATE POLICY "Menu snapshots are viewable by authenticated users"
-  ON menu_snapshots FOR SELECT
-  TO authenticated
-  USING (true);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'menu_snapshots'
+    AND policyname = 'Menu snapshots are viewable by authenticated users'
+  ) THEN
+    CREATE POLICY "Menu snapshots are viewable by authenticated users"
+      ON menu_snapshots FOR SELECT
+      TO authenticated
+      USING (true);
+  END IF;
 
-CREATE POLICY "Menu snapshots are insertable by service role"
-  ON menu_snapshots FOR INSERT
-  TO service_role
-  WITH CHECK (true);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE tablename = 'menu_snapshots'
+    AND policyname = 'Menu snapshots are insertable by service role'
+  ) THEN
+    CREATE POLICY "Menu snapshots are insertable by service role"
+      ON menu_snapshots FOR INSERT
+      TO service_role
+      WITH CHECK (true);
+  END IF;
+END
+$$;
 
 -- Optional: Set up pg_cron to run the monitor automatically
 -- Run this in Supabase SQL Editor after deploying the edge function:
