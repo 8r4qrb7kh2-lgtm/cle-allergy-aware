@@ -22,6 +22,7 @@ interface MenuSnapshot {
   restaurant_id: string
   content_hash: string
   menu_text: string
+  dishes_json?: string
   detected_at: string
 }
 
@@ -100,6 +101,7 @@ serve(async (req) => {
             restaurant_id: restaurant.id,
             content_hash: currentHash,
             menu_text: menuText,
+            dishes_json: JSON.stringify(detectedDishes),
             detected_at: new Date().toISOString()
           })
 
@@ -117,11 +119,23 @@ serve(async (req) => {
             restaurant_id: restaurant.id,
             content_hash: currentHash,
             menu_text: menuText,
+            dishes_json: JSON.stringify(detectedDishes),
             detected_at: new Date().toISOString()
           })
 
-          // Extract previous dishes from AI
-          const previousDishes = await extractDishesWithAI(previousSnapshot.menu_text)
+          // Get previous dishes from stored JSON, or extract from text as fallback
+          let previousDishes: Array<{ name: string; description: string }> = []
+          if (previousSnapshot.dishes_json) {
+            try {
+              previousDishes = JSON.parse(previousSnapshot.dishes_json)
+            } catch (e) {
+              console.error('Failed to parse previous dishes JSON, extracting from text')
+              previousDishes = await extractDishesWithAI(previousSnapshot.menu_text)
+            }
+          } else {
+            // Old snapshot without dishes_json, extract from text
+            previousDishes = await extractDishesWithAI(previousSnapshot.menu_text)
+          }
 
           // Detect changes per dish by comparing previous to current
           const changesByDish = detectChangesByDish(previousDishes, detectedDishes)
@@ -152,7 +166,7 @@ serve(async (req) => {
           results.push({
             restaurant: restaurant.name,
             status: 'changed',
-            changes,
+            changes: changesByDish.flatMap(d => d.changes),
             dishes: detectedDishes
           })
         } else {
