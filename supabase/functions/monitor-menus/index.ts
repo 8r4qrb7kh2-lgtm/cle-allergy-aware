@@ -120,11 +120,11 @@ serve(async (req) => {
             detected_at: new Date().toISOString()
           })
 
-          // Detect what changed
-          const changes = detectChanges(previousSnapshot.menu_text, menuText)
+          // Extract previous dishes from AI
+          const previousDishes = await extractDishesWithAI(previousSnapshot.menu_text)
 
-          // Group changes by dish
-          const changesByDish = await groupChangesByDish(detectedDishes, changes)
+          // Detect changes per dish by comparing previous to current
+          const changesByDish = detectChangesByDish(previousDishes, detectedDishes)
 
           // Send separate notification for each changed dish
           let emailsSentCount = 0
@@ -292,6 +292,62 @@ function extractDishesWithPattern(html: string): Array<{ name: string; descripti
     name: match[1].trim(),
     description: match[2].trim()
   }))
+}
+
+function detectChangesByDish(
+  previousDishes: Array<{ name: string; description: string }>,
+  currentDishes: Array<{ name: string; description: string }>
+): Array<{ dishName: string; changes: string[] }> {
+  const changesByDish: Array<{ dishName: string; changes: string[] }> = []
+
+  // Compare each current dish with its previous version
+  for (const currentDish of currentDishes) {
+    const previousDish = previousDishes.find(d => d.name === currentDish.name)
+
+    if (!previousDish) {
+      // New dish added
+      changesByDish.push({
+        dishName: currentDish.name,
+        changes: [`New dish added: ${currentDish.description}`]
+      })
+      continue
+    }
+
+    // Compare descriptions word by word
+    const oldWords = new Set(previousDish.description.toLowerCase().split(/\s+/))
+    const newWords = new Set(currentDish.description.toLowerCase().split(/\s+/))
+
+    const addedWords = [...newWords].filter(word => !oldWords.has(word) && word.length > 2)
+    const removedWords = [...oldWords].filter(word => !newWords.has(word) && word.length > 2)
+
+    const dishChanges: string[] = []
+    if (addedWords.length > 0) {
+      dishChanges.push(`Added: ${addedWords.join(', ')}`)
+    }
+    if (removedWords.length > 0) {
+      dishChanges.push(`Removed: ${removedWords.join(', ')}`)
+    }
+
+    if (dishChanges.length > 0) {
+      changesByDish.push({
+        dishName: currentDish.name,
+        changes: dishChanges
+      })
+    }
+  }
+
+  // Check for removed dishes
+  for (const previousDish of previousDishes) {
+    const currentDish = currentDishes.find(d => d.name === previousDish.name)
+    if (!currentDish) {
+      changesByDish.push({
+        dishName: previousDish.name,
+        changes: [`Dish removed from menu`]
+      })
+    }
+  }
+
+  return changesByDish
 }
 
 async function groupChangesByDish(
