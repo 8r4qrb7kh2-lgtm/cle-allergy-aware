@@ -547,7 +547,8 @@ Unsubscribe: mailto:clarivoretesting@gmail.com?subject=Unsubscribe
         personalizations: [{
           to: [{ email: 'clarivoretesting@gmail.com' }]
         }],
-        from: { email: 'clarivoretesting@gmail.com', name: 'Clarivore Menu Monitor' },
+        from: { email: 'noreply@clarivore.org', name: 'Clarivore Menu Monitor' },
+        reply_to: { email: 'clarivoretesting@gmail.com' },
         subject: subject,
         content: [
           { type: 'text/plain', value: emailText },
