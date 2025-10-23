@@ -20,302 +20,16 @@
       overflow-x: hidden;
     }
 
-    .hero-section {
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      position: relative;
-      background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 100%);
-    }
-
-    .hero-title {
-      font-size: clamp(2.5rem, 8vw, 6rem);
-      font-weight: 700;
-      text-align: center;
-      padding: 0 20px;
-      opacity: 0;
-      transform: translateY(30px);
-      transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .hero-title.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .hero-subtitle {
-      font-size: clamp(1rem, 3vw, 1.5rem);
-      text-align: center;
-      padding: 20px;
-      max-width: 800px;
-      opacity: 0;
-      transform: translateY(30px);
-      transition: all 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s;
-      color: rgba(255,255,255,0.8);
-    }
-
-    .hero-subtitle.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .scroll-indicator {
-      position: absolute;
-      bottom: 40px;
-      font-size: 2rem;
-      animation: bounce 2s infinite;
-      opacity: 0.7;
-    }
-
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(10px); }
-    }
-
-    .feature-section {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 100px 20px;
-      position: relative;
-    }
-
-    .feature-container {
-      max-width: 1200px;
-      width: 100%;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 80px;
-      align-items: center;
-    }
-
-    @media (max-width: 968px) {
-      .feature-container {
-        grid-template-columns: 1fr;
-        gap: 40px;
-      }
-    }
-
-    .feature-text {
-      opacity: 0;
-      transform: translateX(-50px);
-      transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .feature-text.visible {
-      opacity: 1;
-      transform: translateX(0);
-    }
-
-    .feature-visual {
-      opacity: 0;
-      transform: translateX(50px);
-      transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .feature-visual.visible {
-      opacity: 1;
-      transform: translateX(0);
-    }
-
-    .feature-text h2 {
-      font-size: clamp(2rem, 5vw, 3.5rem);
-      margin-bottom: 20px;
-      font-weight: 700;
-    }
-
-    .feature-text p {
-      font-size: clamp(1rem, 2vw, 1.3rem);
-      line-height: 1.6;
-      color: rgba(255,255,255,0.8);
-      margin-bottom: 16px;
-    }
-
-    .color-demo {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 20px;
-    }
-
-    .color-card {
-      background: rgba(255,255,255,0.05);
-      padding: 24px;
-      border-radius: 16px;
-      border: 2px solid rgba(255,255,255,0.1);
-      transition: all 0.3s;
-      opacity: 0;
-      transform: scale(0.9);
-    }
-
-    .color-card.visible {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    .color-card:hover {
-      transform: scale(1.05);
-      border-color: rgba(255,255,255,0.3);
-    }
-
-    .color-badge {
-      width: 60px;
-      height: 60px;
-      border-radius: 12px;
-      margin-bottom: 16px;
-    }
-
-    .color-badge.green { background: #4cc85a; }
-    .color-badge.yellow { background: #fbbf24; }
-    .color-badge.red { background: #e85d5d; }
-    .color-badge.gray { background: #9ca3af; }
-
-    .color-card h3 {
-      font-size: 1.2rem;
-      margin-bottom: 8px;
-    }
-
-    .color-card p {
-      font-size: 0.95rem;
-      color: rgba(255,255,255,0.7);
-    }
-
-    .step-cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 24px;
-      margin-top: 40px;
-    }
-
-    .step-card {
-      background: rgba(255,255,255,0.05);
-      padding: 32px;
-      border-radius: 20px;
-      border: 2px solid rgba(255,255,255,0.1);
-      opacity: 0;
-      transform: translateY(30px);
-      transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .step-card.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .step-number {
-      width: 50px;
-      height: 50px;
-      background: linear-gradient(135deg, #4c5ad4 0%, #6366f1 100%);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 20px;
-    }
-
-    .step-card h3 {
-      font-size: 1.4rem;
-      margin-bottom: 12px;
-    }
-
-    .step-card p {
-      color: rgba(255,255,255,0.8);
-      line-height: 1.6;
-    }
-
-    .icon-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 20px;
-      margin-top: 40px;
-    }
-
-    .icon-item {
-      background: rgba(255,255,255,0.05);
-      padding: 24px;
-      border-radius: 16px;
-      text-align: center;
-      opacity: 0;
-      transform: scale(0.8);
-      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .icon-item.visible {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    .icon-item .emoji {
-      font-size: 3rem;
-      margin-bottom: 12px;
-      display: block;
-    }
-
-    .icon-item h4 {
-      font-size: 1.1rem;
-      margin-bottom: 8px;
-    }
-
-    .icon-item p {
-      font-size: 0.9rem;
-      color: rgba(255,255,255,0.7);
-    }
-
-    .cta-section {
-      height: 80vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, #4c5ad4 0%, #6366f1 100%);
-      padding: 40px 20px;
-    }
-
-    .cta-section h2 {
-      font-size: clamp(2rem, 5vw, 3rem);
-      margin-bottom: 20px;
-      text-align: center;
-    }
-
-    .cta-section p {
-      font-size: clamp(1rem, 2vw, 1.3rem);
-      margin-bottom: 40px;
-      text-align: center;
-      color: rgba(255,255,255,0.9);
-    }
-
-    .cta-button {
-      padding: 18px 48px;
-      background: white;
-      color: #4c5ad4;
-      border: none;
-      border-radius: 50px;
-      font-size: 1.2rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-      text-decoration: none;
-      display: inline-block;
-    }
-
-    .cta-button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    }
-
     .simple-topbar {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
-      background: rgba(0,0,0,0.8);
+      background: rgba(0,0,0,0.9);
       backdrop-filter: blur(10px);
       z-index: 1000;
       padding: 12px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
     }
 
     .simple-topbar-inner {
@@ -341,10 +55,665 @@
       height: 32px;
     }
 
-    /* Navigation styles now come from shared styles.css */
+    /* Hero Section */
+    .hero-section {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 50%, #667eea 100%);
+      padding: 0 20px;
+    }
+
+    .hero-title {
+      font-size: clamp(3rem, 10vw, 7rem);
+      font-weight: 800;
+      text-align: center;
+      background: linear-gradient(135deg, #fff 0%, #e9ecff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 24px;
+      animation: fadeInUp 1s ease-out;
+    }
+
+    .hero-subtitle {
+      font-size: clamp(1.2rem, 3vw, 2rem);
+      text-align: center;
+      max-width: 900px;
+      opacity: 0.95;
+      animation: fadeInUp 1s ease-out 0.2s backwards;
+      line-height: 1.5;
+    }
+
+    .scroll-indicator {
+      position: absolute;
+      bottom: 60px;
+      font-size: 2.5rem;
+      animation: bounce 2s infinite;
+      cursor: pointer;
+      opacity: 0.8;
+      transition: opacity 0.3s;
+    }
+
+    .scroll-indicator:hover {
+      opacity: 1;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(15px); }
+    }
+
+    /* Feature Section Base */
+    .feature-section {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 120px 40px 80px;
+      position: relative;
+    }
+
+    .feature-container {
+      max-width: 1400px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    @media (max-width: 968px) {
+      .feature-container {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+
+      .feature-demo {
+        order: -1;
+      }
+    }
+
+    .feature-content {
+      opacity: 0;
+      transform: translateY(50px);
+      transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .feature-content.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .feature-number {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #667eea;
+      margin-bottom: 16px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .feature-title {
+      font-size: clamp(2.5rem, 5vw, 4rem);
+      font-weight: 800;
+      margin-bottom: 24px;
+      line-height: 1.1;
+    }
+
+    .feature-description {
+      font-size: clamp(1.1rem, 2vw, 1.4rem);
+      line-height: 1.7;
+      color: rgba(255,255,255,0.85);
+      margin-bottom: 16px;
+    }
+
+    /* Demo Container */
+    .feature-demo {
+      position: relative;
+      opacity: 0;
+      transform: translateY(50px);
+      transition: all 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s;
+    }
+
+    .feature-demo.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .demo-wrapper {
+      background: #111630;
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      border: 2px solid #2a3261;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Virtual Cursor */
+    .virtual-cursor {
+      position: absolute;
+      width: 48px;
+      height: 48px;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 100;
+      filter: drop-shadow(0 4px 12px rgba(102, 126, 234, 0.6));
+    }
+
+    .virtual-cursor.active {
+      opacity: 1;
+    }
+
+    .cursor-click-effect {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      border: 3px solid #667eea;
+      border-radius: 50%;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .cursor-click-effect.animate {
+      animation: clickPulse 0.6s ease-out;
+    }
+
+    @keyframes clickPulse {
+      0% {
+        transform: translate(-50%, -50%) scale(0.5);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(1.5);
+        opacity: 0;
+      }
+    }
+
+    /* Demo Menu Items */
+    .demo-menu {
+      display: grid;
+      gap: 16px;
+    }
+
+    .demo-item {
+      background: rgba(30, 40, 70, 0.6);
+      border: 3px solid transparent;
+      border-radius: 16px;
+      padding: 20px;
+      position: relative;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+
+    .demo-item.safe { border-color: #22c55e; background: rgba(34, 197, 94, 0.08); }
+    .demo-item.caution { border-color: #facc15; background: rgba(250, 204, 21, 0.08); }
+    .demo-item.danger { border-color: #ef4444; background: rgba(239, 68, 68, 0.08); }
+    .demo-item.gray { border-color: #6b7280; background: rgba(107, 114, 128, 0.08); }
+
+    .demo-item.highlighted {
+      transform: scale(1.03);
+      box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
+    }
+
+    .demo-item-name {
+      font-weight: 700;
+      font-size: 1.2rem;
+      margin-bottom: 6px;
+      color: #e9ecff;
+    }
+
+    .demo-item-desc {
+      color: #a8b2d6;
+      font-size: 0.95rem;
+      line-height: 1.4;
+    }
+
+    .demo-badge {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.3rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .demo-badge.safe { background: #22c55e; color: white; }
+    .demo-badge.caution { background: #facc15; color: #000; }
+    .demo-badge.danger { background: #ef4444; color: white; }
+    .demo-badge.gray { background: #6b7280; color: white; }
+
+    /* Allergen Overlay */
+    .demo-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(11, 16, 32, 0.98);
+      backdrop-filter: blur(16px);
+      border-radius: 14px;
+      padding: 24px;
+      opacity: 0;
+      transform: scale(0.95);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events: none;
+      overflow-y: auto;
+    }
+
+    .demo-overlay.visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .overlay-section {
+      margin-bottom: 20px;
+    }
+
+    .overlay-title {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #e9ecff;
+      margin-bottom: 12px;
+    }
+
+    .allergen-warning {
+      background: rgba(239, 68, 68, 0.15);
+      border-left: 4px solid #ef4444;
+      padding: 14px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      color: #e9ecff;
+      line-height: 1.5;
+    }
+
+    .allergen-caution {
+      background: rgba(250, 204, 21, 0.15);
+      border-left: 4px solid #facc15;
+      padding: 14px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      color: #e9ecff;
+      line-height: 1.5;
+    }
+
+    .allergen-safe {
+      background: rgba(34, 197, 94, 0.15);
+      border-left: 4px solid #22c55e;
+      padding: 14px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      color: #e9ecff;
+      line-height: 1.5;
+    }
+
+    /* Allergen Selection Demo */
+    .allergen-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .allergen-pill {
+      background: rgba(30, 40, 70, 0.6);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+
+    .allergen-pill.selected {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: #ef4444;
+      transform: scale(1.05);
+    }
+
+    .allergen-pill .icon {
+      font-size: 2rem;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .allergen-pill .label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #e9ecff;
+    }
+
+    .dietary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+    }
+
+    .dietary-pill {
+      background: rgba(30, 40, 70, 0.6);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+
+    .dietary-pill.selected {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: #22c55e;
+      transform: scale(1.05);
+    }
+
+    .dietary-pill .icon {
+      font-size: 1.8rem;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .dietary-pill .label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #e9ecff;
+    }
+
+    /* AI Demo */
+    .ai-demo-container {
+      background: rgba(30, 40, 70, 0.6);
+      border: 2px dashed rgba(102, 126, 234, 0.4);
+      border-radius: 16px;
+      padding: 32px;
+      text-align: center;
+      min-height: 250px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ai-upload-icon {
+      font-size: 4rem;
+      opacity: 0.5;
+      transition: all 0.3s;
+    }
+
+    .ai-demo-container.analyzing .ai-upload-icon {
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.1); }
+    }
+
+    .ai-results {
+      width: 100%;
+      text-align: left;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .ai-results.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .ai-result-item {
+      background: rgba(11, 16, 32, 0.8);
+      padding: 12px 16px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      border-left: 3px solid #667eea;
+    }
+
+    /* Mobile Demo */
+    .mobile-frame {
+      width: 320px;
+      height: 600px;
+      background: #000;
+      border-radius: 32px;
+      border: 8px solid #1a1a1a;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+      overflow: hidden;
+      position: relative;
+      margin: 0 auto;
+    }
+
+    .mobile-screen {
+      width: 100%;
+      height: 100%;
+      background: #111630;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .mobile-menu-image {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: linear-gradient(135deg, #2a3261 0%, #1a2240 100%);
+      min-height: 400px;
+    }
+
+    .zoom-controls {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      gap: 10px;
+      background: rgba(0,0,0,0.8);
+      padding: 8px;
+      border-radius: 20px;
+    }
+
+    .zoom-btn {
+      width: 36px;
+      height: 36px;
+      background: #667eea;
+      border: none;
+      border-radius: 50%;
+      color: white;
+      font-size: 1.2rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .zoom-btn:hover {
+      transform: scale(1.1);
+      background: #7c9cff;
+    }
+
+    /* Favorites Demo */
+    .restaurant-card {
+      background: rgba(30, 40, 70, 0.6);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 24px;
+      position: relative;
+      transition: all 0.3s;
+    }
+
+    .favorite-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 48px;
+      height: 48px;
+      background: rgba(0,0,0,0.6);
+      border: 2px solid rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .favorite-btn.favorited {
+      background: rgba(250, 204, 21, 0.3);
+      border-color: #facc15;
+      transform: scale(1.1);
+    }
+
+    .restaurant-name {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #e9ecff;
+      margin-bottom: 8px;
+    }
+
+    .restaurant-desc {
+      color: #a8b2d6;
+      line-height: 1.5;
+    }
+
+    /* Manager Edit Demo */
+    .menu-canvas {
+      width: 100%;
+      aspect-ratio: 3/4;
+      background: linear-gradient(135deg, #2a3261 0%, #1a2240 100%);
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      cursor: crosshair;
+    }
+
+    .overlay-box {
+      position: absolute;
+      border: 3px dashed #667eea;
+      background: rgba(102, 126, 234, 0.1);
+      backdrop-filter: blur(4px);
+      cursor: move;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      color: #7c9cff;
+      font-size: 0.9rem;
+      transition: all 0.3s;
+    }
+
+    .overlay-box:hover {
+      background: rgba(102, 126, 234, 0.2);
+      border-color: #7c9cff;
+    }
+
+    /* Change Log */
+    .changelog-item {
+      background: rgba(30, 40, 70, 0.6);
+      border-left: 4px solid #667eea;
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .changelog-date {
+      font-size: 0.85rem;
+      color: #7c9cff;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .changelog-text {
+      color: #e9ecff;
+      line-height: 1.5;
+    }
+
+    /* CTA Section */
+    .cta-section {
+      min-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 80px 40px;
+      text-align: center;
+    }
+
+    .cta-title {
+      font-size: clamp(2.5rem, 6vw, 4rem);
+      font-weight: 800;
+      margin-bottom: 24px;
+    }
+
+    .cta-text {
+      font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+      margin-bottom: 40px;
+      opacity: 0.95;
+      max-width: 700px;
+    }
+
+    .cta-button {
+      padding: 20px 50px;
+      background: white;
+      color: #667eea;
+      border: none;
+      border-radius: 50px;
+      font-size: 1.3rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+      display: inline-block;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .cta-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+    }
+
+    /* Feature Labels */
+    .feature-label {
+      display: inline-block;
+      background: rgba(102, 126, 234, 0.2);
+      border: 1px solid #667eea;
+      color: #7c9cff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    /* Alternating backgrounds */
+    .bg-dark { background: #0a0a0a; }
+    .bg-darker { background: #050505; }
+    .bg-gradient-1 { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); }
+    .bg-gradient-2 { background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); }
   </style>
 </head>
 <body>
+  <!-- Top Navigation -->
   <header class="simple-topbar">
     <div class="simple-topbar-inner">
       <a class="simple-brand" href="restaurants.html">
@@ -359,237 +728,382 @@
 
   <!-- Hero Section -->
   <section class="hero-section">
-    <h1 class="hero-title">Dine with Confidence</h1>
-    <p class="hero-subtitle">Discover how Clarivore makes dining safer for people with food allergies and dietary restrictions</p>
+    <h1 class="hero-title">How Clarivore Works</h1>
+    <p class="hero-subtitle">Experience every feature that makes dining safer for people with food allergies and dietary restrictions</p>
     <div class="scroll-indicator">↓</div>
   </section>
 
-  <!-- Interactive Demo Section -->
-  <section class="demo-section" style="background: #0a0a0a; min-height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; padding: 100px 20px;">
-    <div class="demo-container" style="max-width: 900px; width: 100%; position: relative;">
-      <h2 style="text-align: center; font-size: 2.5rem; margin-bottom: 60px; color: #e9ecff;">See How It Works</h2>
-
-      <div id="interactiveDemo" style="position: relative; background: #111630; border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: 1px solid #2a3261;">
-        <!-- Your Saved Allergens Header -->
-        <div style="margin-bottom: 20px; padding: 16px; background: rgba(124,156,255,0.1); border: 1px dashed rgba(124,156,255,0.3); border-radius: 12px;">
-          <div style="font-weight: 600; color: #7c9cff; margin-bottom: 8px;">Your Saved Allergens</div>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <span style="background: rgba(239,68,68,0.15); color: #e85d5d; padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; border: 1px solid rgba(239,68,68,0.3);">🥛 Dairy</span>
-            <span style="background: rgba(239,68,68,0.15); color: #e85d5d; padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; border: 1px solid rgba(239,68,68,0.3);">🥚 Egg</span>
-            <span style="background: rgba(239,68,68,0.15); color: #e85d5d; padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; border: 1px solid rgba(239,68,68,0.3);">🥜 Peanut</span>
-            <span style="background: rgba(239,68,68,0.15); color: #e85d5d; padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; border: 1px solid rgba(239,68,68,0.3);">🌰 Tree Nut</span>
+  <!-- Feature 1: Color-Coded Safety -->
+  <section class="feature-section bg-dark" id="section-1">
+    <div class="feature-container">
+      <div class="feature-content">
+        <div class="feature-number">Feature 01</div>
+        <h2 class="feature-title">Color-Coded Safety Indicators</h2>
+        <p class="feature-description">Every menu item is instantly color-coded based on your allergens. Green means safe, yellow means caution, red means avoid.</p>
+        <p class="feature-description">No more reading through ingredient lists or asking multiple questions. The answer is right there.</p>
+      </div>
+      <div class="feature-demo">
+        <div class="demo-wrapper">
+          <div class="demo-menu" id="demo-color-coding">
+            <div class="demo-item safe">
+              <div class="demo-item-name">🥗 Garden Salad</div>
+              <div class="demo-item-desc">Fresh greens, tomatoes, cucumber, balsamic vinaigrette</div>
+              <div class="demo-badge safe">✓</div>
+            </div>
+            <div class="demo-item caution">
+              <div class="demo-item-name">🍝 Pasta Primavera</div>
+              <div class="demo-item-desc">Seasonal vegetables, olive oil, parmesan cheese</div>
+              <div class="demo-badge caution">!</div>
+            </div>
+            <div class="demo-item danger">
+              <div class="demo-item-name">🥜 Thai Peanut Noodles</div>
+              <div class="demo-item-desc">Rice noodles, peanut sauce, vegetables, sesame</div>
+              <div class="demo-badge danger">✕</div>
+            </div>
+            <div class="demo-item gray">
+              <div class="demo-item-name">🍲 Chef's Special</div>
+              <div class="demo-item-desc">Ask your server for today's special</div>
+              <div class="demo-badge gray">?</div>
+            </div>
           </div>
-          <div style="font-weight: 600; color: #7c9cff; margin-top: 12px; margin-bottom: 8px;">Your Saved Dietary Preferences</div>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <span style="background: rgba(76,200,90,0.15); color: #4cc85a; padding: 6px 12px; border-radius: 20px; font-size: 0.9rem; border: 1px solid rgba(76,200,90,0.3);">🌱 Vegan</span>
+          <div class="virtual-cursor" id="cursor-1">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+              <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#667eea" stroke="#fff" stroke-width="1.5"/>
+            </svg>
           </div>
         </div>
+      </div>
+    </div>
+  </section>
 
-        <!-- Demo Menu -->
-        <div class="demo-menu" style="display: grid; gap: 16px;">
-          <div class="demo-item demo-safe" data-step="1" style="background: rgba(34,197,94,0.1); border: 2px solid #22c55e; border-radius: 12px; padding: 16px; position: relative; cursor: pointer; transition: all 0.3s;">
-            <div class="demo-item-name" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 4px; color: #e9ecff;">🥗 Garden Salad</div>
-            <div class="demo-item-desc" style="color: #a8b2d6; font-size: 0.9rem;">Fresh greens, tomatoes, cucumber</div>
-            <div class="demo-badge" style="position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; background: #22c55e; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.1rem;">✓</div>
-          </div>
-
-          <div class="demo-item demo-caution" data-step="2" style="background: rgba(250,204,21,0.1); border: 2px solid #facc15; border-radius: 12px; padding: 16px; position: relative; cursor: pointer; transition: all 0.3s;">
-            <div class="demo-item-name" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 4px; color: #e9ecff;">🍝 Pasta Primavera</div>
-            <div class="demo-item-desc" style="color: #a8b2d6; font-size: 0.9rem;">Vegetables, olive oil, parmesan</div>
-            <div class="demo-badge" style="position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; background: #facc15; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #000; font-weight: bold; font-size: 1.2rem;">!</div>
-            <div class="demo-overlay" style="display: none; position: absolute; inset: 0; background: rgba(11,16,32,0.97); border-radius: 12px; padding: 20px; backdrop-filter: blur(14px); font-size: 0.95rem;">
-              <strong style="display: block; margin-bottom: 12px; color: #e9ecff; font-size: 1rem;">Allergen Information</strong>
-              <div style="background: rgba(250,204,21,0.15); padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 3px solid #facc15;">
-                <div style="color: #e9ecff; margin-bottom: 6px;">🥛 Contains <strong>dairy</strong> (can be substituted out)</div>
-              </div>
-              <div style="padding-top: 12px; margin-top: 12px; border-top: 1px solid rgba(124,156,255,0.2);">
-                <strong style="display: block; margin-bottom: 8px; color: #e9ecff;">Dietary Options</strong>
-                <div style="color: #e85d5d; font-size: 0.9rem; margin-bottom: 6px;">🌱 This dish is not <strong>vegan</strong></div>
+  <!-- Feature 2: Click for Details -->
+  <section class="feature-section bg-gradient-1" id="section-2">
+    <div class="feature-container">
+      <div class="feature-demo">
+        <div class="demo-wrapper">
+          <div class="demo-menu" id="demo-details">
+            <div class="demo-item caution">
+              <div class="demo-item-name">🍕 Margherita Pizza</div>
+              <div class="demo-item-desc">Fresh mozzarella, tomato sauce, basil</div>
+              <div class="demo-badge caution">!</div>
+              <div class="demo-overlay" id="overlay-pizza">
+                <div class="overlay-section">
+                  <div class="overlay-title">⚠️ Allergen Information</div>
+                  <div class="allergen-caution">
+                    <strong>🥛 Contains Dairy</strong><br>
+                    Can be substituted with vegan cheese
+                  </div>
+                  <div class="allergen-caution">
+                    <strong>🌾 Contains Wheat</strong><br>
+                    Can be made with gluten-free crust
+                  </div>
+                </div>
+                <div class="overlay-section">
+                  <div class="overlay-title">🌱 Dietary Information</div>
+                  <div class="allergen-safe">
+                    ✓ Vegetarian<br>
+                    ✓ Can be made Vegan<br>
+                    ✓ Can be made Gluten-Free
+                  </div>
+                </div>
+                <div class="overlay-section">
+                  <div class="overlay-title">⚠️ Cross-Contamination Warning</div>
+                  <div style="color: #facc15; font-size: 0.9rem;">
+                    Kitchen handles tree nuts and peanuts. Cross-contamination possible.
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+          <div class="virtual-cursor" id="cursor-2">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+              <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#667eea" stroke="#fff" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="cursor-click-effect" id="click-effect-2"></div>
+        </div>
+      </div>
+      <div class="feature-content">
+        <div class="feature-number">Feature 02</div>
+        <h2 class="feature-title">Detailed Allergen Information</h2>
+        <p class="feature-description">Tap any dish to see complete allergen details, substitution options, and cross-contamination warnings.</p>
+        <p class="feature-description">Every detail you need to make an informed decision, all in one place.</p>
+      </div>
+    </div>
+  </section>
 
-          <div class="demo-item demo-danger" data-step="3" style="background: rgba(239,68,68,0.1); border: 2px solid #ef4444; border-radius: 12px; padding: 16px; position: relative; cursor: pointer; transition: all 0.3s;">
-            <div class="demo-item-name" style="font-weight: 600; font-size: 1.1rem; margin-bottom: 4px; color: #e9ecff;">🥜 Thai Peanut Noodles</div>
-            <div class="demo-item-desc" style="color: #a8b2d6; font-size: 0.9rem;">Rice noodles, peanut sauce, vegetables</div>
-            <div class="demo-badge" style="position: absolute; top: 16px; right: 16px; width: 32px; height: 32px; background: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.2rem;">✕</div>
-            <div class="demo-overlay" style="display: none; position: absolute; inset: 0; background: rgba(11,16,32,0.97); border-radius: 12px; padding: 20px; backdrop-filter: blur(14px); font-size: 0.95rem;">
-              <strong style="display: block; margin-bottom: 12px; color: #e9ecff; font-size: 1rem;">Allergen Information</strong>
-              <div style="background: rgba(239,68,68,0.15); padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 3px solid #ef4444;">
-                <div style="color: #e9ecff; margin-bottom: 6px;">🥜 Contains <strong>peanut</strong> (cannot be substituted out)</div>
+  <!-- Feature 3: Personalized Allergen Selection -->
+  <section class="feature-section bg-dark" id="section-3">
+    <div class="feature-container">
+      <div class="feature-content">
+        <div class="feature-number">Feature 03</div>
+        <h2 class="feature-title">Your Personal Allergen Profile</h2>
+        <p class="feature-description">Select your allergens once, and every menu automatically adapts to show what's safe for you.</p>
+        <p class="feature-description">All 9 major allergens supported, plus dietary preferences like vegan, vegetarian, kosher, and halal.</p>
+      </div>
+      <div class="feature-demo">
+        <div class="demo-wrapper">
+          <div style="margin-bottom: 24px;">
+            <div class="overlay-title" style="margin-bottom: 16px;">Select Your Allergens</div>
+            <div class="allergen-grid" id="allergen-selector">
+              <div class="allergen-pill" data-allergen="dairy">
+                <span class="icon">🥛</span>
+                <span class="label">Dairy</span>
               </div>
-              <div style="padding-top: 12px; margin-top: 12px; border-top: 1px solid rgba(124,156,255,0.2);">
-                <strong style="display: block; margin-bottom: 8px; color: #e9ecff;">Dietary Options</strong>
-                <div style="color: #4cc85a; font-size: 0.9rem; margin-bottom: 6px;">🌱 This dish is <strong>vegan</strong></div>
+              <div class="allergen-pill" data-allergen="egg">
+                <span class="icon">🥚</span>
+                <span class="label">Egg</span>
+              </div>
+              <div class="allergen-pill" data-allergen="peanut">
+                <span class="icon">🥜</span>
+                <span class="label">Peanut</span>
+              </div>
+              <div class="allergen-pill" data-allergen="treenut">
+                <span class="icon">🌰</span>
+                <span class="label">Tree Nut</span>
+              </div>
+              <div class="allergen-pill" data-allergen="shellfish">
+                <span class="icon">🦐</span>
+                <span class="label">Shellfish</span>
+              </div>
+              <div class="allergen-pill" data-allergen="fish">
+                <span class="icon">🐟</span>
+                <span class="label">Fish</span>
+              </div>
+              <div class="allergen-pill" data-allergen="soy">
+                <span class="icon">🫘</span>
+                <span class="label">Soy</span>
+              </div>
+              <div class="allergen-pill" data-allergen="sesame">
+                <span class="icon">🌾</span>
+                <span class="label">Sesame</span>
+              </div>
+              <div class="allergen-pill" data-allergen="wheat">
+                <span class="icon">🌾</span>
+                <span class="label">Wheat</span>
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- Animated Cursor -->
-        <div id="demoCursor" style="position: absolute; width: 40px; height: 40px; pointer-events: none; opacity: 0; transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1); z-index: 10;">
-          <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
-            <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#7c9cff" stroke="#fff" stroke-width="1.5"/>
-          </svg>
-        </div>
-
-        <!-- Step Indicator -->
-        <div id="stepIndicator" style="text-align: center; margin-top: 30px; color: #a8b2d6; font-size: 0.95rem; min-height: 24px;"></div>
-      </div>
-
-      <div style="text-align: center; margin-top: 30px; color: #a8b2d6; font-size: 0.9rem;">
-        <p>↓ Scroll down to see the interaction ↓</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Feature: For Diners -->
-  <section class="feature-section" style="background: #0a0a0a;">
-    <div class="feature-container">
-      <div class="feature-text">
-        <h2>For Diners</h2>
-        <p>See which menu items are safe for you at a glance. No more guessing or lengthy conversations.</p>
-        <p>Every dish is color-coded based on your specific allergens and dietary preferences.</p>
-      </div>
-      <div class="feature-visual">
-        <div class="step-cards">
-          <div class="step-card">
-            <div class="step-number">1</div>
-            <h3>Set Your Profile</h3>
-            <p>Select your allergens and dietary preferences once</p>
+          <div>
+            <div class="overlay-title" style="margin-bottom: 16px;">Dietary Preferences</div>
+            <div class="dietary-grid" id="dietary-selector">
+              <div class="dietary-pill" data-diet="vegan">
+                <span class="icon">🌱</span>
+                <span class="label">Vegan</span>
+              </div>
+              <div class="dietary-pill" data-diet="vegetarian">
+                <span class="icon">🥕</span>
+                <span class="label">Vegetarian</span>
+              </div>
+              <div class="dietary-pill" data-diet="pescatarian">
+                <span class="icon">🐟</span>
+                <span class="label">Pescatarian</span>
+              </div>
+              <div class="dietary-pill" data-diet="kosher">
+                <span class="icon">✡️</span>
+                <span class="label">Kosher</span>
+              </div>
+              <div class="dietary-pill" data-diet="halal">
+                <span class="icon">☪️</span>
+                <span class="label">Halal</span>
+              </div>
+            </div>
           </div>
-          <div class="step-card" style="transition-delay: 0.1s;">
-            <div class="step-number">2</div>
-            <h3>Browse Menus</h3>
-            <p>View restaurant menus with safety indicators</p>
+          <div class="virtual-cursor" id="cursor-3">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+              <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#667eea" stroke="#fff" stroke-width="1.5"/>
+            </svg>
           </div>
-          <div class="step-card" style="transition-delay: 0.2s;">
-            <div class="step-number">3</div>
-            <h3>Tap for Details</h3>
-            <p>See complete allergen and ingredient information</p>
-          </div>
-          <div class="step-card" style="transition-delay: 0.3s;">
-            <div class="step-number">4</div>
-            <h3>Order Safely</h3>
-            <p>Dine with confidence knowing what's safe</p>
-          </div>
+          <div class="cursor-click-effect" id="click-effect-3"></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Feature: Color Coding -->
-  <section class="feature-section" style="background: #1a1a1a;">
+  <!-- Feature 4: AI Ingredient Assistant -->
+  <section class="feature-section bg-gradient-2" id="section-4">
     <div class="feature-container">
-      <div class="feature-visual">
-        <div class="color-demo">
-          <div class="color-card">
-            <div class="color-badge green"></div>
-            <h3>Safe</h3>
-            <p>No allergens detected. Safe to eat based on your profile.</p>
+      <div class="feature-demo">
+        <div class="demo-wrapper">
+          <div class="ai-demo-container" id="ai-demo">
+            <div class="ai-upload-icon">📸</div>
+            <div style="color: #a8b2d6;">
+              <div style="font-weight: 600; font-size: 1.1rem; color: #e9ecff; margin-bottom: 8px;">AI Ingredient Assistant</div>
+              <div style="font-size: 0.95rem;">Upload a photo or paste ingredients</div>
+            </div>
+            <div class="ai-results" id="ai-results">
+              <div class="overlay-title" style="margin-bottom: 12px;">✨ Analysis Complete</div>
+              <div class="ai-result-item">
+                <strong style="color: #e9ecff;">Detected Ingredients:</strong><br>
+                <span style="color: #a8b2d6;">Flour, Sugar, Eggs, Butter, Milk, Vanilla</span>
+              </div>
+              <div class="ai-result-item">
+                <strong style="color: #ef4444;">⚠️ Allergens Found:</strong><br>
+                <span style="color: #a8b2d6;">🥛 Dairy, 🥚 Egg, 🌾 Wheat</span>
+              </div>
+              <div class="ai-result-item">
+                <strong style="color: #22c55e;">✓ Status:</strong><br>
+                <span style="color: #a8b2d6;">Not safe for your profile</span>
+              </div>
+            </div>
           </div>
-          <div class="color-card" style="transition-delay: 0.1s;">
-            <div class="color-badge yellow"></div>
-            <h3>Can Accommodate</h3>
-            <p>Contains allergens but they can be removed or substituted.</p>
-          </div>
-          <div class="color-card" style="transition-delay: 0.2s;">
-            <div class="color-badge red"></div>
-            <h3>Contains Allergens</h3>
-            <p>Contains your allergens and cannot be modified.</p>
-          </div>
-          <div class="color-card" style="transition-delay: 0.3s;">
-            <div class="color-badge gray"></div>
-            <h3>No Information</h3>
-            <p>Allergen information not yet available for this item.</p>
+          <div class="virtual-cursor" id="cursor-4">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+              <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#667eea" stroke="#fff" stroke-width="1.5"/>
+            </svg>
           </div>
         </div>
       </div>
-      <div class="feature-text">
-        <h2>Color-Coded Clarity</h2>
-        <p>Instant visual feedback shows which dishes work for you.</p>
-        <p>Green means go, yellow means ask, red means avoid. It's that simple.</p>
+      <div class="feature-content">
+        <div class="feature-number">Feature 04</div>
+        <h2 class="feature-title">AI-Powered Ingredient Analysis</h2>
+        <p class="feature-description">Upload photos of ingredient labels or paste ingredient lists, and our AI instantly detects allergens.</p>
+        <p class="feature-description">Perfect for when you're cooking at home or checking packaged foods at the grocery store.</p>
       </div>
     </div>
   </section>
 
-  <!-- Feature: Detailed Info -->
-  <section class="feature-section" style="background: #0a0a0a;">
+  <!-- Feature 5: Mobile Experience -->
+  <section class="feature-section bg-dark" id="section-5">
     <div class="feature-container">
-      <div class="feature-text">
-        <h2>Complete Information</h2>
-        <p>Tap any dish to see comprehensive allergen details, dietary compatibility, and ingredient lists.</p>
-        <p>Know exactly what you're eating before you order.</p>
+      <div class="feature-content">
+        <div class="feature-number">Feature 05</div>
+        <h2 class="feature-title">Mobile-Optimized Experience</h2>
+        <p class="feature-description">Full-screen menu viewer with pinch-to-zoom capabilities. Read even the smallest text clearly.</p>
+        <p class="feature-description">Allergen information stays visible while you zoom, so you never lose context.</p>
       </div>
-      <div class="feature-visual">
-        <div class="icon-grid">
-          <div class="icon-item">
-            <span class="emoji">🥛</span>
-            <h4>Allergen Icons</h4>
-            <p>Visual indicators for each allergen type</p>
+      <div class="feature-demo">
+        <div class="demo-wrapper" style="padding: 20px;">
+          <div class="mobile-frame">
+            <div class="mobile-screen" id="mobile-screen">
+              <div class="mobile-menu-image" style="display: flex; flex-direction: column; padding: 20px; gap: 12px;">
+                <div class="demo-item safe" style="margin: 0;">
+                  <div class="demo-item-name" style="font-size: 1rem;">🥗 Garden Salad</div>
+                  <div class="demo-item-desc" style="font-size: 0.85rem;">Fresh and healthy</div>
+                  <div class="demo-badge safe" style="width: 32px; height: 32px; font-size: 1.1rem;">✓</div>
+                </div>
+                <div class="demo-item caution" style="margin: 0;">
+                  <div class="demo-item-name" style="font-size: 1rem;">🍝 Pasta</div>
+                  <div class="demo-item-desc" style="font-size: 0.85rem;">Contains dairy</div>
+                  <div class="demo-badge caution" style="width: 32px; height: 32px; font-size: 1.1rem;">!</div>
+                </div>
+                <div class="demo-item danger" style="margin: 0;">
+                  <div class="demo-item-name" style="font-size: 1rem;">🥜 Peanut Noodles</div>
+                  <div class="demo-item-desc" style="font-size: 0.85rem;">Contains peanuts</div>
+                  <div class="demo-badge danger" style="width: 32px; height: 32px; font-size: 1.1rem;">✕</div>
+                </div>
+              </div>
+              <div class="zoom-controls">
+                <button class="zoom-btn">−</button>
+                <button class="zoom-btn">+</button>
+              </div>
+            </div>
           </div>
-          <div class="icon-item" style="transition-delay: 0.1s;">
-            <span class="emoji">🌱</span>
-            <h4>Dietary Options</h4>
-            <p>Vegan, vegetarian, kosher, halal, and more</p>
-          </div>
-          <div class="icon-item" style="transition-delay: 0.2s;">
-            <span class="emoji">⚠️</span>
-            <h4>Cross-Contact</h4>
-            <p>Warnings about potential contamination risks</p>
-          </div>
-          <div class="icon-item" style="transition-delay: 0.3s;">
-            <span class="emoji">📋</span>
-            <h4>Ingredients</h4>
-            <p>Full ingredient lists when available</p>
+          <div class="virtual-cursor" id="cursor-5">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+              <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#667eea" stroke="#fff" stroke-width="1.5"/>
+            </svg>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Feature: For Restaurants -->
-  <section class="feature-section" style="background: #1a1a1a;">
+  <!-- Feature 6: Favorites System -->
+  <section class="feature-section bg-gradient-1" id="section-6">
     <div class="feature-container">
-      <div class="feature-visual">
-        <div class="step-cards">
-          <div class="step-card">
-            <div class="step-number">📷</div>
-            <h3>Upload Menu</h3>
-            <p>AI automatically detects dishes and creates overlays</p>
+      <div class="feature-demo">
+        <div class="demo-wrapper">
+          <div class="restaurant-card" id="favorite-demo">
+            <div class="restaurant-name">Harvest Moon Cafe</div>
+            <div class="restaurant-desc">Farm-to-table restaurant with extensive allergen-friendly options. Known for their vegan and gluten-free selections.</div>
+            <div class="favorite-btn" id="favorite-btn">☆</div>
           </div>
-          <div class="step-card" style="transition-delay: 0.1s;">
-            <div class="step-number">🤖</div>
-            <h3>AI Assistant</h3>
-            <p>Scan ingredient labels for instant allergen detection</p>
+          <div class="virtual-cursor" id="cursor-6">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+              <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#667eea" stroke="#fff" stroke-width="1.5"/>
+            </svg>
           </div>
-          <div class="step-card" style="transition-delay: 0.2s;">
-            <div class="step-number">✏️</div>
-            <h3>Easy Updates</h3>
-            <p>Simple interface to manage allergen information</p>
+          <div class="cursor-click-effect" id="click-effect-6"></div>
+        </div>
+      </div>
+      <div class="feature-content">
+        <div class="feature-number">Feature 06</div>
+        <h2 class="feature-title">Save Your Favorites</h2>
+        <p class="feature-description">Found a restaurant with great allergen-friendly options? Save it to your favorites for quick access.</p>
+        <p class="feature-description">Build your personal collection of trusted dining spots.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Feature 7: Manager Edit Mode -->
+  <section class="feature-section bg-dark" id="section-7">
+    <div class="feature-container">
+      <div class="feature-content">
+        <div class="feature-number">Feature 07</div>
+        <div class="feature-label">For Restaurants</div>
+        <h2 class="feature-title">Easy Menu Management</h2>
+        <p class="feature-description">Restaurant managers can easily create allergen overlays by dragging and dropping boxes on their menu images.</p>
+        <p class="feature-description">Upload a photo of your menu, and our AI detects dish locations automatically.</p>
+      </div>
+      <div class="feature-demo">
+        <div class="demo-wrapper">
+          <div class="menu-canvas" id="menu-canvas">
+            <div class="overlay-box" id="overlay-box-1" style="left: 10%; top: 10%; width: 35%; height: 15%;">
+              Drag to position
+            </div>
+            <div class="overlay-box" id="overlay-box-2" style="left: 55%; top: 30%; width: 35%; height: 15%;">
+              Drag to position
+            </div>
           </div>
-          <div class="step-card" style="transition-delay: 0.3s;">
-            <div class="step-number">📊</div>
-            <h3>Track Changes</h3>
-            <p>Built-in change log for transparency</p>
+          <div class="virtual-cursor" id="cursor-7">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+              <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#667eea" stroke="#fff" stroke-width="1.5"/>
+            </svg>
           </div>
         </div>
       </div>
-      <div class="feature-text">
-        <h2>For Restaurants</h2>
-        <p>Make your menu accessible to diners with allergies and dietary restrictions.</p>
-        <p>AI-powered tools make it easy to create and maintain accurate allergen information.</p>
+    </div>
+  </section>
+
+  <!-- Feature 8: Change Log -->
+  <section class="feature-section bg-gradient-2" id="section-8">
+    <div class="feature-container">
+      <div class="feature-demo">
+        <div class="demo-wrapper">
+          <div class="overlay-title" style="margin-bottom: 20px;">📋 Menu Change Log</div>
+          <div class="changelog-item">
+            <div class="changelog-date">Updated 2 days ago by Sarah M.</div>
+            <div class="changelog-text">✓ Menu verified - all allergen information confirmed accurate</div>
+          </div>
+          <div class="changelog-item">
+            <div class="changelog-date">Updated 1 week ago by Chef Mike</div>
+            <div class="changelog-text">Updated "Pasta Primavera" - now available with vegan cheese option</div>
+          </div>
+          <div class="changelog-item">
+            <div class="changelog-date">Updated 2 weeks ago by Sarah M.</div>
+            <div class="changelog-text">Added new dish "Thai Peanut Noodles" with complete allergen information</div>
+          </div>
+        </div>
+      </div>
+      <div class="feature-content">
+        <div class="feature-number">Feature 08</div>
+        <div class="feature-label">For Transparency</div>
+        <h2 class="feature-title">Complete Change History</h2>
+        <p class="feature-description">Every menu update is logged with a timestamp and staff member name.</p>
+        <p class="feature-description">See exactly when allergen information was last verified, giving you confidence in the data.</p>
       </div>
     </div>
   </section>
 
   <!-- CTA Section -->
   <section class="cta-section">
-    <h2>Ready to Get Started?</h2>
-    <p>Join Clarivore and discover safe dining options across Cleveland</p>
-    <a href="account.html" class="cta-button">Create Your Profile</a>
+    <h2 class="cta-title">Ready to Dine with Confidence?</h2>
+    <p class="cta-text">Join thousands of diners who use Clarivore to find safe, delicious meals across Cleveland and beyond.</p>
+    <a href="account.html" class="cta-button">Create Your Free Profile</a>
   </section>
 
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module">
     import supabaseClient from './js/supabase-client.js';
@@ -606,91 +1120,14 @@
     initNav();
   </script>
   <script>
-    // Interactive Demo Animation
-    let currentStep = -1;
-    const totalSteps = 4;
+    // Scroll indicator click
+    document.querySelector('.scroll-indicator')?.addEventListener('click', () => {
+      window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
+    });
 
-    function animateDemo() {
-      const demo = document.getElementById('interactiveDemo');
-      const cursor = document.getElementById('demoCursor');
-      const indicator = document.getElementById('stepIndicator');
-      const items = document.querySelectorAll('.demo-item');
-
-      if (!demo || !cursor || !items.length) return;
-
-      const rect = demo.getBoundingClientRect();
-      const viewportMid = window.innerHeight / 2;
-
-      // Calculate progress based on demo position relative to viewport middle
-      let progress = 0;
-      if (rect.top > viewportMid) {
-        progress = 0; // Demo is below middle
-      } else if (rect.bottom < viewportMid) {
-        progress = 1; // Demo is above middle
-      } else {
-        // Demo is crossing the middle - interpolate
-        progress = (viewportMid - rect.top) / rect.height;
-        progress = Math.max(0, Math.min(1, progress));
-      }
-
-      const step = Math.floor(progress * (totalSteps - 0.5));
-
-      if (step !== currentStep) {
-        currentStep = step;
-
-        // Reset all overlays and transforms
-        document.querySelectorAll('.demo-overlay').forEach(overlay => {
-          overlay.style.display = 'none';
-        });
-        items.forEach(item => {
-          item.style.transform = 'scale(1)';
-        });
-
-        if (currentStep === 0) {
-          // Initial state - show all items normally
-          cursor.style.opacity = '0';
-          indicator.textContent = '';
-        } else if (currentStep === 1) {
-          // Hover over safe item
-          const item = items[0];
-          const itemRect = item.getBoundingClientRect();
-          const demoRect = demo.getBoundingClientRect();
-          cursor.style.left = (itemRect.left - demoRect.left + itemRect.width / 2 - 20) + 'px';
-          cursor.style.top = (itemRect.top - demoRect.top + itemRect.height / 2 - 20) + 'px';
-          cursor.style.opacity = '1';
-          indicator.textContent = '✓ Green border means safe - no allergens detected';
-          item.style.transform = 'scale(1.02)';
-        } else if (currentStep === 2) {
-          // Click on caution item to show overlay
-          const item = items[1];
-          const overlay = item.querySelector('.demo-overlay');
-          const itemRect = item.getBoundingClientRect();
-          const demoRect = demo.getBoundingClientRect();
-          cursor.style.left = (itemRect.left - demoRect.left + itemRect.width / 2 - 20) + 'px';
-          cursor.style.top = (itemRect.top - demoRect.top + itemRect.height / 2 - 20) + 'px';
-          cursor.style.opacity = '1';
-          if (overlay) overlay.style.display = 'block';
-          indicator.textContent = '⚠️ Yellow border means caution - tap to see what can be removed';
-          item.style.transform = 'scale(1.02)';
-        } else if (currentStep >= 3) {
-          // Click on danger item to show overlay
-          const item = items[2];
-          const overlay = item.querySelector('.demo-overlay');
-          const itemRect = item.getBoundingClientRect();
-          const demoRect = demo.getBoundingClientRect();
-          cursor.style.left = (itemRect.left - demoRect.left + itemRect.width / 2 - 20) + 'px';
-          cursor.style.top = (itemRect.top - demoRect.top + itemRect.height / 2 - 20) + 'px';
-          cursor.style.opacity = '1';
-          if (overlay) overlay.style.display = 'block';
-          indicator.textContent = '🚫 Red border means avoid - contains allergens that cannot be removed';
-          item.style.transform = 'scale(1.02)';
-        }
-      }
-    }
-
-    // Scroll animation observer
+    // Intersection Observer for scroll animations
     const observerOptions = {
-      threshold: 0.2,
+      threshold: 0.3,
       rootMargin: '0px 0px -100px 0px'
     };
 
@@ -702,76 +1139,272 @@
       });
     }, observerOptions);
 
-    // Add scroll listener for demo animation
-    let tickingDemo = false;
-    window.addEventListener('scroll', () => {
-      if (!tickingDemo) {
-        window.requestAnimationFrame(() => {
-          animateDemo();
-          tickingDemo = false;
-        });
-        tickingDemo = true;
-      }
-    }, { passive: true });
-
-    // Parallax effect on scroll
-    let tickingParallax = false;
-    window.addEventListener('scroll', () => {
-      if (!tickingParallax) {
-        window.requestAnimationFrame(() => {
-          const scrolled = window.pageYOffset;
-          const heroTitle = document.querySelector('.hero-title');
-          const heroSubtitle = document.querySelector('.hero-subtitle');
-
-          if (heroTitle && scrolled < window.innerHeight) {
-            heroTitle.style.transform = `translateY(${scrolled * 0.3}px)`;
-            heroTitle.style.opacity = 1 - (scrolled / window.innerHeight);
-          }
-
-          if (heroSubtitle && scrolled < window.innerHeight) {
-            heroSubtitle.style.transform = `translateY(${scrolled * 0.2}px)`;
-            heroSubtitle.style.opacity = 1 - (scrolled / window.innerHeight);
-          }
-
-          tickingParallax = false;
-        });
-        tickingParallax = true;
-      }
-    }, { passive: true });
-
-    // Observe all animated elements
-    document.addEventListener('DOMContentLoaded', () => {
-      // Hero animations
-      setTimeout(() => {
-        const title = document.querySelector('.hero-title');
-        if (title) title.classList.add('visible');
-      }, 300);
-      setTimeout(() => {
-        const subtitle = document.querySelector('.hero-subtitle');
-        if (subtitle) subtitle.classList.add('visible');
-      }, 500);
-
-      // Observe all feature elements
-      const animatedElements = document.querySelectorAll(
-        '.feature-text, .feature-visual, .step-card, .color-card, .icon-item'
-      );
-
-      animatedElements.forEach(el => observer.observe(el));
-
-      // Smooth scroll for indicator
-      const scrollIndicator = document.querySelector('.scroll-indicator');
-      if (scrollIndicator) {
-        scrollIndicator.addEventListener('click', () => {
-          window.scrollTo({
-            top: window.innerHeight,
-            behavior: 'smooth'
-          });
-        });
-      }
-
-      // Initial animation check
-      animateDemo();
+    // Observe all animatable elements
+    document.querySelectorAll('.feature-content, .feature-demo').forEach(el => {
+      observer.observe(el);
     });
+
+    // Feature-specific scroll-triggered animations
+    const featureAnimations = {
+      'section-1': animateColorCoding,
+      'section-2': animateDetails,
+      'section-3': animateAllergenSelection,
+      'section-4': animateAI,
+      'section-5': animateMobile,
+      'section-6': animateFavorites,
+      'section-7': animateManagerEdit,
+    };
+
+    // Track which sections have been animated
+    const animatedSections = new Set();
+
+    // Section observer for cursor animations
+    const sectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !animatedSections.has(entry.target.id)) {
+          const animationFunc = featureAnimations[entry.target.id];
+          if (animationFunc) {
+            animatedSections.add(entry.target.id);
+            setTimeout(() => animationFunc(), 500);
+          }
+        }
+      });
+    }, { threshold: 0.5 });
+
+    // Observe all feature sections
+    Object.keys(featureAnimations).forEach(id => {
+      const section = document.getElementById(id);
+      if (section) sectionObserver.observe(section);
+    });
+
+    // Animation Functions
+    function animateColorCoding() {
+      const cursor = document.getElementById('cursor-1');
+      const items = document.querySelectorAll('#demo-color-coding .demo-item');
+
+      cursor.classList.add('active');
+
+      let index = 0;
+      function highlightNext() {
+        items.forEach(item => item.classList.remove('highlighted'));
+
+        if (index < items.length) {
+          const item = items[index];
+          const rect = item.getBoundingClientRect();
+          const parentRect = item.closest('.demo-wrapper').getBoundingClientRect();
+
+          cursor.style.left = (rect.left - parentRect.left + rect.width / 2 - 24) + 'px';
+          cursor.style.top = (rect.top - parentRect.top + rect.height / 2 - 24) + 'px';
+
+          item.classList.add('highlighted');
+          index++;
+          setTimeout(highlightNext, 1500);
+        } else {
+          setTimeout(() => {
+            cursor.classList.remove('active');
+            items.forEach(item => item.classList.remove('highlighted'));
+          }, 1000);
+        }
+      }
+
+      highlightNext();
+    }
+
+    function animateDetails() {
+      const cursor = document.getElementById('cursor-2');
+      const item = document.querySelector('#demo-details .demo-item');
+      const overlay = document.getElementById('overlay-pizza');
+      const clickEffect = document.getElementById('click-effect-2');
+
+      cursor.classList.add('active');
+
+      const rect = item.getBoundingClientRect();
+      const parentRect = item.closest('.demo-wrapper').getBoundingClientRect();
+
+      cursor.style.left = (rect.left - parentRect.left + rect.width / 2 - 24) + 'px';
+      cursor.style.top = (rect.top - parentRect.top + rect.height / 2 - 24) + 'px';
+
+      setTimeout(() => {
+        item.classList.add('highlighted');
+        clickEffect.classList.add('animate');
+
+        setTimeout(() => {
+          overlay.classList.add('visible');
+          clickEffect.classList.remove('animate');
+        }, 300);
+
+        setTimeout(() => {
+          overlay.classList.remove('visible');
+          item.classList.remove('highlighted');
+          cursor.classList.remove('active');
+        }, 4000);
+      }, 800);
+    }
+
+    function animateAllergenSelection() {
+      const cursor = document.getElementById('cursor-3');
+      const clickEffect = document.getElementById('click-effect-3');
+      const allergenPills = document.querySelectorAll('#allergen-selector .allergen-pill');
+      const dietaryPills = document.querySelectorAll('#dietary-selector .dietary-pill');
+
+      cursor.classList.add('active');
+
+      const toSelect = [
+        { pills: allergenPills, indices: [0, 2, 3] }, // Dairy, Peanut, Tree Nut
+        { pills: dietaryPills, indices: [0] } // Vegan
+      ];
+
+      let groupIndex = 0;
+      let itemIndex = 0;
+
+      function selectNext() {
+        if (groupIndex >= toSelect.length) {
+          setTimeout(() => {
+            cursor.classList.remove('active');
+          }, 1000);
+          return;
+        }
+
+        const group = toSelect[groupIndex];
+        if (itemIndex >= group.indices.length) {
+          groupIndex++;
+          itemIndex = 0;
+          setTimeout(selectNext, 500);
+          return;
+        }
+
+        const pill = group.pills[group.indices[itemIndex]];
+        const rect = pill.getBoundingClientRect();
+        const parentRect = pill.closest('.demo-wrapper').getBoundingClientRect();
+
+        cursor.style.left = (rect.left - parentRect.left + rect.width / 2 - 24) + 'px';
+        cursor.style.top = (rect.top - parentRect.top + rect.height / 2 - 24) + 'px';
+
+        setTimeout(() => {
+          pill.classList.add('selected');
+          itemIndex++;
+          setTimeout(selectNext, 800);
+        }, 500);
+      }
+
+      selectNext();
+    }
+
+    function animateAI() {
+      const cursor = document.getElementById('cursor-4');
+      const container = document.getElementById('ai-demo');
+      const results = document.getElementById('ai-results');
+
+      cursor.classList.add('active');
+
+      const rect = container.getBoundingClientRect();
+      const parentRect = container.closest('.demo-wrapper').getBoundingClientRect();
+
+      cursor.style.left = (rect.left - parentRect.left + rect.width / 2 - 24) + 'px';
+      cursor.style.top = (rect.top - parentRect.top + rect.height / 2 - 24) + 'px';
+
+      setTimeout(() => {
+        container.classList.add('analyzing');
+
+        setTimeout(() => {
+          container.classList.remove('analyzing');
+          results.classList.add('visible');
+
+          setTimeout(() => {
+            cursor.classList.remove('active');
+          }, 2000);
+        }, 2000);
+      }, 800);
+    }
+
+    function animateMobile() {
+      const cursor = document.getElementById('cursor-5');
+      const screen = document.getElementById('mobile-screen');
+      const zoomBtns = document.querySelectorAll('.zoom-btn');
+
+      cursor.classList.add('active');
+
+      // Position cursor on zoom button
+      const btn = zoomBtns[1];
+      const rect = btn.getBoundingClientRect();
+      const parentRect = btn.closest('.demo-wrapper').getBoundingClientRect();
+
+      cursor.style.left = (rect.left - parentRect.left + rect.width / 2 - 24) + 'px';
+      cursor.style.top = (rect.top - parentRect.top + rect.height / 2 - 24) + 'px';
+
+      setTimeout(() => {
+        // Simulate zoom
+        screen.style.transform = 'scale(1.5)';
+        screen.style.transition = 'transform 0.8s ease';
+
+        setTimeout(() => {
+          screen.style.transform = 'scale(1)';
+          cursor.classList.remove('active');
+        }, 2500);
+      }, 800);
+    }
+
+    function animateFavorites() {
+      const cursor = document.getElementById('cursor-6');
+      const clickEffect = document.getElementById('click-effect-6');
+      const btn = document.getElementById('favorite-btn');
+
+      cursor.classList.add('active');
+
+      const rect = btn.getBoundingClientRect();
+      const parentRect = btn.closest('.demo-wrapper').getBoundingClientRect();
+
+      cursor.style.left = (rect.left - parentRect.left + rect.width / 2 - 24) + 'px';
+      cursor.style.top = (rect.top - parentRect.top + rect.height / 2 - 24) + 'px';
+
+      setTimeout(() => {
+        clickEffect.classList.add('animate');
+        btn.classList.add('favorited');
+        btn.textContent = '★';
+
+        setTimeout(() => {
+          clickEffect.classList.remove('animate');
+          cursor.classList.remove('active');
+        }, 1500);
+      }, 800);
+    }
+
+    function animateManagerEdit() {
+      const cursor = document.getElementById('cursor-7');
+      const overlayBox = document.getElementById('overlay-box-1');
+
+      cursor.classList.add('active');
+
+      const startRect = overlayBox.getBoundingClientRect();
+      const parentRect = overlayBox.closest('.demo-wrapper').getBoundingClientRect();
+
+      const startX = startRect.left - parentRect.left + startRect.width / 2 - 24;
+      const startY = startRect.top - parentRect.top + startRect.height / 2 - 24;
+
+      cursor.style.left = startX + 'px';
+      cursor.style.top = startY + 'px';
+
+      setTimeout(() => {
+        // Simulate drag
+        const newLeft = '15%';
+        const newTop = '50%';
+
+        overlayBox.style.transition = 'all 1s cubic-bezier(0.4, 0, 0.2, 1)';
+        overlayBox.style.left = newLeft;
+        overlayBox.style.top = newTop;
+
+        // Move cursor with it
+        setTimeout(() => {
+          const newRect = overlayBox.getBoundingClientRect();
+          cursor.style.left = (newRect.left - parentRect.left + newRect.width / 2 - 24) + 'px';
+          cursor.style.top = (newRect.top - parentRect.top + newRect.height / 2 - 24) + 'px';
+        }, 50);
+
+        setTimeout(() => {
+          cursor.classList.remove('active');
+        }, 1200);
+      }, 800);
+    }
   </script>
 </body>
 </html>

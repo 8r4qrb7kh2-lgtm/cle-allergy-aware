@@ -123,25 +123,29 @@ serve(async (req) => {
           // Detect what changed
           const changes = detectChanges(previousSnapshot.menu_text, menuText)
 
-          // Try to extract dish name from detected dishes
-          const dishName = await extractDishNameFromChanges(detectedDishes, changes)
+          // Group changes by dish
+          const changesByDish = await groupChangesByDish(detectedDishes, changes)
 
-          // Send notification
-          const emailSent = await sendNotification({
-            restaurantId: restaurant.id,
-            restaurantName: restaurant.name,
-            restaurantUrl: restaurant.menu_url,
-            changes,
-            dishName,
-            previousText: previousSnapshot.menu_text,
-            currentText: menuText
-          })
+          // Send separate notification for each changed dish
+          let emailsSentCount = 0
+          for (const dishChange of changesByDish) {
+            const emailSent = await sendNotification({
+              restaurantId: restaurant.id,
+              restaurantName: restaurant.name,
+              restaurantUrl: restaurant.menu_url,
+              changes: dishChange.changes,
+              dishName: dishChange.dishName,
+              previousText: previousSnapshot.menu_text,
+              currentText: menuText
+            })
+            if (emailSent) emailsSentCount++
+          }
 
-          // Increment emails_sent if email was sent
-          if (emailSent) {
+          // Increment emails_sent by the number of emails actually sent
+          if (emailsSentCount > 0) {
             await supabase
               .from('restaurants')
-              .update({ emails_sent: (restaurant.emails_sent || 0) + 1 })
+              .update({ emails_sent: (restaurant.emails_sent || 0) + emailsSentCount })
               .eq('id', restaurant.id)
           }
 
@@ -287,6 +291,60 @@ function extractDishesWithPattern(html: string): Array<{ name: string; descripti
   return matches.map(match => ({
     name: match[1].trim(),
     description: match[2].trim()
+  }))
+}
+
+async function groupChangesByDish(
+  dishes: Array<{ name: string; description: string }>,
+  changes: string[]
+): Promise<Array<{ dishName: string; changes: string[] }>> {
+  // Parse all changed words
+  const parsedChanges: Array<{ type: 'added' | 'removed'; words: string[]; original: string }> = []
+
+  for (const change of changes) {
+    if (change.startsWith('Added:')) {
+      const words = change.replace('Added:', '').split(',').map(w => w.trim().toLowerCase()).filter(w => w.length > 2)
+      parsedChanges.push({ type: 'added', words, original: change })
+    } else if (change.startsWith('Removed:')) {
+      const words = change.replace('Removed:', '').split(',').map(w => w.trim().toLowerCase()).filter(w => w.length > 2)
+      parsedChanges.push({ type: 'removed', words, original: change })
+    }
+  }
+
+  // Group changes by which dish they belong to
+  const dishChangesMap = new Map<string, string[]>()
+
+  for (const parsedChange of parsedChanges) {
+    let bestMatch: { name: string; score: number } | null = null
+
+    for (const dish of dishes) {
+      const description = dish.description.toLowerCase()
+
+      // Count how many changed words appear in this dish's description
+      let score = 0
+      for (const word of parsedChange.words) {
+        if (word.length > 2 && description.includes(word)) {
+          score++
+        }
+      }
+
+      // Track the dish with the most matching changed words
+      if (score > 0 && (!bestMatch || score > bestMatch.score)) {
+        bestMatch = { name: dish.name, score }
+      }
+    }
+
+    if (bestMatch) {
+      const existing = dishChangesMap.get(bestMatch.name) || []
+      existing.push(parsedChange.original)
+      dishChangesMap.set(bestMatch.name, existing)
+    }
+  }
+
+  // Convert map to array
+  return Array.from(dishChangesMap.entries()).map(([dishName, changes]) => ({
+    dishName,
+    changes
   }))
 }
 
