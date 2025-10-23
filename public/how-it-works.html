@@ -7,6 +7,18 @@
   <title>How It Works - Clarivore</title>
   <link rel="stylesheet" href="css/styles.css">
   <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #111630;
+      --ink: #e9ecff;
+      --muted: #a8b2d6;
+      --brand: #7c9cff;
+      --ok: #22c55e;
+      --warn: #facc15;
+      --bad: #ef4444;
+      --border: #2a3261;
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -15,8 +27,8 @@
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: #000;
-      color: #fff;
+      background: var(--bg);
+      color: var(--ink);
       overflow-x: hidden;
     }
 
@@ -25,11 +37,11 @@
       top: 0;
       left: 0;
       right: 0;
-      background: rgba(0,0,0,0.9);
+      background: rgba(11, 16, 32, 0.95);
       backdrop-filter: blur(10px);
       z-index: 1000;
       padding: 12px 20px;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
+      border-bottom: 1px solid var(--border);
     }
 
     .simple-topbar-inner {
@@ -45,7 +57,7 @@
       align-items: center;
       gap: 12px;
       text-decoration: none;
-      color: white;
+      color: var(--ink);
       font-weight: 600;
       font-size: 1.1rem;
     }
@@ -62,589 +74,350 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      position: relative;
-      background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 50%, #667eea 100%);
-      padding: 0 20px;
+      background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 100%);
     }
 
     .hero-title {
-      font-size: clamp(3rem, 10vw, 7rem);
-      font-weight: 800;
+      font-size: clamp(2.5rem, 8vw, 6rem);
+      font-weight: 700;
       text-align: center;
-      background: linear-gradient(135deg, #fff 0%, #e9ecff 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 24px;
-      animation: fadeInUp 1s ease-out;
+      padding: 0 20px;
+      margin-bottom: 20px;
     }
 
     .hero-subtitle {
-      font-size: clamp(1.2rem, 3vw, 2rem);
+      font-size: clamp(1rem, 3vw, 1.5rem);
       text-align: center;
-      max-width: 900px;
-      opacity: 0.95;
-      animation: fadeInUp 1s ease-out 0.2s backwards;
-      line-height: 1.5;
+      padding: 0 20px;
+      max-width: 800px;
+      color: rgba(255,255,255,0.9);
+      margin-bottom: 40px;
     }
 
     .scroll-indicator {
-      position: absolute;
-      bottom: 60px;
-      font-size: 2.5rem;
+      font-size: 2rem;
       animation: bounce 2s infinite;
+      opacity: 0.7;
       cursor: pointer;
-      opacity: 0.8;
-      transition: opacity 0.3s;
-    }
-
-    .scroll-indicator:hover {
-      opacity: 1;
-    }
-
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
     }
 
     @keyframes bounce {
       0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(15px); }
+      50% { transform: translateY(10px); }
     }
 
-    /* Feature Section Base */
-    .feature-section {
-      min-height: 100vh;
+    /* Main Showcase */
+    .showcase-section {
+      min-height: 600vh;
+      position: relative;
+      background: var(--bg);
+    }
+
+    .showcase-sticky {
+      position: sticky;
+      top: 0;
+      height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 120px 40px 80px;
-      position: relative;
+      padding: 80px 20px 20px;
     }
 
-    .feature-container {
-      max-width: 1400px;
+    .showcase-container {
+      max-width: 1600px;
       width: 100%;
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 80px;
-      align-items: center;
+      grid-template-columns: 400px 1fr;
+      gap: 40px;
+      align-items: start;
     }
 
-    @media (max-width: 968px) {
-      .feature-container {
+    @media (max-width: 1200px) {
+      .showcase-container {
         grid-template-columns: 1fr;
-        gap: 40px;
+        gap: 20px;
       }
-
-      .feature-demo {
-        order: -1;
-      }
-    }
-
-    .feature-content {
-      opacity: 0;
-      transform: translateY(50px);
-      transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .feature-content.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .feature-number {
-      font-size: 1rem;
-      font-weight: 700;
-      color: #667eea;
-      margin-bottom: 16px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
-
-    .feature-title {
-      font-size: clamp(2.5rem, 5vw, 4rem);
-      font-weight: 800;
-      margin-bottom: 24px;
-      line-height: 1.1;
-    }
-
-    .feature-description {
-      font-size: clamp(1.1rem, 2vw, 1.4rem);
-      line-height: 1.7;
-      color: rgba(255,255,255,0.85);
-      margin-bottom: 16px;
-    }
-
-    /* Demo Container */
-    .feature-demo {
-      position: relative;
-      opacity: 0;
-      transform: translateY(50px);
-      transition: all 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s;
-    }
-
-    .feature-demo.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .demo-wrapper {
-      background: #111630;
-      border-radius: 24px;
-      padding: 32px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-      border: 2px solid #2a3261;
-      position: relative;
-      overflow: hidden;
-    }
-
-    /* Virtual Cursor */
-    .virtual-cursor {
-      position: absolute;
-      width: 48px;
-      height: 48px;
-      pointer-events: none;
-      opacity: 0;
-      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-      z-index: 100;
-      filter: drop-shadow(0 4px 12px rgba(102, 126, 234, 0.6));
-    }
-
-    .virtual-cursor.active {
-      opacity: 1;
-    }
-
-    .cursor-click-effect {
-      position: absolute;
-      width: 80px;
-      height: 80px;
-      border: 3px solid #667eea;
-      border-radius: 50%;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) scale(0);
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .cursor-click-effect.animate {
-      animation: clickPulse 0.6s ease-out;
-    }
-
-    @keyframes clickPulse {
-      0% {
-        transform: translate(-50%, -50%) scale(0.5);
-        opacity: 1;
-      }
-      100% {
-        transform: translate(-50%, -50%) scale(1.5);
-        opacity: 0;
+      .info-panel {
+        max-width: 600px;
+        margin: 0 auto;
       }
     }
 
-    /* Demo Menu Items */
-    .demo-menu {
-      display: grid;
-      gap: 16px;
-    }
-
-    .demo-item {
-      background: rgba(30, 40, 70, 0.6);
-      border: 3px solid transparent;
+    .info-panel {
+      padding: 30px;
+      background: var(--panel);
       border-radius: 16px;
-      padding: 20px;
-      position: relative;
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      cursor: pointer;
+      border: 1px solid var(--border);
     }
 
-    .demo-item.safe { border-color: #22c55e; background: rgba(34, 197, 94, 0.08); }
-    .demo-item.caution { border-color: #facc15; background: rgba(250, 204, 21, 0.08); }
-    .demo-item.danger { border-color: #ef4444; background: rgba(239, 68, 68, 0.08); }
-    .demo-item.gray { border-color: #6b7280; background: rgba(107, 114, 128, 0.08); }
-
-    .demo-item.highlighted {
-      transform: scale(1.03);
-      box-shadow: 0 12px 40px rgba(102, 126, 234, 0.4);
+    .info-panel h2 {
+      font-size: 2rem;
+      color: var(--brand);
+      margin-bottom: 16px;
     }
 
-    .demo-item-name {
-      font-weight: 700;
-      font-size: 1.2rem;
-      margin-bottom: 6px;
-      color: #e9ecff;
-    }
-
-    .demo-item-desc {
-      color: #a8b2d6;
-      font-size: 0.95rem;
-      line-height: 1.4;
-    }
-
-    .demo-badge {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      font-size: 1.3rem;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
-
-    .demo-badge.safe { background: #22c55e; color: white; }
-    .demo-badge.caution { background: #facc15; color: #000; }
-    .demo-badge.danger { background: #ef4444; color: white; }
-    .demo-badge.gray { background: #6b7280; color: white; }
-
-    /* Allergen Overlay */
-    .demo-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(11, 16, 32, 0.98);
-      backdrop-filter: blur(16px);
-      border-radius: 14px;
-      padding: 24px;
-      opacity: 0;
-      transform: scale(0.95);
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      pointer-events: none;
-      overflow-y: auto;
-    }
-
-    .demo-overlay.visible {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    .overlay-section {
-      margin-bottom: 20px;
-    }
-
-    .overlay-title {
-      font-weight: 700;
+    .info-panel p {
       font-size: 1.1rem;
-      color: #e9ecff;
+      line-height: 1.6;
+      color: var(--muted);
       margin-bottom: 12px;
     }
 
-    .allergen-warning {
-      background: rgba(239, 68, 68, 0.15);
-      border-left: 4px solid #ef4444;
-      padding: 14px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      color: #e9ecff;
-      line-height: 1.5;
+    .info-panel strong {
+      color: var(--ink);
     }
 
-    .allergen-caution {
-      background: rgba(250, 204, 21, 0.15);
-      border-left: 4px solid #facc15;
-      padding: 14px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      color: #e9ecff;
-      line-height: 1.5;
-    }
-
-    .allergen-safe {
-      background: rgba(34, 197, 94, 0.15);
-      border-left: 4px solid #22c55e;
-      padding: 14px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      color: #e9ecff;
-      line-height: 1.5;
-    }
-
-    /* Allergen Selection Demo */
-    .allergen-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-
-    .allergen-pill {
-      background: rgba(30, 40, 70, 0.6);
-      border: 2px solid rgba(255,255,255,0.1);
-      border-radius: 12px;
-      padding: 14px;
-      text-align: center;
-      transition: all 0.3s;
-      cursor: pointer;
-    }
-
-    .allergen-pill.selected {
-      background: rgba(239, 68, 68, 0.2);
-      border-color: #ef4444;
-      transform: scale(1.05);
-    }
-
-    .allergen-pill .icon {
-      font-size: 2rem;
-      display: block;
-      margin-bottom: 8px;
-    }
-
-    .allergen-pill .label {
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: #e9ecff;
-    }
-
-    .dietary-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      gap: 12px;
-    }
-
-    .dietary-pill {
-      background: rgba(30, 40, 70, 0.6);
-      border: 2px solid rgba(255,255,255,0.1);
-      border-radius: 12px;
-      padding: 14px;
-      text-align: center;
-      transition: all 0.3s;
-      cursor: pointer;
-    }
-
-    .dietary-pill.selected {
-      background: rgba(34, 197, 94, 0.2);
-      border-color: #22c55e;
-      transform: scale(1.05);
-    }
-
-    .dietary-pill .icon {
-      font-size: 1.8rem;
-      display: block;
-      margin-bottom: 8px;
-    }
-
-    .dietary-pill .label {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #e9ecff;
-    }
-
-    /* AI Demo */
-    .ai-demo-container {
-      background: rgba(30, 40, 70, 0.6);
-      border: 2px dashed rgba(102, 126, 234, 0.4);
-      border-radius: 16px;
-      padding: 32px;
-      text-align: center;
-      min-height: 250px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 20px;
+    /* Menu Container - mimics restaurant.html */
+    .menu-container {
       position: relative;
+      background: var(--panel);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
       overflow: hidden;
     }
 
-    .ai-upload-icon {
-      font-size: 4rem;
-      opacity: 0.5;
-      transition: all 0.3s;
+    /* Allergen Selector - from restaurant.html */
+    .allergen-selector {
+      padding: 20px;
+      background: rgba(124,156,255,0.05);
+      border-bottom: 1px solid var(--border);
     }
 
-    .ai-demo-container.analyzing .ai-upload-icon {
-      animation: pulse 1.5s infinite;
+    .allergen-selector-title {
+      font-weight: 600;
+      color: var(--brand);
+      margin-bottom: 10px;
+      font-size: 0.9rem;
+    }
+
+    .allergen-chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .allergen-chip {
+      background: rgba(168, 178, 214, 0.1);
+      color: var(--muted);
+      padding: 6px 12px;
+      border-radius: 16px;
+      font-size: 0.85rem;
+      border: 1px solid rgba(168, 178, 214, 0.2);
+      transition: all 0.3s;
+      user-select: none;
+    }
+
+    .allergen-chip.selected {
+      background: rgba(239,68,68,0.15);
+      color: #e85d5d;
+      border-color: rgba(239,68,68,0.3);
+    }
+
+    .diet-chip.selected {
+      background: rgba(76,200,90,0.15);
+      color: #4cc85a;
+      border-color: rgba(76,200,90,0.3);
+    }
+
+    /* Demo Menu Image */
+    .menu-wrapper {
+      position: relative;
+      padding: 20px;
+      background: #1a1a1a;
+    }
+
+    #demoMenu {
+      width: 100%;
+      height: 700px;
+      background: linear-gradient(to bottom, #2a2a2a 0%, #1a1a1a 100%);
+      border-radius: 8px;
+      position: relative;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
+    }
+
+    /* Menu Title Overlay */
+    .menu-title-overlay {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: rgba(255,255,255,0.1);
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      pointer-events: none;
+    }
+
+    /* Overlay Layer - from restaurant.html */
+    #overlayLayer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .overlay {
+      position: absolute;
+      border: 3px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      transition: all 0.3s;
+      pointer-events: all;
+      cursor: pointer;
+      background: rgba(0,0,0,0.3);
+      backdrop-filter: blur(2px);
+    }
+
+    .overlay:hover {
+      background: rgba(0,0,0,0.5);
+      transform: scale(1.02);
+    }
+
+    /* Badges - from restaurant.html */
+    .ovBadge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 32px;
+      height: 32px;
+      background: rgba(124,156,255,0.9);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .ovBadge:hover {
+      transform: scale(1.1);
+      background: var(--brand);
+    }
+
+    .ovWarning {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      width: 28px;
+      height: 28px;
+      background: var(--warn);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      animation: pulse 2s infinite;
     }
 
     @keyframes pulse {
-      0%, 100% { opacity: 0.5; transform: scale(1); }
-      50% { opacity: 1; transform: scale(1.1); }
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.05); }
     }
 
-    .ai-results {
-      width: 100%;
-      text-align: left;
-      opacity: 0;
-      transform: translateY(20px);
-      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .ai-results.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .ai-result-item {
-      background: rgba(11, 16, 32, 0.8);
-      padding: 12px 16px;
-      border-radius: 10px;
-      margin-bottom: 10px;
-      border-left: 3px solid #667eea;
-    }
-
-    /* Mobile Demo */
-    .mobile-frame {
-      width: 320px;
-      height: 600px;
-      background: #000;
-      border-radius: 32px;
-      border: 8px solid #1a1a1a;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.8);
-      overflow: hidden;
-      position: relative;
-      margin: 0 auto;
-    }
-
-    .mobile-screen {
-      width: 100%;
-      height: 100%;
-      background: #111630;
-      overflow-y: auto;
-      position: relative;
-    }
-
-    .mobile-menu-image {
-      width: 100%;
-      height: auto;
-      display: block;
-      background: linear-gradient(135deg, #2a3261 0%, #1a2240 100%);
-      min-height: 400px;
-    }
-
-    .zoom-controls {
+    /* Tooltip - from restaurant.html */
+    #pageTip {
       position: absolute;
-      bottom: 20px;
-      right: 20px;
-      display: flex;
-      gap: 10px;
-      background: rgba(0,0,0,0.8);
-      padding: 8px;
-      border-radius: 20px;
-    }
-
-    .zoom-btn {
-      width: 36px;
-      height: 36px;
-      background: #667eea;
-      border: none;
-      border-radius: 50%;
-      color: white;
-      font-size: 1.2rem;
-      font-weight: bold;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-
-    .zoom-btn:hover {
-      transform: scale(1.1);
-      background: #7c9cff;
-    }
-
-    /* Favorites Demo */
-    .restaurant-card {
-      background: rgba(30, 40, 70, 0.6);
-      border: 2px solid rgba(255,255,255,0.1);
-      border-radius: 16px;
-      padding: 24px;
-      position: relative;
-      transition: all 0.3s;
-    }
-
-    .favorite-btn {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      width: 48px;
-      height: 48px;
-      background: rgba(0,0,0,0.6);
-      border: 2px solid rgba(255,255,255,0.2);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-
-    .favorite-btn.favorited {
-      background: rgba(250, 204, 21, 0.3);
-      border-color: #facc15;
-      transform: scale(1.1);
-    }
-
-    .restaurant-name {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: #e9ecff;
-      margin-bottom: 8px;
-    }
-
-    .restaurant-desc {
-      color: #a8b2d6;
-      line-height: 1.5;
-    }
-
-    /* Manager Edit Demo */
-    .menu-canvas {
-      width: 100%;
-      aspect-ratio: 3/4;
-      background: linear-gradient(135deg, #2a3261 0%, #1a2240 100%);
-      border-radius: 12px;
-      position: relative;
-      overflow: hidden;
-      cursor: crosshair;
-    }
-
-    .overlay-box {
-      position: absolute;
-      border: 3px dashed #667eea;
-      background: rgba(102, 126, 234, 0.1);
-      backdrop-filter: blur(4px);
-      cursor: move;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 600;
-      color: #7c9cff;
-      font-size: 0.9rem;
-      transition: all 0.3s;
-    }
-
-    .overlay-box:hover {
-      background: rgba(102, 126, 234, 0.2);
-      border-color: #7c9cff;
-    }
-
-    /* Change Log */
-    .changelog-item {
-      background: rgba(30, 40, 70, 0.6);
-      border-left: 4px solid #667eea;
+      background: rgba(11, 16, 32, 0.98);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border);
       border-radius: 10px;
       padding: 16px;
+      max-width: 320px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      display: none;
+      z-index: 1000;
+      font-size: 0.9rem;
+    }
+
+    .tipHead {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 12px;
     }
 
-    .changelog-date {
-      font-size: 0.85rem;
-      color: #7c9cff;
+    .tTitle {
       font-weight: 600;
-      margin-bottom: 8px;
+      color: var(--ink);
+      font-size: 1rem;
     }
 
-    .changelog-text {
-      color: #e9ecff;
-      line-height: 1.5;
+    .tClose {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: var(--ink);
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    .note {
+      background: rgba(124,156,255,0.1);
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+    }
+
+    .tooltipDangerText {
+      background: rgba(239,68,68,0.15);
+      border-left: 3px solid var(--bad);
+      color: var(--ink);
+    }
+
+    .tooltipWarnText {
+      background: rgba(250,204,21,0.15);
+      border-left: 3px solid var(--warn);
+      color: var(--ink);
+    }
+
+    .tooltipNeutralText {
+      background: rgba(34,197,94,0.15);
+      border-left: 3px solid var(--ok);
+      color: var(--ink);
+    }
+
+    /* Virtual Cursor */
+    #virtualCursor {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 2000;
+      filter: drop-shadow(0 2px 8px rgba(124,156,255,0.5));
+    }
+
+    #virtualCursor.visible {
+      opacity: 1;
+    }
+
+    /* Progress Indicator */
+    .progress-indicator {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(11, 16, 32, 0.9);
+      padding: 12px 24px;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      font-size: 0.9rem;
+      color: var(--muted);
+      text-align: center;
+      max-width: 90%;
     }
 
     /* CTA Section */
@@ -654,756 +427,611 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 80px 40px;
+      background: linear-gradient(135deg, #4c5ad4 0%, #6366f1 100%);
+      padding: 60px 20px;
+    }
+
+    .cta-section h2 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      margin-bottom: 20px;
       text-align: center;
     }
 
-    .cta-title {
-      font-size: clamp(2.5rem, 6vw, 4rem);
-      font-weight: 800;
-      margin-bottom: 24px;
-    }
-
-    .cta-text {
-      font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+    .cta-section p {
+      font-size: clamp(1rem, 2vw, 1.3rem);
       margin-bottom: 40px;
-      opacity: 0.95;
-      max-width: 700px;
+      text-align: center;
+      color: rgba(255,255,255,0.9);
+      max-width: 600px;
     }
 
     .cta-button {
-      padding: 20px 50px;
+      padding: 18px 48px;
       background: white;
-      color: #667eea;
+      color: #4c5ad4;
       border: none;
       border-radius: 50px;
-      font-size: 1.3rem;
-      font-weight: 700;
+      font-size: 1.2rem;
+      font-weight: 600;
       cursor: pointer;
       transition: all 0.3s;
       text-decoration: none;
       display: inline-block;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     }
 
     .cta-button:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+      transform: scale(1.05);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     }
-
-    /* Feature Labels */
-    .feature-label {
-      display: inline-block;
-      background: rgba(102, 126, 234, 0.2);
-      border: 1px solid #667eea;
-      color: #7c9cff;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      margin-bottom: 20px;
-    }
-
-    /* Alternating backgrounds */
-    .bg-dark { background: #0a0a0a; }
-    .bg-darker { background: #050505; }
-    .bg-gradient-1 { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); }
-    .bg-gradient-2 { background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%); }
   </style>
 </head>
 <body>
-  <!-- Top Navigation -->
   <header class="simple-topbar">
     <div class="simple-topbar-inner">
       <a class="simple-brand" href="restaurants.html">
         <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt="Clarivore logo">
         <span>Clarivore</span>
       </a>
-      <div class="simple-nav">
-        <!-- Navigation populated by shared-nav.js -->
-      </div>
+      <div class="simple-nav"></div>
     </div>
   </header>
 
   <!-- Hero Section -->
   <section class="hero-section">
     <h1 class="hero-title">How Clarivore Works</h1>
-    <p class="hero-subtitle">Experience every feature that makes dining safer for people with food allergies and dietary restrictions</p>
+    <p class="hero-subtitle">Experience the complete allergen-aware dining system. Scroll to see every feature in action.</p>
     <div class="scroll-indicator">↓</div>
   </section>
 
-  <!-- Feature 1: Color-Coded Safety -->
-  <section class="feature-section bg-dark" id="section-1">
-    <div class="feature-container">
-      <div class="feature-content">
-        <div class="feature-number">Feature 01</div>
-        <h2 class="feature-title">Color-Coded Safety Indicators</h2>
-        <p class="feature-description">Every menu item is instantly color-coded based on your allergens. Green means safe, yellow means caution, red means avoid.</p>
-        <p class="feature-description">No more reading through ingredient lists or asking multiple questions. The answer is right there.</p>
-      </div>
-      <div class="feature-demo">
-        <div class="demo-wrapper">
-          <div class="demo-menu" id="demo-color-coding">
-            <div class="demo-item safe">
-              <div class="demo-item-name">🥗 Garden Salad</div>
-              <div class="demo-item-desc">Fresh greens, tomatoes, cucumber, balsamic vinaigrette</div>
-              <div class="demo-badge safe">✓</div>
-            </div>
-            <div class="demo-item caution">
-              <div class="demo-item-name">🍝 Pasta Primavera</div>
-              <div class="demo-item-desc">Seasonal vegetables, olive oil, parmesan cheese</div>
-              <div class="demo-badge caution">!</div>
-            </div>
-            <div class="demo-item danger">
-              <div class="demo-item-name">🥜 Thai Peanut Noodles</div>
-              <div class="demo-item-desc">Rice noodles, peanut sauce, vegetables, sesame</div>
-              <div class="demo-badge danger">✕</div>
-            </div>
-            <div class="demo-item gray">
-              <div class="demo-item-name">🍲 Chef's Special</div>
-              <div class="demo-item-desc">Ask your server for today's special</div>
-              <div class="demo-badge gray">?</div>
-            </div>
-          </div>
-          <div class="virtual-cursor" id="cursor-1">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-              <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#667eea" stroke="#fff" stroke-width="1.5"/>
-            </svg>
-          </div>
+  <!-- Interactive Showcase -->
+  <section class="showcase-section">
+    <div class="showcase-sticky">
+      <div class="showcase-container">
+        <!-- Info Panel -->
+        <div class="info-panel">
+          <h2 id="sceneTitle">Loading...</h2>
+          <div id="sceneDescription"></div>
         </div>
-      </div>
-    </div>
-  </section>
 
-  <!-- Feature 2: Click for Details -->
-  <section class="feature-section bg-gradient-1" id="section-2">
-    <div class="feature-container">
-      <div class="feature-demo">
-        <div class="demo-wrapper">
-          <div class="demo-menu" id="demo-details">
-            <div class="demo-item caution">
-              <div class="demo-item-name">🍕 Margherita Pizza</div>
-              <div class="demo-item-desc">Fresh mozzarella, tomato sauce, basil</div>
-              <div class="demo-badge caution">!</div>
-              <div class="demo-overlay" id="overlay-pizza">
-                <div class="overlay-section">
-                  <div class="overlay-title">⚠️ Allergen Information</div>
-                  <div class="allergen-caution">
-                    <strong>🥛 Contains Dairy</strong><br>
-                    Can be substituted with vegan cheese
-                  </div>
-                  <div class="allergen-caution">
-                    <strong>🌾 Contains Wheat</strong><br>
-                    Can be made with gluten-free crust
-                  </div>
-                </div>
-                <div class="overlay-section">
-                  <div class="overlay-title">🌱 Dietary Information</div>
-                  <div class="allergen-safe">
-                    ✓ Vegetarian<br>
-                    ✓ Can be made Vegan<br>
-                    ✓ Can be made Gluten-Free
-                  </div>
-                </div>
-                <div class="overlay-section">
-                  <div class="overlay-title">⚠️ Cross-Contamination Warning</div>
-                  <div style="color: #facc15; font-size: 0.9rem;">
-                    Kitchen handles tree nuts and peanuts. Cross-contamination possible.
-                  </div>
-                </div>
-              </div>
-            </div>
+        <!-- Menu Demo -->
+        <div class="menu-container">
+          <!-- Allergen Selector -->
+          <div class="allergen-selector">
+            <div class="allergen-selector-title">Your Saved Allergens</div>
+            <div class="allergen-chips" id="allergenChips"></div>
+            <div class="allergen-selector-title">Your Saved Dietary Preferences</div>
+            <div class="allergen-chips" id="dietChips"></div>
           </div>
-          <div class="virtual-cursor" id="cursor-2">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-              <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#667eea" stroke="#fff" stroke-width="1.5"/>
-            </svg>
-          </div>
-          <div class="cursor-click-effect" id="click-effect-2"></div>
-        </div>
-      </div>
-      <div class="feature-content">
-        <div class="feature-number">Feature 02</div>
-        <h2 class="feature-title">Detailed Allergen Information</h2>
-        <p class="feature-description">Tap any dish to see complete allergen details, substitution options, and cross-contamination warnings.</p>
-        <p class="feature-description">Every detail you need to make an informed decision, all in one place.</p>
-      </div>
-    </div>
-  </section>
 
-  <!-- Feature 3: Personalized Allergen Selection -->
-  <section class="feature-section bg-dark" id="section-3">
-    <div class="feature-container">
-      <div class="feature-content">
-        <div class="feature-number">Feature 03</div>
-        <h2 class="feature-title">Your Personal Allergen Profile</h2>
-        <p class="feature-description">Select your allergens once, and every menu automatically adapts to show what's safe for you.</p>
-        <p class="feature-description">All 9 major allergens supported, plus dietary preferences like vegan, vegetarian, kosher, and halal.</p>
-      </div>
-      <div class="feature-demo">
-        <div class="demo-wrapper">
-          <div style="margin-bottom: 24px;">
-            <div class="overlay-title" style="margin-bottom: 16px;">Select Your Allergens</div>
-            <div class="allergen-grid" id="allergen-selector">
-              <div class="allergen-pill" data-allergen="dairy">
-                <span class="icon">🥛</span>
-                <span class="label">Dairy</span>
-              </div>
-              <div class="allergen-pill" data-allergen="egg">
-                <span class="icon">🥚</span>
-                <span class="label">Egg</span>
-              </div>
-              <div class="allergen-pill" data-allergen="peanut">
-                <span class="icon">🥜</span>
-                <span class="label">Peanut</span>
-              </div>
-              <div class="allergen-pill" data-allergen="treenut">
-                <span class="icon">🌰</span>
-                <span class="label">Tree Nut</span>
-              </div>
-              <div class="allergen-pill" data-allergen="shellfish">
-                <span class="icon">🦐</span>
-                <span class="label">Shellfish</span>
-              </div>
-              <div class="allergen-pill" data-allergen="fish">
-                <span class="icon">🐟</span>
-                <span class="label">Fish</span>
-              </div>
-              <div class="allergen-pill" data-allergen="soy">
-                <span class="icon">🫘</span>
-                <span class="label">Soy</span>
-              </div>
-              <div class="allergen-pill" data-allergen="sesame">
-                <span class="icon">🌾</span>
-                <span class="label">Sesame</span>
-              </div>
-              <div class="allergen-pill" data-allergen="wheat">
-                <span class="icon">🌾</span>
-                <span class="label">Wheat</span>
-              </div>
+          <!-- Menu Display -->
+          <div class="menu-wrapper">
+            <div id="demoMenu">
+              <div class="menu-title-overlay">DEMO MENU</div>
+              <div id="overlayLayer"></div>
             </div>
-          </div>
-          <div>
-            <div class="overlay-title" style="margin-bottom: 16px;">Dietary Preferences</div>
-            <div class="dietary-grid" id="dietary-selector">
-              <div class="dietary-pill" data-diet="vegan">
-                <span class="icon">🌱</span>
-                <span class="label">Vegan</span>
-              </div>
-              <div class="dietary-pill" data-diet="vegetarian">
-                <span class="icon">🥕</span>
-                <span class="label">Vegetarian</span>
-              </div>
-              <div class="dietary-pill" data-diet="pescatarian">
-                <span class="icon">🐟</span>
-                <span class="label">Pescatarian</span>
-              </div>
-              <div class="dietary-pill" data-diet="kosher">
-                <span class="icon">✡️</span>
-                <span class="label">Kosher</span>
-              </div>
-              <div class="dietary-pill" data-diet="halal">
-                <span class="icon">☪️</span>
-                <span class="label">Halal</span>
-              </div>
-            </div>
-          </div>
-          <div class="virtual-cursor" id="cursor-3">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-              <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#667eea" stroke="#fff" stroke-width="1.5"/>
-            </svg>
-          </div>
-          <div class="cursor-click-effect" id="click-effect-3"></div>
-        </div>
-      </div>
-    </div>
-  </section>
 
-  <!-- Feature 4: AI Ingredient Assistant -->
-  <section class="feature-section bg-gradient-2" id="section-4">
-    <div class="feature-container">
-      <div class="feature-demo">
-        <div class="demo-wrapper">
-          <div class="ai-demo-container" id="ai-demo">
-            <div class="ai-upload-icon">📸</div>
-            <div style="color: #a8b2d6;">
-              <div style="font-weight: 600; font-size: 1.1rem; color: #e9ecff; margin-bottom: 8px;">AI Ingredient Assistant</div>
-              <div style="font-size: 0.95rem;">Upload a photo or paste ingredients</div>
+            <!-- Virtual Cursor -->
+            <div id="virtualCursor">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+                <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#7c9cff" stroke="#fff" stroke-width="2"/>
+              </svg>
             </div>
-            <div class="ai-results" id="ai-results">
-              <div class="overlay-title" style="margin-bottom: 12px;">✨ Analysis Complete</div>
-              <div class="ai-result-item">
-                <strong style="color: #e9ecff;">Detected Ingredients:</strong><br>
-                <span style="color: #a8b2d6;">Flour, Sugar, Eggs, Butter, Milk, Vanilla</span>
-              </div>
-              <div class="ai-result-item">
-                <strong style="color: #ef4444;">⚠️ Allergens Found:</strong><br>
-                <span style="color: #a8b2d6;">🥛 Dairy, 🥚 Egg, 🌾 Wheat</span>
-              </div>
-              <div class="ai-result-item">
-                <strong style="color: #22c55e;">✓ Status:</strong><br>
-                <span style="color: #a8b2d6;">Not safe for your profile</span>
-              </div>
-            </div>
-          </div>
-          <div class="virtual-cursor" id="cursor-4">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-              <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#667eea" stroke="#fff" stroke-width="1.5"/>
-            </svg>
-          </div>
-        </div>
-      </div>
-      <div class="feature-content">
-        <div class="feature-number">Feature 04</div>
-        <h2 class="feature-title">AI-Powered Ingredient Analysis</h2>
-        <p class="feature-description">Upload photos of ingredient labels or paste ingredient lists, and our AI instantly detects allergens.</p>
-        <p class="feature-description">Perfect for when you're cooking at home or checking packaged foods at the grocery store.</p>
-      </div>
-    </div>
-  </section>
 
-  <!-- Feature 5: Mobile Experience -->
-  <section class="feature-section bg-dark" id="section-5">
-    <div class="feature-container">
-      <div class="feature-content">
-        <div class="feature-number">Feature 05</div>
-        <h2 class="feature-title">Mobile-Optimized Experience</h2>
-        <p class="feature-description">Full-screen menu viewer with pinch-to-zoom capabilities. Read even the smallest text clearly.</p>
-        <p class="feature-description">Allergen information stays visible while you zoom, so you never lose context.</p>
-      </div>
-      <div class="feature-demo">
-        <div class="demo-wrapper" style="padding: 20px;">
-          <div class="mobile-frame">
-            <div class="mobile-screen" id="mobile-screen">
-              <div class="mobile-menu-image" style="display: flex; flex-direction: column; padding: 20px; gap: 12px;">
-                <div class="demo-item safe" style="margin: 0;">
-                  <div class="demo-item-name" style="font-size: 1rem;">🥗 Garden Salad</div>
-                  <div class="demo-item-desc" style="font-size: 0.85rem;">Fresh and healthy</div>
-                  <div class="demo-badge safe" style="width: 32px; height: 32px; font-size: 1.1rem;">✓</div>
-                </div>
-                <div class="demo-item caution" style="margin: 0;">
-                  <div class="demo-item-name" style="font-size: 1rem;">🍝 Pasta</div>
-                  <div class="demo-item-desc" style="font-size: 0.85rem;">Contains dairy</div>
-                  <div class="demo-badge caution" style="width: 32px; height: 32px; font-size: 1.1rem;">!</div>
-                </div>
-                <div class="demo-item danger" style="margin: 0;">
-                  <div class="demo-item-name" style="font-size: 1rem;">🥜 Peanut Noodles</div>
-                  <div class="demo-item-desc" style="font-size: 0.85rem;">Contains peanuts</div>
-                  <div class="demo-badge danger" style="width: 32px; height: 32px; font-size: 1.1rem;">✕</div>
-                </div>
-              </div>
-              <div class="zoom-controls">
-                <button class="zoom-btn">−</button>
-                <button class="zoom-btn">+</button>
-              </div>
-            </div>
+            <!-- Tooltip -->
+            <div id="pageTip"></div>
           </div>
-          <div class="virtual-cursor" id="cursor-5">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-              <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#667eea" stroke="#fff" stroke-width="1.5"/>
-            </svg>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
 
-  <!-- Feature 6: Favorites System -->
-  <section class="feature-section bg-gradient-1" id="section-6">
-    <div class="feature-container">
-      <div class="feature-demo">
-        <div class="demo-wrapper">
-          <div class="restaurant-card" id="favorite-demo">
-            <div class="restaurant-name">Harvest Moon Cafe</div>
-            <div class="restaurant-desc">Farm-to-table restaurant with extensive allergen-friendly options. Known for their vegan and gluten-free selections.</div>
-            <div class="favorite-btn" id="favorite-btn">☆</div>
-          </div>
-          <div class="virtual-cursor" id="cursor-6">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-              <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#667eea" stroke="#fff" stroke-width="1.5"/>
-            </svg>
-          </div>
-          <div class="cursor-click-effect" id="click-effect-6"></div>
+          <!-- Progress Indicator -->
+          <div class="progress-indicator" id="progressText">Scroll to begin</div>
         </div>
-      </div>
-      <div class="feature-content">
-        <div class="feature-number">Feature 06</div>
-        <h2 class="feature-title">Save Your Favorites</h2>
-        <p class="feature-description">Found a restaurant with great allergen-friendly options? Save it to your favorites for quick access.</p>
-        <p class="feature-description">Build your personal collection of trusted dining spots.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Feature 7: Manager Edit Mode -->
-  <section class="feature-section bg-dark" id="section-7">
-    <div class="feature-container">
-      <div class="feature-content">
-        <div class="feature-number">Feature 07</div>
-        <div class="feature-label">For Restaurants</div>
-        <h2 class="feature-title">Easy Menu Management</h2>
-        <p class="feature-description">Restaurant managers can easily create allergen overlays by dragging and dropping boxes on their menu images.</p>
-        <p class="feature-description">Upload a photo of your menu, and our AI detects dish locations automatically.</p>
-      </div>
-      <div class="feature-demo">
-        <div class="demo-wrapper">
-          <div class="menu-canvas" id="menu-canvas">
-            <div class="overlay-box" id="overlay-box-1" style="left: 10%; top: 10%; width: 35%; height: 15%;">
-              Drag to position
-            </div>
-            <div class="overlay-box" id="overlay-box-2" style="left: 55%; top: 30%; width: 35%; height: 15%;">
-              Drag to position
-            </div>
-          </div>
-          <div class="virtual-cursor" id="cursor-7">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
-              <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#667eea" stroke="#fff" stroke-width="1.5"/>
-            </svg>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Feature 8: Change Log -->
-  <section class="feature-section bg-gradient-2" id="section-8">
-    <div class="feature-container">
-      <div class="feature-demo">
-        <div class="demo-wrapper">
-          <div class="overlay-title" style="margin-bottom: 20px;">📋 Menu Change Log</div>
-          <div class="changelog-item">
-            <div class="changelog-date">Updated 2 days ago by Sarah M.</div>
-            <div class="changelog-text">✓ Menu verified - all allergen information confirmed accurate</div>
-          </div>
-          <div class="changelog-item">
-            <div class="changelog-date">Updated 1 week ago by Chef Mike</div>
-            <div class="changelog-text">Updated "Pasta Primavera" - now available with vegan cheese option</div>
-          </div>
-          <div class="changelog-item">
-            <div class="changelog-date">Updated 2 weeks ago by Sarah M.</div>
-            <div class="changelog-text">Added new dish "Thai Peanut Noodles" with complete allergen information</div>
-          </div>
-        </div>
-      </div>
-      <div class="feature-content">
-        <div class="feature-number">Feature 08</div>
-        <div class="feature-label">For Transparency</div>
-        <h2 class="feature-title">Complete Change History</h2>
-        <p class="feature-description">Every menu update is logged with a timestamp and staff member name.</p>
-        <p class="feature-description">See exactly when allergen information was last verified, giving you confidence in the data.</p>
       </div>
     </div>
   </section>
 
   <!-- CTA Section -->
   <section class="cta-section">
-    <h2 class="cta-title">Ready to Dine with Confidence?</h2>
-    <p class="cta-text">Join thousands of diners who use Clarivore to find safe, delicious meals across Cleveland and beyond.</p>
-    <a href="account.html" class="cta-button">Create Your Free Profile</a>
+    <h2>Ready to Get Started?</h2>
+    <p>Join Clarivore and discover safe dining options tailored to your needs</p>
+    <a href="account.html" class="cta-button">Create Your Profile</a>
   </section>
 
-  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module">
     import supabaseClient from './js/supabase-client.js';
     import { setupNav, attachSignOutHandler } from './js/shared-nav.js';
 
-    // Setup navigation
     async function initNav() {
       const { data: { user } } = await supabaseClient.auth.getUser();
       setupNav('how-it-works', user);
-      if (user) {
-        attachSignOutHandler(supabaseClient);
-      }
+      if (user) attachSignOutHandler(supabaseClient);
     }
     initNav();
   </script>
   <script>
-    // Scroll indicator click
-    document.querySelector('.scroll-indicator')?.addEventListener('click', () => {
-      window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
-    });
-
-    // Intersection Observer for scroll animations
-    const observerOptions = {
-      threshold: 0.3,
-      rootMargin: '0px 0px -100px 0px'
+    // Constants from restaurant.html
+    const ALLERGENS = ["dairy", "egg", "peanut", "tree nut", "shellfish", "fish", "soy", "sesame", "wheat"];
+    const DIETS = ["Vegan", "Vegetarian", "Pescatarian", "Kosher", "Halal"];
+    const ALLERGEN_EMOJI = {
+      'dairy': '🥛', 'egg': '🥚', 'peanut': '🥜', 'tree nut': '🌰',
+      'shellfish': '🦐', 'fish': '🐟', 'soy': '🫛', 'sesame': '🫘', 'wheat': '🌾'
+    };
+    const DIET_EMOJI = {
+      'Vegan': '🌱', 'Vegetarian': '🥬', 'Pescatarian': '🐟', 'Kosher': '✡️', 'Halal': '☪️'
     };
 
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
+    // Demo menu items with overlay positions (as percentages)
+    const DEMO_ITEMS = [
+      {
+        id: "Garden Salad",
+        x: 10, y: 8, w: 35, h: 12,
+        allergens: [],
+        removable: [],
+        crossContamination: [],
+        diets: ["Vegan", "Vegetarian", "Pescatarian"]
+      },
+      {
+        id: "Grilled Chicken Breast",
+        x: 55, y: 8, w: 35, h: 12,
+        allergens: [],
+        removable: [],
+        crossContamination: ["soy"],
+        diets: []
+      },
+      {
+        id: "Pasta Primavera",
+        x: 10, y: 25, w: 35, h: 12,
+        allergens: ["dairy"],
+        removable: [{allergen: "dairy"}],
+        crossContamination: [],
+        diets: ["Vegetarian"]
+      },
+      {
+        id: "Thai Peanut Noodles",
+        x: 55, y: 25, w: 35, h: 12,
+        allergens: ["peanut", "sesame"],
+        removable: [],
+        crossContamination: [],
+        diets: ["Vegan", "Vegetarian"]
+      },
+      {
+        id: "Seafood Linguine",
+        x: 10, y: 42, w: 35, h: 12,
+        allergens: ["shellfish", "fish", "dairy"],
+        removable: [],
+        crossContamination: [],
+        diets: []
+      },
+      {
+        id: "Margherita Pizza",
+        x: 55, y: 42, w: 35, h: 12,
+        allergens: ["dairy", "wheat"],
+        removable: [{allergen: "dairy"}],
+        crossContamination: [],
+        diets: ["Vegetarian"]
+      },
+      {
+        id: "Caesar Salad",
+        x: 10, y: 59, w: 35, h: 12,
+        allergens: ["dairy", "egg", "fish"],
+        removable: [{allergen: "dairy"}],
+        crossContamination: [],
+        diets: []
+      },
+      {
+        id: "Vegetable Stir Fry",
+        x: 55, y: 59, w: 35, h: 12,
+        allergens: ["soy"],
+        removable: [],
+        crossContamination: [],
+        diets: ["Vegan", "Vegetarian"]
+      },
+      {
+        id: "Chocolate Cake",
+        x: 10, y: 76, w: 35, h: 12,
+        allergens: ["dairy", "egg", "wheat"],
+        removable: [],
+        crossContamination: [],
+        diets: ["Vegetarian"]
+      },
+      {
+        id: "Fresh Fruit Plate",
+        x: 55, y: 76, w: 35, h: 12,
+        allergens: [],
+        removable: [],
+        crossContamination: [],
+        diets: ["Vegan", "Vegetarian", "Pescatarian", "Kosher", "Halal"]
+      }
+    ];
+
+    // State
+    let state = {
+      allergens: [],
+      diets: [],
+      currentScene: 0
+    };
+
+    // Core logic from restaurant.html
+    function computeStatus(item, allergens, diets) {
+      const hasAllergenReqs = allergens && allergens.length > 0;
+      const hasDietReqs = diets && diets.length > 0;
+      if (!hasAllergenReqs && !hasDietReqs) return 'neutral';
+
+      const allergenHits = (item.allergens || []).filter(a => allergens.includes(a));
+      const hasAllergenIssues = allergenHits.length > 0;
+      const allergenRemovableAll = hasAllergenIssues ?
+        allergenHits.every(a => (item.removable || []).some(r => r.allergen === a)) : true;
+
+      const itemDiets = new Set(item.diets || []);
+      const meetsDietReqs = !hasDietReqs || diets.every(diet => itemDiets.has(diet));
+
+      if (!meetsDietReqs) return 'unsafe';
+      if (hasAllergenIssues && !allergenRemovableAll) return 'unsafe';
+      if (hasAllergenIssues && allergenRemovableAll) return 'removable';
+      return 'safe';
+    }
+
+    function hasCrossContamination(item, allergens) {
+      if (!allergens || !allergens.length) return false;
+      return (item.crossContamination || []).some(a => allergens.includes(a));
+    }
+
+    function tooltipBodyHTML(item, allergens, diets) {
+      if (!allergens.length && !diets.length) {
+        return '<div class="note">Select allergens or dietary preferences to see safety information</div>';
+      }
+
+      let html = '';
+      if (allergens.length) {
+        html += '<strong style="display:block;margin-bottom:8px;color:var(--ink)">Allergen Information</strong>';
+        const hits = (item.allergens || []).filter(a => allergens.includes(a));
+        const removableSet = new Set((item.removable || []).map(r => r.allergen));
+        const unsafeHits = hits.filter(a => !removableSet.has(a));
+        const removableHits = hits.filter(a => removableSet.has(a));
+
+        if (unsafeHits.length) {
+          const list = unsafeHits.map(a => {
+            const emoji = ALLERGEN_EMOJI[a] || '⚠️';
+            return `<div style="margin-bottom:4px">${emoji} Contains <strong>${a}</strong> (cannot be substituted)</div>`;
+          }).join('');
+          html += `<div class="note tooltipDangerText">${list}</div>`;
         }
+        if (removableHits.length) {
+          const list = removableHits.map(a => {
+            const emoji = ALLERGEN_EMOJI[a] || '⚠️';
+            return `<div style="margin-bottom:4px">${emoji} Contains <strong>${a}</strong> (can be substituted)</div>`;
+          }).join('');
+          html += `<div class="note tooltipWarnText">${list}</div>`;
+        }
+        if (!hits.length && !hasCrossContamination(item, allergens)) {
+          html += '<div class="note tooltipNeutralText">✓ None of your allergens found</div>';
+        }
+
+        if (hasCrossContamination(item, allergens)) {
+          const crossHits = (item.crossContamination || []).filter(a => allergens.includes(a));
+          const crossList = crossHits.map(a => {
+            const emoji = ALLERGEN_EMOJI[a] || '⚠️';
+            return `<div style="margin-bottom:4px">${emoji} Cross-contamination risk: <strong>${a}</strong></div>`;
+          }).join('');
+          html += `<div class="note tooltipWarnText">${crossList}</div>`;
+        }
+      }
+
+      if (diets.length) {
+        html += '<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(124,156,255,0.2)">';
+        html += '<strong style="display:block;margin-bottom:8px;color:var(--ink)">Dietary Options</strong>';
+        const itemDietSet = new Set(item.diets || []);
+        diets.forEach(diet => {
+          const isDietMet = itemDietSet.has(diet);
+          const color = isDietMet ? '#4cc85a' : '#e85d5d';
+          const emoji = DIET_EMOJI[diet] || '✓';
+          const status = isDietMet ? 'is' : 'is not';
+          html += `<div style="margin-bottom:6px;color:${color};font-size:0.9rem">${emoji} This dish ${status} <strong>${diet.toLowerCase()}</strong></div>`;
+        });
+        html += '</div>';
+      }
+
+      return html;
+    }
+
+    // Render functions
+    function renderAllergenSelector() {
+      const allergenChips = document.getElementById('allergenChips');
+      allergenChips.innerHTML = ALLERGENS.map(allergen => {
+        const emoji = ALLERGEN_EMOJI[allergen] || '';
+        const selected = state.allergens.includes(allergen);
+        return `<div class="allergen-chip ${selected ? 'selected' : ''}">${emoji} ${allergen.charAt(0).toUpperCase() + allergen.slice(1)}</div>`;
+      }).join('');
+
+      const dietChips = document.getElementById('dietChips');
+      dietChips.innerHTML = DIETS.map(diet => {
+        const emoji = DIET_EMOJI[diet] || '';
+        const selected = state.diets.includes(diet);
+        return `<div class="allergen-chip diet-chip ${selected ? 'selected' : ''}">${emoji} ${diet}</div>`;
+      }).join('');
+    }
+
+    function renderLayer() {
+      const layer = document.getElementById('overlayLayer');
+      const menu = document.getElementById('demoMenu');
+      layer.innerHTML = '';
+
+      const colors = {
+        safe: 'var(--ok)',
+        removable: 'var(--warn)',
+        unsafe: 'var(--bad)',
+        neutral: 'rgba(255,255,255,0.2)'
+      };
+
+      DEMO_ITEMS.forEach(item => {
+        const box = document.createElement('div');
+        box.className = 'overlay';
+        box.dataset.itemId = item.id;
+
+        const status = computeStatus(item, state.allergens, state.diets);
+        box.style.borderColor = colors[status];
+        box.style.left = item.x + '%';
+        box.style.top = item.y + '%';
+        box.style.width = item.w + '%';
+        box.style.height = item.h + '%';
+
+        // Add item label
+        const label = document.createElement('div');
+        label.style.cssText = 'position:absolute;bottom:8px;left:8px;color:rgba(255,255,255,0.9);font-size:0.85rem;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,0.8);';
+        label.textContent = item.id;
+        box.appendChild(label);
+
+        // Cross-contamination warning
+        if (hasCrossContamination(item, state.allergens)) {
+          const warning = document.createElement('div');
+          warning.className = 'ovWarning';
+          warning.textContent = '⚠';
+          box.appendChild(warning);
+        }
+
+        // Info badge
+        const badge = document.createElement('div');
+        badge.className = 'ovBadge';
+        badge.textContent = 'i';
+        box.appendChild(badge);
+
+        // Hover tooltip
+        box.addEventListener('mouseenter', (e) => {
+          showTooltip(item, e);
+        });
+        box.addEventListener('mouseleave', hideTooltip);
+
+        layer.appendChild(box);
       });
-    }, observerOptions);
+    }
 
-    // Observe all animatable elements
-    document.querySelectorAll('.feature-content, .feature-demo').forEach(el => {
-      observer.observe(el);
-    });
+    function showTooltip(item, event) {
+      const tip = document.getElementById('pageTip');
+      const html = tooltipBodyHTML(item, state.allergens, state.diets);
 
-    // Feature-specific scroll-triggered animations
-    const featureAnimations = {
-      'section-1': animateColorCoding,
-      'section-2': animateDetails,
-      'section-3': animateAllergenSelection,
-      'section-4': animateAI,
-      'section-5': animateMobile,
-      'section-6': animateFavorites,
-      'section-7': animateManagerEdit,
-    };
+      tip.innerHTML = `
+        <div class="tipHead">
+          <div class="tTitle">${item.id}</div>
+          <button class="tClose" onclick="document.getElementById('pageTip').style.display='none'">×</button>
+        </div>
+        ${html}
+      `;
 
-    // Track which sections have been animated
-    const animatedSections = new Set();
+      tip.style.display = 'block';
 
-    // Section observer for cursor animations
-    const sectionObserver = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting && !animatedSections.has(entry.target.id)) {
-          const animationFunc = featureAnimations[entry.target.id];
-          if (animationFunc) {
-            animatedSections.add(entry.target.id);
-            setTimeout(() => animationFunc(), 500);
+      // Position tooltip
+      const rect = event.currentTarget.getBoundingClientRect();
+      const menuWrapper = document.querySelector('.menu-wrapper');
+      const wrapperRect = menuWrapper.getBoundingClientRect();
+
+      tip.style.left = (rect.right - wrapperRect.left + 10) + 'px';
+      tip.style.top = (rect.top - wrapperRect.top) + 'px';
+    }
+
+    function hideTooltip() {
+      document.getElementById('pageTip').style.display = 'none';
+    }
+
+    // Scene definitions
+    const SCENES = [
+      {
+        title: "Welcome to Clarivore",
+        description: "<p>This is an interactive demo showing exactly how Clarivore works with real menus.</p><p><strong>Scroll down</strong> to see the virtual cursor navigate through all features.</p>",
+        allergens: [],
+        diets: [],
+        cursorTarget: null,
+        tooltipItem: null,
+        progressText: "Scroll down to begin the interactive demo"
+      },
+      {
+        title: "Step 1: Select Your Allergens",
+        description: "<p>First, you select your allergens from the top panel.</p><p>Watch as we automatically select <strong>dairy</strong> and <strong>peanut</strong> allergens.</p><p>The menu overlays will instantly update to show which items are safe.</p>",
+        allergens: ["dairy", "peanut"],
+        diets: [],
+        cursorTarget: null,
+        tooltipItem: null,
+        progressText: "Allergens selected: 🥛 Dairy, 🥜 Peanut"
+      },
+      {
+        title: "Step 2: Color-Coded Safety Status",
+        description: "<p>Notice how each menu item now has a colored border:</p><p>🟢 <strong>Green</strong> = Safe to eat</p><p>🟡 <strong>Yellow</strong> = Can be accommodated</p><p>🔴 <strong>Red</strong> = Contains allergens</p>",
+        allergens: ["dairy", "peanut"],
+        diets: [],
+        cursorTarget: "Garden Salad",
+        tooltipItem: null,
+        progressText: "Green borders indicate safe items with no allergens"
+      },
+      {
+        title: "Step 3: Hover for Details",
+        description: "<p>Hover over any menu item to see detailed allergen information.</p><p>The <strong>Pasta Primavera</strong> contains dairy, but it can be substituted.</p><p>This is why it has a yellow border instead of red.</p>",
+        allergens: ["dairy", "peanut"],
+        diets: [],
+        cursorTarget: "Pasta Primavera",
+        tooltipItem: "Pasta Primavera",
+        progressText: "Yellow = allergen can be removed or substituted"
+      },
+      {
+        title: "Step 4: Unsafe Items",
+        description: "<p>Items with red borders contain allergens that cannot be removed.</p><p><strong>Thai Peanut Noodles</strong> has peanuts as a core ingredient.</p><p>The tooltip shows clearly that it cannot be substituted.</p>",
+        allergens: ["dairy", "peanut"],
+        diets: [],
+        cursorTarget: "Thai Peanut Noodles",
+        tooltipItem: "Thai Peanut Noodles",
+        progressText: "Red = contains allergens that cannot be removed"
+      },
+      {
+        title: "Step 5: Cross-Contamination Warnings",
+        description: "<p>The yellow ⚠️ badge indicates cross-contamination risk.</p><p><strong>Grilled Chicken</strong> doesn't contain soy, but it's prepared in an area with soy cross-contamination.</p><p>This helps you make fully informed decisions.</p>",
+        allergens: ["soy"],
+        diets: [],
+        cursorTarget: "Grilled Chicken Breast",
+        tooltipItem: "Grilled Chicken Breast",
+        progressText: "⚠️ Yellow badge = cross-contamination warning"
+      },
+      {
+        title: "Step 6: Dietary Preferences",
+        description: "<p>You can also filter by dietary preferences like Vegan, Vegetarian, Pescatarian, Kosher, or Halal.</p><p>Let's add <strong>Vegan</strong> to see which items meet that requirement.</p>",
+        allergens: [],
+        diets: ["Vegan"],
+        cursorTarget: "Fresh Fruit Plate",
+        tooltipItem: "Fresh Fruit Plate",
+        progressText: "Dietary preference selected: 🌱 Vegan"
+      },
+      {
+        title: "Step 7: Combined Filtering",
+        description: "<p>Combine allergens and dietary preferences for precise filtering.</p><p>With dairy allergy + vegan diet, items must pass BOTH requirements to be green.</p><p>Items like <strong>Vegetable Stir Fry</strong> are vegan but contain soy.</p>",
+        allergens: ["dairy"],
+        diets: ["Vegan"],
+        cursorTarget: "Vegetable Stir Fry",
+        tooltipItem: "Vegetable Stir Fry",
+        progressText: "Filtering by both allergens AND dietary preferences"
+      },
+      {
+        title: "Step 8: The Info Badge",
+        description: "<p>Every menu item has an info badge (ⓘ) you can click.</p><p>This shows complete allergen and dietary information.</p><p>All tooltips work exactly as they do in the real menu viewer.</p>",
+        allergens: ["dairy", "wheat"],
+        diets: [],
+        cursorTarget: "Margherita Pizza",
+        tooltipItem: "Margherita Pizza",
+        progressText: "Click the ⓘ badge on any item for full details"
+      },
+      {
+        title: "Complete Feature Set",
+        description: "<p>Clarivore gives you:</p><p>✓ Visual color-coding at a glance</p><p>✓ Detailed allergen information</p><p>✓ Removable vs. non-removable indicators</p><p>✓ Cross-contamination warnings</p><p>✓ Dietary preference filtering</p><p><strong>All working together</strong> to help you dine safely.</p>",
+        allergens: ["dairy", "peanut"],
+        diets: [],
+        cursorTarget: null,
+        tooltipItem: null,
+        progressText: "Scroll down to create your profile"
+      }
+    ];
+
+    // Animation and scroll handling
+    let currentSceneIndex = 0;
+
+    function updateScene() {
+      const showcaseSection = document.querySelector('.showcase-section');
+      const rect = showcaseSection.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+
+      let progress = 0;
+      if (rect.top > 0) {
+        progress = 0;
+      } else if (rect.bottom < viewportHeight) {
+        progress = 1;
+      } else {
+        progress = Math.abs(rect.top) / (rect.height - viewportHeight);
+      }
+
+      const sceneIndex = Math.min(
+        Math.floor(progress * SCENES.length),
+        SCENES.length - 1
+      );
+
+      if (sceneIndex !== currentSceneIndex) {
+        currentSceneIndex = sceneIndex;
+        applyScene(SCENES[currentSceneIndex]);
+      }
+
+      updateCursor();
+    }
+
+    function applyScene(scene) {
+      document.getElementById('sceneTitle').textContent = scene.title;
+      document.getElementById('sceneDescription').innerHTML = scene.description;
+      document.getElementById('progressText').textContent = scene.progressText;
+
+      state.allergens = [...scene.allergens];
+      state.diets = [...scene.diets];
+
+      renderAllergenSelector();
+      renderLayer();
+      hideTooltip();
+    }
+
+    function updateCursor() {
+      const scene = SCENES[currentSceneIndex];
+      const cursor = document.getElementById('virtualCursor');
+
+      if (!scene.cursorTarget) {
+        cursor.classList.remove('visible');
+        if (!scene.tooltipItem) hideTooltip();
+        return;
+      }
+
+      cursor.classList.add('visible');
+
+      const targetOverlay = document.querySelector(`[data-item-id="${scene.cursorTarget}"]`);
+      if (targetOverlay) {
+        const rect = targetOverlay.getBoundingClientRect();
+        const menuWrapper = document.querySelector('.menu-wrapper');
+        const wrapperRect = menuWrapper.getBoundingClientRect();
+
+        cursor.style.left = (rect.left - wrapperRect.left + rect.width / 2 - 20) + 'px';
+        cursor.style.top = (rect.top - wrapperRect.top + rect.height / 2 - 20) + 'px';
+      }
+
+      if (scene.tooltipItem) {
+        const item = DEMO_ITEMS.find(i => i.id === scene.tooltipItem);
+        if (item) {
+          const overlay = document.querySelector(`[data-item-id="${item.id}"]`);
+          if (overlay) {
+            showTooltip(item, { currentTarget: overlay });
           }
         }
-      });
-    }, { threshold: 0.5 });
+      }
+    }
 
-    // Observe all feature sections
-    Object.keys(featureAnimations).forEach(id => {
-      const section = document.getElementById(id);
-      if (section) sectionObserver.observe(section);
-    });
+    // Initialize
+    function init() {
+      renderAllergenSelector();
+      renderLayer();
+      applyScene(SCENES[0]);
 
-    // Animation Functions
-    function animateColorCoding() {
-      const cursor = document.getElementById('cursor-1');
-      const items = document.querySelectorAll('#demo-color-coding .demo-item');
-
-      cursor.classList.add('active');
-
-      let index = 0;
-      function highlightNext() {
-        items.forEach(item => item.classList.remove('highlighted'));
-
-        if (index < items.length) {
-          const item = items[index];
-          const rect = item.getBoundingClientRect();
-          const parentRect = item.closest('.demo-wrapper').getBoundingClientRect();
-
-          cursor.style.left = (rect.left - parentRect.left + rect.width / 2 - 24) + 'px';
-          cursor.style.top = (rect.top - parentRect.top + rect.height / 2 - 24) + 'px';
-
-          item.classList.add('highlighted');
-          index++;
-          setTimeout(highlightNext, 1500);
-        } else {
-          setTimeout(() => {
-            cursor.classList.remove('active');
-            items.forEach(item => item.classList.remove('highlighted'));
-          }, 1000);
+      let ticking = false;
+      window.addEventListener('scroll', () => {
+        if (!ticking) {
+          window.requestAnimationFrame(() => {
+            updateScene();
+            ticking = false;
+          });
+          ticking = true;
         }
+      }, { passive: true });
+
+      const scrollIndicator = document.querySelector('.scroll-indicator');
+      if (scrollIndicator) {
+        scrollIndicator.addEventListener('click', () => {
+          window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
+        });
       }
 
-      highlightNext();
+      updateScene();
     }
 
-    function animateDetails() {
-      const cursor = document.getElementById('cursor-2');
-      const item = document.querySelector('#demo-details .demo-item');
-      const overlay = document.getElementById('overlay-pizza');
-      const clickEffect = document.getElementById('click-effect-2');
-
-      cursor.classList.add('active');
-
-      const rect = item.getBoundingClientRect();
-      const parentRect = item.closest('.demo-wrapper').getBoundingClientRect();
-
-      cursor.style.left = (rect.left - parentRect.left + rect.width / 2 - 24) + 'px';
-      cursor.style.top = (rect.top - parentRect.top + rect.height / 2 - 24) + 'px';
-
-      setTimeout(() => {
-        item.classList.add('highlighted');
-        clickEffect.classList.add('animate');
-
-        setTimeout(() => {
-          overlay.classList.add('visible');
-          clickEffect.classList.remove('animate');
-        }, 300);
-
-        setTimeout(() => {
-          overlay.classList.remove('visible');
-          item.classList.remove('highlighted');
-          cursor.classList.remove('active');
-        }, 4000);
-      }, 800);
-    }
-
-    function animateAllergenSelection() {
-      const cursor = document.getElementById('cursor-3');
-      const clickEffect = document.getElementById('click-effect-3');
-      const allergenPills = document.querySelectorAll('#allergen-selector .allergen-pill');
-      const dietaryPills = document.querySelectorAll('#dietary-selector .dietary-pill');
-
-      cursor.classList.add('active');
-
-      const toSelect = [
-        { pills: allergenPills, indices: [0, 2, 3] }, // Dairy, Peanut, Tree Nut
-        { pills: dietaryPills, indices: [0] } // Vegan
-      ];
-
-      let groupIndex = 0;
-      let itemIndex = 0;
-
-      function selectNext() {
-        if (groupIndex >= toSelect.length) {
-          setTimeout(() => {
-            cursor.classList.remove('active');
-          }, 1000);
-          return;
-        }
-
-        const group = toSelect[groupIndex];
-        if (itemIndex >= group.indices.length) {
-          groupIndex++;
-          itemIndex = 0;
-          setTimeout(selectNext, 500);
-          return;
-        }
-
-        const pill = group.pills[group.indices[itemIndex]];
-        const rect = pill.getBoundingClientRect();
-        const parentRect = pill.closest('.demo-wrapper').getBoundingClientRect();
-
-        cursor.style.left = (rect.left - parentRect.left + rect.width / 2 - 24) + 'px';
-        cursor.style.top = (rect.top - parentRect.top + rect.height / 2 - 24) + 'px';
-
-        setTimeout(() => {
-          pill.classList.add('selected');
-          itemIndex++;
-          setTimeout(selectNext, 800);
-        }, 500);
-      }
-
-      selectNext();
-    }
-
-    function animateAI() {
-      const cursor = document.getElementById('cursor-4');
-      const container = document.getElementById('ai-demo');
-      const results = document.getElementById('ai-results');
-
-      cursor.classList.add('active');
-
-      const rect = container.getBoundingClientRect();
-      const parentRect = container.closest('.demo-wrapper').getBoundingClientRect();
-
-      cursor.style.left = (rect.left - parentRect.left + rect.width / 2 - 24) + 'px';
-      cursor.style.top = (rect.top - parentRect.top + rect.height / 2 - 24) + 'px';
-
-      setTimeout(() => {
-        container.classList.add('analyzing');
-
-        setTimeout(() => {
-          container.classList.remove('analyzing');
-          results.classList.add('visible');
-
-          setTimeout(() => {
-            cursor.classList.remove('active');
-          }, 2000);
-        }, 2000);
-      }, 800);
-    }
-
-    function animateMobile() {
-      const cursor = document.getElementById('cursor-5');
-      const screen = document.getElementById('mobile-screen');
-      const zoomBtns = document.querySelectorAll('.zoom-btn');
-
-      cursor.classList.add('active');
-
-      // Position cursor on zoom button
-      const btn = zoomBtns[1];
-      const rect = btn.getBoundingClientRect();
-      const parentRect = btn.closest('.demo-wrapper').getBoundingClientRect();
-
-      cursor.style.left = (rect.left - parentRect.left + rect.width / 2 - 24) + 'px';
-      cursor.style.top = (rect.top - parentRect.top + rect.height / 2 - 24) + 'px';
-
-      setTimeout(() => {
-        // Simulate zoom
-        screen.style.transform = 'scale(1.5)';
-        screen.style.transition = 'transform 0.8s ease';
-
-        setTimeout(() => {
-          screen.style.transform = 'scale(1)';
-          cursor.classList.remove('active');
-        }, 2500);
-      }, 800);
-    }
-
-    function animateFavorites() {
-      const cursor = document.getElementById('cursor-6');
-      const clickEffect = document.getElementById('click-effect-6');
-      const btn = document.getElementById('favorite-btn');
-
-      cursor.classList.add('active');
-
-      const rect = btn.getBoundingClientRect();
-      const parentRect = btn.closest('.demo-wrapper').getBoundingClientRect();
-
-      cursor.style.left = (rect.left - parentRect.left + rect.width / 2 - 24) + 'px';
-      cursor.style.top = (rect.top - parentRect.top + rect.height / 2 - 24) + 'px';
-
-      setTimeout(() => {
-        clickEffect.classList.add('animate');
-        btn.classList.add('favorited');
-        btn.textContent = '★';
-
-        setTimeout(() => {
-          clickEffect.classList.remove('animate');
-          cursor.classList.remove('active');
-        }, 1500);
-      }, 800);
-    }
-
-    function animateManagerEdit() {
-      const cursor = document.getElementById('cursor-7');
-      const overlayBox = document.getElementById('overlay-box-1');
-
-      cursor.classList.add('active');
-
-      const startRect = overlayBox.getBoundingClientRect();
-      const parentRect = overlayBox.closest('.demo-wrapper').getBoundingClientRect();
-
-      const startX = startRect.left - parentRect.left + startRect.width / 2 - 24;
-      const startY = startRect.top - parentRect.top + startRect.height / 2 - 24;
-
-      cursor.style.left = startX + 'px';
-      cursor.style.top = startY + 'px';
-
-      setTimeout(() => {
-        // Simulate drag
-        const newLeft = '15%';
-        const newTop = '50%';
-
-        overlayBox.style.transition = 'all 1s cubic-bezier(0.4, 0, 0.2, 1)';
-        overlayBox.style.left = newLeft;
-        overlayBox.style.top = newTop;
-
-        // Move cursor with it
-        setTimeout(() => {
-          const newRect = overlayBox.getBoundingClientRect();
-          cursor.style.left = (newRect.left - parentRect.left + newRect.width / 2 - 24) + 'px';
-          cursor.style.top = (newRect.top - parentRect.top + newRect.height / 2 - 24) + 'px';
-        }, 50);
-
-        setTimeout(() => {
-          cursor.classList.remove('active');
-        }, 1200);
-      }, 800);
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
     }
   </script>
 </body>
