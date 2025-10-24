@@ -2523,6 +2523,63 @@ async function openAiBarcodeScanner(rowIdx){
               });
             }
 
+            // Infer dietary preferences from product data and allergens
+            const diets = [];
+            const productName = (product.product_name || '').toLowerCase();
+            const ingredientsText = (product.ingredients_text || '').toLowerCase();
+            const productText = productName + ' ' + ingredientsText;
+
+            // Check Open Food Facts labels
+            const labels = product.labels_tags || [];
+            const categories = product.categories_tags || [];
+
+            // Vegan detection
+            const isVegan = labels.some(l => l.includes('vegan')) ||
+                           categories.some(c => c.includes('vegan')) ||
+                           (!parsedAllergens.includes('dairy') &&
+                            !parsedAllergens.includes('egg') &&
+                            !parsedAllergens.includes('fish') &&
+                            !parsedAllergens.includes('shellfish') &&
+                            !productText.includes('honey') &&
+                            !productText.includes('gelatin') &&
+                            (productText.includes('tofu') ||
+                             productText.includes('plant') ||
+                             labels.some(l => l.includes('plant'))));
+
+            if(isVegan) {
+              diets.push('Vegan');
+              diets.push('Vegetarian'); // Vegan is also vegetarian
+              diets.push('Pescatarian'); // Vegan is compatible with pescatarian
+            } else {
+              // Vegetarian detection
+              const isVegetarian = labels.some(l => l.includes('vegetarian')) ||
+                                  categories.some(c => c.includes('vegetarian')) ||
+                                  (!parsedAllergens.includes('fish') &&
+                                   !parsedAllergens.includes('shellfish') &&
+                                   !productText.includes('meat') &&
+                                   !productText.includes('chicken') &&
+                                   !productText.includes('beef') &&
+                                   !productText.includes('pork') &&
+                                   !productText.includes('gelatin'));
+
+              if(isVegetarian) {
+                diets.push('Vegetarian');
+                if(!parsedAllergens.includes('egg') && !parsedAllergens.includes('dairy')) {
+                  diets.push('Pescatarian'); // Vegetarian without dairy/egg is compatible
+                }
+              }
+            }
+
+            // Kosher detection
+            if(labels.some(l => l.includes('kosher')) || productText.includes('kosher')) {
+              diets.push('Kosher');
+            }
+
+            // Halal detection
+            if(labels.some(l => l.includes('halal')) || productText.includes('halal')) {
+              diets.push('Halal');
+            }
+
             // Convert to the format expected by applyBrandSuggestionConfirmed
             const suggestion = {
               name: product.product_name || product.name || 'Unknown Product',
@@ -2532,6 +2589,7 @@ async function openAiBarcodeScanner(rowIdx){
               ingredientsImage: product.image_ingredients_url || product.ingredientsImage || '',
               ingredientsList: product.ingredients_text ? [product.ingredients_text] : (product.ingredientsList || []),
               allergens: parsedAllergens,
+              diets: diets,
               productUrl: `https://world.openfoodfacts.org/product/${barcode}`
             };
 
@@ -2829,6 +2887,15 @@ function applyBrandSuggestionConfirmed(rowIdx, suggestion){
       input.checked=true;
     }
   });
+
+  // Update dietary preference checkboxes from suggestion
+  if(Array.isArray(suggestion.diets) && suggestion.diets.length > 0){
+    row.querySelectorAll('.aiDietCheckbox').forEach(input=>{
+      if(suggestion.diets.includes(input.value)){
+        input.checked=true;
+      }
+    });
+  }
 
   // NOW collect data (will include the updated brands) and re-render
   const allData = collectAiTableData();
