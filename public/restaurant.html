@@ -1462,17 +1462,29 @@ function ensureAiAssistElements(){
   }
 }
 
+let scrollLockPosition = 0;
+
 function toggleAiAssistBackdrop(show){
   ensureAiAssistElements();
   if(!aiAssistBackdrop) return;
   if(show){
     aiAssistBackdrop.classList.add('show');
     aiAssistBackdrop.setAttribute('aria-hidden','false');
-    document.body.style.overflow = 'hidden'; // Lock background scrolling
+    // Mobile-safe scroll lock: store position and fix body
+    scrollLockPosition = window.pageYOffset || document.documentElement.scrollTop;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollLockPosition}px`;
+    document.body.style.width = '100%';
+    document.body.style.overflow = 'hidden';
   } else {
     aiAssistBackdrop.classList.remove('show');
     aiAssistBackdrop.setAttribute('aria-hidden','true');
-    document.body.style.overflow = ''; // Unlock background scrolling
+    // Restore scroll position and body styles
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    window.scrollTo(0, scrollLockPosition);
   }
 }
 
@@ -2405,6 +2417,13 @@ async function openAiBarcodeScanner(rowIdx){
     </div>
   `;
 
+  // Lock background scrolling (mobile-safe)
+  scrollLockPosition = window.pageYOffset || document.documentElement.scrollTop;
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${scrollLockPosition}px`;
+  document.body.style.width = '100%';
+  document.body.style.overflow = 'hidden';
+
   document.body.appendChild(scannerModal);
 
   const video = scannerModal.querySelector('#barcodeScannerVideo');
@@ -2436,6 +2455,12 @@ async function openAiBarcodeScanner(rowIdx){
     if(scannerModal && scannerModal.parentNode){
       scannerModal.parentNode.removeChild(scannerModal);
     }
+    // Restore scroll position and body styles
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    window.scrollTo(0, scrollLockPosition);
   };
 
   cancelBtn.addEventListener('click', closeModal);
