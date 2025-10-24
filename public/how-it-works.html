@@ -17,6 +17,7 @@
       --warn: #facc15;
       --bad: #ef4444;
       --border: #2a3261;
+      --hover: #4c5ad4;
     }
 
     * {
@@ -108,7 +109,7 @@
 
     /* Main Showcase */
     .showcase-section {
-      min-height: 600vh;
+      min-height: 1800vh;
       position: relative;
       background: var(--bg);
     }
@@ -124,81 +125,99 @@
     }
 
     .showcase-container {
-      max-width: 1600px;
+      max-width: 1800px;
       width: 100%;
-      display: grid;
-      grid-template-columns: 400px 1fr;
-      gap: 40px;
-      align-items: start;
+      height: 100%;
+      display: flex;
+      gap: 20px;
+      align-items: stretch;
     }
 
     @media (max-width: 1200px) {
       .showcase-container {
-        grid-template-columns: 1fr;
-        gap: 20px;
-      }
-      .info-panel {
-        max-width: 600px;
-        margin: 0 auto;
+        flex-direction: column;
+        gap: 16px;
+        overflow-y: auto;
       }
     }
 
+    /* Info Panel */
     .info-panel {
+      flex: 0 0 400px;
       padding: 30px;
       background: var(--panel);
       border-radius: 16px;
       border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
+
+    @media (max-width: 1200px) {
+      .info-panel {
+        flex: 0 0 auto;
+      }
     }
 
     .info-panel h2 {
-      font-size: 2rem;
+      font-size: 1.8rem;
       color: var(--brand);
-      margin-bottom: 16px;
+      margin: 0;
     }
 
     .info-panel p {
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       line-height: 1.6;
       color: var(--muted);
-      margin-bottom: 12px;
+      margin: 0;
     }
 
     .info-panel strong {
       color: var(--ink);
     }
 
-    /* Menu Container - mimics restaurant.html */
-    .menu-container {
-      position: relative;
+    /* Demo Container */
+    .demo-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
       background: var(--panel);
       border-radius: 16px;
       border: 1px solid var(--border);
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
       overflow: hidden;
+      position: relative;
     }
 
-    /* Allergen Selector - from restaurant.html */
-    .allergen-selector {
-      padding: 20px;
+    /* Allergen/Diet Selector */
+    .demo-selector {
+      padding: 16px 20px;
       background: rgba(124,156,255,0.05);
       border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
-    .allergen-selector-title {
+    .selector-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .selector-label {
       font-weight: 600;
       color: var(--brand);
-      margin-bottom: 10px;
       font-size: 0.9rem;
     }
 
-    .allergen-chips {
+    .selector-chips {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
-      margin-bottom: 16px;
     }
 
-    .allergen-chip {
+    .selector-chip {
       background: rgba(168, 178, 214, 0.1);
       color: var(--muted);
       padding: 6px 12px;
@@ -207,55 +226,100 @@
       border: 1px solid rgba(168, 178, 214, 0.2);
       transition: all 0.3s;
       user-select: none;
+      cursor: pointer;
     }
 
-    .allergen-chip.selected {
+    .selector-chip.selected {
       background: rgba(239,68,68,0.15);
       color: #e85d5d;
       border-color: rgba(239,68,68,0.3);
     }
 
-    .diet-chip.selected {
+    .selector-chip.diet.selected {
       background: rgba(76,200,90,0.15);
       color: #4cc85a;
       border-color: rgba(76,200,90,0.3);
     }
 
-    /* Demo Menu Image */
-    .menu-wrapper {
-      position: relative;
-      padding: 20px;
-      background: #1a1a1a;
+    /* Manager Mode Toggle */
+    .manager-toggle {
+      padding: 16px 20px;
+      background: rgba(76,90,212,0.08);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      opacity: 0;
+      transition: opacity 0.5s;
     }
 
-    #demoMenu {
-      width: 100%;
-      height: 700px;
-      background: linear-gradient(to bottom, #2a2a2a 0%, #1a1a1a 100%);
+    .manager-toggle.visible {
+      opacity: 1;
+    }
+
+    .manager-label {
+      font-weight: 600;
+      color: var(--brand);
+      font-size: 0.95rem;
+    }
+
+    .manager-button {
+      background: #3651ff;
+      border: 1px solid #4e65ff;
+      color: white;
+      padding: 8px 16px;
       border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .manager-button:hover {
+      background: #4e65ff;
+      box-shadow: 0 0 12px rgba(54, 81, 255, 0.5);
+    }
+
+    .manager-button.active {
+      background: #17663a;
+      border-color: #1a7b46;
+    }
+
+    /* Menu Viewer */
+    .menu-viewer {
+      flex: 1;
       position: relative;
+      background: #1a1a1a;
+      overflow: hidden;
+    }
+
+    .menu-canvas {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      background: linear-gradient(to bottom, #2a2a2a 0%, #1a1a1a 100%);
       background-image:
         linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
       background-size: 50px 50px;
     }
 
-    /* Menu Title Overlay */
-    .menu-title-overlay {
+    .menu-title-watermark {
       position: absolute;
-      top: 20px;
+      top: 50%;
       left: 50%;
-      transform: translateX(-50%);
-      font-size: 2.5rem;
+      transform: translate(-50%, -50%);
+      font-size: 4rem;
       font-weight: 700;
-      color: rgba(255,255,255,0.1);
+      color: rgba(255,255,255,0.05);
       text-transform: uppercase;
-      letter-spacing: 4px;
+      letter-spacing: 8px;
       pointer-events: none;
+      white-space: nowrap;
     }
 
-    /* Overlay Layer - from restaurant.html */
-    #overlayLayer {
+    /* Overlay Layer */
+    .overlay-layer {
       position: absolute;
       top: 0;
       left: 0;
@@ -264,7 +328,7 @@
       pointer-events: none;
     }
 
-    .overlay {
+    .overlay-box {
       position: absolute;
       border: 3px solid rgba(255,255,255,0.2);
       border-radius: 8px;
@@ -275,36 +339,22 @@
       backdrop-filter: blur(2px);
     }
 
-    .overlay:hover {
+    .overlay-box:hover {
       background: rgba(0,0,0,0.5);
       transform: scale(1.02);
     }
 
-    /* Badges - from restaurant.html */
-    .ovBadge {
+    .overlay-label {
       position: absolute;
-      top: 8px;
-      right: 8px;
-      width: 32px;
-      height: 32px;
-      background: rgba(124,156,255,0.9);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: bold;
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: all 0.2s;
+      bottom: 8px;
+      left: 8px;
+      color: rgba(255,255,255,0.9);
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
     }
 
-    .ovBadge:hover {
-      transform: scale(1.1);
-      background: var(--brand);
-    }
-
-    .ovWarning {
+    .overlay-warning {
       position: absolute;
       top: 8px;
       left: 8px;
@@ -324,100 +374,237 @@
       50% { opacity: 0.7; transform: scale(1.05); }
     }
 
-    /* Tooltip - from restaurant.html */
-    #pageTip {
+    .overlay-info {
       position: absolute;
-      background: rgba(11, 16, 32, 0.98);
-      backdrop-filter: blur(14px);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-      max-width: 320px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      display: none;
-      z-index: 1000;
-      font-size: 0.9rem;
-    }
-
-    .tipHead {
+      top: 8px;
+      right: 8px;
+      width: 32px;
+      height: 32px;
+      background: rgba(124,156,255,0.9);
+      border-radius: 50%;
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .tTitle {
-      font-weight: 600;
-      color: var(--ink);
-      font-size: 1rem;
-    }
-
-    .tClose {
-      background: rgba(255,255,255,0.1);
-      border: none;
-      color: var(--ink);
-      padding: 4px 8px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 1rem;
-    }
-
-    .note {
-      background: rgba(124,156,255,0.1);
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 8px;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
       font-size: 0.9rem;
-    }
-
-    .tooltipDangerText {
-      background: rgba(239,68,68,0.15);
-      border-left: 3px solid var(--bad);
-      color: var(--ink);
-    }
-
-    .tooltipWarnText {
-      background: rgba(250,204,21,0.15);
-      border-left: 3px solid var(--warn);
-      color: var(--ink);
-    }
-
-    .tooltipNeutralText {
-      background: rgba(34,197,94,0.15);
-      border-left: 3px solid var(--ok);
-      color: var(--ink);
     }
 
     /* Virtual Cursor */
-    #virtualCursor {
+    .virtual-cursor {
       position: absolute;
       width: 40px;
       height: 40px;
       pointer-events: none;
       opacity: 0;
-      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 1s cubic-bezier(0.4, 0, 0.2, 1);
       z-index: 2000;
       filter: drop-shadow(0 2px 8px rgba(124,156,255,0.5));
     }
 
-    #virtualCursor.visible {
+    .virtual-cursor.visible {
       opacity: 1;
     }
 
-    /* Progress Indicator */
-    .progress-indicator {
+    .virtual-cursor.clicking {
+      transform: scale(0.9);
+      transition: transform 0.15s;
+    }
+
+    /* Floating Text Box */
+    .floating-textbox {
       position: absolute;
-      bottom: 20px;
+      background: rgba(11, 16, 32, 0.98);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--brand);
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 400px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      opacity: 0;
+      transition: opacity 0.5s;
+      z-index: 1500;
+      pointer-events: none;
+    }
+
+    .floating-textbox.visible {
+      opacity: 1;
+    }
+
+    .floating-textbox h3 {
+      margin: 0 0 12px 0;
+      color: var(--brand);
+      font-size: 1.2rem;
+    }
+
+    .floating-textbox p {
+      margin: 0;
+      color: var(--ink);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    /* Drag Preview */
+    .drag-preview {
+      position: absolute;
+      border: 2px dashed var(--warn);
+      border-radius: 8px;
+      background: rgba(250,204,21,0.1);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .drag-preview.visible {
+      opacity: 1;
+    }
+
+    /* Dish Editor Modal */
+    .dish-editor-modal {
+      position: absolute;
+      top: 50%;
       left: 50%;
-      transform: translateX(-50%);
-      background: rgba(11, 16, 32, 0.9);
-      padding: 12px 24px;
-      border-radius: 24px;
+      transform: translate(-50%, -50%);
+      background: rgba(15, 21, 52, 0.98);
+      backdrop-filter: blur(14px);
       border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80%;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+      opacity: 0;
+      transition: opacity 0.5s;
+      z-index: 1800;
+      pointer-events: none;
+    }
+
+    .dish-editor-modal.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .dish-editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .dish-editor-header h3 {
+      margin: 0;
+      color: var(--brand);
+      font-size: 1.4rem;
+    }
+
+    .dish-editor-close {
+      background: rgba(76,90,212,0.3);
+      border: 1px solid rgba(76,90,212,0.5);
+      color: var(--ink);
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      line-height: 1;
+    }
+
+    .dish-editor-input {
+      width: 100%;
+      background: rgba(10,16,36,0.95);
+      border: 1px solid rgba(76,90,212,0.35);
+      border-radius: 8px;
+      padding: 12px;
+      color: var(--ink);
+      font-size: 1rem;
+      margin-bottom: 16px;
+    }
+
+    .dish-editor-button {
+      background: #3651ff;
+      border: 1px solid #4e65ff;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+
+    .dish-editor-button.secondary {
+      background: rgba(76,90,212,0.3);
+      border-color: rgba(76,90,212,0.5);
+    }
+
+    .ingredient-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
       font-size: 0.9rem;
-      color: var(--muted);
-      text-align: center;
-      max-width: 90%;
+    }
+
+    .ingredient-table th,
+    .ingredient-table td {
+      padding: 10px;
+      border-bottom: 1px solid rgba(76,90,212,0.2);
+      text-align: left;
+    }
+
+    .ingredient-table th {
+      background: rgba(17,26,60,0.75);
+      font-weight: 600;
+      color: var(--brand);
+    }
+
+    .ingredient-row-input {
+      background: rgba(10,16,36,0.95);
+      border: 1px solid rgba(76,90,212,0.25);
+      border-radius: 4px;
+      padding: 6px 8px;
+      color: var(--ink);
+      font-size: 0.85rem;
+      width: 100%;
+    }
+
+    .allergen-checkboxes {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .allergen-checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.8rem;
+      padding: 4px 8px;
+      background: rgba(76,90,212,0.1);
+      border-radius: 12px;
+      cursor: pointer;
+    }
+
+    .diet-checkboxes {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .diet-checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.8rem;
+      padding: 4px 8px;
+      background: rgba(76,200,90,0.1);
+      border-radius: 12px;
+      cursor: pointer;
     }
 
     /* CTA Section */
@@ -479,12 +666,12 @@
   <!-- Hero Section -->
   <section class="hero-section">
     <h1 class="hero-title">How Clarivore Works</h1>
-    <p class="hero-subtitle">Experience the complete allergen-aware dining system. Scroll to see every feature in action.</p>
-    <div class="scroll-indicator">↓</div>
+    <p class="hero-subtitle">Watch how diners find safe meals and how restaurants manage their menus. Scroll to control the demo.</p>
+    <div class="scroll-indicator" onclick="window.scrollTo({top: window.innerHeight, behavior: 'smooth'})">↓</div>
   </section>
 
   <!-- Interactive Showcase -->
-  <section class="showcase-section">
+  <section class="showcase-section" id="showcaseSection">
     <div class="showcase-sticky">
       <div class="showcase-container">
         <!-- Info Panel -->
@@ -493,36 +680,58 @@
           <div id="sceneDescription"></div>
         </div>
 
-        <!-- Menu Demo -->
-        <div class="menu-container">
-          <!-- Allergen Selector -->
-          <div class="allergen-selector">
-            <div class="allergen-selector-title">Your Saved Allergens</div>
-            <div class="allergen-chips" id="allergenChips"></div>
-            <div class="allergen-selector-title">Your Saved Dietary Preferences</div>
-            <div class="allergen-chips" id="dietChips"></div>
+        <!-- Demo Container -->
+        <div class="demo-container">
+          <!-- Allergen/Diet Selector -->
+          <div class="demo-selector" id="demoSelector">
+            <div class="selector-row">
+              <div class="selector-label">Your Saved Allergens</div>
+              <div class="selector-chips" id="allergenChips"></div>
+            </div>
+            <div class="selector-row">
+              <div class="selector-label">Your Saved Dietary Preferences</div>
+              <div class="selector-chips" id="dietChips"></div>
+            </div>
           </div>
 
-          <!-- Menu Display -->
-          <div class="menu-wrapper">
-            <div id="demoMenu">
-              <div class="menu-title-overlay">DEMO MENU</div>
-              <div id="overlayLayer"></div>
+          <!-- Manager Toggle -->
+          <div class="manager-toggle" id="managerToggle">
+            <div class="manager-label">Restaurant Manager Tools</div>
+            <button class="manager-button" id="managerButton">Manager Edit</button>
+          </div>
+
+          <!-- Menu Viewer -->
+          <div class="menu-viewer">
+            <div class="menu-canvas">
+              <div class="menu-title-watermark">DEMO MENU</div>
+              <div class="overlay-layer" id="overlayLayer"></div>
+
+              <!-- Drag Preview for creating overlays -->
+              <div class="drag-preview" id="dragPreview"></div>
+
+              <!-- Dish Editor Modal -->
+              <div class="dish-editor-modal" id="dishEditorModal">
+                <div class="dish-editor-header">
+                  <h3>Edit Dish</h3>
+                  <button class="dish-editor-close">×</button>
+                </div>
+                <div id="dishEditorContent"></div>
+              </div>
             </div>
 
             <!-- Virtual Cursor -->
-            <div id="virtualCursor">
+            <div class="virtual-cursor" id="virtualCursor">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
                 <path d="M3 3L10.07 19.97L12.58 12.58L19.97 10.07L3 3Z" fill="#7c9cff" stroke="#fff" stroke-width="2"/>
               </svg>
             </div>
 
-            <!-- Tooltip -->
-            <div id="pageTip"></div>
+            <!-- Floating Text Box -->
+            <div class="floating-textbox" id="floatingTextbox">
+              <h3 id="textboxTitle">Feature</h3>
+              <p id="textboxContent">Description</p>
+            </div>
           </div>
-
-          <!-- Progress Indicator -->
-          <div class="progress-indicator" id="progressText">Scroll to begin</div>
         </div>
       </div>
     </div>
@@ -548,7 +757,7 @@
     initNav();
   </script>
   <script>
-    // Constants from restaurant.html
+    // Constants
     const ALLERGENS = ["dairy", "egg", "peanut", "tree nut", "shellfish", "fish", "soy", "sesame", "wheat"];
     const DIETS = ["Vegan", "Vegetarian", "Pescatarian", "Kosher", "Halal"];
     const ALLERGEN_EMOJI = {
@@ -559,87 +768,72 @@
       'Vegan': '🌱', 'Vegetarian': '🥬', 'Pescatarian': '🐟', 'Kosher': '✡️', 'Halal': '☪️'
     };
 
-    // Demo menu items with overlay positions (as percentages)
+    // Demo menu items
     const DEMO_ITEMS = [
       {
-        id: "Garden Salad",
-        x: 10, y: 8, w: 35, h: 12,
+        id: "garden-salad",
+        name: "Garden Salad",
+        x: 10, y: 15, w: 35, h: 15,
         allergens: [],
         removable: [],
         crossContamination: [],
-        diets: ["Vegan", "Vegetarian", "Pescatarian"]
+        diets: ["Vegan", "Vegetarian", "Pescatarian"],
+        ingredients: []
       },
       {
-        id: "Grilled Chicken Breast",
-        x: 55, y: 8, w: 35, h: 12,
+        id: "grilled-chicken",
+        name: "Grilled Chicken Breast",
+        x: 55, y: 15, w: 35, h: 15,
         allergens: [],
         removable: [],
         crossContamination: ["soy"],
-        diets: []
+        diets: [],
+        ingredients: []
       },
       {
-        id: "Pasta Primavera",
-        x: 10, y: 25, w: 35, h: 12,
+        id: "pasta-primavera",
+        name: "Pasta Primavera",
+        x: 10, y: 35, w: 35, h: 15,
         allergens: ["dairy"],
         removable: [{allergen: "dairy"}],
         crossContamination: [],
-        diets: ["Vegetarian"]
+        diets: ["Vegetarian"],
+        ingredients: []
       },
       {
-        id: "Thai Peanut Noodles",
-        x: 55, y: 25, w: 35, h: 12,
+        id: "thai-peanut-noodles",
+        name: "Thai Peanut Noodles",
+        x: 55, y: 35, w: 35, h: 15,
         allergens: ["peanut", "sesame"],
         removable: [],
         crossContamination: [],
-        diets: ["Vegan", "Vegetarian"]
+        diets: ["Vegan", "Vegetarian"],
+        ingredients: []
       },
       {
-        id: "Seafood Linguine",
-        x: 10, y: 42, w: 35, h: 12,
-        allergens: ["shellfish", "fish", "dairy"],
-        removable: [],
-        crossContamination: [],
-        diets: []
-      },
-      {
-        id: "Margherita Pizza",
-        x: 55, y: 42, w: 35, h: 12,
+        id: "margherita-pizza",
+        name: "Margherita Pizza",
+        x: 10, y: 55, w: 35, h: 15,
         allergens: ["dairy", "wheat"],
         removable: [{allergen: "dairy"}],
         crossContamination: [],
-        diets: ["Vegetarian"]
+        diets: ["Vegetarian"],
+        ingredients: [
+          { name: "Tomato Sauce", allergens: [], diets: ["Vegan", "Vegetarian"] },
+          { name: "Mozzarella Cheese", allergens: ["dairy"], diets: ["Vegetarian"] },
+          { name: "Pizza Dough", allergens: ["wheat"], diets: ["Vegan", "Vegetarian"] },
+          { name: "Fresh Basil", allergens: [], diets: ["Vegan", "Vegetarian"] }
+        ]
       },
       {
-        id: "Caesar Salad",
-        x: 10, y: 59, w: 35, h: 12,
-        allergens: ["dairy", "egg", "fish"],
-        removable: [{allergen: "dairy"}],
-        crossContamination: [],
-        diets: []
-      },
-      {
-        id: "Vegetable Stir Fry",
-        x: 55, y: 59, w: 35, h: 12,
-        allergens: ["soy"],
-        removable: [],
-        crossContamination: [],
-        diets: ["Vegan", "Vegetarian"]
-      },
-      {
-        id: "Chocolate Cake",
-        x: 10, y: 76, w: 35, h: 12,
-        allergens: ["dairy", "egg", "wheat"],
-        removable: [],
-        crossContamination: [],
-        diets: ["Vegetarian"]
-      },
-      {
-        id: "Fresh Fruit Plate",
-        x: 55, y: 76, w: 35, h: 12,
+        id: "fresh-fruit-plate",
+        name: "Fresh Fruit Plate",
+        x: 55, y: 55, w: 35, h: 15,
         allergens: [],
         removable: [],
         crossContamination: [],
-        diets: ["Vegan", "Vegetarian", "Pescatarian", "Kosher", "Halal"]
+        diets: ["Vegan", "Vegetarian", "Pescatarian", "Kosher", "Halal"],
+        ingredients: []
       }
     ];
 
@@ -647,10 +841,12 @@
     let state = {
       allergens: [],
       diets: [],
-      currentScene: 0
+      managerMode: false,
+      currentScene: 0,
+      items: [...DEMO_ITEMS]
     };
 
-    // Core logic from restaurant.html
+    // Compute status (from restaurant.html)
     function computeStatus(item, allergens, diets) {
       const hasAllergenReqs = allergens && allergens.length > 0;
       const hasDietReqs = diets && diets.length > 0;
@@ -675,84 +871,25 @@
       return (item.crossContamination || []).some(a => allergens.includes(a));
     }
 
-    function tooltipBodyHTML(item, allergens, diets) {
-      if (!allergens.length && !diets.length) {
-        return '<div class="note">Select allergens or dietary preferences to see safety information</div>';
-      }
-
-      let html = '';
-      if (allergens.length) {
-        html += '<strong style="display:block;margin-bottom:8px;color:var(--ink)">Allergen Information</strong>';
-        const hits = (item.allergens || []).filter(a => allergens.includes(a));
-        const removableSet = new Set((item.removable || []).map(r => r.allergen));
-        const unsafeHits = hits.filter(a => !removableSet.has(a));
-        const removableHits = hits.filter(a => removableSet.has(a));
-
-        if (unsafeHits.length) {
-          const list = unsafeHits.map(a => {
-            const emoji = ALLERGEN_EMOJI[a] || '⚠️';
-            return `<div style="margin-bottom:4px">${emoji} Contains <strong>${a}</strong> (cannot be substituted)</div>`;
-          }).join('');
-          html += `<div class="note tooltipDangerText">${list}</div>`;
-        }
-        if (removableHits.length) {
-          const list = removableHits.map(a => {
-            const emoji = ALLERGEN_EMOJI[a] || '⚠️';
-            return `<div style="margin-bottom:4px">${emoji} Contains <strong>${a}</strong> (can be substituted)</div>`;
-          }).join('');
-          html += `<div class="note tooltipWarnText">${list}</div>`;
-        }
-        if (!hits.length && !hasCrossContamination(item, allergens)) {
-          html += '<div class="note tooltipNeutralText">✓ None of your allergens found</div>';
-        }
-
-        if (hasCrossContamination(item, allergens)) {
-          const crossHits = (item.crossContamination || []).filter(a => allergens.includes(a));
-          const crossList = crossHits.map(a => {
-            const emoji = ALLERGEN_EMOJI[a] || '⚠️';
-            return `<div style="margin-bottom:4px">${emoji} Cross-contamination risk: <strong>${a}</strong></div>`;
-          }).join('');
-          html += `<div class="note tooltipWarnText">${crossList}</div>`;
-        }
-      }
-
-      if (diets.length) {
-        html += '<div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(124,156,255,0.2)">';
-        html += '<strong style="display:block;margin-bottom:8px;color:var(--ink)">Dietary Options</strong>';
-        const itemDietSet = new Set(item.diets || []);
-        diets.forEach(diet => {
-          const isDietMet = itemDietSet.has(diet);
-          const color = isDietMet ? '#4cc85a' : '#e85d5d';
-          const emoji = DIET_EMOJI[diet] || '✓';
-          const status = isDietMet ? 'is' : 'is not';
-          html += `<div style="margin-bottom:6px;color:${color};font-size:0.9rem">${emoji} This dish ${status} <strong>${diet.toLowerCase()}</strong></div>`;
-        });
-        html += '</div>';
-      }
-
-      return html;
-    }
-
     // Render functions
-    function renderAllergenSelector() {
+    function renderSelectors() {
       const allergenChips = document.getElementById('allergenChips');
       allergenChips.innerHTML = ALLERGENS.map(allergen => {
         const emoji = ALLERGEN_EMOJI[allergen] || '';
         const selected = state.allergens.includes(allergen);
-        return `<div class="allergen-chip ${selected ? 'selected' : ''}">${emoji} ${allergen.charAt(0).toUpperCase() + allergen.slice(1)}</div>`;
+        return `<div class="selector-chip ${selected ? 'selected' : ''}" data-allergen="${allergen}">${emoji} ${allergen.charAt(0).toUpperCase() + allergen.slice(1)}</div>`;
       }).join('');
 
       const dietChips = document.getElementById('dietChips');
       dietChips.innerHTML = DIETS.map(diet => {
         const emoji = DIET_EMOJI[diet] || '';
         const selected = state.diets.includes(diet);
-        return `<div class="allergen-chip diet-chip ${selected ? 'selected' : ''}">${emoji} ${diet}</div>`;
+        return `<div class="selector-chip diet ${selected ? 'selected' : ''}" data-diet="${diet}">${emoji} ${diet}</div>`;
       }).join('');
     }
 
-    function renderLayer() {
+    function renderOverlays() {
       const layer = document.getElementById('overlayLayer');
-      const menu = document.getElementById('demoMenu');
       layer.innerHTML = '';
 
       const colors = {
@@ -762,9 +899,9 @@
         neutral: 'rgba(255,255,255,0.2)'
       };
 
-      DEMO_ITEMS.forEach(item => {
+      state.items.forEach(item => {
         const box = document.createElement('div');
-        box.className = 'overlay';
+        box.className = 'overlay-box';
         box.dataset.itemId = item.id;
 
         const status = computeStatus(item, state.allergens, state.diets);
@@ -774,162 +911,313 @@
         box.style.width = item.w + '%';
         box.style.height = item.h + '%';
 
-        // Add item label
+        // Label
         const label = document.createElement('div');
-        label.style.cssText = 'position:absolute;bottom:8px;left:8px;color:rgba(255,255,255,0.9);font-size:0.85rem;font-weight:600;text-shadow:0 1px 3px rgba(0,0,0,0.8);';
-        label.textContent = item.id;
+        label.className = 'overlay-label';
+        label.textContent = item.name;
         box.appendChild(label);
 
         // Cross-contamination warning
         if (hasCrossContamination(item, state.allergens)) {
           const warning = document.createElement('div');
-          warning.className = 'ovWarning';
+          warning.className = 'overlay-warning';
           warning.textContent = '⚠';
           box.appendChild(warning);
         }
 
         // Info badge
-        const badge = document.createElement('div');
-        badge.className = 'ovBadge';
-        badge.textContent = 'i';
-        box.appendChild(badge);
-
-        // Hover tooltip
-        box.addEventListener('mouseenter', (e) => {
-          showTooltip(item, e);
-        });
-        box.addEventListener('mouseleave', hideTooltip);
+        if (!state.managerMode) {
+          const info = document.createElement('div');
+          info.className = 'overlay-info';
+          info.textContent = 'i';
+          box.appendChild(info);
+        }
 
         layer.appendChild(box);
       });
-    }
-
-    function showTooltip(item, event) {
-      const tip = document.getElementById('pageTip');
-      const html = tooltipBodyHTML(item, state.allergens, state.diets);
-
-      tip.innerHTML = `
-        <div class="tipHead">
-          <div class="tTitle">${item.id}</div>
-          <button class="tClose" onclick="document.getElementById('pageTip').style.display='none'">×</button>
-        </div>
-        ${html}
-      `;
-
-      tip.style.display = 'block';
-
-      // Position tooltip
-      const rect = event.currentTarget.getBoundingClientRect();
-      const menuWrapper = document.querySelector('.menu-wrapper');
-      const wrapperRect = menuWrapper.getBoundingClientRect();
-
-      tip.style.left = (rect.right - wrapperRect.left + 10) + 'px';
-      tip.style.top = (rect.top - wrapperRect.top) + 'px';
-    }
-
-    function hideTooltip() {
-      document.getElementById('pageTip').style.display = 'none';
     }
 
     // Scene definitions
     const SCENES = [
       {
         title: "Welcome to Clarivore",
-        description: "<p>This is an interactive demo showing exactly how Clarivore works with real menus.</p><p><strong>Scroll down</strong> to see the virtual cursor navigate through all features.</p>",
+        description: "<p>This is a scroll-controlled demo showing exactly how Clarivore works.</p><p><strong>Scroll down</strong> to watch the cursor navigate through all features - for both diners and restaurant managers.</p>",
         allergens: [],
         diets: [],
+        managerMode: false,
         cursorTarget: null,
-        tooltipItem: null,
-        progressText: "Scroll down to begin the interactive demo"
+        textbox: null,
+        duration: 1
       },
       {
-        title: "Step 1: Select Your Allergens",
-        description: "<p>First, you select your allergens from the top panel.</p><p>Watch as we automatically select <strong>dairy</strong> and <strong>peanut</strong> allergens.</p><p>The menu overlays will instantly update to show which items are safe.</p>",
-        allergens: ["dairy", "peanut"],
+        title: "1. Select Your Allergens",
+        description: "<p>Diners start by selecting their allergens from the saved allergen list.</p><p>Watch as we select <strong>Peanut</strong>...</p>",
+        allergens: ["peanut"],
         diets: [],
-        cursorTarget: null,
-        tooltipItem: null,
-        progressText: "Allergens selected: 🥛 Dairy, 🥜 Peanut"
+        managerMode: false,
+        cursorTarget: { type: 'allergen', value: 'peanut' },
+        textbox: {
+          title: "Allergen Selection",
+          content: "Select your allergens to see which dishes are safe for you",
+          position: { top: '20%', left: '5%' }
+        },
+        duration: 1
       },
       {
-        title: "Step 2: Color-Coded Safety Status",
-        description: "<p>Notice how each menu item now has a colored border:</p><p>🟢 <strong>Green</strong> = Safe to eat</p><p>🟡 <strong>Yellow</strong> = Can be accommodated</p><p>🔴 <strong>Red</strong> = Contains allergens</p>",
-        allergens: ["dairy", "peanut"],
+        title: "2. Color-Coded Safety Status",
+        description: "<p>Notice how menu items instantly show colored borders:</p><p>🟢 <strong>Green</strong> = Safe to eat<br>🟡 <strong>Yellow</strong> = Can be modified<br>🔴 <strong>Red</strong> = Contains allergen</p>",
+        allergens: ["peanut"],
         diets: [],
-        cursorTarget: "Garden Salad",
-        tooltipItem: null,
-        progressText: "Green borders indicate safe items with no allergens"
+        managerMode: false,
+        cursorTarget: { type: 'overlay', id: 'garden-salad' },
+        textbox: {
+          title: "Visual Safety Indicators",
+          content: "Green borders mean this dish is completely safe for your allergen profile",
+          position: { top: '35%', right: '5%' }
+        },
+        duration: 1
       },
       {
-        title: "Step 3: Hover for Details",
-        description: "<p>Hover over any menu item to see detailed allergen information.</p><p>The <strong>Pasta Primavera</strong> contains dairy, but it can be substituted.</p><p>This is why it has a yellow border instead of red.</p>",
-        allergens: ["dairy", "peanut"],
+        title: "3. Unsafe Items Highlighted",
+        description: "<p>Red-bordered dishes contain allergens that cannot be removed.</p><p>The <strong>Thai Peanut Noodles</strong> contains peanuts as a core ingredient.</p>",
+        allergens: ["peanut"],
         diets: [],
-        cursorTarget: "Pasta Primavera",
-        tooltipItem: "Pasta Primavera",
-        progressText: "Yellow = allergen can be removed or substituted"
+        managerMode: false,
+        cursorTarget: { type: 'overlay', id: 'thai-peanut-noodles' },
+        textbox: {
+          title: "Unsafe Dishes",
+          content: "Red borders indicate dishes that contain your allergens and cannot be modified",
+          position: { top: '55%', left: '5%' }
+        },
+        duration: 1
       },
       {
-        title: "Step 4: Unsafe Items",
-        description: "<p>Items with red borders contain allergens that cannot be removed.</p><p><strong>Thai Peanut Noodles</strong> has peanuts as a core ingredient.</p><p>The tooltip shows clearly that it cannot be substituted.</p>",
-        allergens: ["dairy", "peanut"],
-        diets: [],
-        cursorTarget: "Thai Peanut Noodles",
-        tooltipItem: "Thai Peanut Noodles",
-        progressText: "Red = contains allergens that cannot be removed"
-      },
-      {
-        title: "Step 5: Cross-Contamination Warnings",
-        description: "<p>The yellow ⚠️ badge indicates cross-contamination risk.</p><p><strong>Grilled Chicken</strong> doesn't contain soy, but it's prepared in an area with soy cross-contamination.</p><p>This helps you make fully informed decisions.</p>",
+        title: "4. Cross-Contamination Warnings",
+        description: "<p>The yellow ⚠️ badge warns about cross-contamination risk.</p><p><strong>Grilled Chicken</strong> is prepared near soy-containing ingredients.</p>",
         allergens: ["soy"],
         diets: [],
-        cursorTarget: "Grilled Chicken Breast",
-        tooltipItem: "Grilled Chicken Breast",
-        progressText: "⚠️ Yellow badge = cross-contamination warning"
+        managerMode: false,
+        cursorTarget: { type: 'overlay', id: 'grilled-chicken' },
+        textbox: {
+          title: "Cross-Contamination Alert",
+          content: "Yellow warning badges show dishes that may have allergen cross-contact during preparation",
+          position: { top: '35%', left: '5%' }
+        },
+        duration: 1
       },
       {
-        title: "Step 6: Dietary Preferences",
-        description: "<p>You can also filter by dietary preferences like Vegan, Vegetarian, Pescatarian, Kosher, or Halal.</p><p>Let's add <strong>Vegan</strong> to see which items meet that requirement.</p>",
-        allergens: [],
-        diets: ["Vegan"],
-        cursorTarget: "Fresh Fruit Plate",
-        tooltipItem: "Fresh Fruit Plate",
-        progressText: "Dietary preference selected: 🌱 Vegan"
-      },
-      {
-        title: "Step 7: Combined Filtering",
-        description: "<p>Combine allergens and dietary preferences for precise filtering.</p><p>With dairy allergy + vegan diet, items must pass BOTH requirements to be green.</p><p>Items like <strong>Vegetable Stir Fry</strong> are vegan but contain soy.</p>",
-        allergens: ["dairy"],
-        diets: ["Vegan"],
-        cursorTarget: "Vegetable Stir Fry",
-        tooltipItem: "Vegetable Stir Fry",
-        progressText: "Filtering by both allergens AND dietary preferences"
-      },
-      {
-        title: "Step 8: The Info Badge",
-        description: "<p>Every menu item has an info badge (ⓘ) you can click.</p><p>This shows complete allergen and dietary information.</p><p>All tooltips work exactly as they do in the real menu viewer.</p>",
-        allergens: ["dairy", "wheat"],
-        diets: [],
-        cursorTarget: "Margherita Pizza",
-        tooltipItem: "Margherita Pizza",
-        progressText: "Click the ⓘ badge on any item for full details"
-      },
-      {
-        title: "Complete Feature Set",
-        description: "<p>Clarivore gives you:</p><p>✓ Visual color-coding at a glance</p><p>✓ Detailed allergen information</p><p>✓ Removable vs. non-removable indicators</p><p>✓ Cross-contamination warnings</p><p>✓ Dietary preference filtering</p><p><strong>All working together</strong> to help you dine safely.</p>",
+        title: "5. Multiple Allergens",
+        description: "<p>Select multiple allergens to see combined safety status.</p><p>Now we're filtering for both <strong>dairy</strong> and <strong>peanut</strong>.</p>",
         allergens: ["dairy", "peanut"],
         diets: [],
+        managerMode: false,
+        cursorTarget: { type: 'allergen', value: 'dairy' },
+        textbox: {
+          title: "Multiple Allergen Filtering",
+          content: "Select multiple allergens to see which dishes are safe for all of them",
+          position: { top: '20%', right: '5%' }
+        },
+        duration: 1
+      },
+      {
+        title: "6. Dietary Preferences",
+        description: "<p>You can also filter by dietary preferences.</p><p>Let's add <strong>Vegan</strong> to see which items meet that requirement.</p>",
+        allergens: [],
+        diets: ["Vegan"],
+        managerMode: false,
+        cursorTarget: { type: 'diet', value: 'Vegan' },
+        textbox: {
+          title: "Dietary Filtering",
+          content: "Filter by Vegan, Vegetarian, Pescatarian, Kosher, or Halal preferences",
+          position: { top: '25%', left: '5%' }
+        },
+        duration: 1
+      },
+      {
+        title: "7. Combined Filtering",
+        description: "<p>Combine allergens and dietary preferences for precise filtering.</p><p>Items must pass BOTH requirements to show green.</p>",
+        allergens: ["dairy"],
+        diets: ["Vegan"],
+        managerMode: false,
+        cursorTarget: { type: 'overlay', id: 'garden-salad' },
+        textbox: {
+          title: "Combined Filters",
+          content: "Dishes are evaluated against both allergen safety AND dietary requirements",
+          position: { top: '40%', right: '5%' }
+        },
+        duration: 1
+      },
+      {
+        title: "8. Manager Mode",
+        description: "<p>Now let's see how restaurant managers use Clarivore.</p><p>Managers click <strong>Manager Edit</strong> to enter edit mode.</p>",
+        allergens: [],
+        diets: [],
+        managerMode: true,
+        cursorTarget: { type: 'button', id: 'managerButton' },
+        textbox: {
+          title: "Restaurant Manager Tools",
+          content: "Restaurant managers can edit menus in real-time to keep allergen info current",
+          position: { top: '20%', left: '5%' }
+        },
+        duration: 1
+      },
+      {
+        title: "9. Creating Dish Overlays",
+        description: "<p>Managers drag to create overlay boxes around menu items.</p><p>Let's create a new dish overlay...</p>",
+        allergens: [],
+        diets: [],
+        managerMode: true,
+        cursorTarget: { type: 'drag', start: { x: 10, y: 78 }, end: { x: 35, y: 88 } },
+        textbox: {
+          title: "Map Menu Items",
+          content: "Draw boxes around dishes on your menu to map them in the system",
+          position: { top: '50%', right: '5%' }
+        },
+        duration: 1.5
+      },
+      {
+        title: "10. Resizing Overlays",
+        description: "<p>Overlays can be resized for perfect alignment.</p><p>Managers drag the edges to adjust the size...</p>",
+        allergens: [],
+        diets: [],
+        managerMode: true,
+        cursorTarget: { type: 'resize', id: 'margherita-pizza', edge: 'se' },
+        textbox: {
+          title: "Adjust Overlay Size",
+          content: "Resize overlays by dragging edges and corners for perfect positioning",
+          position: { top: '70%', left: '5%' }
+        },
+        duration: 1
+      },
+      {
+        title: "11. Adding Dish Names",
+        description: "<p>Click an overlay to open the dish editor.</p><p>Managers can name each dish...</p>",
+        allergens: [],
+        diets: [],
+        managerMode: true,
+        cursorTarget: { type: 'overlay', id: 'margherita-pizza' },
+        showDishEditor: true,
+        dishEditorContent: 'name',
+        textbox: {
+          title: "Name Your Dishes",
+          content: "Give each dish a clear name so diners can easily identify it",
+          position: { top: '30%', left: '5%' }
+        },
+        duration: 1
+      },
+      {
+        title: "12. AI Ingredient Assistant",
+        description: "<p>The <strong>AI Ingredient Helper</strong> analyzes dishes automatically.</p><p>Click to let AI extract ingredients...</p>",
+        allergens: [],
+        diets: [],
+        managerMode: true,
+        cursorTarget: { type: 'button', id: 'aiHelperButton' },
+        showDishEditor: true,
+        dishEditorContent: 'ai-button',
+        textbox: {
+          title: "AI-Powered Analysis",
+          content: "Let AI analyze your dish and automatically extract all ingredients",
+          position: { top: '25%', right: '5%' }
+        },
+        duration: 1
+      },
+      {
+        title: "13. Ingredient List Generation",
+        description: "<p>AI populates the ingredient table with complete information.</p><p>All allergens and dietary info are detected automatically.</p>",
+        allergens: [],
+        diets: [],
+        managerMode: true,
         cursorTarget: null,
-        tooltipItem: null,
-        progressText: "Scroll down to create your profile"
+        showDishEditor: true,
+        dishEditorContent: 'ingredients',
+        textbox: {
+          title: "AI-Generated Ingredients",
+          content: "AI identifies all ingredients, allergens, and dietary compatibility automatically",
+          position: { top: '35%', left: '5%' }
+        },
+        duration: 1.5
+      },
+      {
+        title: "14. Manual Ingredient Editing",
+        description: "<p>Managers can review and edit ingredients for accuracy.</p><p>Add, remove, or modify any ingredient...</p>",
+        allergens: [],
+        diets: [],
+        managerMode: true,
+        cursorTarget: { type: 'input', id: 'ingredientInput' },
+        showDishEditor: true,
+        dishEditorContent: 'ingredients',
+        textbox: {
+          title: "Review & Adjust",
+          content: "Manually edit ingredients and allergen tags for complete accuracy",
+          position: { top: '50%', right: '5%' }
+        },
+        duration: 1
+      },
+      {
+        title: "15. Cross-Contamination Warnings",
+        description: "<p>Managers can flag dishes with cross-contamination risk.</p><p>This helps diners make fully informed decisions.</p>",
+        allergens: [],
+        diets: [],
+        managerMode: true,
+        cursorTarget: { type: 'checkbox', id: 'crossContamCheck' },
+        showDishEditor: true,
+        dishEditorContent: 'cross-contam',
+        textbox: {
+          title: "Add Warning Flags",
+          content: "Mark dishes that may have cross-contact with allergens during preparation",
+          position: { top: '60%', left: '5%' }
+        },
+        duration: 1
+      },
+      {
+        title: "16. Dietary Classification",
+        description: "<p>Managers mark dishes as Vegan, Vegetarian, etc.</p><p>This helps diners filter by dietary preferences.</p>",
+        allergens: [],
+        diets: [],
+        managerMode: true,
+        cursorTarget: { type: 'checkbox', id: 'veganCheck' },
+        showDishEditor: true,
+        dishEditorContent: 'diets',
+        textbox: {
+          title: "Dietary Options",
+          content: "Tag dishes with dietary classifications like Vegan, Vegetarian, Kosher, and more",
+          position: { top: '70%', right: '5%' }
+        },
+        duration: 1
+      },
+      {
+        title: "17. Saving Changes",
+        description: "<p>Click <strong>Save</strong> to publish changes instantly.</p><p>Updates are immediately visible to all diners.</p>",
+        allergens: [],
+        diets: [],
+        managerMode: true,
+        cursorTarget: { type: 'button', id: 'saveButton' },
+        showDishEditor: true,
+        dishEditorContent: 'save',
+        textbox: {
+          title: "Instant Publishing",
+          content: "Changes are saved instantly and visible to diners immediately",
+          position: { top: '30%', left: '5%' }
+        },
+        duration: 1
+      },
+      {
+        title: "18. Complete System",
+        description: "<p>Clarivore provides:</p><p>✓ Visual safety indicators for diners<br>✓ Detailed allergen information<br>✓ Cross-contamination warnings<br>✓ Dietary preference filtering<br>✓ Real-time menu management for restaurants<br>✓ AI-powered ingredient analysis</p><p><strong>Everything you need</strong> for safe, confident dining.</p>",
+        allergens: ["dairy", "peanut"],
+        diets: [],
+        managerMode: false,
+        cursorTarget: null,
+        textbox: null,
+        duration: 1
       }
     ];
 
-    // Animation and scroll handling
+    // Animation
     let currentSceneIndex = 0;
 
     function updateScene() {
-      const showcaseSection = document.querySelector('.showcase-section');
+      const showcaseSection = document.getElementById('showcaseSection');
       const rect = showcaseSection.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
 
@@ -942,10 +1230,21 @@
         progress = Math.abs(rect.top) / (rect.height - viewportHeight);
       }
 
-      const sceneIndex = Math.min(
-        Math.floor(progress * SCENES.length),
-        SCENES.length - 1
-      );
+      // Calculate total duration
+      const totalDuration = SCENES.reduce((sum, scene) => sum + scene.duration, 0);
+      let currentTime = progress * totalDuration;
+
+      // Find current scene
+      let accumulatedTime = 0;
+      let sceneIndex = 0;
+      for (let i = 0; i < SCENES.length; i++) {
+        if (currentTime < accumulatedTime + SCENES[i].duration) {
+          sceneIndex = i;
+          break;
+        }
+        accumulatedTime += SCENES[i].duration;
+        sceneIndex = i;
+      }
 
       if (sceneIndex !== currentSceneIndex) {
         currentSceneIndex = sceneIndex;
@@ -953,19 +1252,148 @@
       }
 
       updateCursor();
+      updateTextbox();
     }
 
     function applyScene(scene) {
       document.getElementById('sceneTitle').textContent = scene.title;
       document.getElementById('sceneDescription').innerHTML = scene.description;
-      document.getElementById('progressText').textContent = scene.progressText;
 
       state.allergens = [...scene.allergens];
       state.diets = [...scene.diets];
+      state.managerMode = scene.managerMode;
 
-      renderAllergenSelector();
-      renderLayer();
-      hideTooltip();
+      renderSelectors();
+      renderOverlays();
+
+      // Toggle manager mode UI
+      const managerToggle = document.getElementById('managerToggle');
+      const managerButton = document.getElementById('managerButton');
+      if (scene.managerMode || currentSceneIndex >= 8) {
+        managerToggle.classList.add('visible');
+      } else {
+        managerToggle.classList.remove('visible');
+      }
+
+      if (scene.managerMode) {
+        managerButton.classList.add('active');
+        managerButton.textContent = 'Exit Editor';
+      } else {
+        managerButton.classList.remove('active');
+        managerButton.textContent = 'Manager Edit';
+      }
+
+      // Show/hide dish editor
+      const dishEditor = document.getElementById('dishEditorModal');
+      if (scene.showDishEditor) {
+        renderDishEditor(scene.dishEditorContent);
+        dishEditor.classList.add('visible');
+      } else {
+        dishEditor.classList.remove('visible');
+      }
+    }
+
+    function renderDishEditor(content) {
+      const container = document.getElementById('dishEditorContent');
+
+      if (content === 'name') {
+        container.innerHTML = `
+          <label style="display: block; margin-bottom: 8px; color: var(--muted); font-size: 0.9rem;">Dish Name</label>
+          <input type="text" class="dish-editor-input" value="Margherita Pizza" placeholder="Enter dish name...">
+          <button class="dish-editor-button">AI Ingredient Helper</button>
+        `;
+      } else if (content === 'ai-button') {
+        container.innerHTML = `
+          <label style="display: block; margin-bottom: 8px; color: var(--muted); font-size: 0.9rem;">Dish Name</label>
+          <input type="text" class="dish-editor-input" value="Margherita Pizza" readonly>
+          <button class="dish-editor-button" id="aiHelperButton" style="background: var(--ok); border-color: #1a7b46;">AI Ingredient Helper</button>
+          <p style="color: var(--muted); font-size: 0.85rem; margin-top: 8px;">Click to analyze this dish with AI</p>
+        `;
+      } else if (content === 'ingredients') {
+        container.innerHTML = `
+          <label style="display: block; margin-bottom: 8px; color: var(--muted); font-size: 0.9rem;">Dish Name</label>
+          <input type="text" class="dish-editor-input" value="Margherita Pizza" readonly>
+          <h4 style="margin: 16px 0 8px; color: var(--brand);">Ingredients</h4>
+          <table class="ingredient-table">
+            <thead>
+              <tr>
+                <th>Ingredient</th>
+                <th>Allergens</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><input type="text" class="ingredient-row-input" value="Tomato Sauce" id="ingredientInput"></td>
+                <td>
+                  <div class="allergen-checkboxes">
+                    <label class="allergen-checkbox-label"><input type="checkbox"> 🥛 Dairy</label>
+                    <label class="allergen-checkbox-label"><input type="checkbox"> 🌾 Wheat</label>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td><input type="text" class="ingredient-row-input" value="Mozzarella Cheese"></td>
+                <td>
+                  <div class="allergen-checkboxes">
+                    <label class="allergen-checkbox-label"><input type="checkbox" checked> 🥛 Dairy</label>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td><input type="text" class="ingredient-row-input" value="Pizza Dough"></td>
+                <td>
+                  <div class="allergen-checkboxes">
+                    <label class="allergen-checkbox-label"><input type="checkbox" checked> 🌾 Wheat</label>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td><input type="text" class="ingredient-row-input" value="Fresh Basil"></td>
+                <td>
+                  <div class="allergen-checkboxes">
+                    <label class="allergen-checkbox-label"><input type="checkbox"> None</label>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <button class="dish-editor-button secondary">+ Add Ingredient</button>
+        `;
+      } else if (content === 'cross-contam') {
+        container.innerHTML = `
+          <h4 style="margin: 0 0 12px; color: var(--brand);">Cross-Contamination</h4>
+          <label style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; cursor: pointer;">
+            <input type="checkbox" id="crossContamCheck">
+            <span>This dish may have cross-contact with allergens</span>
+          </label>
+          <p style="color: var(--muted); font-size: 0.85rem; margin: 8px 0;">Select allergens that may cross-contaminate:</p>
+          <div class="allergen-checkboxes">
+            <label class="allergen-checkbox-label"><input type="checkbox"> 🥛 Dairy</label>
+            <label class="allergen-checkbox-label"><input type="checkbox"> 🥜 Peanut</label>
+            <label class="allergen-checkbox-label"><input type="checkbox"> 🫛 Soy</label>
+          </div>
+        `;
+      } else if (content === 'diets') {
+        container.innerHTML = `
+          <h4 style="margin: 0 0 12px; color: var(--brand);">Dietary Classifications</h4>
+          <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 12px;">Select all that apply:</p>
+          <div class="diet-checkboxes">
+            <label class="diet-checkbox-label"><input type="checkbox"> 🌱 Vegan</label>
+            <label class="diet-checkbox-label"><input type="checkbox" checked id="veganCheck"> 🥬 Vegetarian</label>
+            <label class="diet-checkbox-label"><input type="checkbox"> 🐟 Pescatarian</label>
+            <label class="diet-checkbox-label"><input type="checkbox"> ✡️ Kosher</label>
+            <label class="diet-checkbox-label"><input type="checkbox"> ☪️ Halal</label>
+          </div>
+        `;
+      } else if (content === 'save') {
+        container.innerHTML = `
+          <div style="background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+            <p style="color: var(--ok); margin: 0; font-weight: 600;">✓ All changes saved</p>
+          </div>
+          <button class="dish-editor-button" id="saveButton" style="background: var(--ok); border-color: #1a7b46;">Save Changes</button>
+          <button class="dish-editor-button secondary">Cancel</button>
+        `;
+      }
     }
 
     function updateCursor() {
@@ -974,37 +1402,69 @@
 
       if (!scene.cursorTarget) {
         cursor.classList.remove('visible');
-        if (!scene.tooltipItem) hideTooltip();
         return;
       }
 
       cursor.classList.add('visible');
 
-      const targetOverlay = document.querySelector(`[data-item-id="${scene.cursorTarget}"]`);
-      if (targetOverlay) {
-        const rect = targetOverlay.getBoundingClientRect();
-        const menuWrapper = document.querySelector('.menu-wrapper');
-        const wrapperRect = menuWrapper.getBoundingClientRect();
+      const target = scene.cursorTarget;
+      const canvas = document.querySelector('.menu-canvas');
+      const canvasRect = canvas.getBoundingClientRect();
 
-        cursor.style.left = (rect.left - wrapperRect.left + rect.width / 2 - 20) + 'px';
-        cursor.style.top = (rect.top - wrapperRect.top + rect.height / 2 - 20) + 'px';
-      }
-
-      if (scene.tooltipItem) {
-        const item = DEMO_ITEMS.find(i => i.id === scene.tooltipItem);
-        if (item) {
-          const overlay = document.querySelector(`[data-item-id="${item.id}"]`);
-          if (overlay) {
-            showTooltip(item, { currentTarget: overlay });
-          }
+      if (target.type === 'allergen' || target.type === 'diet') {
+        const chip = document.querySelector(`[data-${target.type}="${target.value}"]`);
+        if (chip) {
+          const rect = chip.getBoundingClientRect();
+          cursor.style.left = (rect.left - canvasRect.left + rect.width / 2 - 20) + 'px';
+          cursor.style.top = (rect.top - canvasRect.top + rect.height / 2 - 20) + 'px';
         }
+      } else if (target.type === 'overlay') {
+        const overlay = document.querySelector(`[data-item-id="${target.id}"]`);
+        if (overlay) {
+          const rect = overlay.getBoundingClientRect();
+          cursor.style.left = (rect.left - canvasRect.left + rect.width / 2 - 20) + 'px';
+          cursor.style.top = (rect.top - canvasRect.top + rect.height / 2 - 20) + 'px';
+        }
+      } else if (target.type === 'button') {
+        const button = document.getElementById(target.id);
+        if (button) {
+          const rect = button.getBoundingClientRect();
+          cursor.style.left = (rect.left - canvasRect.left + rect.width / 2 - 20) + 'px';
+          cursor.style.top = (rect.top - canvasRect.top + rect.height / 2 - 20) + 'px';
+        }
+      } else if (target.type === 'drag') {
+        // Animate drag from start to end
+        const startX = (canvasRect.width * target.start.x / 100);
+        const startY = (canvasRect.height * target.start.y / 100);
+        cursor.style.left = startX + 'px';
+        cursor.style.top = startY + 'px';
       }
+    }
+
+    function updateTextbox() {
+      const scene = SCENES[currentSceneIndex];
+      const textbox = document.getElementById('floatingTextbox');
+
+      if (!scene.textbox) {
+        textbox.classList.remove('visible');
+        return;
+      }
+
+      document.getElementById('textboxTitle').textContent = scene.textbox.title;
+      document.getElementById('textboxContent').textContent = scene.textbox.content;
+
+      // Position textbox
+      Object.keys(scene.textbox.position).forEach(key => {
+        textbox.style[key] = scene.textbox.position[key];
+      });
+
+      textbox.classList.add('visible');
     }
 
     // Initialize
     function init() {
-      renderAllergenSelector();
-      renderLayer();
+      renderSelectors();
+      renderOverlays();
       applyScene(SCENES[0]);
 
       let ticking = false;
@@ -1017,13 +1477,6 @@
           ticking = true;
         }
       }, { passive: true });
-
-      const scrollIndicator = document.querySelector('.scroll-indicator');
-      if (scrollIndicator) {
-        scrollIndicator.addEventListener('click', () => {
-          window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
-        });
-      }
 
       updateScene();
     }
