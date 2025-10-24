@@ -2367,34 +2367,47 @@ async function openAiBarcodeScanner(rowIdx){
     return;
   }
 
-  // Find the row-specific brand results container
-  const rowElement=aiAssistTableBody?.querySelector(`tr[data-index="${rowIdx}"]`);
-  if(!rowElement) return;
-  const rowBrandResults=rowElement.querySelector('.aiRowBrandResults');
-  if(!rowBrandResults) return;
+  // Create a full-screen modal overlay for the scanner
+  const scannerModal = document.createElement('div');
+  scannerModal.id = 'barcodeScannerModal';
+  scannerModal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.95);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  `;
 
-  // Show barcode scanner UI
-  rowBrandResults.classList.add('show');
-  rowBrandResults.innerHTML=`
-    <div class="aiBarcodeScannerContainer">
-      <div style="margin-bottom:12px">
-        <label style="display:block;margin-bottom:6px;font-weight:500">Ingredient: <strong>${esc(ingredientName)}</strong></label>
-        <p style="color:var(--muted);font-size:0.9rem;margin-bottom:12px">Point your camera at the product barcode</p>
+  scannerModal.innerHTML = `
+    <div style="width:100%;max-width:600px;display:flex;flex-direction:column;gap:16px">
+      <div style="text-align:center">
+        <h3 style="margin:0 0 8px 0;font-size:1.4rem;color:#fff">Scan Barcode</h3>
+        <p style="margin:0;color:#a8b2d6;font-size:0.95rem">Ingredient: <strong style="color:#fff">${esc(ingredientName)}</strong></p>
+        <p style="margin:8px 0 0 0;color:#a8b2d6;font-size:0.9rem">Point your camera at the product barcode</p>
       </div>
-      <div style="position:relative;background:#000;border-radius:12px;overflow:hidden;margin-bottom:12px;min-height:300px">
-        <video id="barcodeScannerVideo" autoplay playsinline muted style="width:100%;min-height:300px;max-height:400px;display:block;object-fit:cover"></video>
-        <div id="barcodeScannerOverlay" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;height:60%;border:2px solid #4c5ad4;border-radius:8px;pointer-events:none"></div>
-        <div id="barcodeScannerStatus" style="position:absolute;top:12px;left:12px;right:12px;background:rgba(11,16,32,0.9);padding:8px 12px;border-radius:8px;color:#fff;text-align:center;font-size:0.9rem">Initializing camera...</div>
+      <div style="position:relative;background:#000;border-radius:16px;overflow:hidden;width:100%">
+        <video id="barcodeScannerVideo" autoplay playsinline muted style="width:100%;height:60vh;max-height:500px;display:block;object-fit:cover"></video>
+        <div id="barcodeScannerOverlay" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:70%;height:40%;border:3px solid #4c5ad4;border-radius:12px;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,0.5)"></div>
+        <div id="barcodeScannerStatus" style="position:absolute;top:16px;left:16px;right:16px;background:rgba(11,16,32,0.95);padding:12px 16px;border-radius:12px;color:#fff;text-align:center;font-size:1rem;font-weight:500">Initializing camera...</div>
       </div>
-      <div style="display:flex;gap:8px;justify-content:center">
-        <button type="button" class="btn aiBarcodeScannerCancel" style="background:#301424;border-color:#4c2138">Cancel</button>
+      <div style="display:flex;gap:12px;justify-content:center">
+        <button type="button" class="btn aiBarcodeScannerCancel" style="background:#ef4444;border-color:#dc2626;padding:12px 32px;font-size:1rem">Cancel</button>
       </div>
     </div>
   `;
 
-  const video = rowBrandResults.querySelector('#barcodeScannerVideo');
-  const statusDiv = rowBrandResults.querySelector('#barcodeScannerStatus');
-  const cancelBtn = rowBrandResults.querySelector('.aiBarcodeScannerCancel');
+  document.body.appendChild(scannerModal);
+
+  const video = scannerModal.querySelector('#barcodeScannerVideo');
+  const statusDiv = scannerModal.querySelector('#barcodeScannerStatus');
+  const cancelBtn = scannerModal.querySelector('.aiBarcodeScannerCancel');
 
   // Ensure video attributes are set for mobile compatibility
   video.setAttribute('autoplay', '');
@@ -2416,11 +2429,14 @@ async function openAiBarcodeScanner(rowIdx){
     }
   };
 
-  cancelBtn.addEventListener('click', () => {
+  const closeModal = () => {
     stopScanning();
-    rowBrandResults.classList.remove('show');
-    rowBrandResults.innerHTML = '';
-  });
+    if(scannerModal && scannerModal.parentNode){
+      scannerModal.parentNode.removeChild(scannerModal);
+    }
+  };
+
+  cancelBtn.addEventListener('click', closeModal);
 
   try {
     // Check if ZXing library is loaded
@@ -2465,12 +2481,11 @@ async function openAiBarcodeScanner(rowIdx){
         statusDiv.textContent = `Found barcode: ${barcode}`;
         statusDiv.style.background = 'rgba(34,197,94,0.9)';
 
-        // Stop scanning
-        stopScanning();
+        // Stop scanning and close modal
+        closeModal();
 
         // Look up product by barcode
         aiAssistSetStatus('Looking up product by barcode…');
-        rowBrandResults.innerHTML='<div>Searching product database…</div>';
 
         try {
           const product = await fetchProductByBarcode(barcode);
@@ -2491,30 +2506,12 @@ async function openAiBarcodeScanner(rowIdx){
             showBrandConfirmationModal(suggestion, () => {
               applyBrandSuggestionConfirmed(rowIdx, suggestion);
             });
+            aiAssistSetStatus('Product found! Review and confirm.','success');
           } else {
-            rowBrandResults.innerHTML=`
-              <div style="text-align:center;padding:20px">
-                <p style="margin-bottom:12px;color:#dc5252">Product not found for barcode: ${esc(barcode)}</p>
-                <p style="margin-bottom:12px;font-size:0.9rem;color:var(--muted)">The product may not be in the Open Food Facts database yet.</p>
-                <button type="button" class="btn aiBarcodeScanAgain">Scan another barcode</button>
-              </div>
-            `;
-            rowBrandResults.querySelector('.aiBarcodeScanAgain').addEventListener('click', () => {
-              openAiBarcodeScanner(rowIdx);
-            });
-            aiAssistSetStatus('Product not found in database.','warn');
+            aiAssistSetStatus('Product not found in database. Try scanning again or search manually.','warn');
           }
         } catch(err){
           console.error('Barcode lookup failed', err);
-          rowBrandResults.innerHTML=`
-            <div style="text-align:center;padding:20px">
-              <p style="margin-bottom:12px;color:#dc5252">Failed to look up product</p>
-              <button type="button" class="btn aiBarcodeScanAgain">Try again</button>
-            </div>
-          `;
-          rowBrandResults.querySelector('.aiBarcodeScanAgain').addEventListener('click', () => {
-            openAiBarcodeScanner(rowIdx);
-          });
           aiAssistSetStatus('Barcode lookup failed. Try again.','warn');
         }
       }
