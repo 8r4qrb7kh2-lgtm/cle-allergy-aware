@@ -52,7 +52,7 @@ Return ONLY a JSON object with this structure:
   "allergens": ["dairy", "egg", "wheat", "gluten", "fish", "shellfish", "soy", "tree_nut", "peanut"],
   "removable": [],
   "crossContamination": [],
-  "diets": ["Vegan", "Vegetarian", "Pescatarian", "Kosher", "Halal"],
+  "diets": ["Vegan", "Vegetarian", "Pescatarian"],
   "details": {}
 }
 

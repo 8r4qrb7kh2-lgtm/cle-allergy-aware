@@ -759,13 +759,13 @@
   <script>
     // Constants
     const ALLERGENS = ["dairy", "egg", "peanut", "tree nut", "shellfish", "fish", "soy", "sesame", "wheat"];
-    const DIETS = ["Vegan", "Vegetarian", "Pescatarian", "Kosher", "Halal"];
+    const DIETS = ["Vegan", "Vegetarian", "Pescatarian"];
     const ALLERGEN_EMOJI = {
       'dairy': '🥛', 'egg': '🥚', 'peanut': '🥜', 'tree nut': '🌰',
       'shellfish': '🦐', 'fish': '🐟', 'soy': '🫛', 'sesame': '🫘', 'wheat': '🌾'
     };
     const DIET_EMOJI = {
-      'Vegan': '🌱', 'Vegetarian': '🥬', 'Pescatarian': '🐟', 'Kosher': '✡️', 'Halal': '☪️'
+      'Vegan': '🌱', 'Vegetarian': '🥬', 'Pescatarian': '🐟'
     };
 
     // Demo menu items
@@ -832,7 +832,7 @@
         allergens: [],
         removable: [],
         crossContamination: [],
-        diets: ["Vegan", "Vegetarian", "Pescatarian", "Kosher", "Halal"],
+        diets: ["Vegan", "Vegetarian", "Pescatarian"],
         ingredients: []
       }
     ];
@@ -1028,7 +1028,7 @@
         cursorTarget: { type: 'diet', value: 'Vegan' },
         textbox: {
           title: "Dietary Filtering",
-          content: "Filter by Vegan, Vegetarian, Pescatarian, Kosher, or Halal preferences",
+          content: "Filter by Vegan, Vegetarian, or Pescatarian preferences",
           position: { top: '25%', left: '5%' }
         },
         duration: 1
@@ -1180,7 +1180,7 @@
         dishEditorContent: 'diets',
         textbox: {
           title: "Dietary Options",
-          content: "Tag dishes with dietary classifications like Vegan, Vegetarian, Kosher, and more",
+          content: "Tag dishes with dietary classifications like Vegan, Vegetarian, and Pescatarian",
           position: { top: '70%', right: '5%' }
         },
         duration: 1
@@ -1381,8 +1381,6 @@
             <label class="diet-checkbox-label"><input type="checkbox"> 🌱 Vegan</label>
             <label class="diet-checkbox-label"><input type="checkbox" checked id="veganCheck"> 🥬 Vegetarian</label>
             <label class="diet-checkbox-label"><input type="checkbox"> 🐟 Pescatarian</label>
-            <label class="diet-checkbox-label"><input type="checkbox"> ✡️ Kosher</label>
-            <label class="diet-checkbox-label"><input type="checkbox"> ☪️ Halal</label>
           </div>
         `;
       } else if (content === 'save') {

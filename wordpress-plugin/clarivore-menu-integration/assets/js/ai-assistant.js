@@ -345,8 +345,8 @@
                 return true;
             }
 
-            // Enable if missing any dietary preferences (i.e., not all 5 preferences are met)
-            const allDietaryPreferences = ['Vegan', 'Vegetarian', 'Pescatarian', 'Kosher', 'Halal'];
+            // Enable if missing any dietary preferences (i.e., not all 3 preferences are met)
+            const allDietaryPreferences = ['Vegan', 'Vegetarian', 'Pescatarian'];
             const missingPreferences = allDietaryPreferences.some(pref => !diets.includes(pref));
 
             return missingPreferences;
@@ -470,7 +470,7 @@
         }
 
         function renderDietCheckboxes(diets, index) {
-            const dietList = ['Vegan', 'Vegetarian', 'Pescatarian', 'Kosher', 'Halal'];
+            const dietList = ['Vegan', 'Vegetarian', 'Pescatarian'];
 
             return dietList.map(diet => `
                 <label>

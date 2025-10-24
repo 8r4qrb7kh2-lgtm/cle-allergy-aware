@@ -484,7 +484,7 @@ if (!slug) {
 document.body.style.display='none';
 
 const ALLERGENS=["dairy","egg","peanut","tree nut","shellfish","fish","soy","sesame","wheat"];
-const DIETS=["Vegan","Vegetarian","Pescatarian","Kosher","Halal"];
+const DIETS=["Vegan","Vegetarian","Pescatarian"];
 const ALLERGEN_ALIASES={
   milk:'dairy',
   lactose:'dairy',
@@ -648,7 +648,7 @@ function updateFullScreenAllergySummary(){
     // Dietary preferences with emoji
     if(selectedDiets.length){
       const dietBadges=selectedDiets.map(d=>{
-        const emoji=d==='Vegan'?'🌱':d==='Vegetarian'?'🥬':d==='Pescatarian'?'🐟':d==='Kosher'?'✡️':d==='Halal'?'☪️':'🍽️';
+        const emoji=d==='Vegan'?'🌱':d==='Vegetarian'?'🥬':d==='Pescatarian'?'🐟':'🍽️';
         return `<span style="display:inline-flex;align-items:center;gap:3px;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);border-radius:999px;padding:3px 8px;font-size:0.8rem;white-space:nowrap;"><span>${emoji}</span><span>${esc(d)}</span></span>`;
       }).join('');
       html+=`<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:${uniqueKeys.length?'5px':'0'}"><span class="label">Diets:</span>${dietBadges}</div>`;
@@ -2570,15 +2570,6 @@ async function openAiBarcodeScanner(rowIdx){
               }
             }
 
-            // Kosher detection
-            if(labels.some(l => l.includes('kosher')) || productText.includes('kosher')) {
-              diets.push('Kosher');
-            }
-
-            // Halal detection
-            if(labels.some(l => l.includes('halal')) || productText.includes('halal')) {
-              diets.push('Halal');
-            }
 
             // Convert to the format expected by applyBrandSuggestionConfirmed
             const suggestion = {
@@ -3503,8 +3494,6 @@ function tooltipBodyHTML(item,sel,userDiets){
         'Vegan': '🌱',
         'Vegetarian': '🥬',
         'Pescatarian': '🐟',
-        'Kosher': '✡️',
-        'Halal': '☪️'
       }[userDiet] || '✓';
       const status = isDietMet ? 'is' : 'is not';
       const dietLower = userDiet.toLowerCase();
@@ -3800,7 +3789,7 @@ function renderSavedDiets(el){
   }
   const row=div('','chips');
   saved.forEach(d=>{
-    const emoji=d==='Vegan'?'🌱':d==='Vegetarian'?'🥬':d==='Pescatarian'?'🐟':d==='Kosher'?'✡️':d==='Halal'?'☪️':'🍽️';
+    const emoji=d==='Vegan'?'🌱':d==='Vegetarian'?'🥬':d==='Pescatarian'?'🐟':'🍽️';
     row.appendChild(div(`${emoji} ${esc(d)}`,'chip active'));
   });
   el.appendChild(row);
@@ -3863,7 +3852,7 @@ function renderDietSelector(el){
   const sel=new Set(state.diets||[]);
   DIETS.forEach(diet=>{
     const isActive=sel.has(diet);
-    const emoji=diet==='Vegan'?'🌱':diet==='Vegetarian'?'🥬':diet==='Pescatarian'?'🐟':diet==='Kosher'?'✡️':diet==='Halal'?'☪️':'🍽️';
+    const emoji=diet==='Vegan'?'🌱':diet==='Vegetarian'?'🥬':diet==='Pescatarian'?'🐟':'🍽️';
     const c=div(`${emoji} ${esc(diet)}`,'chip clickable'+(isActive?' active':''));
     c.setAttribute('role','button');
     c.setAttribute('tabindex','0');

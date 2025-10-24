@@ -42,7 +42,7 @@ IMPORTANT INSTRUCTIONS:
 2. If the image shows preparation instructions (like "arrange cheese, add salami, etc."), extract each mentioned food item as a separate ingredient
 3. Create a SEPARATE entry for EACH distinct ingredient (e.g., "spinach", "ricotta", "egg", "parsley" should be 4 separate entries, NOT combined)
 4. For each ingredient, identify allergens from this list: dairy, egg, peanut, tree nut, shellfish, fish, gluten, soy, sesame, wheat
-5. Also determine which dietary options the overall dish meets from this list: Vegan, Vegetarian, Pescatarian, Kosher, Halal
+5. Also determine which dietary options the overall dish meets from this list: Vegan, Vegetarian, Pescatarian
 6. Even if the image format is unexpected, extract food items mentioned and return valid JSON
 7. If the image is unclear, indicate that in imageQuality but STILL return valid JSON
 
@@ -59,7 +59,7 @@ Return a JSON object with this exact structure:
       "imageQuality": "good|poor|unreadable"
     }
   ],
-  "dietaryOptions": ["Vegan", "Vegetarian", "Pescatarian", "Kosher", "Halal"],
+  "dietaryOptions": ["Vegan", "Vegetarian", "Pescatarian"],
   "verifiedFromImage": true
 }
 
@@ -67,8 +67,6 @@ DIETARY OPTIONS RULES (IMPORTANT - Be proactive in assigning these):
 - Vegan: Include if ALL ingredients are plant-based (no meat, dairy, eggs, honey, gelatin, or animal-derived additives)
 - Vegetarian: Include if no meat or fish, even if dairy/eggs are present
 - Pescatarian: Include if contains fish/seafood but no other meat, may contain dairy/eggs
-- Kosher: Include if no pork, no shellfish, and no obvious meat+dairy mixing
-- Halal: Include if no pork and no alcohol
 
 EXAMPLE 1: If you see "30 oz spinach, 15 oz cottage cheese, 1 egg, parsley":
 - {"name": "spinach", "allergens": [], ...}
@@ -79,7 +77,7 @@ dietaryOptions: ["Vegetarian"] (not vegan due to dairy/egg)
 
 EXAMPLE 2: If you see "radish, water, vinegar, salt":
 - All plant-based ingredients
-dietaryOptions: ["Vegan", "Vegetarian", "Pescatarian", "Kosher", "Halal"] (all apply since no animal products)
+dietaryOptions: ["Vegan", "Vegetarian", "Pescatarian"] (all apply since no animal products)
 
 EXAMPLE 3: If you see "rapeseed oil, water, egg yolk, vinegar, salt":
 dietaryOptions: ["Vegetarian"] (contains egg, so not vegan)
@@ -91,7 +89,7 @@ Analyze the dish description and extract:
 1. Individual ingredients
 2. Likely brands (if mentioned)
 3. Potential allergens from this list: dairy, egg, peanut, tree nut, shellfish, fish, gluten, soy, sesame, wheat
-4. Dietary options the dish meets from this list: Vegan, Vegetarian, Pescatarian, Kosher, Halal
+4. Dietary options the dish meets from this list: Vegan, Vegetarian, Pescatarian
 
 Return a JSON object with this exact structure:
 {
@@ -103,7 +101,7 @@ Return a JSON object with this exact structure:
       "ingredientsList": ["raw ingredient from label"]
     }
   ],
-  "dietaryOptions": ["Vegan", "Vegetarian", "Pescatarian", "Kosher", "Halal"],
+  "dietaryOptions": ["Vegan", "Vegetarian", "Pescatarian"],
   "verifiedFromImage": false
 }
 
@@ -111,11 +109,9 @@ DIETARY OPTIONS RULES (IMPORTANT - Be proactive in assigning these):
 - Vegan: Include if ALL ingredients are plant-based (no meat, dairy, eggs, honey, gelatin, or animal-derived additives)
 - Vegetarian: Include if no meat or fish, even if dairy/eggs are present
 - Pescatarian: Include if contains fish/seafood but no other meat, may contain dairy/eggs
-- Kosher: Include if no pork, no shellfish, and no obvious meat+dairy mixing
-- Halal: Include if no pork and no alcohol
 
 EXAMPLES:
-- "radish, water, vinegar, salt" → ["Vegan", "Vegetarian", "Pescatarian", "Kosher", "Halal"]
+- "radish, water, vinegar, salt" → ["Vegan", "Vegetarian", "Pescatarian"]
 - "rapeseed oil, water, egg yolk, vinegar, salt" → ["Vegetarian"]
 - "chicken, salt, pepper" → [] (no dietary options apply)
 
