@@ -2381,8 +2381,8 @@ async function openAiBarcodeScanner(rowIdx){
         <label style="display:block;margin-bottom:6px;font-weight:500">Ingredient: <strong>${esc(ingredientName)}</strong></label>
         <p style="color:var(--muted);font-size:0.9rem;margin-bottom:12px">Point your camera at the product barcode</p>
       </div>
-      <div style="position:relative;background:#000;border-radius:12px;overflow:hidden;margin-bottom:12px">
-        <video id="barcodeScannerVideo" style="width:100%;height:auto;display:block;max-height:400px"></video>
+      <div style="position:relative;background:#000;border-radius:12px;overflow:hidden;margin-bottom:12px;min-height:300px">
+        <video id="barcodeScannerVideo" autoplay playsinline muted style="width:100%;min-height:300px;max-height:400px;display:block;object-fit:cover"></video>
         <div id="barcodeScannerOverlay" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;height:60%;border:2px solid #4c5ad4;border-radius:8px;pointer-events:none"></div>
         <div id="barcodeScannerStatus" style="position:absolute;top:12px;left:12px;right:12px;background:rgba(11,16,32,0.9);padding:8px 12px;border-radius:8px;color:#fff;text-align:center;font-size:0.9rem">Initializing camera...</div>
       </div>
@@ -2395,6 +2395,11 @@ async function openAiBarcodeScanner(rowIdx){
   const video = rowBrandResults.querySelector('#barcodeScannerVideo');
   const statusDiv = rowBrandResults.querySelector('#barcodeScannerStatus');
   const cancelBtn = rowBrandResults.querySelector('.aiBarcodeScannerCancel');
+
+  // Ensure video attributes are set for mobile compatibility
+  video.setAttribute('autoplay', '');
+  video.setAttribute('playsinline', '');
+  video.setAttribute('muted', '');
 
   let codeReader = null;
   let scanning = false;
