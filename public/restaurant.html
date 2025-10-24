@@ -2490,6 +2490,37 @@ async function openAiBarcodeScanner(rowIdx){
         try {
           const product = await fetchProductByBarcode(barcode);
           if(product){
+            // Parse allergens from Open Food Facts format (e.g., "en:milk" -> "dairy")
+            const allergenMap = {
+              'milk': 'dairy',
+              'lactose': 'dairy',
+              'eggs': 'egg',
+              'peanuts': 'peanut',
+              'nuts': 'tree nut',
+              'tree-nuts': 'tree nut',
+              'shellfish': 'shellfish',
+              'crustaceans': 'shellfish',
+              'fish': 'fish',
+              'soybeans': 'soy',
+              'soy': 'soy',
+              'sesame': 'sesame',
+              'sesame-seeds': 'sesame',
+              'gluten': 'wheat',
+              'wheat': 'wheat'
+            };
+
+            const parsedAllergens = [];
+            if(Array.isArray(product.allergens_tags)){
+              product.allergens_tags.forEach(tag => {
+                const allergen = tag.replace(/^en:/, '').toLowerCase();
+                if(allergenMap[allergen]){
+                  if(!parsedAllergens.includes(allergenMap[allergen])){
+                    parsedAllergens.push(allergenMap[allergen]);
+                  }
+                }
+              });
+            }
+
             // Convert to the format expected by applyBrandSuggestionConfirmed
             const suggestion = {
               name: product.product_name || product.name || 'Unknown Product',
@@ -2498,7 +2529,7 @@ async function openAiBarcodeScanner(rowIdx){
               image: product.image_url || product.image || '',
               ingredientsImage: product.image_ingredients_url || product.ingredientsImage || '',
               ingredientsList: product.ingredients_text ? [product.ingredients_text] : (product.ingredientsList || []),
-              allergens: product.allergens_tags || product.allergens || [],
+              allergens: parsedAllergens,
               productUrl: `https://world.openfoodfacts.org/product/${barcode}`
             };
 
@@ -2561,6 +2592,9 @@ function showBrandConfirmationModal(suggestion, onConfirm){
   const hasImage = suggestion.ingredientsImage;
   const hasIngredients = suggestion.ingredientsList && suggestion.ingredientsList.length > 0;
 
+  // Lock body scrolling
+  document.body.style.overflow = 'hidden';
+
   // Create modal overlay
   const modal = document.createElement('div');
   modal.style.cssText = `
@@ -2571,10 +2605,11 @@ function showBrandConfirmationModal(suggestion, onConfirm){
     height: 100%;
     background: rgba(0,0,0,0.8);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     z-index: 10000;
-    padding: 20px;
+    padding: 60px 20px 20px 20px;
+    overflow-y: auto;
   `;
 
   const modalContent = document.createElement('div');
@@ -2582,11 +2617,13 @@ function showBrandConfirmationModal(suggestion, onConfirm){
     background: #0c102a;
     border: 2px solid ${hasImage ? '#4c5ad4' : '#dc5252'};
     border-radius: 16px;
-    max-width: 600px;
-    max-height: 90vh;
+    max-width: 95vw;
+    width: 800px;
+    max-height: calc(100vh - 80px);
     overflow-y: auto;
     padding: 24px;
     color: #fff;
+    margin: auto;
   `;
 
   modalContent.innerHTML = `
@@ -2737,12 +2774,14 @@ function showBrandConfirmationModal(suggestion, onConfirm){
   confirmBtn.addEventListener('click', () => {
     if(confirmBtn.disabled) return;
     document.body.removeChild(modal);
+    document.body.style.overflow = ''; // Unlock scrolling
     onConfirm();
   });
 
   // Handle cancel
   const handleCancel = () => {
     document.body.removeChild(modal);
+    document.body.style.overflow = ''; // Unlock scrolling
     aiAssistSetStatus('Brand not applied. Verification required for safety.', 'warn');
   };
 
