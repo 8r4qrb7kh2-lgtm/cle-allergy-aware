@@ -1738,13 +1738,22 @@ function renderAiTable(rows){
     const aiDetectedAllergens = new Set();
     const aiDetectedDiets = new Set();
     brands.forEach(brand => {
+      console.log('Brand data:', brand);
       if(Array.isArray(brand.allergens)){
-        brand.allergens.forEach(a => aiDetectedAllergens.add(norm(a)));
+        brand.allergens.forEach(a => {
+          console.log('Adding allergen to aiDetected:', a, '=> norm:', norm(a));
+          aiDetectedAllergens.add(norm(a));
+        });
       }
       if(Array.isArray(brand.diets)){
-        brand.diets.forEach(d => aiDetectedDiets.add(d));
+        brand.diets.forEach(d => {
+          console.log('Adding diet to aiDetected:', d);
+          aiDetectedDiets.add(d);
+        });
       }
     });
+    console.log('aiDetectedAllergens:', Array.from(aiDetectedAllergens));
+    console.log('aiDetectedDiets:', Array.from(aiDetectedDiets));
 
     const brandsHTML = brands.length > 0 ? brands.map((brand, brandIdx) => {
       console.log(`Rendering brand ${brandIdx}:`, brand);
@@ -1816,6 +1825,7 @@ function renderAiTable(rows){
                 ${ALLERGENS.map(allergen=>{
                   const checked=allergens.has(norm(allergen))?'checked':'';
                   const aiDetected=aiDetectedAllergens.has(norm(allergen))?'aiDetected':'';
+                  console.log(`Allergen ${allergen}: aiDetected="${aiDetected}" (looking for norm(${allergen})="${norm(allergen)}" in`, Array.from(aiDetectedAllergens), ')'  );
                   return `<label class="${aiDetected}"><input type="checkbox" class="aiAllergenCheckbox" value="${esc(allergen)}" ${checked}>${esc(cap(allergen))}</label>`;
                 }).join('')}
               </div>
@@ -1827,6 +1837,7 @@ function renderAiTable(rows){
                   const dietSet = new Set((row.diets||[]).map(d=>d));
                   const checked=dietSet.has(diet)?'checked':'';
                   const aiDetected=aiDetectedDiets.has(diet)?'aiDetected':'';
+                  console.log(`Diet ${diet}: aiDetected="${aiDetected}" (looking for "${diet}" in`, Array.from(aiDetectedDiets), ')');
                   return `<label class="${aiDetected}"><input type="checkbox" class="aiDietCheckbox" value="${esc(diet)}" ${checked}>${esc(diet)}</label>`;
                 }).join('')}
               </div>
