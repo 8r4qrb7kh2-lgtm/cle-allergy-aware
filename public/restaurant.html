@@ -3004,6 +3004,11 @@ function applyBrandSuggestionConfirmed(rowIdx, suggestion){
     }
   });
 
+  // Force a re-render to ensure green styling persists
+  // The brands are now in row.dataset.brands, so they should be picked up
+  const allData = collectAiTableData();
+  renderAiTable(allData);
+
   // Close the inline brand results
   const rowBrandResults=aiAssistTableBody?.querySelector(`tr[data-index="${rowIdx}"] .aiRowBrandResults`);
   if(rowBrandResults){
