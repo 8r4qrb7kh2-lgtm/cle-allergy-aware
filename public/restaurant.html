@@ -2943,7 +2943,8 @@ function applyBrandSuggestionConfirmed(rowIdx, suggestion){
     brandImage: suggestion.image || '',
     ingredientsImage: suggestion.ingredientsImage || '',
     ingredientsList: Array.isArray(suggestion.ingredientsList) ? suggestion.ingredientsList : [],
-    allergens: Array.isArray(suggestion.allergens) ? suggestion.allergens : []
+    allergens: Array.isArray(suggestion.allergens) ? suggestion.allergens : [],
+    diets: Array.isArray(suggestion.diets) ? suggestion.diets : []
   };
   console.log('Adding brand:', newBrand);
   brands.push(newBrand);
