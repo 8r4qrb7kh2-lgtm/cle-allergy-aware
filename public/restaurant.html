@@ -1681,8 +1681,12 @@ function collectAiTableData(){
     const brands=[];
     if(row.dataset.brands){
       try{
-        brands.push(...JSON.parse(row.dataset.brands));
-      }catch(_){}
+        const parsed = JSON.parse(row.dataset.brands);
+        console.log(`Row ${idx} brands from dataset:`, parsed);
+        brands.push(...parsed);
+      }catch(e){
+        console.error(`Failed to parse brands for row ${idx}:`, e);
+      }
     }
 
     data.push({index:idx,name,allergens,diets,brands,confirmed,removable});
@@ -1713,7 +1717,8 @@ function renderAiTable(rows){
           brandImage: memory.brandImage || '',
           ingredientsImage: memory.ingredientsImage || '',
           ingredientsList: memory.ingredientsList || [],
-          allergens: memory.allergens || []
+          allergens: memory.allergens || [],
+          diets: memory.diets || []
         });
         // Also merge allergens from memory
         if((!row.allergens || !row.allergens.length) && memory.allergens){
