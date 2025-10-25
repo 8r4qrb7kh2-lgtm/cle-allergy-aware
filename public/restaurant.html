@@ -2548,10 +2548,31 @@ async function openAiBarcodeScanner(rowIdx){
               });
             }
 
+            // Also scan ingredients text for allergen keywords
+            const ingredientsForAllergens = (product.ingredients_text || '').toLowerCase();
+            const allergenKeywords = {
+              'dairy': ['milk', 'cream', 'butter', 'cheese', 'whey', 'casein', 'lactose'],
+              'egg': ['egg', 'eggs', 'albumin'],
+              'peanut': ['peanut', 'peanuts'],
+              'tree nut': ['almond', 'cashew', 'walnut', 'pecan', 'pistachio', 'hazelnut', 'macadamia'],
+              'soy': ['soy', 'soya', 'tofu', 'edamame'],
+              'wheat': ['wheat', 'wheat flour'],
+              'fish': ['fish', 'anchovy', 'salmon', 'tuna', 'cod'],
+              'shellfish': ['shrimp', 'crab', 'lobster', 'shellfish', 'prawn']
+            };
+
+            for(const [allergen, keywords] of Object.entries(allergenKeywords)){
+              if(!parsedAllergens.includes(allergen)){
+                if(keywords.some(keyword => ingredientsForAllergens.includes(keyword))){
+                  parsedAllergens.push(allergen);
+                }
+              }
+            }
+
             // Infer dietary preferences from product data and allergens
             const diets = [];
             const productName = (product.product_name || '').toLowerCase();
-            const ingredientsText = (product.ingredients_text || '').toLowerCase();
+            const ingredientsText = ingredientsForAllergens;
             const productText = productName + ' ' + ingredientsText;
 
             // Check Open Food Facts labels
@@ -2668,7 +2689,7 @@ function showBrandConfirmationModal(suggestion, onConfirm){
   const hasImage = suggestion.ingredientsImage;
   const hasIngredients = suggestion.ingredientsList && suggestion.ingredientsList.length > 0;
 
-  // Create modal overlay (body scrolling already locked by AI Assistant backdrop)
+  // Create modal overlay with scroll lock
   const modal = document.createElement('div');
   modal.style.cssText = `
     position: fixed;
@@ -2678,11 +2699,12 @@ function showBrandConfirmationModal(suggestion, onConfirm){
     height: 100%;
     background: rgba(0,0,0,0.9);
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: center;
     z-index: 10001;
-    padding: 60px 20px 20px 20px;
-    overflow-y: auto;
+    padding: 20px;
+    overflow: hidden;
+    touch-action: none;
   `;
 
   const modalContent = document.createElement('div');
@@ -2692,11 +2714,12 @@ function showBrandConfirmationModal(suggestion, onConfirm){
     border-radius: 16px;
     max-width: 95vw;
     width: 1000px;
-    max-height: calc(100vh - 80px);
+    max-height: 85vh;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 24px;
     color: #fff;
-    margin: auto;
+    touch-action: pan-y;
   `;
 
   modalContent.innerHTML = `
