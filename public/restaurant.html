@@ -2970,32 +2970,39 @@ function applyBrandSuggestionConfirmed(rowIdx, suggestion){
   row.dataset.brands = JSON.stringify(brands);
   console.log('Updated row.dataset.brands:', row.dataset.brands);
 
-  // Update allergens checkboxes with combined allergens from all brands
-  const allAllergens = new Set();
+  // Collect all AI-detected allergens and diets from all brands
+  const aiDetectedAllergens = new Set();
+  const aiDetectedDiets = new Set();
   brands.forEach(brand => {
     if(Array.isArray(brand.allergens)){
-      brand.allergens.forEach(a => allAllergens.add(norm(a)));
+      brand.allergens.forEach(a => aiDetectedAllergens.add(norm(a)));
     }
-  });
-  row.querySelectorAll('.aiAllergenChecklist input').forEach(input=>{
-    if(allAllergens.has(norm(input.value))){
-      input.checked=true;
+    if(Array.isArray(brand.diets)){
+      brand.diets.forEach(d => aiDetectedDiets.add(d));
     }
   });
 
-  // Update dietary preference checkboxes from suggestion
-  if(Array.isArray(suggestion.diets) && suggestion.diets.length > 0){
-    row.querySelectorAll('.aiDietCheckbox').forEach(input=>{
-      if(suggestion.diets.includes(input.value)){
-        input.checked=true;
-      }
-    });
-  }
+  // Update allergen checkboxes and add green styling
+  row.querySelectorAll('.aiAllergenChecklist label').forEach(label=>{
+    const input = label.querySelector('input');
+    if(!input) return;
+    const allergen = input.value;
+    if(aiDetectedAllergens.has(norm(allergen))){
+      input.checked = true;
+      label.classList.add('aiDetected');
+    }
+  });
 
-  // NOW collect data (will include the updated brands) and re-render
-  const allData = collectAiTableData();
-  console.log('Collected data after brand update:', allData);
-  renderAiTable(allData);
+  // Update dietary preference checkboxes and add green styling
+  row.querySelectorAll('.aiDietChecklist label').forEach(label=>{
+    const input = label.querySelector('input');
+    if(!input) return;
+    const diet = input.value;
+    if(aiDetectedDiets.has(diet)){
+      input.checked = true;
+      label.classList.add('aiDetected');
+    }
+  });
 
   // Close the inline brand results
   const rowBrandResults=aiAssistTableBody?.querySelector(`tr[data-index="${rowIdx}"] .aiRowBrandResults`);
