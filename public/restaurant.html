@@ -1732,11 +1732,15 @@ function renderAiTable(rows){
       delete tr.dataset.brands;
     }
 
-    // Collect all AI-detected allergens from brands
+    // Collect all AI-detected allergens and diets from brands
     const aiDetectedAllergens = new Set();
+    const aiDetectedDiets = new Set();
     brands.forEach(brand => {
       if(Array.isArray(brand.allergens)){
         brand.allergens.forEach(a => aiDetectedAllergens.add(norm(a)));
+      }
+      if(Array.isArray(brand.diets)){
+        brand.diets.forEach(d => aiDetectedDiets.add(d));
       }
     });
 
@@ -1815,11 +1819,13 @@ function renderAiTable(rows){
               </div>
             </div>
             <div>
+              ${aiDetectedDiets.size > 0 ? '<div style="color:#4caf50;font-size:0.8rem;margin-bottom:6px">✓ Green = AI detected from brand labels</div>' : ''}
               <div class="aiDietChecklist">
                 ${DIETS.map(diet=>{
                   const dietSet = new Set((row.diets||[]).map(d=>d));
                   const checked=dietSet.has(diet)?'checked':'';
-                  return `<label><input type="checkbox" class="aiDietCheckbox" value="${esc(diet)}" ${checked}>${esc(diet)}</label>`;
+                  const aiDetected=aiDetectedDiets.has(diet)?'aiDetected':'';
+                  return `<label class="${aiDetected}"><input type="checkbox" class="aiDietCheckbox" value="${esc(diet)}" ${checked}>${esc(diet)}</label>`;
                 }).join('')}
               </div>
             </div>
