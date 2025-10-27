@@ -2832,7 +2832,7 @@ function showBrandConfirmationModal(suggestion, onConfirm){
       </div>
     ` : ''}
 
-    ${hasImage && hasIngredients ? `
+    ${hasImage ? `
       <div style="margin-bottom: 20px;">
         <div style="background: rgba(76,90,212,0.1); border: 1px solid rgba(76,90,212,0.3); border-radius: 8px; padding: 16px; margin-bottom: 12px;">
           <p style="margin: 0 0 12px 0; font-weight: 600; color: #4c5ad4;">📋 Ingredient Label Image:</p>
@@ -2843,27 +2843,31 @@ function showBrandConfirmationModal(suggestion, onConfirm){
             Click image to view full size
           </p>
         </div>
-
-        <div style="background: rgba(76,90,212,0.1); border: 1px solid rgba(76,90,212,0.3); border-radius: 8px; padding: 16px;">
-          <p style="margin: 0 0 8px 0; font-weight: 600; color: #4c5ad4;">📝 Ingredients List (from database):</p>
-          <p style="margin: 0; font-size: 0.9rem; line-height: 1.5;">
-            ${suggestion.ingredientsList.join(', ')}
-          </p>
-          ${suggestion.allergens && suggestion.allergens.length > 0 ? `
-            <p style="margin: 12px 0 0 0; font-weight: 600; color: #dc5252;">🚨 Detected Allergens:</p>
-            <p style="margin: 4px 0 0 0; font-size: 0.9rem; color: #dc5252;">
-              ${suggestion.allergens.join(', ')}
-            </p>
-          ` : ''}
-          ${suggestion.diets && suggestion.diets.length > 0 ? `
-            <p style="margin: 12px 0 0 0; font-weight: 600; color: #4caf50;">📋 Detected Dietary Preferences:</p>
-            <p style="margin: 4px 0 0 0; font-size: 0.9rem; color: #4caf50;">
-              ${suggestion.diets.join(', ')}
-            </p>
-          ` : ''}
-        </div>
       </div>
+    ` : ''}
 
+    ${hasIngredients ? `
+      <div style="background: rgba(76,90,212,0.1); border: 1px solid rgba(76,90,212,0.3); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+        <p style="margin: 0 0 8px 0; font-weight: 600; color: #4c5ad4;">📝 Ingredients List (from database):</p>
+        <p style="margin: 0; font-size: 0.9rem; line-height: 1.5;">
+          ${suggestion.ingredientsList.join(', ')}
+        </p>
+        ${suggestion.allergens && suggestion.allergens.length > 0 ? `
+          <p style="margin: 12px 0 0 0; font-weight: 600; color: #dc5252;">🚨 Detected Allergens:</p>
+          <p style="margin: 4px 0 0 0; font-size: 0.9rem; color: #dc5252;">
+            ${suggestion.allergens.join(', ')}
+          </p>
+        ` : ''}
+        ${suggestion.diets && suggestion.diets.length > 0 ? `
+          <p style="margin: 12px 0 0 0; font-weight: 600; color: #4caf50;">📋 Detected Dietary Preferences:</p>
+          <p style="margin: 4px 0 0 0; font-size: 0.9rem; color: #4caf50;">
+            ${suggestion.diets.join(', ')}
+          </p>
+        ` : ''}
+      </div>
+    ` : ''}
+
+    ${hasImage && hasIngredients ? `
       <div style="background: rgba(220,82,82,0.15); border: 1px solid rgba(220,82,82,0.4); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
         <p style="margin: 0 0 12px 0; font-weight: 600; color: #dc5252;">✓ Before confirming, verify:</p>
         <div style="display: flex; flex-direction: column; gap: 12px;">
