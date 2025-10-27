@@ -2692,11 +2692,33 @@ async function openAiBarcodeScanner(rowIdx){
               productUrl: `https://world.openfoodfacts.org/product/${barcode}`
             };
 
-            // Show confirmation modal
-            showBrandConfirmationModal(suggestion, () => {
-              applyBrandSuggestionConfirmed(rowIdx, suggestion);
-            });
-            aiAssistSetStatus('Product found! Review and confirm.','success');
+            // Check if product has ingredient list - if not, treat as not useful
+            const hasIngredients = suggestion.ingredientsList && suggestion.ingredientsList.length > 0;
+            if(!hasIngredients){
+              // No ingredient list available - show error and restart scanning
+              statusDiv.textContent = `Product found but no ingredient list available (Barcode: ${barcode}). Scan again or close to search manually.`;
+              statusDiv.style.background = 'rgba(220,82,82,0.9)';
+              statusDiv.style.padding = '16px';
+              statusDiv.style.fontSize = '0.95rem';
+              aiAssistSetStatus('No ingredient data available. Try scanning again or search manually.','warn');
+
+              // Restart scanning after 3 seconds
+              setTimeout(() => {
+                if(scannerModal.parentNode){
+                  scanning = true;
+                  statusDiv.textContent = 'Point camera at barcode to try again...';
+                  statusDiv.style.background = 'rgba(11,16,32,0.95)';
+                  statusDiv.style.padding = '12px 16px';
+                  statusDiv.style.fontSize = '1rem';
+                }
+              }, 3000);
+            } else {
+              // Has ingredient list - show confirmation modal
+              showBrandConfirmationModal(suggestion, () => {
+                applyBrandSuggestionConfirmed(rowIdx, suggestion);
+              });
+              aiAssistSetStatus('Product found! Review and confirm.','success');
+            }
           } else {
             // Product not found - show error and offer to retry
             statusDiv.textContent = `Product not found in Open Food Facts database (Barcode: ${barcode}). Scan again or close to search manually.`;
