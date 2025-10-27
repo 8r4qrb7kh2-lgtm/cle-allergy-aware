@@ -2267,78 +2267,38 @@ async function fetchBrandSuggestions(query, ingredientName){
       return [];
     }
 
-    // Filter and map products - only include if they have text ingredient list
-    return products.filter(product => {
+    // Filter products to only include those with text ingredient list
+    const filteredProducts = products.filter(product => {
       // Must have text ingredient list - this is required for allergen/diet detection
-      // Having only an image isn't useful since we can't parse it
       const hasIngredientsList = product.ingredientsList && product.ingredientsList.length > 0;
       return hasIngredientsList;
-    }).map(product => {
-      const allergens = [];
-      if (Array.isArray(product.allergens)) {
-        product.allergens.forEach(tag => {
-          const key = norm(tag.replace(/^en:/, '').replace(/-/g, ' '));
-          const mapped = ALLERGEN_ALIASES[key] || key;
-          if (mapped && ALLERGENS.some(a => norm(a) === mapped)) {
-            allergens.push(cap(mapped));
+    });
+
+    // Use Claude AI to analyze each product's ingredients
+    const analyzedProducts = await Promise.all(filteredProducts.map(async (product) => {
+      let allergens = [];
+      let diets = [];
+
+      try {
+        const analysisResult = await window.supabaseClient.functions.invoke('analyze-brand-allergens', {
+          body: {
+            ingredientText: product.ingredientsList.join(', '),
+            productName: product.name || '',
+            labels: product.labels_tags || [],
+            categories: product.categories_tags || []
           }
         });
-      }
 
-      // Also detect allergens from ingredients text
-      if (product.ingredientsList && product.ingredientsList.length > 0) {
-        const ingredientsText = product.ingredientsList.join(', ');
-        detectAllergensInText(ingredientsText).forEach(a => {
-          if (!allergens.includes(cap(a))) allergens.push(cap(a));
-        });
-      }
-
-      // Infer dietary preferences (same logic as barcode scan)
-      const diets = [];
-      const productName = (product.name || '').toLowerCase();
-      const ingredientsText = (product.ingredientsList || []).join(', ').toLowerCase();
-      const productText = productName + ' ' + ingredientsText;
-
-      // Check Open Food Facts labels
-      const labels = product.labels_tags || [];
-      const categories = product.categories_tags || [];
-
-      // Vegan detection
-      const normalizedAllergens = allergens.map(a => norm(a));
-      const isVegan = labels.some(l => l.includes('vegan')) ||
-                     categories.some(c => c.includes('vegan')) ||
-                     (!normalizedAllergens.includes('dairy') &&
-                      !normalizedAllergens.includes('egg') &&
-                      !normalizedAllergens.includes('fish') &&
-                      !normalizedAllergens.includes('shellfish') &&
-                      !productText.includes('honey') &&
-                      !productText.includes('gelatin') &&
-                      (productText.includes('tofu') ||
-                       productText.includes('plant') ||
-                       labels.some(l => l.includes('plant'))));
-
-      if(isVegan) {
-        diets.push('Vegan');
-        diets.push('Vegetarian');
-        diets.push('Pescatarian');
-      } else {
-        // Vegetarian detection
-        const isVegetarian = labels.some(l => l.includes('vegetarian')) ||
-                            categories.some(c => c.includes('vegetarian')) ||
-                            (!normalizedAllergens.includes('fish') &&
-                             !normalizedAllergens.includes('shellfish') &&
-                             !productText.includes('meat') &&
-                             !productText.includes('chicken') &&
-                             !productText.includes('beef') &&
-                             !productText.includes('pork') &&
-                             !productText.includes('gelatin'));
-
-        if(isVegetarian) {
-          diets.push('Vegetarian');
-          if(!normalizedAllergens.includes('egg') && !normalizedAllergens.includes('dairy')) {
-            diets.push('Pescatarian');
-          }
+        if (analysisResult.error) {
+          console.error('Claude AI analysis error for product:', product.name, analysisResult.error);
+        } else {
+          const { allergens: aiAllergens, diets: aiDiets } = analysisResult.data || {};
+          allergens = aiAllergens || [];
+          diets = aiDiets || [];
+          console.log('Claude AI analyzed:', product.name, { allergens, diets });
         }
+      } catch (aiError) {
+        console.error('Failed to analyze product with Claude AI:', product.name, aiError);
       }
 
       return {
@@ -2351,7 +2311,9 @@ async function fetchBrandSuggestions(query, ingredientName){
         diets,
         productUrl: product.productUrl || ''
       };
-    });
+    }));
+
+    return analyzedProducts;
 
   } catch (err) {
     console.error('Failed to fetch brand suggestions:', err);
@@ -2632,125 +2594,41 @@ async function openAiBarcodeScanner(rowIdx){
           if(product){
             // Close modal on success
             closeModal();
-            // Parse allergens from Open Food Facts format (e.g., "en:milk" -> "dairy")
-            const allergenMap = {
-              'milk': 'dairy',
-              'lactose': 'dairy',
-              'eggs': 'egg',
-              'peanuts': 'peanut',
-              'nuts': 'tree nut',
-              'tree-nuts': 'tree nut',
-              'shellfish': 'shellfish',
-              'crustaceans': 'shellfish',
-              'fish': 'fish',
-              'soybeans': 'soy',
-              'soy': 'soy',
-              'sesame': 'sesame',
-              'sesame-seeds': 'sesame',
-              'gluten': 'wheat',
-              'wheat': 'wheat'
-            };
 
-            const parsedAllergens = [];
-            if(Array.isArray(product.allergens_tags)){
-              product.allergens_tags.forEach(tag => {
-                const allergen = tag.replace(/^en:/, '').toLowerCase();
-                if(allergenMap[allergen]){
-                  if(!parsedAllergens.includes(allergenMap[allergen])){
-                    parsedAllergens.push(allergenMap[allergen]);
-                  }
+            // Use Claude AI to analyze ingredients (Sonnet 4.5)
+            statusDiv.textContent = 'Analyzing ingredients with AI...';
+            statusDiv.style.background = 'rgba(139,92,246,0.9)';
+            aiAssistSetStatus('Analyzing ingredients with Claude AI…');
+
+            let parsedAllergens = [];
+            let diets = [];
+
+            try {
+              const analysisResult = await window.supabaseClient.functions.invoke('analyze-brand-allergens', {
+                body: {
+                  ingredientText: product.ingredients_text || '',
+                  productName: product.product_name || '',
+                  labels: product.labels_tags || [],
+                  categories: product.categories_tags || []
                 }
               });
-            }
 
-            // Also scan ingredients text for allergen keywords
-            const ingredientsForAllergens = (product.ingredients_text || '').toLowerCase();
-
-            // Define plant-based alternatives that should NOT trigger allergen detection
-            const plantBasedPrefixes = ['almond', 'oat', 'soy', 'coconut', 'rice', 'cashew', 'hemp', 'pea', 'plant-based', 'vegan'];
-
-            const allergenKeywords = {
-              'dairy': ['milk', 'cream', 'butter', 'cheese', 'whey', 'casein', 'lactose'],
-              'egg': ['egg', 'eggs', 'albumin'],
-              'peanut': ['peanut', 'peanuts'],
-              'tree nut': ['almond', 'cashew', 'walnut', 'pecan', 'pistachio', 'hazelnut', 'macadamia'],
-              'soy': ['soy', 'soya', 'tofu', 'edamame'],
-              'wheat': ['wheat', 'wheat flour'],
-              'fish': ['fish', 'anchovy', 'salmon', 'tuna', 'cod'],
-              'shellfish': ['shrimp', 'crab', 'lobster', 'shellfish', 'prawn']
-            };
-
-            for(const [allergen, keywords] of Object.entries(allergenKeywords)){
-              if(!parsedAllergens.includes(allergen)){
-                for(const keyword of keywords){
-                  if(ingredientsForAllergens.includes(keyword)){
-                    // Special handling for dairy to avoid false positives from plant-based milks
-                    if(allergen === 'dairy' && (keyword === 'milk' || keyword === 'cream' || keyword === 'butter')){
-                      // Check if this is a plant-based alternative
-                      const keywordIndex = ingredientsForAllergens.indexOf(keyword);
-                      const precedingText = ingredientsForAllergens.substring(Math.max(0, keywordIndex - 20), keywordIndex);
-                      const isPlantBased = plantBasedPrefixes.some(prefix => precedingText.includes(prefix));
-
-                      if(isPlantBased){
-                        continue; // Skip this keyword, it's a plant-based alternative
-                      }
-                    }
-
-                    // Special handling for tree nuts in nut milks (they should still be detected as tree nut allergens)
-                    // but not as dairy
-
-                    parsedAllergens.push(allergen);
-                    break; // Found a match for this allergen, move to next
-                  }
-                }
+              if (analysisResult.error) {
+                console.error('Claude AI analysis error:', analysisResult.error);
+                // Fall back to empty arrays if AI fails
+                parsedAllergens = [];
+                diets = [];
+              } else {
+                const { allergens, diets: aiDiets, reasoning } = analysisResult.data || {};
+                parsedAllergens = allergens || [];
+                diets = aiDiets || [];
+                console.log('Claude AI analysis:', { allergens: parsedAllergens, diets, reasoning });
               }
-            }
-
-            // Infer dietary preferences from product data and allergens
-            const diets = [];
-            const productName = (product.product_name || '').toLowerCase();
-            const ingredientsText = ingredientsForAllergens;
-            const productText = productName + ' ' + ingredientsText;
-
-            // Check Open Food Facts labels
-            const labels = product.labels_tags || [];
-            const categories = product.categories_tags || [];
-
-            // Vegan detection
-            const isVegan = labels.some(l => l.includes('vegan')) ||
-                           categories.some(c => c.includes('vegan')) ||
-                           (!parsedAllergens.includes('dairy') &&
-                            !parsedAllergens.includes('egg') &&
-                            !parsedAllergens.includes('fish') &&
-                            !parsedAllergens.includes('shellfish') &&
-                            !productText.includes('honey') &&
-                            !productText.includes('gelatin') &&
-                            (productText.includes('tofu') ||
-                             productText.includes('plant') ||
-                             labels.some(l => l.includes('plant'))));
-
-            if(isVegan) {
-              diets.push('Vegan');
-              diets.push('Vegetarian'); // Vegan is also vegetarian
-              diets.push('Pescatarian'); // Vegan is compatible with pescatarian
-            } else {
-              // Vegetarian detection
-              const isVegetarian = labels.some(l => l.includes('vegetarian')) ||
-                                  categories.some(c => c.includes('vegetarian')) ||
-                                  (!parsedAllergens.includes('fish') &&
-                                   !parsedAllergens.includes('shellfish') &&
-                                   !productText.includes('meat') &&
-                                   !productText.includes('chicken') &&
-                                   !productText.includes('beef') &&
-                                   !productText.includes('pork') &&
-                                   !productText.includes('gelatin'));
-
-              if(isVegetarian) {
-                diets.push('Vegetarian');
-                if(!parsedAllergens.includes('egg') && !parsedAllergens.includes('dairy')) {
-                  diets.push('Pescatarian'); // Vegetarian without dairy/egg is compatible
-                }
-              }
+            } catch (aiError) {
+              console.error('Failed to analyze with Claude AI:', aiError);
+              // Fall back to empty arrays if AI call fails
+              parsedAllergens = [];
+              diets = [];
             }
 
 
