@@ -2267,12 +2267,12 @@ async function fetchBrandSuggestions(query, ingredientName){
       return [];
     }
 
-    // Filter and map products - only include if they have ingredient data
+    // Filter and map products - only include if they have text ingredient list
     return products.filter(product => {
-      // Must have EITHER ingredient label image OR text ingredient list
-      const hasIngredientsImage = product.ingredientsImage && product.ingredientsImage.length > 0;
+      // Must have text ingredient list - this is required for allergen/diet detection
+      // Having only an image isn't useful since we can't parse it
       const hasIngredientsList = product.ingredientsList && product.ingredientsList.length > 0;
-      return hasIngredientsImage || hasIngredientsList;
+      return hasIngredientsList;
     }).map(product => {
       const allergens = [];
       if (Array.isArray(product.allergens)) {
