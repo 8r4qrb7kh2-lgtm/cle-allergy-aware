@@ -1213,6 +1213,10 @@ function ensureAiAssistElements(){
             <button type="button" class="aiAssistClose" id="aiAssistClose" aria-label="Close AI assistant">×</button>
           </div>
         </div>
+        <div style="margin-bottom:12px">
+          <label for="aiAssistNameInput" style="display:block;margin-bottom:4px;font-size:0.85rem;color:#a8b2d6">Dish name:</label>
+          <input type="text" id="aiAssistNameInput" class="aiAssistInput" placeholder="Enter dish name" style="width:100%;padding:10px;font-size:1rem;font-weight:600">
+        </div>
         <p class="aiAssistIntro">Upload recipe photos or describe the dish ingredients below.</p>
 
         <!-- Photo Upload Section -->
@@ -1946,6 +1950,12 @@ function openAiAssistant(context){
   const titleEl = document.getElementById('aiAssistTitle');
   if(titleEl){
     titleEl.textContent = dishName;
+  }
+
+  // Populate the name input field
+  const nameInput = document.getElementById('aiAssistNameInput');
+  if(nameInput){
+    nameInput.value = dishName;
   }
 
   // Show/hide delete button and wire up callback
@@ -5786,6 +5796,21 @@ function renderEditor(){
       if(uniqueAggregated && uniqueAggregated.length){
         it.details.__ingredientsSummary = uniqueAggregated.join(', ');
       }
+
+      // Update the overlay name from the AI Assistant name input
+      const aiNameInput = document.getElementById('aiAssistNameInput');
+      const manualNameInput = document.getElementById('itemName');
+      const newName = (aiNameInput?.value?.trim()) || (manualNameInput?.value?.trim()) || it.id || 'Item';
+      if(newName !== it.id){
+        const oldName = it.id;
+        it.id = newName;
+        pendingChanges.push(`Renamed "${oldName}" to "${newName}"`);
+        // Also update the manual editor input if it exists
+        if(manualNameInput){
+          manualNameInput.value = newName;
+        }
+      }
+
       // Update removable ingredients
       it.removable = [];
       removableIngredients.forEach(allergen => {
@@ -5861,7 +5886,12 @@ function renderEditor(){
     setTimeout(()=>{
       openAiAssistant({
         seedText,
-        getCurrentName:()=>document.getElementById('itemName').value||it.id||'Item',
+        getCurrentName:()=>{
+          // Check AI Assistant name input first, then fall back to manual editor input
+          const aiNameInput = document.getElementById('aiAssistNameInput');
+          const manualNameInput = document.getElementById('itemName');
+          return (aiNameInput?.value?.trim()) || (manualNameInput?.value?.trim()) || it.id || 'Item';
+        },
         onApply:(rows)=>applyIngredientsFromAi(rows),
         existingIngredients: existingIngredientRows,
         onDelete: () => {
