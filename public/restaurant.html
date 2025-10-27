@@ -2289,6 +2289,54 @@ async function fetchBrandSuggestions(query, ingredientName){
         });
       }
 
+      // Infer dietary preferences (same logic as barcode scan)
+      const diets = [];
+      const productName = (product.name || '').toLowerCase();
+      const ingredientsText = (product.ingredientsList || []).join(', ').toLowerCase();
+      const productText = productName + ' ' + ingredientsText;
+
+      // Check Open Food Facts labels
+      const labels = product.labels_tags || [];
+      const categories = product.categories_tags || [];
+
+      // Vegan detection
+      const normalizedAllergens = allergens.map(a => norm(a));
+      const isVegan = labels.some(l => l.includes('vegan')) ||
+                     categories.some(c => c.includes('vegan')) ||
+                     (!normalizedAllergens.includes('dairy') &&
+                      !normalizedAllergens.includes('egg') &&
+                      !normalizedAllergens.includes('fish') &&
+                      !normalizedAllergens.includes('shellfish') &&
+                      !productText.includes('honey') &&
+                      !productText.includes('gelatin') &&
+                      (productText.includes('tofu') ||
+                       productText.includes('plant') ||
+                       labels.some(l => l.includes('plant'))));
+
+      if(isVegan) {
+        diets.push('Vegan');
+        diets.push('Vegetarian');
+        diets.push('Pescatarian');
+      } else {
+        // Vegetarian detection
+        const isVegetarian = labels.some(l => l.includes('vegetarian')) ||
+                            categories.some(c => c.includes('vegetarian')) ||
+                            (!normalizedAllergens.includes('fish') &&
+                             !normalizedAllergens.includes('shellfish') &&
+                             !productText.includes('meat') &&
+                             !productText.includes('chicken') &&
+                             !productText.includes('beef') &&
+                             !productText.includes('pork') &&
+                             !productText.includes('gelatin'));
+
+        if(isVegetarian) {
+          diets.push('Vegetarian');
+          if(!normalizedAllergens.includes('egg') && !normalizedAllergens.includes('dairy')) {
+            diets.push('Pescatarian');
+          }
+        }
+      }
+
       return {
         name: product.name || '',
         brand: product.brand || '',
@@ -2296,6 +2344,7 @@ async function fetchBrandSuggestions(query, ingredientName){
         ingredientsImage: product.ingredientsImage || '',
         ingredientsList: product.ingredientsList || [],
         allergens,
+        diets,
         productUrl: product.productUrl || ''
       };
     });
