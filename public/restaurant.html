@@ -3524,11 +3524,15 @@ async function handleRecipePhotoUpload(file){
       const imageData = e.target.result;
       aiAssistSetStatus('Reading recipe from photo using AI...');
 
+      // Get dish name from input field if available
+      const nameInput = document.getElementById('aiAssistNameInput');
+      const dishNameForAi = nameInput?.value?.trim() || (aiAssistState.context?.getCurrentName ? aiAssistState.context.getCurrentName() : '');
+
       const payload = {
         imageData: imageData,
         imageFileName: file.name,
         text: 'Please extract all ingredients from this recipe image.',
-        dishName: aiAssistState.context?.getCurrentName ? aiAssistState.context.getCurrentName() : ''
+        dishName: dishNameForAi
       };
 
       try{
@@ -3715,13 +3719,17 @@ async function handleAiProcess(){
       progressBarFill.style.width = '20%';
     }
 
+    // Get dish name from input field if available
+    const nameInput = document.getElementById('aiAssistNameInput');
+    const dishNameForAi = nameInput?.value?.trim() || (aiAssistState.context?.getCurrentName ? aiAssistState.context.getCurrentName() : '');
+
     for(let i = 0; i < window.aiAssistPhotos.length; i++){
       const photoData = window.aiAssistPhotos[i];
       const payload = {
         imageData: photoData,
         imageFileName: `recipe_${i+1}.jpg`,
         text: text || 'Please extract all ingredients from this recipe image.',
-        dishName: aiAssistState.context?.getCurrentName ? aiAssistState.context.getCurrentName() : ''
+        dishName: dishNameForAi
       };
 
       // Update progress for current photo
@@ -3776,9 +3784,12 @@ async function handleAiProcess(){
 
   // Otherwise process text
   aiAssistSetStatus('Preparing to analyze description…');
+  // Get dish name from input field if available, otherwise use getCurrentName
+  const nameInput = document.getElementById('aiAssistNameInput');
+  const dishNameForAi = nameInput?.value?.trim() || (aiAssistState.context?.getCurrentName ? aiAssistState.context.getCurrentName() : '');
   const payload={
     text,
-    dishName:aiAssistState.context?.getCurrentName ? aiAssistState.context.getCurrentName() : ''
+    dishName: dishNameForAi
   };
   if(window!==window.parent){
     const requestId=`ai-${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -6605,10 +6616,10 @@ function renderEditor(){
       openAiAssistant({
         seedText,
         getCurrentName:()=>{
-          // Check AI Assistant name input first, then fall back to manual editor input
-          const aiNameInput = document.getElementById('aiAssistNameInput');
+          // Return the dish's actual name first, then fall back to manual editor input
+          // This prevents the AI input field from having stale data from other dishes
           const manualNameInput = document.getElementById('itemName');
-          return (aiNameInput?.value?.trim()) || (manualNameInput?.value?.trim()) || it.id || 'Item';
+          return it.id || (manualNameInput?.value?.trim()) || 'Item';
         },
         onApply:(rows)=>applyIngredientsFromAi(rows),
         existingIngredients: existingIngredientRows,
