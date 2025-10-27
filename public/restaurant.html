@@ -1876,9 +1876,9 @@ function collectAiTableData(){
     const diets=[...row.querySelectorAll('.aiDietChecklist input:checked')].map(input=>input.value);
     const confirmed=row.querySelector('.aiConfirmBtn')?.dataset.confirmed === 'true';
 
-    // Collect removable status
-    const removableRadio=row.querySelector('.aiRemovableRadio:checked');
-    const removable=removableRadio?.value === 'yes';
+    // Collect removable status from checkbox (unchecked by default = not substitutable)
+    const removableCheckbox=row.querySelector('.aiRemovableCheckbox');
+    const removable=removableCheckbox?.checked || false;
 
     // Collect multiple brands
     const brands=[];
@@ -2162,7 +2162,7 @@ function renderAiTable(rows){
             <div>
               <div style="display:flex;flex-direction:column;gap:8px">
                 <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-                  <input type="radio" name="removable_${idx}" value="yes" class="aiRemovableRadio">
+                  <input type="checkbox" class="aiRemovableCheckbox" ${row.removable ? 'checked' : ''}>
                   <span style="font-size:0.9rem">Can be substituted out</span>
                 </label>
               </div>
