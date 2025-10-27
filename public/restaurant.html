@@ -1213,9 +1213,9 @@ function ensureAiAssistElements(){
             <button type="button" class="aiAssistClose" id="aiAssistClose" aria-label="Close AI assistant">×</button>
           </div>
         </div>
-        <div style="margin-bottom:12px">
-          <label for="aiAssistNameInput" style="display:block;margin-bottom:4px;font-size:0.85rem;color:#a8b2d6">Dish name:</label>
-          <input type="text" id="aiAssistNameInput" class="aiAssistInput" placeholder="Enter dish name" style="width:100%;padding:10px;font-size:1rem;font-weight:600">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <label for="aiAssistNameInput" style="font-size:0.95rem;color:#a8b2d6;white-space:nowrap">Dish name:</label>
+          <input type="text" id="aiAssistNameInput" class="aiAssistInput" placeholder="Enter dish name" style="flex:1;padding:10px;font-size:1rem;font-weight:600">
         </div>
         <p class="aiAssistIntro">Upload recipe photos or describe the dish ingredients below.</p>
 
@@ -2849,6 +2849,12 @@ function showBrandConfirmationModal(suggestion, onConfirm){
             <p style="margin: 12px 0 0 0; font-weight: 600; color: #dc5252;">🚨 Detected Allergens:</p>
             <p style="margin: 4px 0 0 0; font-size: 0.9rem; color: #dc5252;">
               ${suggestion.allergens.join(', ')}
+            </p>
+          ` : ''}
+          ${suggestion.diets && suggestion.diets.length > 0 ? `
+            <p style="margin: 12px 0 0 0; font-weight: 600; color: #4caf50;">📋 Detected Dietary Preferences:</p>
+            <p style="margin: 4px 0 0 0; font-size: 0.9rem; color: #4caf50;">
+              ${suggestion.diets.join(', ')}
             </p>
           ` : ''}
         </div>
