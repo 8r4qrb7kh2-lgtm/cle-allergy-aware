@@ -2612,6 +2612,10 @@ async function openAiBarcodeScanner(rowIdx){
 
             // Also scan ingredients text for allergen keywords
             const ingredientsForAllergens = (product.ingredients_text || '').toLowerCase();
+
+            // Define plant-based alternatives that should NOT trigger allergen detection
+            const plantBasedPrefixes = ['almond', 'oat', 'soy', 'coconut', 'rice', 'cashew', 'hemp', 'pea', 'plant-based', 'vegan'];
+
             const allergenKeywords = {
               'dairy': ['milk', 'cream', 'butter', 'cheese', 'whey', 'casein', 'lactose'],
               'egg': ['egg', 'eggs', 'albumin'],
@@ -2625,8 +2629,26 @@ async function openAiBarcodeScanner(rowIdx){
 
             for(const [allergen, keywords] of Object.entries(allergenKeywords)){
               if(!parsedAllergens.includes(allergen)){
-                if(keywords.some(keyword => ingredientsForAllergens.includes(keyword))){
-                  parsedAllergens.push(allergen);
+                for(const keyword of keywords){
+                  if(ingredientsForAllergens.includes(keyword)){
+                    // Special handling for dairy to avoid false positives from plant-based milks
+                    if(allergen === 'dairy' && (keyword === 'milk' || keyword === 'cream' || keyword === 'butter')){
+                      // Check if this is a plant-based alternative
+                      const keywordIndex = ingredientsForAllergens.indexOf(keyword);
+                      const precedingText = ingredientsForAllergens.substring(Math.max(0, keywordIndex - 20), keywordIndex);
+                      const isPlantBased = plantBasedPrefixes.some(prefix => precedingText.includes(prefix));
+
+                      if(isPlantBased){
+                        continue; // Skip this keyword, it's a plant-based alternative
+                      }
+                    }
+
+                    // Special handling for tree nuts in nut milks (they should still be detected as tree nut allergens)
+                    // but not as dairy
+
+                    parsedAllergens.push(allergen);
+                    break; // Found a match for this allergen, move to next
+                  }
                 }
               }
             }
