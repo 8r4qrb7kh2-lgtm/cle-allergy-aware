@@ -2267,9 +2267,13 @@ async function fetchBrandSuggestions(query, ingredientName){
       return [];
     }
 
-    // Products are already filtered and formatted by the edge function
-    // They all have both brand image and ingredients image
-    return products.map(product => {
+    // Filter and map products - only include if they have ingredient data
+    return products.filter(product => {
+      // Must have EITHER ingredient label image OR text ingredient list
+      const hasIngredientsImage = product.ingredientsImage && product.ingredientsImage.length > 0;
+      const hasIngredientsList = product.ingredientsList && product.ingredientsList.length > 0;
+      return hasIngredientsImage || hasIngredientsList;
+    }).map(product => {
       const allergens = [];
       if (Array.isArray(product.allergens)) {
         product.allergens.forEach(tag => {
