@@ -2012,9 +2012,25 @@ function renderAiTable(rows){
       delete tr.dataset.brands;
     }
 
-    // Collect all AI-detected allergens and diets from brands
+    // Collect all AI-detected allergens and diets from both base ingredient and brands
     const aiDetectedAllergens = new Set();
     const aiDetectedDiets = new Set();
+
+    // Add allergens detected by AI for the base ingredient (from initial AI analysis)
+    if(Array.isArray(row.allergens)){
+      row.allergens.forEach(a => {
+        if(a) aiDetectedAllergens.add(norm(a));
+      });
+    }
+
+    // Add diets detected by AI for the base ingredient (from initial AI analysis)
+    if(Array.isArray(row.diets)){
+      row.diets.forEach(d => {
+        if(d) aiDetectedDiets.add(d);
+      });
+    }
+
+    // Also add allergens and diets from brand labels
     brands.forEach(brand => {
       console.log('Brand data:', brand);
       if(Array.isArray(brand.allergens)){
@@ -2119,7 +2135,7 @@ function renderAiTable(rows){
                 <button type="button" class="btn aiBrandBarcodeBtn" style="background:#17663a;border-color:#1a7b46">Scan item barcode</button>
               </div>
             </div>
-            ${(aiDetectedAllergens.size > 0 || aiDetectedDiets.size > 0) ? '<div style="color:#4caf50;font-size:0.85rem;margin:16px 0 12px 0;font-weight:600;padding:8px 12px;background:rgba(76,175,80,0.1);border-radius:6px;border-left:3px solid #4caf50">✓ Green = AI detected from brand labels</div>' : ''}
+            ${(aiDetectedAllergens.size > 0 || aiDetectedDiets.size > 0) ? '<div style="color:#4caf50;font-size:0.85rem;margin:16px 0 12px 0;font-weight:600;padding:8px 12px;background:rgba(76,175,80,0.1);border-radius:6px;border-left:3px solid #4caf50">✓ Green = AI detected</div>' : ''}
             <div style="display:flex;gap:20px;margin-top:12px">
               <div style="flex:1">
                 <div class="aiAllergenChecklist">
