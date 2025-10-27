@@ -1215,9 +1215,9 @@ function ensureAiAssistElements(){
             <button type="button" class="aiAssistClose" id="aiAssistClose" aria-label="Close AI assistant">×</button>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
           <label for="aiAssistNameInput" style="font-size:0.95rem;color:#a8b2d6;white-space:nowrap">Dish name:</label>
-          <input type="text" id="aiAssistNameInput" class="aiAssistInput" placeholder="Enter dish name" style="flex:1;padding:10px;font-size:1rem;font-weight:600">
+          <input type="text" id="aiAssistNameInput" placeholder="Enter dish name" style="flex:1;padding:10px;font-size:1rem;font-weight:600;border-radius:8px;border:1px solid rgba(76,90,212,0.35);background:rgba(10,16,36,0.95);color:var(--ink)">
         </div>
         <p class="aiAssistIntro">Upload recipe photos or describe the dish ingredients below.</p>
 
@@ -1947,11 +1947,10 @@ function openAiAssistant(context){
   updateAiAssistMediaPreview();
   aiAssistSetStatus('');
 
-  // Update the title to show the dish name
-  const dishName = context?.getCurrentName ? context.getCurrentName() : 'Dish';
+  // Keep the title generic - dish name is shown in the editable field below
   const titleEl = document.getElementById('aiAssistTitle');
   if(titleEl){
-    titleEl.textContent = dishName;
+    titleEl.textContent = 'AI Ingredient Assistant';
   }
 
   // Populate the name input field
