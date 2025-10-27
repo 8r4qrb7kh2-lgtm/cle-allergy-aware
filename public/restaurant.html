@@ -921,6 +921,8 @@ const send=(p)=>{
               type: 'update',
               description: authorName,
               changes: storedChanges,
+              overlays: p.overlays || [],
+              menuImage: p.menuImage || null,
               userEmail: state.user?.email || null
             });
           }catch(logError){
@@ -3524,6 +3526,8 @@ async function insertChangeLogEntry(base){
     changes: base.changes,
     user_email: base.userEmail || null,
     photos: Array.isArray(base.photos) ? base.photos : (base.photos ? [base.photos] : []),
+    overlays: base.overlays || null,
+    menu_image: base.menuImage || null,
     timestamp: base.timestamp || new Date().toISOString()
   };
   Object.keys(payload).forEach(k=>payload[k]==null&&delete payload[k]);
@@ -4383,6 +4387,8 @@ function renderEditor(){
     <div class="mgrRow" style="justify-content:space-between">
       <button class="btn" id="backBtn">← Done</button>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn" id="undoBtn" title="Undo (Ctrl+Z)" style="opacity:0.5">↶ Undo</button>
+        <button class="btn" id="redoBtn" title="Redo (Ctrl+Y)" style="opacity:0.5">↷ Redo</button>
         <button class="btn" id="viewLogBtn">📋 View log of changes</button>
         <button class="btn" id="uploadMenuBtn">📷 Upload new menu image</button>
         <button class="btn btnDanger" id="confirmBtn">Confirm allergen information is up-to-date</button>
@@ -4426,6 +4432,67 @@ function renderEditor(){
   // Track all changes as they happen
   let pendingChanges=[];
   let originalOverlaysRef = JSON.stringify(rs.overlays||[]);
+
+  // History tracking for undo/redo
+  let history = [{overlays: JSON.parse(JSON.stringify(overlays)), pendingChanges: [], timestamp: Date.now()}];
+  let historyIndex = 0;
+
+  function pushHistory(){
+    // Remove any future history if we've undone and then made a new change
+    if(historyIndex < history.length - 1){
+      history = history.slice(0, historyIndex + 1);
+    }
+    // Add new history entry
+    history.push({
+      overlays: JSON.parse(JSON.stringify(overlays)),
+      pendingChanges: [...pendingChanges],
+      timestamp: Date.now()
+    });
+    historyIndex = history.length - 1;
+    // Limit history to 50 entries
+    if(history.length > 50){
+      history.shift();
+      historyIndex--;
+    }
+    updateUndoRedoButtons();
+  }
+
+  function undo(){
+    if(historyIndex > 0){
+      historyIndex--;
+      const snapshot = history[historyIndex];
+      overlays.splice(0, overlays.length, ...JSON.parse(JSON.stringify(snapshot.overlays)));
+      pendingChanges.splice(0, pendingChanges.length, ...snapshot.pendingChanges);
+      drawAll();
+      setDirty(true);
+      updateUndoRedoButtons();
+    }
+  }
+
+  function redo(){
+    if(historyIndex < history.length - 1){
+      historyIndex++;
+      const snapshot = history[historyIndex];
+      overlays.splice(0, overlays.length, ...JSON.parse(JSON.stringify(snapshot.overlays)));
+      pendingChanges.splice(0, pendingChanges.length, ...snapshot.pendingChanges);
+      drawAll();
+      setDirty(true);
+      updateUndoRedoButtons();
+    }
+  }
+
+  function updateUndoRedoButtons(){
+    const undoBtn = document.getElementById('undoBtn');
+    const redoBtn = document.getElementById('redoBtn');
+    if(undoBtn){
+      undoBtn.disabled = historyIndex <= 0;
+      undoBtn.style.opacity = historyIndex <= 0 ? '0.5' : '1';
+    }
+    if(redoBtn){
+      redoBtn.disabled = historyIndex >= history.length - 1;
+      redoBtn.style.opacity = historyIndex >= history.length - 1 ? '0.5' : '1';
+    }
+  }
 
   const saveBtn=document.getElementById('saveBtn');
   function setSaveState(s){
@@ -4561,10 +4628,27 @@ function renderEditor(){
 
   const confirmBtn=document.getElementById('confirmBtn');
   if(confirmBtn){confirmBtn.onclick=()=>{openPhotoCapture();};}
-  
+
   const viewLogBtn=document.getElementById('viewLogBtn');
   if(viewLogBtn){viewLogBtn.onclick=()=>{openChangeLog();};}
-  
+
+  const undoBtn=document.getElementById('undoBtn');
+  if(undoBtn){undoBtn.onclick=()=>{undo();};}
+
+  const redoBtn=document.getElementById('redoBtn');
+  if(redoBtn){redoBtn.onclick=()=>{redo();};}
+
+  // Keyboard shortcuts for undo/redo
+  document.addEventListener('keydown', function handleEditorKeydown(e){
+    if((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey){
+      e.preventDefault();
+      undo();
+    } else if((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))){
+      e.preventDefault();
+      redo();
+    }
+  });
+
   function updateLastConfirmedText(){
     const lastConfirmedText=document.getElementById('lastConfirmedText');
     if(lastConfirmedText){
@@ -4889,6 +4973,13 @@ function renderEditor(){
           html+=`<img src="${esc(photoUrl)}" class="logThumbnail" onclick="window.showPhotoPreview('${photoEsc}')" alt="Confirmation photo">`;
         });
       }
+      // Add restore button if this log entry has overlays data and is an update
+      if(log.type === 'update' && log.overlays){
+        const logDataEsc = esc(JSON.stringify({overlays: log.overlays, menuImage: log.menu_image || log.menuImage})).replace(/'/g,'&#39;');
+        html+=`<div style="margin-top:12px;text-align:right">
+          <button class="btn btnPrimary" onclick="window.restoreFromLog('${logDataEsc}')" style="font-size:0.9rem;padding:6px 12px">↶ Restore this version</button>
+        </div>`;
+      }
       html+=`</div>`;
     });
     
@@ -4905,7 +4996,47 @@ function renderEditor(){
     img.src=photoUrl;
     modal.style.display='flex';
   };
-  
+
+  window.restoreFromLog=(logDataStr)=>{
+    try{
+      const logData = JSON.parse(logDataStr);
+      if(!logData.overlays){
+        alert('This log entry does not contain overlay data.');
+        return;
+      }
+
+      if(!confirm('Restore overlays from this version? This will replace your current overlays and cannot be undone (but you can use Undo after restoring).')){
+        return;
+      }
+
+      // Clear current overlays and load from log
+      overlays.splice(0, overlays.length, ...JSON.parse(JSON.stringify(logData.overlays)));
+
+      // Update menu image if it's different
+      if(logData.menuImage && logData.menuImage !== rs.menuImage){
+        rs.menuImage = logData.menuImage;
+        const img = document.querySelector('.menuImg');
+        if(img) img.src = logData.menuImage;
+      }
+
+      // Add to pending changes
+      pendingChanges.push(`Restored overlays from previous version`);
+
+      // Redraw and mark dirty
+      drawAll();
+      setDirty(true);
+      pushHistory();
+
+      // Close the change log modal
+      document.getElementById('modalBack').style.display='none';
+
+      alert('Overlays restored successfully! You can use Undo if needed.');
+    } catch(err){
+      console.error('Failed to restore from log:', err);
+      alert('Failed to restore from this version. The log data may be corrupted.');
+    }
+  };
+
   document.getElementById('photoModalClose').onclick=()=>{
     document.getElementById('photoModal').style.display='none';
   };
@@ -4942,7 +5073,7 @@ function renderEditor(){
         const nx=Math.max(0,Math.min(iw-start.w,start.l+(e.clientX-start.x)));
         const ny=Math.max(0,Math.min(ih-start.h,start.t+(e.clientY-start.y)));
         const xPct=nx/iw*100,yPct=ny/ih*100; it.x=xPct; it.y=yPct; box.style.left=xPct+'%'; box.style.top=yPct+'%';});
-      box.addEventListener('pointerup',()=>{ if(dragging){dragging=false; setDirty(true);} });
+      box.addEventListener('pointerup',()=>{ if(dragging){dragging=false; setDirty(true); pushHistory();} });
 
       function startResize(e,corner){
         e.stopPropagation(); e.preventDefault(); box.setPointerCapture(e.pointerId);
@@ -5038,7 +5169,7 @@ function renderEditor(){
           it.x=x; it.y=y; it.w=w; it.h=h;
           box.style.left=x+'%'; box.style.top=y+'%'; box.style.width=w+'%'; box.style.height=h+'%';
         }
-        function onUp(ev){ box.releasePointerCapture(ev.pointerId); document.removeEventListener('pointermove',onMove); document.removeEventListener('pointerup',onUp); setDirty(true); }
+        function onUp(ev){ box.releasePointerCapture(ev.pointerId); document.removeEventListener('pointermove',onMove); document.removeEventListener('pointerup',onUp); setDirty(true); pushHistory(); }
         document.addEventListener('pointermove',onMove); document.addEventListener('pointerup',onUp);
       }
 
@@ -5054,6 +5185,7 @@ function renderEditor(){
     pendingChanges.push(`${newOverlay.id}: Added overlay`);
     drawAll();
     setDirty(true);
+    pushHistory();
   };
 
   // Detect & Map Dishes - AI-assisted overlay creation
@@ -5226,6 +5358,7 @@ function renderEditor(){
 
           drawAll();
           setDirty(true);
+          pushHistory();
           showCurrentDish();
         }
 
@@ -5826,6 +5959,7 @@ function renderEditor(){
 
       updatePreview();
       setDirty(true);
+      pushHistory();
       aiAssistSetStatus('Ingredient details applied and saved to dish!','success');
     }
     
@@ -5907,6 +6041,7 @@ function renderEditor(){
           if(mb) mb.style.display='none';
           drawAll();
           setDirty(true);
+          pushHistory();
         }
       });
     }, 100);
@@ -5977,7 +6112,7 @@ function renderEditor(){
         it.aiIngredients = list.dataset.aiIngredients || '';
         it.aiIngredientSummary = list.dataset.aiIngredientSummary || '';
       }
-      mb.style.display='none'; drawAll(); setDirty(true);
+      mb.style.display='none'; drawAll(); setDirty(true); pushHistory();
     };
     document.getElementById('delBtn').onclick=()=>{
       if(confirm('Delete this overlay?')){
@@ -5986,6 +6121,7 @@ function renderEditor(){
         mb.style.display='none';
         drawAll();
         setDirty(true);
+        pushHistory();
       }
     };
     // Don't show the modal - AI assistant opens instead
