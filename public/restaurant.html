@@ -1953,6 +1953,9 @@ function openAiAssistant(context){
     titleEl.textContent = 'AI Ingredient Assistant';
   }
 
+  // Get the dish name for the input field
+  const dishName = context?.getCurrentName ? context.getCurrentName() : 'Dish';
+
   // Populate the name input field
   const nameInput = document.getElementById('aiAssistNameInput');
   if(nameInput){
