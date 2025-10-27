@@ -1934,7 +1934,7 @@ function updateAiPreview(){
     crossContamination: []
   };
 
-  // Aggregate allergens and diets from all ingredients
+  // Aggregate allergens from all ingredients (OR logic - any ingredient with allergen adds it to dish)
   const allergenDetails = {};
   rows.forEach(row => {
     if(Array.isArray(row.allergens)){
@@ -1955,14 +1955,36 @@ function updateAiPreview(){
         }
       });
     }
-    if(Array.isArray(row.diets)){
-      row.diets.forEach(diet => {
-        if(diet && !tempOverlay.diets.includes(diet)){
-          tempOverlay.diets.push(diet);
-        }
-      });
+  });
+
+  // For dietary preferences, use AND logic - dish is only vegan if ALL ingredients are vegan
+  // Start with all possible diets, then remove any that aren't supported by ALL ingredients
+  let dishDiets = new Set(['Vegan', 'Vegetarian', 'Pescatarian']);
+  rows.forEach(row => {
+    const ingredientDiets = new Set(row.diets || []);
+    // Remove any diets this ingredient doesn't support
+    dishDiets.forEach(diet => {
+      if(!ingredientDiets.has(diet)){
+        dishDiets.delete(diet);
+      }
+    });
+  });
+
+  // Validate dietary preferences against allergens - remove incompatible diets
+  const allergenConflicts = {
+    'Vegan': ['dairy', 'egg', 'fish', 'shellfish'],
+    'Vegetarian': ['fish', 'shellfish'],
+    'Pescatarian': []
+  };
+  dishDiets.forEach(diet => {
+    const conflicts = allergenConflicts[diet] || [];
+    const hasConflict = conflicts.some(allergen => tempOverlay.allergens.includes(allergen));
+    if(hasConflict){
+      dishDiets.delete(diet);
     }
   });
+
+  tempOverlay.diets = Array.from(dishDiets);
 
   // Add details text
   Object.keys(allergenDetails).forEach(key => {
@@ -2099,6 +2121,19 @@ function renderAiTable(rows){
 
     const isConfirmed = row.confirmed || false;
 
+    // Collect all allergens and diets from brands as well as base ingredient
+    // This ensures checkboxes are checked for allergens/diets detected in brands
+    const allAllergens = new Set(allergens);
+    const allDiets = new Set((row.diets||[]).map(d=>d));
+    brands.forEach(brand => {
+      if(Array.isArray(brand.allergens)){
+        brand.allergens.forEach(a => allAllergens.add(norm(a)));
+      }
+      if(Array.isArray(brand.diets)){
+        brand.diets.forEach(d => allDiets.add(d));
+      }
+    });
+
     // Check if there's a remembered brand for this ingredient
     const rememberedBrand = getRememberedBrand(row.name);
     const rememberBrandHTML = rememberedBrand && rememberedBrand.brand ? `
@@ -2135,14 +2170,14 @@ function renderAiTable(rows){
                 <button type="button" class="btn aiBrandBarcodeBtn" style="background:#17663a;border-color:#1a7b46">Scan item barcode</button>
               </div>
             </div>
-            ${(aiDetectedAllergens.size > 0 || aiDetectedDiets.size > 0) ? '<div style="color:#4caf50;font-size:0.85rem;margin:16px 0 12px 0;font-weight:600;padding:8px 12px;background:rgba(76,175,80,0.1);border-radius:6px;border-left:3px solid #4caf50">✓ Green = AI detected</div>' : ''}
-            <div style="display:flex;gap:20px;margin-top:12px">
+            ${(aiDetectedAllergens.size > 0 || aiDetectedDiets.size > 0) ? '<div style="color:#4caf50;font-size:0.85rem;margin:16px 0 12px 0;font-weight:600;padding:8px 12px;background:rgba(76,175,80,0.1);border-radius:6px;border-left:3px solid #4caf50">✓ Green = AI detected from brand labels</div>' : ''}
+            <div style="display:flex;gap:20px;margin-top:0">
               <div style="flex:1">
                 <div class="aiAllergenChecklist">
                   ${ALLERGENS.map(allergen=>{
-                    const checked=allergens.has(norm(allergen))?'checked':'';
+                    const checked=allAllergens.has(norm(allergen))?'checked':'';
                     const aiDetected=aiDetectedAllergens.has(norm(allergen))?'aiDetected':'';
-                    console.log(`Allergen ${allergen}: aiDetected="${aiDetected}" (looking for norm(${allergen})="${norm(allergen)}" in`, Array.from(aiDetectedAllergens), ')'  );
+                    console.log(`Allergen ${allergen}: aiDetected="${aiDetected}", checked="${checked}" (looking for norm(${allergen})="${norm(allergen)}" in`, Array.from(allAllergens), ')'  );
                     return `<label class="${aiDetected}"><input type="checkbox" class="aiAllergenCheckbox" value="${esc(allergen)}" ${checked}>${esc(cap(allergen))}</label>`;
                   }).join('')}
                 </div>
@@ -2150,10 +2185,9 @@ function renderAiTable(rows){
               <div style="flex:1">
                 <div class="aiDietChecklist">
                   ${DIETS.map(diet=>{
-                    const dietSet = new Set((row.diets||[]).map(d=>d));
-                    const checked=dietSet.has(diet)?'checked':'';
+                    const checked=allDiets.has(diet)?'checked':'';
                     const aiDetected=aiDetectedDiets.has(diet)?'aiDetected':'';
-                    console.log(`Diet ${diet}: aiDetected="${aiDetected}" (looking for "${diet}" in`, Array.from(aiDetectedDiets), ')');
+                    console.log(`Diet ${diet}: aiDetected="${aiDetected}", checked="${checked}" (looking for "${diet}" in`, Array.from(allDiets), ')');
                     return `<label class="${aiDetected}"><input type="checkbox" class="aiDietCheckbox" value="${esc(diet)}" ${checked}>${esc(diet)}</label>`;
                   }).join('')}
                 </div>
