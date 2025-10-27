@@ -39,8 +39,14 @@ CRITICAL: You MUST respond with ONLY valid JSON. No explanations, no markdown, n
 
 TASK:
 Analyze the ingredient list and determine:
-1. Which allergens are present from this list: dairy, egg, peanut, tree nut, shellfish, fish, gluten, soy, sesame, wheat
+1. Which allergens are present from this FDA Top 9 list ONLY: dairy, egg, peanut, tree nut, shellfish, fish, wheat, soy, sesame
 2. Which dietary preferences this product is compatible with: Vegan, Vegetarian, Pescatarian
+
+CRITICAL ALLERGEN RULES:
+- ONLY flag allergens from the top 9 list above
+- Do NOT flag "gluten" as a separate allergen - wheat covers gluten-containing grains
+- Oats by themselves are NOT wheat and should NOT be flagged (unless ingredients explicitly mention wheat)
+- Only flag wheat if wheat/wheat flour/wheat-based ingredients are explicitly present
 
 IMPORTANT RULES FOR ALLERGEN DETECTION:
 - "almond milk", "oat milk", "soy milk", "coconut milk", etc. are NOT dairy - they are plant-based alternatives
