@@ -1208,7 +1208,10 @@ function ensureAiAssistElements(){
       <div class="aiAssistPanel" id="aiAssistPanel" role="dialog" aria-modal="true" aria-labelledby="aiAssistTitle">
         <div class="aiAssistHead">
           <h2 id="aiAssistTitle">AI Ingredient Assistant</h2>
-          <button type="button" class="aiAssistClose" id="aiAssistClose" aria-label="Close AI assistant">×</button>
+          <div style="display:flex;gap:8px">
+            <button type="button" class="btn btnDanger" id="aiAssistDeleteBtn" aria-label="Delete overlay" style="display:none;padding:8px 12px;font-size:0.9rem">🗑 Delete</button>
+            <button type="button" class="aiAssistClose" id="aiAssistClose" aria-label="Close AI assistant">×</button>
+          </div>
         </div>
         <p class="aiAssistIntro">Upload recipe photos or describe the dish ingredients below.</p>
 
@@ -1943,6 +1946,23 @@ function openAiAssistant(context){
   const titleEl = document.getElementById('aiAssistTitle');
   if(titleEl){
     titleEl.textContent = dishName;
+  }
+
+  // Show/hide delete button and wire up callback
+  const deleteBtn = document.getElementById('aiAssistDeleteBtn');
+  if(deleteBtn){
+    if(context?.onDelete){
+      deleteBtn.style.display = 'block';
+      deleteBtn.onclick = () => {
+        if(confirm('Delete this overlay? This cannot be undone.')){
+          toggleAiAssistBackdrop(false);
+          context.onDelete();
+        }
+      };
+    } else {
+      deleteBtn.style.display = 'none';
+      deleteBtn.onclick = null;
+    }
   }
 
   // Check if there are existing ingredients to edit
@@ -5843,7 +5863,15 @@ function renderEditor(){
         seedText,
         getCurrentName:()=>document.getElementById('itemName').value||it.id||'Item',
         onApply:(rows)=>applyIngredientsFromAi(rows),
-        existingIngredients: existingIngredientRows
+        existingIngredients: existingIngredientRows,
+        onDelete: () => {
+          // Delete the overlay
+          pendingChanges.push(`${it.id||'Item'}: Removed overlay`);
+          overlays.splice(idx,1);
+          if(mb) mb.style.display='none';
+          drawAll();
+          setDirty(true);
+        }
       });
     }, 100);
 
