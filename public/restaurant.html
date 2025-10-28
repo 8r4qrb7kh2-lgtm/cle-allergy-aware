@@ -1599,7 +1599,15 @@ function ensureAiAssistElements(){
     // New confirmation workflow buttons
     // Save Draft button removed per user request
 
-    aiAssistApplyBtn.addEventListener('click',()=>applyAiIngredientsToOverlay());
+    console.log('Binding aiAssistApplyBtn:', aiAssistApplyBtn);
+    if(aiAssistApplyBtn){
+      aiAssistApplyBtn.addEventListener('click',()=>{
+        console.log('Save to Dish button clicked!');
+        applyAiIngredientsToOverlay();
+      });
+    } else {
+      console.error('aiAssistApplyBtn not found!');
+    }
     if(aiAssistUploadBtn && aiAssistFileInput){
       aiAssistUploadBtn.addEventListener('click',()=>{
         aiAssistFileInput.value='';
