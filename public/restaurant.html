@@ -2444,21 +2444,6 @@ function openAiAssistant(context){
     crossErrorEl.style.display = 'none';
   }
 
-  // Load existing cross-contamination data if available
-  if(context?.noCrossContamination){
-    if(noCrossCheckbox){
-      noCrossCheckbox.checked = true;
-    }
-  } else if(context?.crossContamination && Array.isArray(context.crossContamination) && context.crossContamination.length > 0){
-    // Check the appropriate allergen checkboxes
-    context.crossContamination.forEach(allergen => {
-      const checkbox = Array.from(crossAllergenCheckboxes).find(cb => cb.dataset.allergen === allergen);
-      if(checkbox){
-        checkbox.checked = true;
-      }
-    });
-  }
-
   // Keep the title generic - dish name is shown in the editable field below
   const titleEl = document.getElementById('aiAssistTitle');
   if(titleEl){
@@ -2482,6 +2467,21 @@ function openAiAssistant(context){
 
   // NOW set the context after the name has been determined
   aiAssistState.context=context||{};
+
+  // Load existing cross-contamination data if available (MUST be after context is set)
+  if(context?.noCrossContamination){
+    if(noCrossCheckbox){
+      noCrossCheckbox.checked = true;
+    }
+  } else if(context?.crossContamination && Array.isArray(context.crossContamination) && context.crossContamination.length > 0){
+    // Check the appropriate allergen checkboxes
+    context.crossContamination.forEach(allergen => {
+      const checkbox = Array.from(crossAllergenCheckboxes).find(cb => cb.dataset.allergen === allergen);
+      if(checkbox){
+        checkbox.checked = true;
+      }
+    });
+  }
 
   // Show/hide delete button and wire up callback
   const deleteBtn = document.getElementById('aiAssistDeleteBtn');
