@@ -1785,6 +1785,23 @@ function toggleAiAssistBackdrop(show){
   ensureAiAssistElements();
   if(!aiAssistBackdrop) return;
   if(show){
+    // Re-bind the Save to Dish button every time we show the panel
+    // This ensures the handler is attached even if the button was recreated
+    const applyBtn = document.getElementById('aiAssistApplyBtn');
+    console.log('toggleAiAssistBackdrop: Re-binding Save to Dish button:', applyBtn);
+    if(applyBtn){
+      // Remove any existing listeners by cloning the button
+      const newApplyBtn = applyBtn.cloneNode(true);
+      applyBtn.parentNode.replaceChild(newApplyBtn, applyBtn);
+      newApplyBtn.addEventListener('click',()=>{
+        console.log('Save to Dish button clicked!');
+        applyAiIngredientsToOverlay();
+      });
+      aiAssistApplyBtn = newApplyBtn;
+    } else {
+      console.error('toggleAiAssistBackdrop: aiAssistApplyBtn not found!');
+    }
+
     aiAssistBackdrop.classList.add('show');
     aiAssistBackdrop.setAttribute('aria-hidden','false');
     // Mobile-safe scroll lock: store position and fix body
