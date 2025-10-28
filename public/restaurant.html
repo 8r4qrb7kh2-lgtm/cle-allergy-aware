@@ -4286,7 +4286,6 @@ async function insertChangeLogEntry(base){
     user_email: base.userEmail || null,
     photos: Array.isArray(base.photos) ? base.photos : (base.photos ? [base.photos] : []),
     overlays: base.overlays || null,
-    menu_image: base.menuImage || null,
     timestamp: base.timestamp || new Date().toISOString()
   };
   Object.keys(payload).forEach(k=>payload[k]==null&&delete payload[k]);
