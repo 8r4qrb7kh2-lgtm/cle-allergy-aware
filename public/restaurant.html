@@ -4208,19 +4208,45 @@ function tooltipBodyHTML(item,sel,userDiets){
     html+=`<div class="note" style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(76,90,212,0.2)"><strong style="display:block;margin-bottom:8px;color:var(--ink)">Dietary Options</strong>`;
 
     const itemDietSet = new Set(item.diets || []);
+    const removableAllergens = new Set((item.removable || []).map(r => norm(r.allergen)));
+
+    // Define which allergens conflict with each diet
+    const allergenConflicts = {
+      'Vegan': ['dairy', 'egg', 'fish', 'shellfish'],
+      'Vegetarian': ['fish', 'shellfish'],
+      'Pescatarian': []
+    };
 
     userDiets.forEach(userDiet => {
       const isDietMet = itemDietSet.has(userDiet);
-      const color = isDietMet ? '#4cc85a' : '#e85d5d';
       const emoji = {
         'Vegan': '🌱',
         'Vegetarian': '🥬',
         'Pescatarian': '🐟',
       }[userDiet] || '✓';
-      const status = isDietMet ? 'is' : 'is not';
       const dietLower = userDiet.toLowerCase();
 
-      html+=`<div style="margin-bottom:6px;color:${color};font-size:0.9rem">${emoji} This dish ${status} <strong>${esc(dietLower)}</strong></div>`;
+      if(isDietMet){
+        // Diet is met - show green
+        html+=`<div style="margin-bottom:6px;color:#4cc85a;font-size:0.9rem">${emoji} This dish is <strong>${esc(dietLower)}</strong></div>`;
+      } else {
+        // Diet is not met - check if it can be made to meet the diet
+        const conflicts = allergenConflicts[userDiet] || [];
+        const itemAllergens = item.allergens || [];
+        const conflictingAllergens = conflicts.filter(allergen => itemAllergens.includes(allergen));
+
+        // Check if ALL conflicting allergens are removable
+        const canBeMade = conflictingAllergens.length > 0 &&
+                          conflictingAllergens.every(allergen => removableAllergens.has(allergen));
+
+        if(canBeMade){
+          // All conflicting allergens can be substituted out - show orange
+          html+=`<div style="margin-bottom:6px;color:#f59e0b;font-size:0.9rem">${emoji} This dish can be made <strong>${esc(dietLower)}</strong></div>`;
+        } else {
+          // Cannot be made to meet the diet - show red
+          html+=`<div style="margin-bottom:6px;color:#e85d5d;font-size:0.9rem">${emoji} This dish is not <strong>${esc(dietLower)}</strong></div>`;
+        }
+      }
     });
 
     html+=`</div>`;
