@@ -2497,18 +2497,31 @@ function openAiAssistant(context){
   aiAssistState.context=context||{};
 
   // Load existing cross-contamination data if available (MUST be after context is set)
+  console.log('Loading cross-contamination data from context:', {
+    noCrossContamination: context?.noCrossContamination,
+    crossContamination: context?.crossContamination
+  });
+
   if(context?.noCrossContamination){
+    console.log('  Setting noCrossContamination checkbox to checked');
     if(noCrossCheckbox){
       noCrossCheckbox.checked = true;
     }
   } else if(context?.crossContamination && Array.isArray(context.crossContamination) && context.crossContamination.length > 0){
+    console.log('  Loading cross-contamination allergens:', context.crossContamination);
     // Check the appropriate allergen checkboxes
     context.crossContamination.forEach(allergen => {
       const checkbox = Array.from(crossAllergenCheckboxes).find(cb => cb.dataset.allergen === allergen);
+      console.log(`    Looking for checkbox for ${allergen}:`, checkbox);
       if(checkbox){
         checkbox.checked = true;
+        console.log(`    Set ${allergen} checkbox to checked`);
+      } else {
+        console.warn(`    Could not find checkbox for ${allergen}`);
       }
     });
+  } else {
+    console.log('  No cross-contamination data to load');
   }
 
   // Show/hide delete button and wire up callback
@@ -4218,8 +4231,18 @@ function applyAiIngredientsToOverlay(){
   const crossAllergenCheckboxes = document.querySelectorAll('.aiCrossAllergenCheckbox');
   const crossErrorEl = document.getElementById('aiAssistCrossContaminationError');
 
+  console.log('Found cross-contamination elements:', {
+    noCrossCheckbox,
+    crossAllergenCheckboxesCount: crossAllergenCheckboxes.length
+  });
+
   const noCrossChecked = noCrossCheckbox && noCrossCheckbox.checked;
   const anyAllergenChecked = Array.from(crossAllergenCheckboxes || []).some(cb => cb.checked);
+
+  console.log('Cross-contamination checkbox states:');
+  crossAllergenCheckboxes.forEach(cb => {
+    console.log(`  ${cb.dataset.allergen}: checked=${cb.checked}`);
+  });
 
   console.log('Cross-contamination validation:', {noCrossChecked, anyAllergenChecked});
 
@@ -4241,12 +4264,17 @@ function applyAiIngredientsToOverlay(){
     allergens: []
   };
 
+  console.log('Collecting cross-contamination data...');
   if(!crossContaminationData.noCrossContamination){
     Array.from(crossAllergenCheckboxes || []).forEach(cb => {
+      console.log(`  Checking ${cb.dataset.allergen}: checked=${cb.checked}`);
       if(cb.checked){
+        console.log(`    -> Adding ${cb.dataset.allergen} to allergens array`);
         crossContaminationData.allergens.push(cb.dataset.allergen);
       }
     });
+  } else {
+    console.log('  noCrossContamination is checked, skipping allergen collection');
   }
 
   console.log('Cross-contamination data collected:', crossContaminationData);
