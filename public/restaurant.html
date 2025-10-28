@@ -4240,8 +4240,8 @@ function tooltipBodyHTML(item,sel,userDiets){
                           conflictingAllergens.every(allergen => removableAllergens.has(allergen));
 
         if(canBeMade){
-          // All conflicting allergens can be substituted out - show orange
-          html+=`<div style="margin-bottom:6px;color:#f59e0b;font-size:0.9rem">${emoji} This dish can be made <strong>${esc(dietLower)}</strong></div>`;
+          // All conflicting allergens can be substituted out - show yellow (same as allergen warning color)
+          html+=`<div style="margin-bottom:6px;color:#facc15;font-size:0.9rem">${emoji} This dish can be made <strong>${esc(dietLower)}</strong></div>`;
         } else {
           // Cannot be made to meet the diet - show red
           html+=`<div style="margin-bottom:6px;color:#e85d5d;font-size:0.9rem">${emoji} This dish is not <strong>${esc(dietLower)}</strong></div>`;
