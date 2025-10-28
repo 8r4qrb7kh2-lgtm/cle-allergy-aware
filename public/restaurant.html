@@ -2457,24 +2457,50 @@ function openAiAssistant(context){
   updateAiAssistMediaPreview();
   aiAssistSetStatus('');
 
-  // Reset cross-contamination checkboxes
+  // Check if AI Assistant is already open - if so, don't reset checkboxes (preserve user edits)
+  const isAlreadyOpen = aiAssistBackdrop && aiAssistBackdrop.style.display === 'flex';
+
+  // Reset cross-contamination checkboxes ONLY if:
+  // 1. Assistant is not already open (new opening), AND
+  // 2. Context has explicit data to load
+  // This preserves user's manual checkbox selections when assistant is re-opened
   const noCrossCheckbox = document.getElementById('aiAssistNoCrossContamination');
   const crossAllergenCheckboxes = document.querySelectorAll('.aiCrossAllergenCheckbox');
   const crossErrorEl = document.getElementById('aiAssistCrossContaminationError');
 
-  if(noCrossCheckbox){
-    noCrossCheckbox.checked = false;
+  // Only reset if we're opening fresh AND have context data to load
+  const hasExplicitCrossData = context?.noCrossContamination === true ||
+                                (context?.crossContamination && Array.isArray(context.crossContamination) && context.crossContamination.length > 0);
+
+  console.log('openAiAssistant: Cross-contamination reset logic:', {
+    isAlreadyOpen,
+    hasExplicitCrossData,
+    noCrossContamination: context?.noCrossContamination,
+    crossContamination: context?.crossContamination
+  });
+
+  if(!isAlreadyOpen && hasExplicitCrossData){
+    // Reset checkboxes before loading context data (only when opening fresh)
+    console.log('  -> Resetting cross-contamination checkboxes to load context data');
+    if(noCrossCheckbox){
+      noCrossCheckbox.checked = false;
+    }
+    if(crossAllergenCheckboxes){
+      crossAllergenCheckboxes.forEach(cb => {
+        cb.checked = false;
+        cb.disabled = false;
+        if(cb.parentElement){
+          cb.parentElement.style.opacity = '1';
+          cb.parentElement.style.pointerEvents = 'auto';
+        }
+      });
+    }
+  } else if(isAlreadyOpen){
+    console.log('  -> AI Assistant already open, preserving current checkbox state');
+  } else {
+    console.log('  -> No explicit cross-contamination data in context, keeping checkboxes as-is');
   }
-  if(crossAllergenCheckboxes){
-    crossAllergenCheckboxes.forEach(cb => {
-      cb.checked = false;
-      cb.disabled = false;
-      if(cb.parentElement){
-        cb.parentElement.style.opacity = '1';
-        cb.parentElement.style.pointerEvents = 'auto';
-      }
-    });
-  }
+
   if(crossErrorEl){
     crossErrorEl.style.display = 'none';
   }
@@ -2504,31 +2530,50 @@ function openAiAssistant(context){
   aiAssistState.context=context||{};
 
   // Load existing cross-contamination data if available (MUST be after context is set)
+  // BUT only if assistant was not already open (to preserve user's manual edits)
   console.log('Loading cross-contamination data from context:', {
+    isAlreadyOpen,
     noCrossContamination: context?.noCrossContamination,
     crossContamination: context?.crossContamination
   });
 
-  if(context?.noCrossContamination){
-    console.log('  Setting noCrossContamination checkbox to checked');
-    if(noCrossCheckbox){
-      noCrossCheckbox.checked = true;
-    }
-  } else if(context?.crossContamination && Array.isArray(context.crossContamination) && context.crossContamination.length > 0){
-    console.log('  Loading cross-contamination allergens:', context.crossContamination);
-    // Check the appropriate allergen checkboxes
-    context.crossContamination.forEach(allergen => {
-      const checkbox = Array.from(crossAllergenCheckboxes).find(cb => cb.dataset.allergen === allergen);
-      console.log(`    Looking for checkbox for ${allergen}:`, checkbox);
-      if(checkbox){
-        checkbox.checked = true;
-        console.log(`    Set ${allergen} checkbox to checked`);
-      } else {
-        console.warn(`    Could not find checkbox for ${allergen}`);
+  if(!isAlreadyOpen){
+    if(context?.noCrossContamination){
+      console.log('  Setting noCrossContamination checkbox to checked');
+      if(noCrossCheckbox){
+        noCrossCheckbox.checked = true;
+        // Disable allergen checkboxes when "no cross-contamination" is set
+        crossAllergenCheckboxes.forEach(cb => {
+          cb.checked = false;
+          cb.disabled = true;
+          if(cb.parentElement){
+            cb.parentElement.style.opacity = '0.5';
+            cb.parentElement.style.pointerEvents = 'none';
+          }
+        });
       }
-    });
+    } else if(context?.crossContamination && Array.isArray(context.crossContamination) && context.crossContamination.length > 0){
+      console.log('  Loading cross-contamination allergens:', context.crossContamination);
+      // Uncheck "no cross-contamination" since we have specific allergens
+      if(noCrossCheckbox){
+        noCrossCheckbox.checked = false;
+      }
+      // Check the appropriate allergen checkboxes
+      context.crossContamination.forEach(allergen => {
+        const checkbox = Array.from(crossAllergenCheckboxes).find(cb => cb.dataset.allergen === allergen);
+        console.log(`    Looking for checkbox for ${allergen}:`, checkbox);
+        if(checkbox){
+          checkbox.checked = true;
+          console.log(`    Set ${allergen} checkbox to checked`);
+        } else {
+          console.warn(`    Could not find checkbox for ${allergen}`);
+        }
+      });
+    } else {
+      console.log('  No cross-contamination data to load');
+    }
   } else {
-    console.log('  No cross-contamination data to load');
+    console.log('  Skipping cross-contamination load because assistant is already open');
   }
 
   // Show/hide delete button and wire up callback
@@ -6909,6 +6954,8 @@ function renderEditor(){
       // Track old values for change log
       const oldAllergens = new Set(it.allergens || []);
       const oldDiets = new Set(it.diets || []);
+      const oldCrossContamination = new Set(it.crossContamination || []);
+      const oldNoCrossContamination = it.noCrossContamination || false;
       const dishName = it.id || 'Item';
 
       // Update the overlay object with the new allergen data
@@ -6927,18 +6974,52 @@ function renderEditor(){
       }
 
       // Store cross-contamination data from AI Assistant
+      console.log(`=== applyIngredientsFromAi: Processing crossContamination for "${it.id}" ===`);
+      console.log('  Current it.crossContamination:', it.crossContamination);
+      console.log('  extraData.crossContamination:', extraData?.crossContamination);
       if(extraData && extraData.crossContamination){
         if(extraData.crossContamination.noCrossContamination){
           it.crossContamination = [];
           it.noCrossContamination = true;
-          console.log('Set noCrossContamination=true for', it.id);
+          console.log('  -> Set noCrossContamination=true');
         } else {
           it.crossContamination = extraData.crossContamination.allergens || [];
           it.noCrossContamination = false;
-          console.log('Set crossContamination for', it.id, ':', it.crossContamination);
+          console.log('  -> Set crossContamination:', it.crossContamination);
         }
       } else {
-        console.log('No extraData.crossContamination for', it.id, 'extraData:', extraData);
+        console.log('  -> No extraData.crossContamination, keeping existing value:', it.crossContamination);
+      }
+      console.log('  Final it.crossContamination:', it.crossContamination);
+
+      // Track cross-contamination changes
+      const newCrossContamination = new Set(it.crossContamination || []);
+      const newNoCrossContamination = it.noCrossContamination || false;
+
+      // Check if noCrossContamination status changed
+      if(oldNoCrossContamination !== newNoCrossContamination){
+        if(newNoCrossContamination){
+          pendingChanges.push(`${dishName}: Set to no cross-contamination risk`);
+          console.log(`Added pendingChange: ${dishName}: Set to no cross-contamination risk`);
+        } else {
+          pendingChanges.push(`${dishName}: Removed no cross-contamination status`);
+          console.log(`Added pendingChange: ${dishName}: Removed no cross-contamination status`);
+        }
+      }
+
+      // Check if specific cross-contamination allergens changed
+      const addedCross = [...newCrossContamination].filter(a => !oldCrossContamination.has(a));
+      const removedCross = [...oldCrossContamination].filter(a => !newCrossContamination.has(a));
+
+      if(addedCross.length){
+        const word = addedCross.length === 1 ? 'cross-contamination risk' : 'cross-contamination risks';
+        pendingChanges.push(`${dishName}: Added ${word} for ${addedCross.join(', ')}`);
+        console.log(`Added pendingChange: ${dishName}: Added ${word} for ${addedCross.join(', ')}`);
+      }
+      if(removedCross.length){
+        const word = removedCross.length === 1 ? 'cross-contamination risk' : 'cross-contamination risks';
+        pendingChanges.push(`${dishName}: Removed ${word} for ${removedCross.join(', ')}`);
+        console.log(`Added pendingChange: ${dishName}: Removed ${word} for ${removedCross.join(', ')}`);
       }
 
       // Track allergen changes
@@ -7094,6 +7175,7 @@ function renderEditor(){
       const oldAllergens=new Set(it.allergens||[]);
 
       const final={allergens:[],removable:[],crossContamination:[],diets:[],details:{}};
+      console.log('=== DONE BUTTON: Starting to collect dish data ===');
       list.querySelectorAll('.algRow').forEach(row=>{
         const btn = row.querySelector('.algBtn');
         const a=btn.dataset.a;
@@ -7107,12 +7189,19 @@ function renderEditor(){
           // This is an allergen button
           const txt=row.querySelector('.algInput')?.value.trim()||'';
           const checkboxes=row.querySelectorAll('input[type="checkbox"]');
+          console.log(`  Allergen ${a}: found ${checkboxes.length} checkboxes`);
           const isRem=checkboxes[0]?.checked;
           const isCross=checkboxes[1]?.checked;
+          console.log(`    - isRem (checkbox[0]): ${isRem}`);
+          console.log(`    - isCross (checkbox[1]): ${isCross}`);
           if(on){final.allergens.push(a); if(txt) final.details[a]=txt; if(isRem) final.removable.push({allergen:a,component:txt||a}); }
-          if(isCross){final.crossContamination.push(a);}
+          if(isCross){
+            console.log(`    -> Adding ${a} to crossContamination array`);
+            final.crossContamination.push(a);
+          }
         }
       });
+      console.log('=== DONE BUTTON: Final crossContamination array ===', final.crossContamination);
       if(list && list.dataset.aiIngredientSummary){
         try{
           const rawSummary=JSON.parse(list.dataset.aiIngredientSummary)||[];
@@ -7166,6 +7255,7 @@ function renderEditor(){
       it.removable=final.removable;
       it.crossContamination=final.crossContamination;
       it.diets=final.diets;
+      console.log(`=== DONE BUTTON: Set it.crossContamination for "${newName}" ===`, it.crossContamination);
       // Save AI ingredients data for future editing
       if(list){
         it.aiIngredients = list.dataset.aiIngredients || '';
