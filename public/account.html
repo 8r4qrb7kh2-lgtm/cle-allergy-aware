@@ -137,7 +137,7 @@
         <section id="allergen-section" class="auth-card" style="display:none;">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
             <h2 style="margin:0;">My Allergens</h2>
-            <button class="primary-btn" id="save-btn" type="button">Save changes</button>
+            <button class="primary-btn" id="save-btn" type="button" style="display:none;">Save changes</button>
           </div>
           <div id="allergen-pills" class="allergen-select"></div>
           <p id="allergen-status" class="status-text" style="display:none;"></p>
@@ -147,7 +147,7 @@
         <section id="diet-section" class="auth-card" style="display:none;">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
             <h2 style="margin:0;">My Dietary Preferences</h2>
-            <button class="primary-btn" id="save-diet-btn" type="button">Save changes</button>
+            <button class="primary-btn" id="save-diet-btn" type="button" style="display:none;">Save changes</button>
           </div>
           <div id="diet-pills" class="allergen-select"></div>
           <p id="diet-status" class="status-text" style="display:none;"></p>
@@ -201,6 +201,8 @@
     };
     let selectedAllergies = [];
     let selectedDiets = [];
+    let initialAllergies = []; // Track initial state for change detection
+    let initialDiets = []; // Track initial state for change detection
     let signupAllergies = [];
     let signupDiets = [];
     let currentUser = null;
@@ -320,6 +322,8 @@
       // Filter out any allergens not in current ALLERGENS list (removes legacy data like 'gluten')
       const dbAllergens = data?.allergens || [];
       selectedAllergies = dbAllergens.filter(a => ALLERGENS.includes(a));
+      // Save initial state for change detection
+      initialAllergies = [...selectedAllergies];
       // If we filtered anything out, save the cleaned list back to the database
       if (dbAllergens.length !== selectedAllergies.length) {
         await saveAllergies(selectedAllergies);
@@ -346,6 +350,11 @@
         };
         container.appendChild(pill);
       });
+
+      // Show/hide save button based on whether changes were made
+      const saveBtn = document.getElementById('save-btn');
+      const hasChanges = JSON.stringify([...selectedAllergies].sort()) !== JSON.stringify([...initialAllergies].sort());
+      saveBtn.style.display = hasChanges ? 'block' : 'none';
     }
 
     async function loadDiets() {
@@ -358,6 +367,8 @@
         .eq('user_id', currentUser.id)
         .maybeSingle();
       selectedDiets = data?.diets || [];
+      // Save initial state for change detection
+      initialDiets = [...selectedDiets];
       renderDiets();
     }
 
@@ -380,6 +391,11 @@
         };
         container.appendChild(pill);
       });
+
+      // Show/hide save button based on whether changes were made
+      const saveDietBtn = document.getElementById('save-diet-btn');
+      const hasChanges = JSON.stringify([...selectedDiets].sort()) !== JSON.stringify([...initialDiets].sort());
+      saveDietBtn.style.display = hasChanges ? 'block' : 'none';
     }
 
     async function saveDiets(diets) {
@@ -495,11 +511,15 @@
       allergenStatus.style.display = 'none';
       try {
         await saveAllergies(selectedAllergies);
+        // Update initial state to match saved state
+        initialAllergies = [...selectedAllergies];
         saveBtn.textContent = 'Saved!';
         saveBtn.style.background = '#22c55e';
         setTimeout(() => {
           saveBtn.textContent = originalText;
           saveBtn.style.background = '';
+          // Hide button after save success
+          saveBtn.style.display = 'none';
         }, 2000);
       } catch (error) {
         allergenStatus.textContent = error.message || 'Failed to save.';
@@ -517,11 +537,15 @@
       dietStatus.style.display = 'none';
       try {
         await saveDiets(selectedDiets);
+        // Update initial state to match saved state
+        initialDiets = [...selectedDiets];
         saveDietBtn.textContent = 'Saved!';
         saveDietBtn.style.background = '#22c55e';
         setTimeout(() => {
           saveDietBtn.textContent = originalText;
           saveDietBtn.style.background = '';
+          // Hide button after save success
+          saveDietBtn.style.display = 'none';
         }, 2000);
       } catch (error) {
         dietStatus.textContent = error.message || 'Failed to save.';
