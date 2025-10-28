@@ -1405,6 +1405,27 @@ function ensureAiAssistElements(){
             <button type="button" class="btn btnPrimary" id="aiAssistApplyBtn">✓ Save to Dish</button>
           </div>
 
+          <!-- Cross-Contamination Risk Section -->
+          <div id="aiAssistCrossContamination" style="margin-top:24px;padding-top:24px;border-top:2px solid rgba(76,90,212,0.3)">
+            <h3 style="margin:0 0 12px 0;font-size:1.1rem;color:#a8b2d6">Cross-Contamination Risk</h3>
+            <p style="color:#a8b2d6;font-size:0.9rem;margin-bottom:16px;">Select any allergens that may have cross-contamination risk during preparation:</p>
+
+            <div id="aiAssistCrossAllergenCheckboxes" style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+              <!-- Allergen checkboxes will be inserted here -->
+            </div>
+
+            <div style="margin-top:16px;">
+              <label style="display:flex;align-items:center;gap:12px;padding:16px;background:rgba(76,90,212,0.1);border:2px solid rgba(76,90,212,0.3);border-radius:8px;cursor:pointer;transition:all 0.2s;" id="aiAssistNoCrossContaminationLabel">
+                <input type="checkbox" id="aiAssistNoCrossContamination" style="width:20px;height:20px;cursor:pointer;">
+                <span style="flex:1;color:#d1d5db;font-size:1rem;font-weight:500;">No cross-contamination risk with any of the above allergens</span>
+              </label>
+            </div>
+
+            <p id="aiAssistCrossContaminationError" style="display:none;color:#ef4444;font-size:0.9rem;margin-top:12px;padding:12px;background:rgba(239,68,68,0.1);border:1px solid #ef4444;border-radius:6px;">
+              ⚠️ Please select "No cross-contamination risk" or check at least one allergen before saving.
+            </p>
+          </div>
+
           <!-- Dish Overlay Preview -->
           <div id="aiAssistPreview" style="margin-top:24px;padding-top:24px;border-top:2px solid rgba(76,90,212,0.3)">
             <h3 style="margin:0 0 12px 0;font-size:1.1rem;color:#a8b2d6">Preview: What customers will see</h3>
@@ -1451,6 +1472,85 @@ function ensureAiAssistElements(){
     aiAssistCancelCameraBtn=backdrop.querySelector('#aiAssistCancelCameraBtn');
     aiAssistMediaPreview=backdrop.querySelector('#aiAssistMediaPreview');
     window.aiAssistPhotos = []; // Store multiple photos
+
+    // Initialize cross-contamination allergen checkboxes
+    const crossAllergenContainer = backdrop.querySelector('#aiAssistCrossAllergenCheckboxes');
+    if(crossAllergenContainer && crossAllergenContainer.children.length === 0){
+      ALLERGENS.forEach(allergen => {
+        const label = document.createElement('label');
+        label.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 16px;background:rgba(76,90,212,0.1);border:1px solid rgba(76,90,212,0.3);border-radius:6px;cursor:pointer;transition:all 0.2s;white-space:nowrap;';
+        label.className = 'aiCrossAllergenLabel';
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'aiCrossAllergenCheckbox';
+        checkbox.dataset.allergen = allergen;
+        checkbox.style.cssText = 'width:18px;height:18px;cursor:pointer;';
+
+        const emoji = {
+          'dairy': '🥛',
+          'egg': '🥚',
+          'peanut': '🥜',
+          'tree nut': '🌰',
+          'shellfish': '🦐',
+          'fish': '🐟',
+          'soy': '🫛',
+          'sesame': '🫘',
+          'wheat': '🌾'
+        }[allergen] || '';
+
+        const span = document.createElement('span');
+        span.style.cssText = 'color:#d1d5db;font-size:0.95rem;';
+        span.textContent = `${emoji} ${allergen.charAt(0).toUpperCase() + allergen.slice(1)}`;
+
+        label.appendChild(checkbox);
+        label.appendChild(span);
+        crossAllergenContainer.appendChild(label);
+      });
+    }
+
+    // Add mutual exclusivity event listeners for cross-contamination section
+    const noCrossCheckbox = backdrop.querySelector('#aiAssistNoCrossContamination');
+    const crossAllergenCheckboxes = backdrop.querySelectorAll('.aiCrossAllergenCheckbox');
+    const crossErrorEl = backdrop.querySelector('#aiAssistCrossContaminationError');
+
+    if(noCrossCheckbox && crossAllergenCheckboxes.length > 0){
+      // When "no risk" is checked, disable and uncheck all allergen checkboxes
+      noCrossCheckbox.addEventListener('change', () => {
+        if(noCrossCheckbox.checked){
+          crossAllergenCheckboxes.forEach(cb => {
+            cb.checked = false;
+            cb.disabled = true;
+            cb.parentElement.style.opacity = '0.5';
+            cb.parentElement.style.pointerEvents = 'none';
+          });
+        } else {
+          crossAllergenCheckboxes.forEach(cb => {
+            cb.disabled = false;
+            cb.parentElement.style.opacity = '1';
+            cb.parentElement.style.pointerEvents = 'auto';
+          });
+        }
+        // Hide error when selection changes
+        if(crossErrorEl) crossErrorEl.style.display = 'none';
+        // Update preview to reflect cross-contamination selection
+        updateAiPreview();
+      });
+
+      // When any allergen checkbox is checked, uncheck "no risk"
+      crossAllergenCheckboxes.forEach(cb => {
+        cb.addEventListener('change', () => {
+          if(cb.checked){
+            noCrossCheckbox.checked = false;
+          }
+          // Hide error when selection changes
+          if(crossErrorEl) crossErrorEl.style.display = 'none';
+          // Update preview to reflect cross-contamination selection
+          updateAiPreview();
+        });
+      });
+    }
+
     aiAssistElementsBound=false;
   }
   if(!aiAssistElementsBound){
@@ -2006,10 +2106,49 @@ function updateAiPreview(){
     }
   });
 
+  // Collect cross-contamination data from checkboxes
+  const noCrossCheckbox = document.getElementById('aiAssistNoCrossContamination');
+  const crossAllergenCheckboxes = document.querySelectorAll('.aiCrossAllergenCheckbox');
+
+  if(noCrossCheckbox && noCrossCheckbox.checked){
+    tempOverlay.crossContamination = [];
+    tempOverlay.noCrossContamination = true;
+  } else {
+    const selectedCrossAllergens = [];
+    crossAllergenCheckboxes.forEach(cb => {
+      if(cb.checked){
+        selectedCrossAllergens.push(cb.dataset.allergen);
+      }
+    });
+    tempOverlay.crossContamination = selectedCrossAllergens;
+    tempOverlay.noCrossContamination = false;
+  }
+
   // Use the same tooltip HTML generator that's used for the actual overlays
   const allAllergens = ['dairy','egg','peanut','tree nut','shellfish','fish','gluten','soy','sesame','wheat'];
   const allDiets = ['Vegan','Vegetarian','Pescatarian'];
-  const html = tooltipBodyHTML(tempOverlay, allAllergens, allDiets);
+  let html = tooltipBodyHTML(tempOverlay, allAllergens, allDiets);
+
+  // Add cross-contamination information to preview
+  if(tempOverlay.noCrossContamination){
+    html += '<div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(76,90,212,0.3);color:#4cc85a;font-size:0.95rem">✓ No cross-contamination risk</div>';
+  } else if(tempOverlay.crossContamination && tempOverlay.crossContamination.length > 0){
+    const crossList = tempOverlay.crossContamination.map(a => {
+      const emoji = {
+        'dairy': '🥛',
+        'egg': '🥚',
+        'peanut': '🥜',
+        'tree nut': '🌰',
+        'shellfish': '🦐',
+        'fish': '🐟',
+        'soy': '🫛',
+        'sesame': '🫘',
+        'wheat': '🌾'
+      }[a] || '';
+      return `${emoji} ${a.charAt(0).toUpperCase() + a.slice(1)}`;
+    }).join(', ');
+    html += `<div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(76,90,212,0.3);color:#facc15;font-size:0.95rem">⚠️ Cross-contamination risk: ${crossList}</div>`;
+  }
 
   previewBox.innerHTML = html || '<div style="color:#8891b0;font-style:italic">No preview available</div>';
 }
@@ -2298,6 +2437,28 @@ function openAiAssistant(context){
   stopAiCamera();
   updateAiAssistMediaPreview();
   aiAssistSetStatus('');
+
+  // Reset cross-contamination checkboxes
+  const noCrossCheckbox = document.getElementById('aiAssistNoCrossContamination');
+  const crossAllergenCheckboxes = document.querySelectorAll('.aiCrossAllergenCheckbox');
+  const crossErrorEl = document.getElementById('aiAssistCrossContaminationError');
+
+  if(noCrossCheckbox){
+    noCrossCheckbox.checked = false;
+  }
+  if(crossAllergenCheckboxes){
+    crossAllergenCheckboxes.forEach(cb => {
+      cb.checked = false;
+      cb.disabled = false;
+      if(cb.parentElement){
+        cb.parentElement.style.opacity = '1';
+        cb.parentElement.style.pointerEvents = 'auto';
+      }
+    });
+  }
+  if(crossErrorEl){
+    crossErrorEl.style.display = 'none';
+  }
 
   // Keep the title generic - dish name is shown in the editable field below
   const titleEl = document.getElementById('aiAssistTitle');
@@ -4022,17 +4183,48 @@ function applyAiIngredientsToOverlay(){
     return;
   }
 
+  // Validate cross-contamination selection
+  const noCrossCheckbox = document.getElementById('aiAssistNoCrossContamination');
+  const crossAllergenCheckboxes = document.querySelectorAll('.aiCrossAllergenCheckbox');
+  const crossErrorEl = document.getElementById('aiAssistCrossContaminationError');
+
+  const noCrossChecked = noCrossCheckbox && noCrossCheckbox.checked;
+  const anyAllergenChecked = Array.from(crossAllergenCheckboxes || []).some(cb => cb.checked);
+
+  if(!noCrossChecked && !anyAllergenChecked){
+    if(crossErrorEl){
+      crossErrorEl.style.display = 'block';
+      crossErrorEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    return;
+  }
+
   // NOTE: Brands are NOT saved to memory here - they will only be saved to memory
   // when the overlay is actually saved to the server (not just applied to the dish)
+
+  // Collect cross-contamination data
+  const crossContaminationData = {
+    noCrossContamination: noCrossCheckbox && noCrossCheckbox.checked,
+    allergens: []
+  };
+
+  if(!crossContaminationData.noCrossContamination){
+    Array.from(crossAllergenCheckboxes || []).forEach(cb => {
+      if(cb.checked){
+        crossContaminationData.allergens.push(cb.dataset.allergen);
+      }
+    });
+  }
 
   // Mark as saved
   aiAssistState.savedToDish = true;
 
   if(aiAssistState.context?.onApply){
-    // Pass both ingredients and detected dietary options to the overlay
+    // Pass ingredients, dietary options, and cross-contamination data to the overlay
     const dataToApply = {
       ingredients: rows,
-      dietaryOptions: aiAssistState.detectedDietaryOptions || []
+      dietaryOptions: aiAssistState.detectedDietaryOptions || [],
+      crossContamination: crossContaminationData
     };
     aiAssistState.context.onApply(rows, dataToApply);
   }
@@ -6642,6 +6834,17 @@ function renderEditor(){
         it.details.__ingredientsSummary = uniqueAggregated.join(', ');
       }
 
+      // Store cross-contamination data from AI Assistant
+      if(extraData && extraData.crossContamination){
+        if(extraData.crossContamination.noCrossContamination){
+          it.crossContamination = [];
+          it.noCrossContamination = true;
+        } else {
+          it.crossContamination = extraData.crossContamination.allergens || [];
+          it.noCrossContamination = false;
+        }
+      }
+
       // Track allergen changes
       const addedAllergens = [...activeAllergens].filter(a => !oldAllergens.has(a));
       const removedAllergens = [...oldAllergens].filter(a => !activeAllergens.has(a));
@@ -6770,7 +6973,7 @@ function renderEditor(){
         console.log('getCurrentName called, returning:', currentDishId);
         return currentDishId;
       },
-      onApply:(rows)=>applyIngredientsFromAi(rows),
+      onApply:(rows, extraData)=>applyIngredientsFromAi(rows, extraData),
       existingIngredients: existingIngredientRows,
       onDelete: () => {
         // Delete the overlay
