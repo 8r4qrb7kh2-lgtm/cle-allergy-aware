@@ -1953,6 +1953,16 @@ function updateAiPreview(){
             allergenDetails[key].push(fullLabel);
           }
         }
+
+        // Track removable allergens
+        if(row.removable === true){
+          const detail = allergenDetails[key] && allergenDetails[key].length > 0 ?
+            allergenDetails[key].join(', ') : key;
+          // Only add if not already in the removable array
+          if(!tempOverlay.removable.some(r => r.allergen === key)){
+            tempOverlay.removable.push({allergen: key, component: detail});
+          }
+        }
       });
     }
   });
