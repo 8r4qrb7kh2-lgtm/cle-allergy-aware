@@ -1401,8 +1401,6 @@ function ensureAiAssistElements(){
 
           <div class="aiAssistTableActions">
             <button type="button" class="btn" id="aiAssistAddRowBtn">Add ingredient</button>
-            <div class="aiAssistSpacer"></div>
-            <button type="button" class="btn btnPrimary" id="aiAssistApplyBtn">✓ Save to Dish</button>
           </div>
 
           <!-- Cross-Contamination Risk Section -->
@@ -1424,6 +1422,10 @@ function ensureAiAssistElements(){
             <p id="aiAssistCrossContaminationError" style="display:none;color:#ef4444;font-size:0.9rem;margin-top:12px;padding:12px;background:rgba(239,68,68,0.1);border:1px solid #ef4444;border-radius:6px;">
               ⚠️ Please select "No cross-contamination risk" or check at least one allergen before saving.
             </p>
+
+            <div class="aiAssistTableActions" style="margin-top:20px;">
+              <button type="button" class="btn btnPrimary" id="aiAssistApplyBtn">✓ Save to Dish</button>
+            </div>
           </div>
 
           <!-- Dish Overlay Preview -->
@@ -2129,26 +2131,8 @@ function updateAiPreview(){
   const allDiets = ['Vegan','Vegetarian','Pescatarian'];
   let html = tooltipBodyHTML(tempOverlay, allAllergens, allDiets);
 
-  // Add cross-contamination information to preview
-  if(tempOverlay.noCrossContamination){
-    html += '<div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(76,90,212,0.3);color:#4cc85a;font-size:0.95rem">✓ No cross-contamination risk</div>';
-  } else if(tempOverlay.crossContamination && tempOverlay.crossContamination.length > 0){
-    const crossList = tempOverlay.crossContamination.map(a => {
-      const emoji = {
-        'dairy': '🥛',
-        'egg': '🥚',
-        'peanut': '🥜',
-        'tree nut': '🌰',
-        'shellfish': '🦐',
-        'fish': '🐟',
-        'soy': '🫛',
-        'sesame': '🫘',
-        'wheat': '🌾'
-      }[a] || '';
-      return `${emoji} ${a.charAt(0).toUpperCase() + a.slice(1)}`;
-    }).join(', ');
-    html += `<div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(76,90,212,0.3);color:#facc15;font-size:0.95rem">⚠️ Cross-contamination risk: ${crossList}</div>`;
-  }
+  // Note: Cross-contamination information is already included in tooltipBodyHTML,
+  // so we don't need to add it again here
 
   previewBox.innerHTML = html || '<div style="color:#8891b0;font-style:italic">No preview available</div>';
 }
@@ -2458,6 +2442,21 @@ function openAiAssistant(context){
   }
   if(crossErrorEl){
     crossErrorEl.style.display = 'none';
+  }
+
+  // Load existing cross-contamination data if available
+  if(context?.noCrossContamination){
+    if(noCrossCheckbox){
+      noCrossCheckbox.checked = true;
+    }
+  } else if(context?.crossContamination && Array.isArray(context.crossContamination) && context.crossContamination.length > 0){
+    // Check the appropriate allergen checkboxes
+    context.crossContamination.forEach(allergen => {
+      const checkbox = Array.from(crossAllergenCheckboxes).find(cb => cb.dataset.allergen === allergen);
+      if(checkbox){
+        checkbox.checked = true;
+      }
+    });
   }
 
   // Keep the title generic - dish name is shown in the editable field below
@@ -6975,6 +6974,8 @@ function renderEditor(){
       },
       onApply:(rows, extraData)=>applyIngredientsFromAi(rows, extraData),
       existingIngredients: existingIngredientRows,
+      crossContamination: it.crossContamination || [],
+      noCrossContamination: it.noCrossContamination || false,
       onDelete: () => {
         // Delete the overlay
         pendingChanges.push(`${it.id||'Item'}: Removed overlay`);
