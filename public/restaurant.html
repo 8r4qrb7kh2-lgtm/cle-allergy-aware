@@ -4035,6 +4035,10 @@ async function handleAiProcess(){
     return;
   }
 
+  // Clear existing ingredient data before processing new input
+  renderAiTable([]);
+  console.log('Cleared existing ingredient data for fresh processing');
+
   // If we have photos, process them
   if(hasPhotos){
     aiAssistSetStatus('Processing ' + window.aiAssistPhotos.length + ' recipe photo(s) using AI...');
@@ -4079,15 +4083,12 @@ async function handleAiProcess(){
         })) : [];
 
         if(rows.length > 0){
-          // Merge with existing data, avoiding duplicates
+          // Render new data directly (existing data was cleared at start)
           const existingData = collectAiTableData();
-          const { merged, duplicateCount } = mergeIngredientsWithoutDuplicates(existingData, rows);
-          renderAiTable(merged);
+          const allRows = [...existingData, ...rows];
+          renderAiTable(allRows);
 
           let statusMsg = `Photo ${i+1}/${window.aiAssistPhotos.length} processed.`;
-          if (duplicateCount > 0) {
-            statusMsg += ` ${duplicateCount} duplicate${duplicateCount > 1 ? 's' : ''} skipped.`;
-          }
           if (dishDietaryOptions.length > 0) {
             statusMsg += ` Detected: ${dishDietaryOptions.join(', ')}.`;
           }
@@ -4167,15 +4168,10 @@ async function handleAiProcess(){
         // in the renderAiTable function, rather than auto-populating.
         // This gives users control over whether to use remembered brands.
 
-        // Merge with existing data, avoiding duplicates
-        const existingData = collectAiTableData();
-        const { merged, duplicateCount } = mergeIngredientsWithoutDuplicates(existingData, rows);
-        renderAiTable(merged);
+        // Render new data directly (existing data was cleared at start)
+        renderAiTable(rows);
 
         let statusMsg = rows.length ? 'AI ingredient suggestions ready. Review before applying.' : 'AI could not extract ingredients from the description.';
-        if (duplicateCount > 0) {
-          statusMsg += ` (${duplicateCount} duplicate${duplicateCount > 1 ? 's' : ''} skipped)`;
-        }
         aiAssistSetStatus(statusMsg, 'info');
 
         // Complete progress bar
@@ -4194,15 +4190,10 @@ async function handleAiProcess(){
 
         if(text){
           const ingredients=heuristicallyExtractIngredients(text);
-          // Also check for duplicates in fallback
-          const existingData = collectAiTableData();
-          const { merged, duplicateCount } = mergeIngredientsWithoutDuplicates(existingData, ingredients);
-          renderAiTable(merged);
+          // Render new data directly (existing data was cleared at start)
+          renderAiTable(ingredients);
 
           let statusMsg = 'AI service unavailable—generated a draft using local parsing. Review before applying.';
-          if (duplicateCount > 0) {
-            statusMsg += ` (${duplicateCount} duplicate${duplicateCount > 1 ? 's' : ''} skipped)`;
-          }
           aiAssistSetStatus(statusMsg, 'warn');
         } else {
           aiAssistSetStatus('AI assistant request failed: '+(err.message||err),'warn');
