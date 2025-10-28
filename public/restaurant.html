@@ -1984,6 +1984,8 @@ function collectAiTableData(){
     const removableCheckbox=row.querySelector('.aiRemovableCheckbox');
     const removable=removableCheckbox?.checked || false;
 
+    console.log(`collectAiTableData row ${idx} (${name}): removable=${removable}, removableCheckbox=`, removableCheckbox, 'checked=', removableCheckbox?.checked);
+
     // Collect multiple brands
     const brands=[];
     if(row.dataset.brands){
@@ -1998,6 +2000,7 @@ function collectAiTableData(){
 
     data.push({index:idx,name,allergens,diets,brands,confirmed,removable});
   });
+  console.log('collectAiTableData final data:', data);
   return data;
 }
 
@@ -6724,6 +6727,7 @@ function renderEditor(){
         const name=(row.name||'').trim();
         const brand=(row.brand||'').trim();
         const isRemovable=row.removable===true;
+        console.log(`Processing row: name="${name}", allergens=`, allergens, `removable=${row.removable}, isRemovable=${isRemovable}`);
         if(Array.isArray(row.ingredientsList) && row.ingredientsList.length){
           aggregatedIngredientNames.push(...row.ingredientsList);
         } else if(name){
@@ -6743,6 +6747,7 @@ function renderEditor(){
           }
           // If this ingredient is marked as removable, track the allergen
           if(isRemovable){
+            console.log(`  -> Adding allergen "${key}" to removableIngredients because row is removable`);
             removableIngredients.add(key);
           }
         });
@@ -6908,6 +6913,7 @@ function renderEditor(){
       }
 
       // Update removable ingredients
+      console.log('removableIngredients Set before converting:', Array.from(removableIngredients));
       it.removable = [];
       removableIngredients.forEach(allergen => {
         const detail = it.details[allergen] || allergen;
@@ -6935,6 +6941,9 @@ function renderEditor(){
       try{
         existingIngredientRows = JSON.parse(it.aiIngredients);
         console.log('Found saved AI ingredients:', existingIngredientRows);
+        existingIngredientRows.forEach((row, idx) => {
+          console.log(`  Row ${idx}: name="${row.name}", removable=${row.removable}, allergens=`, row.allergens);
+        });
       }catch(e){
         console.warn('Failed to parse existing AI ingredients:', e);
       }
