@@ -4382,15 +4382,6 @@ function tooltipBodyHTML(item,sel,userDiets){
       html+=`<div class="note tooltipNeutralText">None of your selected allergens found.</div>`;
     }
 
-    if(hasCross){
-      const crossHits=(item.crossContamination||[]).filter(a=>sel.includes(a));
-      const crossList=crossHits.map(a=>{
-        const emoji = ALLERGEN_EMOJI[a.toLowerCase()] || '⚠️';
-        return `<div style="margin-bottom:4px">${emoji} Cross-contamination risk: <strong>${esc(a.toLowerCase())}</strong></div>`;
-      }).join('');
-      html+=`<div class="note tooltipNeutralText">${crossList}</div>`;
-    }
-
     // Ingredients list removed per user request - not needed in tooltip
   }
 
@@ -4443,6 +4434,22 @@ function tooltipBodyHTML(item,sel,userDiets){
     });
 
     html+=`</div>`;
+  }
+
+  // Add cross-contamination risk at the bottom with yellow warning icon
+  if(hasCross && sel.length){
+    const crossHits=(item.crossContamination||[]).filter(a=>sel.includes(a));
+    if(crossHits.length > 0){
+      const crossList=crossHits.map(a=>{
+        const emoji = ALLERGEN_EMOJI[a.toLowerCase()] || '';
+        return `${emoji} <strong>${esc(a.toLowerCase())}</strong>`;
+      }).join(', ');
+      html+=`<div class="note" style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(76,90,212,0.2)">`;
+      html+=`<div style="display:flex;align-items:flex-start;gap:8px;color:#facc15;font-size:0.9rem">`;
+      html+=`<span style="font-size:1.2rem;flex-shrink:0;">⚠️</span>`;
+      html+=`<div>Cross-contamination risk: ${crossList}</div>`;
+      html+=`</div></div>`;
+    }
   }
 
   return html;
