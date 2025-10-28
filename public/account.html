@@ -120,16 +120,16 @@
 
         <!-- Personal details -->
         <section id="details-section" class="auth-card" style="display:none;">
-          <h2 style="margin:0;">Your information</h2>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+            <h2 style="margin:0;">Your information</h2>
+            <button class="primary-btn" id="details-save-btn" type="button" style="display:none;">Save changes</button>
+          </div>
           <div class="form-row">
             <input type="text" id="profile-first-name" placeholder="First name" autocomplete="given-name">
             <input type="text" id="profile-last-name" placeholder="Last name" autocomplete="family-name">
           </div>
           <input type="email" id="profile-email" placeholder="Email" autocomplete="email">
           <p class="muted-text">Updating your email will send a confirmation message.</p>
-          <div class="auth-actions">
-            <button class="primary-btn" id="details-save-btn" type="button">Save details</button>
-          </div>
           <p id="details-status" class="status-text"></p>
         </section>
 
@@ -203,6 +203,9 @@
     let selectedDiets = [];
     let initialAllergies = []; // Track initial state for change detection
     let initialDiets = []; // Track initial state for change detection
+    let initialFirstName = ''; // Track initial first name for change detection
+    let initialLastName = ''; // Track initial last name for change detection
+    let initialEmail = ''; // Track initial email for change detection
     let signupAllergies = [];
     let signupDiets = [];
     let currentUser = null;
@@ -499,9 +502,32 @@
       profileFirstName.value = user?.user_metadata?.first_name || '';
       profileLastName.value = user?.user_metadata?.last_name || '';
       profileEmail.value = user?.email || '';
+
+      // Save initial values for change detection
+      initialFirstName = profileFirstName.value;
+      initialLastName = profileLastName.value;
+      initialEmail = profileEmail.value;
+
       detailsStatus.textContent = '';
       detailsStatus.classList.remove('error','success');
+
+      // Check for changes immediately in case values were set
+      checkDetailsChanged();
     }
+
+    function checkDetailsChanged() {
+      const saveBtn = document.getElementById('details-save-btn');
+      const hasChanges =
+        profileFirstName.value !== initialFirstName ||
+        profileLastName.value !== initialLastName ||
+        profileEmail.value !== initialEmail;
+      saveBtn.style.display = hasChanges ? 'block' : 'none';
+    }
+
+    // Add event listeners to profile fields to detect changes
+    if(profileFirstName) profileFirstName.addEventListener('input', checkDetailsChanged);
+    if(profileLastName) profileLastName.addEventListener('input', checkDetailsChanged);
+    if(profileEmail) profileEmail.addEventListener('input', checkDetailsChanged);
 
     document.getElementById('save-btn').onclick = async () => {
       if (!currentUser) return;
@@ -695,6 +721,8 @@
 
     document.getElementById('details-save-btn').onclick = async () => {
       if (!currentUser) return;
+      const saveBtn = document.getElementById('details-save-btn');
+      const originalText = saveBtn.textContent;
       const firstName = profileFirstName.value.trim();
       const lastName = profileLastName.value.trim();
       const email = profileEmail.value.trim();
@@ -722,8 +750,22 @@
       }
 
       currentUser = data.user;
-      detailsStatus.textContent = 'Details saved.';
-      detailsStatus.classList.add('success');
+
+      // Update initial state to match saved state
+      initialFirstName = firstName;
+      initialLastName = lastName;
+      initialEmail = email;
+
+      // Show success feedback
+      saveBtn.textContent = 'Saved!';
+      saveBtn.style.background = '#22c55e';
+      setTimeout(() => {
+        saveBtn.textContent = originalText;
+        saveBtn.style.background = '';
+        // Hide button after save success
+        saveBtn.style.display = 'none';
+      }, 2000);
+
       setNavState(currentUser);
     };
 
