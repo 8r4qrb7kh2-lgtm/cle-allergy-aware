@@ -1478,6 +1478,7 @@ function ensureAiAssistElements(){
     // Initialize cross-contamination allergen checkboxes
     const crossAllergenContainer = backdrop.querySelector('#aiAssistCrossAllergenCheckboxes');
     if(crossAllergenContainer && crossAllergenContainer.children.length === 0){
+      console.log('Creating cross-contamination checkboxes for the first time');
       ALLERGENS.forEach(allergen => {
         const label = document.createElement('label');
         label.style.cssText = 'display:flex;align-items:center;gap:8px;padding:10px 16px;background:rgba(76,90,212,0.1);border:1px solid rgba(76,90,212,0.3);border-radius:6px;cursor:pointer;transition:all 0.2s;white-space:nowrap;';
@@ -1488,6 +1489,11 @@ function ensureAiAssistElements(){
         checkbox.className = 'aiCrossAllergenCheckbox';
         checkbox.dataset.allergen = allergen;
         checkbox.style.cssText = 'width:18px;height:18px;cursor:pointer;';
+
+        // Add change listener to log when checkbox is clicked
+        checkbox.addEventListener('change', (e) => {
+          console.log(`Cross-contamination checkbox ${allergen} changed to:`, e.target.checked, 'element:', e.target);
+        });
 
         const emoji = {
           'dairy': '🥛',
@@ -2433,6 +2439,7 @@ function heuristicallyExtractIngredients(text){
 }
 
 function openAiAssistant(context){
+  console.log('!!! openAiAssistant called', new Error().stack);
   ensureAiAssistElements();
   if(!aiAssistBackdrop) return;
 
