@@ -2201,25 +2201,12 @@ function renderAiTable(rows){
       delete tr.dataset.brands;
     }
 
-    // Collect all AI-detected allergens and diets from both base ingredient and brands
+    // Collect AI-detected allergens and diets ONLY from brand labels
+    // (not from base ingredient, since we can't distinguish AI-detected vs manually-added)
     const aiDetectedAllergens = new Set();
     const aiDetectedDiets = new Set();
 
-    // Add allergens detected by AI for the base ingredient (from initial AI analysis)
-    if(Array.isArray(row.allergens)){
-      row.allergens.forEach(a => {
-        if(a) aiDetectedAllergens.add(norm(a));
-      });
-    }
-
-    // Add diets detected by AI for the base ingredient (from initial AI analysis)
-    if(Array.isArray(row.diets)){
-      row.diets.forEach(d => {
-        if(d) aiDetectedDiets.add(d);
-      });
-    }
-
-    // Also add allergens and diets from brand labels
+    // Add allergens and diets from brand labels
     brands.forEach(brand => {
       console.log('Brand data:', brand);
       if(Array.isArray(brand.allergens)){
