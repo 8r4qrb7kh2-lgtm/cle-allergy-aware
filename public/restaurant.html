@@ -5356,6 +5356,15 @@ function renderEditor(){
         setSaveState('saved');
         return;
       }
+      // Debug: Log what we're saving
+      console.log('Saving overlays:', JSON.stringify(overlays, null, 2));
+      overlays.forEach((overlay, idx) => {
+        console.log(`Overlay ${idx} (${overlay.id}):`, {
+          crossContamination: overlay.crossContamination,
+          noCrossContamination: overlay.noCrossContamination,
+          removable: overlay.removable
+        });
+      });
       const formattedChanges=formatChangesForLog(changesList);
       send({type:'saveOverlays',overlays,menuImage:rs.menuImage||'',changes:formattedChanges});
     };
@@ -6844,10 +6853,14 @@ function renderEditor(){
         if(extraData.crossContamination.noCrossContamination){
           it.crossContamination = [];
           it.noCrossContamination = true;
+          console.log('Set noCrossContamination=true for', it.id);
         } else {
           it.crossContamination = extraData.crossContamination.allergens || [];
           it.noCrossContamination = false;
+          console.log('Set crossContamination for', it.id, ':', it.crossContamination);
         }
+      } else {
+        console.log('No extraData.crossContamination for', it.id, 'extraData:', extraData);
       }
 
       // Track allergen changes
@@ -6900,6 +6913,7 @@ function renderEditor(){
         const detail = it.details[allergen] || allergen;
         it.removable.push({allergen, component: detail});
       });
+      console.log('Set removable for', it.id, ':', it.removable);
 
       updatePreview();
       setDirty(true);
