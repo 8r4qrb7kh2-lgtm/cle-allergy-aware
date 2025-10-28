@@ -4157,6 +4157,7 @@ function handleAiAssistantError(payload){
 }
 
 function applyAiIngredientsToOverlay(){
+  console.log('applyAiIngredientsToOverlay called');
   ensureAiAssistElements();
   const rows=collectAiTableData();
 
@@ -4166,6 +4167,7 @@ function applyAiIngredientsToOverlay(){
   if(saveErrorEl) saveErrorEl.style.display = 'none';
 
   if(!rows.length){
+    console.log('No rows to apply');
     aiAssistSetStatus('Add at least one ingredient before applying.','warn');
     return;
   }
@@ -4174,6 +4176,7 @@ function applyAiIngredientsToOverlay(){
   const unconfirmed = rows.filter(item => item.name.trim() && !item.confirmed);
   if(unconfirmed.length > 0){
     const ingredientNames = unconfirmed.map(item => item.name).join(', ');
+    console.log('Unconfirmed ingredients:', ingredientNames);
 
     // Show error at bottom near Save to Dish button
     if(saveErrorEl && saveErrorDetailsEl){
@@ -4193,7 +4196,10 @@ function applyAiIngredientsToOverlay(){
   const noCrossChecked = noCrossCheckbox && noCrossCheckbox.checked;
   const anyAllergenChecked = Array.from(crossAllergenCheckboxes || []).some(cb => cb.checked);
 
+  console.log('Cross-contamination validation:', {noCrossChecked, anyAllergenChecked});
+
   if(!noCrossChecked && !anyAllergenChecked){
+    console.log('Cross-contamination validation failed');
     if(crossErrorEl){
       crossErrorEl.style.display = 'block';
       crossErrorEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -4218,8 +4224,12 @@ function applyAiIngredientsToOverlay(){
     });
   }
 
+  console.log('Cross-contamination data collected:', crossContaminationData);
+
   // Mark as saved
   aiAssistState.savedToDish = true;
+
+  console.log('aiAssistState.context?.onApply exists?', !!aiAssistState.context?.onApply);
 
   if(aiAssistState.context?.onApply){
     // Pass ingredients, dietary options, and cross-contamination data to the overlay
@@ -4228,7 +4238,10 @@ function applyAiIngredientsToOverlay(){
       dietaryOptions: aiAssistState.detectedDietaryOptions || [],
       crossContamination: crossContaminationData
     };
+    console.log('Calling onApply with:', {rowCount: rows.length, dataToApply});
     aiAssistState.context.onApply(rows, dataToApply);
+  } else {
+    console.error('No onApply callback found!');
   }
   closeAiAssistant();
   aiAssistSetStatus('');
