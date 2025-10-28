@@ -928,8 +928,6 @@ const send=(p)=>{
               type: 'update',
               description: authorName,
               changes: storedChanges,
-              overlays: p.overlays || [],
-              menuImage: p.menuImage || null,
               userEmail: state.user?.email || null
             });
           }catch(logError){
@@ -4406,7 +4404,8 @@ async function insertChangeLogEntry(base){
     changes: base.changes,
     user_email: base.userEmail || null,
     photos: Array.isArray(base.photos) ? base.photos : (base.photos ? [base.photos] : []),
-    overlays: base.overlays || null,
+    // Note: overlays field removed - overlays are saved separately in restaurants table
+    // and the changes are tracked in the 'changes' JSON field above
     timestamp: base.timestamp || new Date().toISOString()
   };
   Object.keys(payload).forEach(k=>payload[k]==null&&delete payload[k]);
