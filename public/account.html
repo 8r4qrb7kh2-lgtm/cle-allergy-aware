@@ -98,20 +98,8 @@
             <div style="flex:1;height:1px;background:rgba(255,255,255,0.1);"></div>
           </div>
 
-          <div class="form-row">
-            <input type="text" id="signup-first-name" placeholder="First name" autocomplete="given-name">
-            <input type="text" id="signup-last-name" placeholder="Last name" autocomplete="family-name">
-          </div>
           <input type="email" id="signup-email" placeholder="Email" autocomplete="email">
           <input type="password" id="signup-password" placeholder="Password" autocomplete="new-password">
-          <div>
-            <p class="muted-text" style="margin-bottom:8px;">Select the allergens you avoid (you can update this later).</p>
-            <div id="signup-allergen-pills" class="allergen-select"></div>
-          </div>
-          <div>
-            <p class="muted-text" style="margin-bottom:8px;">Select your dietary preferences (you can update this later).</p>
-            <div id="signup-diet-pills" class="allergen-select"></div>
-          </div>
           <div class="auth-actions">
             <button class="primary-btn" id="signup-submit-btn" type="button">Create account</button>
           </div>
@@ -773,8 +761,6 @@
       signupDiets = [];
       signupMessage.textContent = '';
       signupMessage.classList.remove('error','success');
-      renderSignupAllergens();
-      renderSignupDiets();
     };
 
     document.getElementById('signup-back-btn').onclick = () => {
@@ -786,25 +772,20 @@
     };
 
     document.getElementById('signup-submit-btn').onclick = async () => {
-      const firstName = document.getElementById('signup-first-name').value.trim();
-      const lastName = document.getElementById('signup-last-name').value.trim();
       const email = document.getElementById('signup-email').value.trim();
       const password = document.getElementById('signup-password').value;
       signupMessage.textContent = '';
       signupMessage.classList.remove('error', 'success');
 
-      if (!firstName || !lastName || !email || !password) {
-        signupMessage.textContent = 'Please fill in all fields.';
+      if (!email || !password) {
+        signupMessage.textContent = 'Please enter both email and password.';
         signupMessage.classList.add('error');
         return;
       }
 
       const { error } = await supabaseClient.auth.signUp({
         email,
-        password,
-        options: {
-          data: { first_name: firstName, last_name: lastName, allergies: signupAllergies, diets: signupDiets }
-        }
+        password
       });
 
       if (error) {
@@ -819,43 +800,12 @@
       // Attempt immediate login if session returned (email confirmations disabled)
       const { data: { session } } = await supabaseClient.auth.getSession();
       if (session) {
-        // Save allergens and diets immediately after signup
-        try {
-          const { data: { user } } = await supabaseClient.auth.getUser();
-          if (user) {
-            // Save allergens
-            if (signupAllergies.length > 0) {
-              await supabaseClient
-                .from('user_allergies')
-                .upsert({
-                  user_id: user.id,
-                  allergens: signupAllergies,
-                  updated_at: new Date().toISOString()
-                }, { onConflict: 'user_id' });
-            }
-            // Save diets
-            if (signupDiets.length > 0) {
-              await supabaseClient
-                .from('user_allergies')
-                .upsert({
-                  user_id: user.id,
-                  diets: signupDiets,
-                  updated_at: new Date().toISOString()
-                }, { onConflict: 'user_id' });
-            }
-          }
-        } catch (err) {
-          console.error('Failed to save initial preferences', err);
-        }
+        // User will be directed to onboarding wizard to complete profile
         await checkAuth();
-        signupAllergies = [];
-        signupDiets = [];
       } else {
         setTimeout(() => {
           signupView.style.display = 'none';
           authSection.style.display = 'flex';
-          signupAllergies = [];
-          signupDiets = [];
         }, 1500);
       }
     };
