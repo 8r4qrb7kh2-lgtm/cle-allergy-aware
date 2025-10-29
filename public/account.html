@@ -932,6 +932,8 @@
 
         // Check if user has a manager invitation token
         if (inviteToken) {
+          console.log('[DEBUG] Processing invitation token:', inviteToken);
+
           // Validate invitation token and get restaurant info
           const { data: invitation, error: inviteError } = await supabaseClient
             .from('manager_invitations')
@@ -939,18 +941,23 @@
             .eq('token', inviteToken)
             .maybeSingle();
 
+          console.log('[DEBUG] Invitation query result:', invitation, 'error:', inviteError);
+
           if (inviteError) {
             console.error('Invitation lookup error:', inviteError);
           } else if (!invitation) {
+            console.log('[DEBUG] No invitation found for token');
             onboardingStatus.textContent = 'Invalid invitation link. Continuing as regular user.';
             onboardingStatus.classList.add('error');
           } else if (invitation.used) {
+            console.log('[DEBUG] Invitation already used');
             onboardingStatus.textContent = 'This invitation has already been used. Continuing as regular user.';
             onboardingStatus.classList.add('error');
           } else {
             // Valid invitation - mark as manager
             userRole = 'manager';
             restaurantId = invitation.restaurant_id;
+            console.log('[DEBUG] Valid invitation! Setting userRole=manager, restaurantId=', restaurantId);
           }
         }
 
@@ -977,8 +984,10 @@
 
         // If manager, link to restaurant and mark invitation as used
         if (userRole === 'manager' && restaurantId) {
+          console.log('[DEBUG] Linking manager to restaurant. user_id:', currentUser.id, 'restaurant_id:', restaurantId);
+
           // Link user to restaurant
-          await supabaseClient
+          const { data: linkData, error: linkError } = await supabaseClient
             .from('restaurant_managers')
             .insert({
               user_id: currentUser.id,
@@ -986,11 +995,15 @@
               created_at: new Date().toISOString()
             });
 
+          console.log('[DEBUG] Restaurant manager link result:', linkData, 'error:', linkError);
+
           // Mark invitation as used
-          await supabaseClient
+          const { error: updateError } = await supabaseClient
             .from('manager_invitations')
             .update({ used: true, used_by: currentUser.id, used_at: new Date().toISOString() })
             .eq('token', inviteToken);
+
+          console.log('[DEBUG] Invitation marked as used. error:', updateError);
         }
 
         // Redirect to restaurants page
@@ -1041,35 +1054,31 @@
         if (!currentUser) return;
 
         try {
-          // Delete user's allergen data
-          await supabaseClient
-            .from('user_allergies')
-            .delete()
-            .eq('user_id', currentUser.id);
+          // Call the delete_user RPC function which handles all cleanup
+          const { error: rpcError } = await supabaseClient.rpc('delete_user');
 
-          // Delete manager relationships if any
-          await supabaseClient
-            .from('restaurant_managers')
-            .delete()
-            .eq('user_id', currentUser.id);
+          if (rpcError) {
+            console.error('RPC delete error:', rpcError);
 
-          // Delete the user account from Supabase Auth
-          const { error } = await supabaseClient.auth.admin.deleteUser(currentUser.id);
+            // Fallback: delete data manually
+            await supabaseClient
+              .from('user_allergies')
+              .delete()
+              .eq('user_id', currentUser.id);
 
-          // If admin delete fails, try the user-level delete
-          if (error) {
-            // Try to delete via RPC function (you'll need to create this)
-            const { error: rpcError } = await supabaseClient.rpc('delete_user');
-            if (rpcError) throw rpcError;
+            await supabaseClient
+              .from('restaurant_managers')
+              .delete()
+              .eq('user_id', currentUser.id);
           }
 
-          // Sign out and redirect
+          // Sign out
           await supabaseClient.auth.signOut();
           alert('Your account has been deleted successfully.');
           window.location.href = '/';
         } catch (error) {
           console.error('Account deletion error:', error);
-          alert('Failed to delete account. Please contact support.');
+          alert('Failed to delete account: ' + (error.message || 'Please contact support.'));
         }
       });
     }

@@ -100,18 +100,27 @@
       }
 
       try {
+        // Get restaurant name for logging
+        const selectedOption = restaurantSelect.options[restaurantSelect.selectedIndex];
+        const restaurantName = selectedOption.textContent;
+        console.log('[DEBUG] Generating invitation for restaurant:', restaurantName, 'ID:', restaurantId);
+
         // Generate a unique token
         const token = generateToken();
+        console.log('[DEBUG] Generated token:', token);
 
         // Insert invitation into database
-        const { error } = await supabaseClient
+        const { data, error } = await supabaseClient
           .from('manager_invitations')
           .insert({
             restaurant_id: restaurantId,
             token: token,
             created_at: new Date().toISOString(),
             used: false
-          });
+          })
+          .select();
+
+        console.log('[DEBUG] Invitation insert result:', data, 'error:', error);
 
         if (error) throw error;
 
@@ -120,6 +129,8 @@
         const link = `${baseUrl}/account.html?invite=${token}`;
         invitationLink.value = link;
         invitationResult.style.display = 'block';
+
+        console.log('[DEBUG] Generated invitation link:', link);
 
         // Reload invitations list
         loadInvitations();
@@ -155,6 +166,7 @@
           .select(`
             id,
             token,
+            restaurant_id,
             created_at,
             used,
             used_at,
@@ -162,6 +174,8 @@
           `)
           .order('created_at', { ascending: false })
           .limit(20);
+
+        console.log('[DEBUG] Loaded invitations:', data);
 
         if (error) throw error;
 
