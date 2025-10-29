@@ -153,6 +153,31 @@
           <p id="diet-status" class="status-text" style="display:none;"></p>
         </section>
 
+        <!-- Onboarding wizard (shown for new OAuth users) -->
+        <section id="onboarding-section" class="auth-card" style="display:none;">
+          <h2 style="margin:0 0 12px;">Welcome to Clarivore!</h2>
+          <p class="muted-text" style="margin-bottom:20px;">Let's set up your allergy profile to get started.</p>
+
+          <h3 style="margin:16px 0 8px;font-size:1.1rem;">Your name</h3>
+          <div class="form-row">
+            <input type="text" id="onboarding-first-name" placeholder="First name" autocomplete="given-name">
+            <input type="text" id="onboarding-last-name" placeholder="Last name" autocomplete="family-name">
+          </div>
+
+          <h3 style="margin:20px 0 8px;font-size:1.1rem;">Select your allergens</h3>
+          <p class="muted-text" style="margin-bottom:12px;">Choose all allergens you need to avoid.</p>
+          <div id="onboarding-allergen-pills" class="allergen-select"></div>
+
+          <h3 style="margin:20px 0 8px;font-size:1.1rem;">Dietary preferences</h3>
+          <p class="muted-text" style="margin-bottom:12px;">Select any that apply to you.</p>
+          <div id="onboarding-diet-pills" class="allergen-select"></div>
+
+          <div class="auth-actions" style="margin-top:24px;">
+            <button class="primary-btn" id="onboarding-complete-btn" type="button">Complete setup</button>
+          </div>
+          <p id="onboarding-status" class="status-text"></p>
+        </section>
+
         <!-- Sign out section (shown when logged in) -->
         <section id="sign-out-section" class="auth-card" style="display:none;">
           <div style="text-align:center;">
@@ -208,6 +233,8 @@
     let initialEmail = ''; // Track initial email for change detection
     let signupAllergies = [];
     let signupDiets = [];
+    let onboardingAllergies = []; // Track allergens selected during onboarding
+    let onboardingDiets = []; // Track diets selected during onboarding
     let currentUser = null;
     const params = new URLSearchParams(window.location.search);
     const redirectParam = params.get('redirect') || null;
@@ -273,6 +300,7 @@
           allergenSection.style.display = 'none';
           dietSection.style.display = 'none';
           signOutSection.style.display = 'none';
+          document.getElementById('onboarding-section').style.display = 'none';
           passwordResetSection.style.display = 'flex';
           resetPasswordInput.value = '';
           resetPasswordConfirmInput.value = '';
@@ -281,23 +309,41 @@
           return;
         }
 
-        authSection.style.display = 'none';
-        signupView.style.display = 'none';
-        detailsSection.style.display = 'flex';
-        allergenSection.style.display = 'flex';
-        dietSection.style.display = 'flex';
-        signOutSection.style.display = 'flex';
-        passwordResetSection.style.display = 'none';
-        populateDetails(user);
-        await loadAllergies();
-        await loadDiets();
-        if (!returnSlug && redirectParam === 'restaurants') {
-          window.location.href = 'restaurants.html';
-          return;
-        }
-        if (!returnSlug && redirectParam === 'favorites') {
-          window.location.href = 'favorites.html';
-          return;
+        // Check if user needs onboarding (incomplete profile)
+        const needsOnboarding = await checkIfNeedsOnboarding(user);
+
+        if (needsOnboarding) {
+          // Show onboarding wizard
+          authSection.style.display = 'none';
+          signupView.style.display = 'none';
+          detailsSection.style.display = 'none';
+          allergenSection.style.display = 'none';
+          dietSection.style.display = 'none';
+          signOutSection.style.display = 'none';
+          passwordResetSection.style.display = 'none';
+          document.getElementById('onboarding-section').style.display = 'flex';
+          setupOnboarding(user);
+        } else {
+          // Show normal account page
+          authSection.style.display = 'none';
+          signupView.style.display = 'none';
+          detailsSection.style.display = 'flex';
+          allergenSection.style.display = 'flex';
+          dietSection.style.display = 'flex';
+          signOutSection.style.display = 'flex';
+          passwordResetSection.style.display = 'none';
+          document.getElementById('onboarding-section').style.display = 'none';
+          populateDetails(user);
+          await loadAllergies();
+          await loadDiets();
+          if (!returnSlug && redirectParam === 'restaurants') {
+            window.location.href = 'restaurants.html';
+            return;
+          }
+          if (!returnSlug && redirectParam === 'favorites') {
+            window.location.href = 'favorites.html';
+            return;
+          }
         }
       } else {
         allergenSection.style.display = 'none';
@@ -307,10 +353,95 @@
         signupView.style.display = 'none';
         authSection.style.display = 'flex';
         passwordResetSection.style.display = 'none';
+        document.getElementById('onboarding-section').style.display = 'none';
         if (isRecoveryMode) {
           isRecoveryMode = false;
         }
       }
+    }
+
+    async function checkIfNeedsOnboarding(user) {
+      // Check if user has first name and last name
+      const firstName = user?.user_metadata?.first_name || '';
+      const lastName = user?.user_metadata?.last_name || '';
+
+      if (!firstName || !lastName) {
+        return true;
+      }
+
+      // Check if user has set up allergens
+      const { data } = await supabaseClient
+        .from('user_allergies')
+        .select('allergens, diets')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      // If no record exists, needs onboarding
+      if (!data) {
+        return true;
+      }
+
+      // User has completed onboarding
+      return false;
+    }
+
+    function setupOnboarding(user) {
+      // Pre-fill name fields if available from OAuth
+      const onboardingFirstName = document.getElementById('onboarding-first-name');
+      const onboardingLastName = document.getElementById('onboarding-last-name');
+
+      onboardingFirstName.value = user?.user_metadata?.first_name || '';
+      onboardingLastName.value = user?.user_metadata?.last_name || '';
+
+      // Reset selections
+      onboardingAllergies = [];
+      onboardingDiets = [];
+
+      // Render allergen and diet pills
+      renderOnboardingAllergens();
+      renderOnboardingDiets();
+    }
+
+    function renderOnboardingAllergens() {
+      const container = document.getElementById('onboarding-allergen-pills');
+      container.innerHTML = '';
+      ALLERGENS.forEach(allergen => {
+        const pill = document.createElement('button');
+        pill.type = 'button';
+        pill.className = 'chip' + (onboardingAllergies.includes(allergen) ? ' active' : '');
+        const emoji = ALLERGEN_EMOJI[allergen] || '';
+        pill.textContent = emoji + ' ' + allergen.charAt(0).toUpperCase() + allergen.slice(1);
+        pill.onclick = () => {
+          if (onboardingAllergies.includes(allergen)) {
+            onboardingAllergies = onboardingAllergies.filter(a => a !== allergen);
+          } else {
+            onboardingAllergies.push(allergen);
+          }
+          renderOnboardingAllergens();
+        };
+        container.appendChild(pill);
+      });
+    }
+
+    function renderOnboardingDiets() {
+      const container = document.getElementById('onboarding-diet-pills');
+      container.innerHTML = '';
+      DIETS.forEach(diet => {
+        const pill = document.createElement('button');
+        pill.type = 'button';
+        pill.className = 'chip' + (onboardingDiets.includes(diet) ? ' active' : '');
+        const emoji = DIET_EMOJI[diet] || '';
+        pill.textContent = emoji + ' ' + diet;
+        pill.onclick = () => {
+          if (onboardingDiets.includes(diet)) {
+            onboardingDiets = onboardingDiets.filter(d => d !== diet);
+          } else {
+            onboardingDiets.push(diet);
+          }
+          renderOnboardingDiets();
+        };
+        container.appendChild(pill);
+      });
     }
 
     async function loadAllergies() {
@@ -769,6 +900,49 @@
       setNavState(currentUser);
     };
 
+    // Onboarding complete button handler
+    document.getElementById('onboarding-complete-btn').addEventListener('click', async () => {
+      const onboardingFirstName = document.getElementById('onboarding-first-name').value.trim();
+      const onboardingLastName = document.getElementById('onboarding-last-name').value.trim();
+      const onboardingStatus = document.getElementById('onboarding-status');
+
+      onboardingStatus.textContent = '';
+      onboardingStatus.classList.remove('error', 'success');
+
+      // Validate required fields
+      if (!onboardingFirstName || !onboardingLastName) {
+        onboardingStatus.textContent = 'Please enter your first and last name.';
+        onboardingStatus.classList.add('error');
+        return;
+      }
+
+      try {
+        // Update user metadata with name
+        const { data: userData, error: userError } = await supabaseClient.auth.updateUser({
+          data: { first_name: onboardingFirstName, last_name: onboardingLastName }
+        });
+
+        if (userError) throw userError;
+
+        // Save allergens and diets
+        await supabaseClient
+          .from('user_allergies')
+          .upsert({
+            user_id: currentUser.id,
+            allergens: onboardingAllergies,
+            diets: onboardingDiets,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id' });
+
+        // Redirect to restaurants page
+        window.location.href = 'restaurants.html';
+      } catch (error) {
+        console.error('Onboarding error:', error);
+        onboardingStatus.textContent = error.message || 'Failed to complete setup. Please try again.';
+        onboardingStatus.classList.add('error');
+      }
+    });
+
     // Sign out button handler
     const signOutBtn = document.getElementById('sign-out-btn');
     if (signOutBtn) {
@@ -778,6 +952,8 @@
         selectedDiets = [];
         signupAllergies = [];
         signupDiets = [];
+        onboardingAllergies = [];
+        onboardingDiets = [];
         await checkAuth();
       });
     }
