@@ -5848,12 +5848,8 @@ function renderEditor(){
     
     let html='';
     logs.forEach(log=>{
-      const typeLabel=log.type==='confirm'?'Allergen Confirmation':'Allergen Update';
-      const typeClass=log.type==='confirm'?'confirm':'update';
-
       html+=`<div class="logEntry">
         <div class="logHeader">
-          <span class="logType ${typeClass}">${esc(typeLabel)}</span>
           <span class="logTimestamp">${esc(fmtDateTime(log.timestamp))}</span>
         </div>`;
       const parsedChanges = (()=>{
