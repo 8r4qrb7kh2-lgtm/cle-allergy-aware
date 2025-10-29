@@ -43,7 +43,7 @@ serve(async (req) => {
         is_active: r.monitor_enabled,
         last_checked_at: r.last_checked,
         last_change_detected_at: null, // Will be populated from snapshots
-        check_frequency: 'Every 6 hours',
+        check_frequency: 'Every 24 hours',
         total_checks: r.total_checks || 0,
         emails_sent: r.emails_sent || 0
       }))

@@ -1,11 +1,12 @@
--- Enable pg_cron extension
-CREATE EXTENSION IF NOT EXISTS pg_cron;
+-- Update menu monitoring frequency from every 6 hours to every 24 hours
 
--- Schedule menu monitoring to run every 24 hours
--- This runs on Supabase's servers, independent of your local machine
+-- First, unschedule the existing job
+SELECT cron.unschedule('monitor-restaurant-menus');
+
+-- Create new schedule for every 24 hours (daily at midnight UTC)
 SELECT cron.schedule(
   'monitor-restaurant-menus',
-  '0 0 * * *',  -- Every day at midnight UTC (00:00)
+  '0 0 * * *',  -- Every day at midnight (00:00 UTC)
   $$
   SELECT net.http_post(
     url := 'https://fgoiyycctnwnghrvsilt.supabase.co/functions/v1/monitor-menus',
@@ -18,7 +19,15 @@ SELECT cron.schedule(
   $$
 );
 
--- Verify the cron job was created
-SELECT jobid, schedule, command
+-- Verify the cron job was updated
+SELECT
+  jobid,
+  jobname,
+  schedule,
+  active,
+  CASE
+    WHEN schedule = '0 0 * * *' THEN '✓ Updated to daily (midnight UTC)'
+    ELSE '⚠ Schedule not updated correctly'
+  END as status
 FROM cron.job
 WHERE jobname = 'monitor-restaurant-menus';
