@@ -250,10 +250,53 @@
 
       await loadFavorites(user.id);
 
-      const { data, error } = await supabaseClient
-        .from('restaurants')
-        .select('*')
-        .order('name');
+      // Check if user is a manager
+      const userRole = user.user_metadata?.role;
+      let data, error;
+
+      if (userRole === 'manager') {
+        // Managers only see restaurants they manage
+        const { data: managerData, error: managerError } = await supabaseClient
+          .from('restaurant_managers')
+          .select('restaurant_id')
+          .eq('user_id', user.id);
+
+        if (managerError) {
+          console.error('Error loading manager restaurants:', managerError);
+          setStatus('Unable to load your restaurants.', 'error');
+          return;
+        }
+
+        const restaurantIds = managerData.map(m => m.restaurant_id);
+
+        if (restaurantIds.length === 0) {
+          // Manager has no restaurants assigned
+          const grid = document.getElementById('restaurant-grid');
+          if (grid) {
+            grid.innerHTML = '<p style="color: var(--text-muted); grid-column:1/-1;">No restaurants assigned to your account yet.</p>';
+          }
+          return;
+        }
+
+        // Fetch only the restaurants this manager has access to
+        const result = await supabaseClient
+          .from('restaurants')
+          .select('*')
+          .in('id', restaurantIds)
+          .order('name');
+
+        data = result.data;
+        error = result.error;
+      } else {
+        // Customers see all restaurants
+        const result = await supabaseClient
+          .from('restaurants')
+          .select('*')
+          .order('name');
+
+        data = result.data;
+        error = result.error;
+      }
 
       if (error) {
         const grid = document.getElementById('restaurant-grid');
