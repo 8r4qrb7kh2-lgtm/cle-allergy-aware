@@ -268,6 +268,8 @@ async function searchSingleRetailerPerplexity(
   brand: string,
   barcode: string
 ): Promise<Source | null> {
+  console.log(`🔍 [PERPLEXITY] Searching ${retailerName} for ${brand} ${productName}`);
+  
   const searchPrompt = `Find the ingredient list for this product on ${retailerName}:
 
 Product: ${brand} ${productName}
@@ -297,6 +299,8 @@ Return JSON with this exact format:
 If you cannot find this product on ${retailerName}, return: {"found": false}`;
 
   try {
+    console.log(`📡 [PERPLEXITY] Making API call to Perplexity for ${retailerName}...`);
+    
     const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
@@ -314,8 +318,11 @@ If you cannot find this product on ${retailerName}, return: {"found": false}`;
       }),
     });
 
+    console.log(`📥 [PERPLEXITY] ${retailerName} API response status: ${perplexityResponse.status}`);
+
     if (!perplexityResponse.ok) {
-      console.log(`${retailerName} search failed:`, perplexityResponse.status);
+      const errorText = await perplexityResponse.text();
+      console.log(`❌ [PERPLEXITY] ${retailerName} search failed:`, perplexityResponse.status, errorText);
       return null;
     }
 
@@ -787,12 +794,16 @@ async function searchSourceType(
   barcode: string,
   provider: SearchProvider = 'claude'
 ): Promise<Source[]> {
+  console.log(`🎯 [ROUTER] Provider requested: ${provider}, PERPLEXITY_API_KEY exists: ${!!PERPLEXITY_API_KEY}, ANTHROPIC_API_KEY exists: ${!!ANTHROPIC_API_KEY}`);
+  
   if (provider === 'perplexity' && PERPLEXITY_API_KEY) {
+    console.log(`✅ [ROUTER] Using Perplexity for ${sourceType}`);
     return searchSourceTypePerplexity(sourceType, searchQuery, productName, brand, barcode);
   } else if (provider === 'claude' && ANTHROPIC_API_KEY) {
+    console.log(`✅ [ROUTER] Using Claude for ${sourceType}`);
     return searchSourceTypeClaude(sourceType, searchQuery, productName, brand, barcode);
   } else {
-    console.log(`Provider ${provider} not available or API key missing. Falling back to Claude.`);
+    console.log(`⚠️ [ROUTER] Provider ${provider} not available or API key missing. Falling back to Claude.`);
     return searchSourceTypeClaude(sourceType, searchQuery, productName, brand, barcode);
   }
 }
