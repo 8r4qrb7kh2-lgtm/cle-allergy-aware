@@ -750,7 +750,7 @@ CRITICAL REMINDERS:
   }
 }
 
-// General Web search with Perplexity
+// General Web search with Perplexity Search API
 async function searchGeneralWebPerplexity(
   searchQuery: string,
   productName: string,
@@ -759,136 +759,135 @@ async function searchGeneralWebPerplexity(
   addLog?: (msg: string) => void
 ): Promise<Source[]> {
   const log = addLog || console.log;
-  log(`🔎 Calling Perplexity API with query: "${searchQuery}"`);
-
-  const generalPrompt = `You are searching the web for ingredient information about this product: ${brand} ${productName} (Barcode: ${barcode})
-
-🎯 YOUR TASK: Find ingredient lists from AT LEAST 3 DIFFERENT INDEPENDENT WEBSITES
-
-Search the entire web and use your own judgment to find ANY websites that have ingredient information for this product.
-
-⚠️ CRITICAL REQUIREMENTS:
-1. You MUST find AT LEAST 3 independent sources - this is not optional
-2. Each source must have the COMPLETE ingredient list for this exact product
-3. All 3+ ingredient lists must match (same ingredients, possibly different wording)
-4. If ingredient lists don't match across sources, keep searching until you find 3 that DO match
-5. URLs must be SPECIFIC product pages (not search results or homepages)
-6. Copy ingredient lists EXACTLY as written on each website (verbatim, character-by-character)
-7. Search ANY websites you find - don't limit yourself to specific types of sites
-
-📋 RETURN FORMAT:
-{
-  "sources": [
-    {
-      "name": "Source Name",
-      "url": "https://specific-product-page-url.com",
-      "productTitle": "Exact product title from page",
-      "ingredientsText": "EXACT VERBATIM ingredient list copied character-by-character",
-      "explicitAllergenStatement": "Any allergen warnings found",
-      "explicitDietaryLabels": "Any dietary labels found",
-      "crossContaminationWarnings": "Any cross-contamination warnings",
-      "allergens": ["detected allergens"],
-      "diets": ["detected diets"],
-      "confidence": 90
-    },
-    ... AT LEAST 2 MORE SOURCES LIKE THIS ...
-  ]
-}
-
-IMPORTANT REMINDERS:
-- If you only find 1-2 sources, KEEP SEARCHING until you have at least 3
-- Search the ENTIRE WEB - any website that has ingredient information is valid
-- Verify all ingredient lists match before returning
-- Use your own judgment about which websites to search and which results to trust`;
+  log(`🔎 Calling Perplexity Search API with query: "${searchQuery}"`);
 
   try {
-    const resp = await fetch('https://api.perplexity.ai/chat/completions', {
+    // Step 1: Use Perplexity Search API to find relevant web pages
+    const searchResp = await fetch('https://api.perplexity.ai/search', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'sonar-pro',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a comprehensive web researcher. When asked to find ingredient information, you MUST search multiple different websites until you find at least 3 independent sources with matching ingredient lists. Do not stop searching after finding just 1-2 sources.'
-          },
-          { role: 'user', content: generalPrompt }
-        ],
-        temperature: 0.1,
-        max_tokens: 16000,
-        return_citations: true,
-        search_recency_filter: 'month'
+        query: `${brand} ${productName} ingredients barcode ${barcode}`,
+        max_results: 10,
+        max_tokens_per_page: 2048
       })
     });
 
-    if (!resp.ok) {
-      log(`❌ Perplexity API error: ${resp.status} ${resp.statusText}`);
+    if (!searchResp.ok) {
+      log(`❌ Perplexity Search API error: ${searchResp.status} ${searchResp.statusText}`);
+      const errorText = await searchResp.text();
+      log(`   Error details: ${errorText}`);
       return [];
     }
 
-    const data = await resp.json();
-    log(`📨 Perplexity API response received`);
+    const searchData = await searchResp.json();
+    log(`📨 Perplexity Search API response received`);
 
-    const text = data.choices?.[0]?.message?.content || '';
-    log(`📝 Response text length: ${text.length} characters`);
-    log(`📄 Response preview: ${text.substring(0, 200)}...`);
-
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      log(`❌ No JSON found in Perplexity response`);
+    if (!searchData.results || !Array.isArray(searchData.results)) {
+      log(`❌ No results array in Search API response`);
       return [];
     }
 
-    log(`✅ Found JSON in response, parsing...`);
-    const parsed = JSON.parse(jsonMatch[0]);
+    log(`📊 Perplexity Search found ${searchData.results.length} web pages`);
 
-    if (!parsed.sources || !Array.isArray(parsed.sources)) {
-      log(`❌ No 'sources' array in parsed JSON`);
-      return [];
-    }
+    // Step 2: Use Chat API to extract ingredients from each search result
+    const sources: Source[] = [];
 
-    log(`📊 Perplexity returned ${parsed.sources.length} potential sources`);
+    for (const result of searchData.results.slice(0, 5)) { // Process top 5 results
+      log(`  🔍 Analyzing: ${result.title}`);
+      log(`     URL: ${result.url}`);
 
-    const out: Source[] = [];
-    for (const s of parsed.sources) {
-      if (!s.ingredientsText || s.ingredientsText.trim().length <= 10) {
-        log(`  ❌ ${s.name || 'Unknown'} - No ingredients or too short (${s.ingredientsText?.length || 0} chars)`);
+      // Check if snippet contains ingredient information
+      const snippet = result.snippet || '';
+      if (snippet.length < 50) {
+        log(`     ❌ Snippet too short (${snippet.length} chars)`);
         continue;
       }
 
-      const url: string = s.url || '';
-      const isSearchUrl = url.includes('/s?') || url.includes('/search?') || url.includes('searchTerm=') || url.includes('/search/');
-      if (isSearchUrl) {
-        log(`  ❌ ${s.name || 'Unknown'} - Search URL rejected: ${url}`);
+      // Use Chat API to extract structured ingredient data from the snippet
+      const extractResp = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'sonar',
+          messages: [{
+            role: 'user',
+            content: `Extract ingredient information from this web page content about ${brand} ${productName}:
+
+Title: ${result.title}
+URL: ${result.url}
+Content: ${snippet}
+
+Return ONLY a JSON object with this structure (no other text):
+{
+  "hasIngredients": true/false,
+  "ingredientsText": "exact verbatim ingredient list if found, empty string if not",
+  "productTitle": "${result.title}",
+  "url": "${result.url}"
+}
+
+IMPORTANT:
+- If you find an ingredient list, copy it EXACTLY as written
+- If no ingredient list found, set hasIngredients to false
+- Do not make up ingredients`
+          }],
+          temperature: 0.1,
+          max_tokens: 1000
+        })
+      });
+
+      if (!extractResp.ok) {
+        log(`     ❌ Failed to extract ingredients`);
         continue;
       }
 
-      if (!titlesLikelyMatch(brand, productName, s.productTitle || s.title)) {
-        log(`  ❌ ${s.name || 'Unknown'} - Title mismatch: "${s.productTitle || s.title || 'N/A'}"`);
+      const extractData = await extractResp.json();
+      const extractText = extractData.choices?.[0]?.message?.content || '';
+
+      const jsonMatch = extractText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        log(`     ❌ No valid JSON in extraction response`);
         continue;
       }
 
-      log(`  ✅ ${s.name} - Valid source! Ingredients: ${s.ingredientsText.length} chars`);
-      out.push({
-        name: s.name,
-        url: url,
-        productTitle: s.productTitle || s.title || '',
-        ingredientsText: s.ingredientsText,
-        explicitAllergenStatement: s.explicitAllergenStatement || '',
-        explicitDietaryLabels: s.explicitDietaryLabels || '',
-        crossContaminationWarnings: s.crossContaminationWarnings || '',
-        allergens: s.allergens || [],
-        diets: s.diets || [],
-        confidence: s.confidence || 80,
+      const extracted = JSON.parse(jsonMatch[0]);
+
+      if (!extracted.hasIngredients || !extracted.ingredientsText || extracted.ingredientsText.length < 20) {
+        log(`     ❌ No ingredients found in content`);
+        continue;
+      }
+
+      log(`     ✅ Found ingredients! (${extracted.ingredientsText.length} chars)`);
+
+      sources.push({
+        name: new URL(result.url).hostname.replace('www.', ''),
+        url: result.url,
+        productTitle: result.title,
+        ingredientsText: extracted.ingredientsText,
+        explicitAllergenStatement: '',
+        explicitDietaryLabels: '',
+        crossContaminationWarnings: '',
+        allergens: [],
+        diets: [],
+        confidence: 85,
         dataAvailable: true
       });
+
+      // Stop if we have enough sources
+      if (sources.length >= 3) {
+        log(`✅ Found 3 sources, stopping search`);
+        break;
+      }
     }
 
-    log(`✅ Accepted ${out.length} sources from Perplexity`);
-    return out;
+    log(`✅ Total sources extracted: ${sources.length}`);
+    return sources;
   } catch (e) {
     console.log('General Web Perplexity error:', (e as any).message);
     return [];
