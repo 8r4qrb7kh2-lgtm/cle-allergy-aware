@@ -308,7 +308,7 @@ If you cannot find this product on ${retailerName}, return: {"found": false}`;
         'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'llama-3.1-sonar-large-128k-online',
+        model: 'sonar-pro',
         messages: [{
           role: 'user',
           content: searchPrompt
@@ -513,7 +513,7 @@ REMINDER: You MUST search multiple websites and return 2-3+ sources in the sourc
         'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'llama-3.1-sonar-large-128k-online',
+        model: 'sonar-pro',
         messages: [
           {
             role: 'system',
