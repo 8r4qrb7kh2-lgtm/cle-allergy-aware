@@ -1370,20 +1370,21 @@ serve(async (req) => {
         allSources.push(...sources);
       }
 
-      console.log(`\nPhase 2 complete: ${allSources.length} total sources (before deduplication)`);
+      addLog(`📊 Phase 2 complete: Found ${allSources.length} total sources`);
 
       // DEDUPLICATE again after Phase 2
+      addLog('🔄 Deduplicating Phase 2 sources...');
       const seenUrlsPhase2 = new Map<string, Source>();
       for (const source of allSources) {
         const normalizedUrl = source.url.toLowerCase().trim();
         if (!seenUrlsPhase2.has(normalizedUrl)) {
           seenUrlsPhase2.set(normalizedUrl, source);
         } else {
-          console.log(`⚠ Duplicate URL removed: ${source.name} (${source.url})`);
+          addLog(`  ⚠️  Removed duplicate: ${source.name}`);
         }
       }
       allSources = Array.from(seenUrlsPhase2.values());
-      console.log(`After deduplication: ${allSources.length} unique sources`);
+      addLog(`✅ ${allSources.length} unique sources after deduplication`);
 
       // Re-check for matching sources
       matchingSources = [];
@@ -1416,20 +1417,21 @@ serve(async (req) => {
         allSources.push(...sources);
       }
 
-      console.log(`\nPhase 3 complete: ${allSources.length} total sources (before deduplication)`);
+      addLog(`📊 Phase 3 complete: Found ${allSources.length} total sources`);
 
       // DEDUPLICATE again after Phase 3
+      addLog('🔄 Deduplicating Phase 3 sources...');
       const seenUrlsPhase3 = new Map<string, Source>();
       for (const source of allSources) {
         const normalizedUrl = source.url.toLowerCase().trim();
         if (!seenUrlsPhase3.has(normalizedUrl)) {
           seenUrlsPhase3.set(normalizedUrl, source);
         } else {
-          console.log(`⚠ Duplicate URL removed: ${source.name} (${source.url})`);
+          addLog(`  ⚠️  Removed duplicate: ${source.name}`);
         }
       }
       allSources = Array.from(seenUrlsPhase3.values());
-      console.log(`After deduplication: ${allSources.length} unique sources`);
+      addLog(`✅ ${allSources.length} unique sources after deduplication`);
 
       // Re-check for matching sources one more time
       matchingSources = [];
@@ -1445,7 +1447,23 @@ serve(async (req) => {
       }
     }
 
-    const sourcesWithData = matchingSources.filter(s => s.dataAvailable);
+    let sourcesWithData = matchingSources.filter(s => s.dataAvailable);
+
+    // FINAL DEDUPLICATION - ensure no duplicate URLs in final results
+    addLog('');
+    addLog('🔄 Final deduplication of matching sources...');
+    const finalSeenUrls = new Map<string, Source>();
+    for (const source of sourcesWithData) {
+      const normalizedUrl = source.url.toLowerCase().trim();
+      if (!finalSeenUrls.has(normalizedUrl)) {
+        finalSeenUrls.set(normalizedUrl, source);
+      } else {
+        addLog(`  ⚠️  Removed duplicate: ${source.name} (${normalizedUrl.substring(0, 50)}...)`);
+      }
+    }
+    sourcesWithData = Array.from(finalSeenUrls.values());
+    addLog(`✅ ${sourcesWithData.length} unique sources after final deduplication`);
+
     console.log(`\nFinal matching sources: ${sourcesWithData.length}`);
     console.log(`Minimum required: ${MINIMUM_SOURCES_REQUIRED}`);
 
