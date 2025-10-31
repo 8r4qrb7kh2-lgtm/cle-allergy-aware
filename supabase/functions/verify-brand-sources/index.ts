@@ -763,7 +763,6 @@ async function searchGeneralWebPerplexity(
 
   try {
     // Step 1: Use Perplexity Search API to find relevant web pages
-    // Search specifically for retailer sites that show barcodes
     const searchResp = await fetch('https://api.perplexity.ai/search', {
       method: 'POST',
       headers: {
@@ -771,7 +770,7 @@ async function searchGeneralWebPerplexity(
         'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
       },
       body: JSON.stringify({
-        query: `${brand} ${productName} UPC ${barcode} walmart target amazon kroger ingredients`,
+        query: `${brand} ${productName} UPC ${barcode} ingredients`,
         max_results: 15,
         max_tokens_per_page: 2048
       })
