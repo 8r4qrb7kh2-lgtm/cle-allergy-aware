@@ -818,7 +818,7 @@ async function searchGeneralWebPerplexity(
           model: 'sonar',
           messages: [{
             role: 'user',
-            content: `Extract ingredient information from this web page content about ${brand} ${productName}:
+            content: `Extract ingredient and allergen information from this web page content about ${brand} ${productName}:
 
 Title: ${result.title}
 URL: ${result.url}
@@ -827,18 +827,37 @@ Content: ${snippet}
 Return ONLY a JSON object with this structure (no other text):
 {
   "hasIngredients": true/false,
-  "ingredientsText": "exact verbatim ingredient list if found, empty string if not",
-  "productTitle": "${result.title}",
-  "url": "${result.url}"
+  "ingredientsText": "exact verbatim ingredient list if found",
+  "explicitAllergenStatement": "any CONTAINS or allergen warning statements found",
+  "explicitDietaryLabels": "any vegan/vegetarian/pescatarian labels found",
+  "crossContaminationWarnings": "any 'may contain' or 'processed in facility' warnings",
+  "allergens": ["milk", "eggs", "fish", "shellfish", "tree nuts", "peanuts", "wheat", "soybeans", "sesame"],
+  "diets": ["vegan", "vegetarian", "pescatarian"]
 }
 
+ALLERGEN DETECTION (detect from ingredients if present):
+- "milk": milk, butter, cheese, whey, casein, lactose, cream
+- "eggs": egg, albumin, mayonnaise
+- "fish": fish, anchovy, cod, salmon, tuna
+- "shellfish": shrimp, crab, lobster, clam, oyster
+- "tree nuts": almonds, cashews, walnuts, pecans, pistachios, hazelnuts, macadamia
+- "peanuts": peanut, peanut butter
+- "wheat": wheat, wheat flour (NOT barley/rye/oats)
+- "soybeans": soy, soybean, soy lecithin, tofu
+- "sesame": sesame, tahini
+
+DIETARY COMPATIBILITY (infer from ingredients):
+- Vegan: NO animal products (no meat, fish, dairy, eggs, honey, gelatin)
+- Vegetarian: NO meat or fish (may have dairy/eggs)
+- Pescatarian: NO meat (may have fish, dairy, eggs)
+
 IMPORTANT:
-- If you find an ingredient list, copy it EXACTLY as written
-- If no ingredient list found, set hasIngredients to false
-- Do not make up ingredients`
+- Copy ingredient list EXACTLY as written
+- Only include allergens that are actually present
+- Set hasIngredients to false if no ingredients found`
           }],
           temperature: 0.1,
-          max_tokens: 1000
+          max_tokens: 1500
         })
       });
 
@@ -863,18 +882,27 @@ IMPORTANT:
         continue;
       }
 
+      const allergens = Array.isArray(extracted.allergens) ? extracted.allergens : [];
+      const diets = Array.isArray(extracted.diets) ? extracted.diets : [];
+
       log(`     ✅ Found ingredients! (${extracted.ingredientsText.length} chars)`);
+      if (allergens.length > 0) {
+        log(`        Allergens: ${allergens.join(', ')}`);
+      }
+      if (diets.length > 0) {
+        log(`        Diets: ${diets.join(', ')}`);
+      }
 
       sources.push({
         name: new URL(result.url).hostname.replace('www.', ''),
         url: result.url,
         productTitle: result.title,
         ingredientsText: extracted.ingredientsText,
-        explicitAllergenStatement: '',
-        explicitDietaryLabels: '',
-        crossContaminationWarnings: '',
-        allergens: [],
-        diets: [],
+        explicitAllergenStatement: extracted.explicitAllergenStatement || '',
+        explicitDietaryLabels: extracted.explicitDietaryLabels || '',
+        crossContaminationWarnings: extracted.crossContaminationWarnings || '',
+        allergens: allergens,
+        diets: diets,
         confidence: 85,
         dataAvailable: true
       });
