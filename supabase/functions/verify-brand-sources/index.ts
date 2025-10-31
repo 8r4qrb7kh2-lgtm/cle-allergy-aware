@@ -372,6 +372,33 @@ async function searchSourceTypePerplexity(
   console.log(`Starting ${sourceType} search with Perplexity...`);
   console.log(`Search query: ${searchQuery}`);
   
+  // Parse the retailers from sourceType
+  const retailers = sourceType.split(/\s+/).filter(r => r.length > 2);
+  console.log(`Targeting retailers: ${retailers.join(', ')}`);
+  
+  // Make individual searches for each retailer to ensure we get multiple sources
+  const searchPromises = retailers.slice(0, 3).map(async (retailer) => {
+    return searchSingleRetailerPerplexity(retailer, searchQuery, productName, brand, barcode);
+  });
+  
+  const results = await Promise.all(searchPromises);
+  const sources = results.filter(s => s !== null) as Source[];
+  
+  console.log(`${sourceType} Perplexity search complete: ${sources.length} sources found from individual retailer searches`);
+  return sources;
+}
+
+// Alternative: Try to get multiple sources in one call (backup method)
+async function searchSourceTypePerplexityBulk(
+  sourceType: string,
+  searchQuery: string,
+  productName: string,
+  brand: string,
+  barcode: string
+): Promise<Source[]> {
+  console.log(`Starting ${sourceType} bulk search with Perplexity...`);
+  console.log(`Search query: ${searchQuery}`);
+  
   const searchPrompt = `Find ingredient information for this food product from MULTIPLE SOURCES:
 
 Product: ${brand} ${productName}
@@ -492,9 +519,7 @@ REMINDER: You MUST search multiple websites and return 2-3+ sources in the sourc
         ],
         temperature: 0.2,
         max_tokens: 8000,
-        search_domain_filter: ['amazon.com', 'walmart.com', 'target.com', 'kroger.com', 'wholefoodsmarket.com', 'costco.com', 'instacart.com', 'myfitnesspal.com', 'nutritionix.com'],
-        return_citations: true,
-        search_recency_filter: 'month'
+        return_citations: true
       }),
     });
 
