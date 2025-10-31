@@ -306,7 +306,7 @@ DIETARY COMPATIBILITY:
 Return JSON:
 {
   "name": "${retailerName}",
-  "url": "https://...",
+  "url": "https://...",  // MUST be the SPECIFIC product page URL, NOT the homepage
   "ingredientsText": "complete ingredient list here",
   "explicitAllergenStatement": "if found",
   "explicitDietaryLabels": "if found",
@@ -315,6 +315,9 @@ Return JSON:
   "diets": ["pescatarian"],
   "confidence": 90
 }
+
+IMPORTANT: The "url" field MUST be the specific product page URL where you found the ingredients.
+Do NOT use homepage URLs like "https://www.nutritionix.com/" - use the actual product page.
 
 If you cannot find this product on ${retailerName}, return: {"found": false}`;
 
@@ -490,7 +493,7 @@ EXAMPLE (you should return 2-3+ sources like this):
   "sources": [
     {
       "name": "Amazon",
-      "url": "https://amazon.com/...",
+      "url": "https://amazon.com/dp/B08XYZ123",  // SPECIFIC product page
       "ingredientsText": "COMPLETE ingredient list here",
       "explicitAllergenStatement": "CONTAINS: TREE NUTS (ALMONDS)",
       "explicitDietaryLabels": "Vegan, Gluten-Free",
@@ -501,7 +504,7 @@ EXAMPLE (you should return 2-3+ sources like this):
     },
     {
       "name": "Walmart",
-      "url": "https://walmart.com/...",
+      "url": "https://walmart.com/ip/Product-Name/12345",  // SPECIFIC product page
       "ingredientsText": "COMPLETE ingredient list here",
       "explicitAllergenStatement": "",
       "explicitDietaryLabels": "",
@@ -512,7 +515,7 @@ EXAMPLE (you should return 2-3+ sources like this):
     },
     {
       "name": "Target",
-      "url": "https://target.com/...",
+      "url": "https://target.com/p/product-name/-/A-12345",  // SPECIFIC product page
       "ingredientsText": "COMPLETE ingredient list here",
       ...same fields...
       "confidence": 85
@@ -523,8 +526,12 @@ EXAMPLE (you should return 2-3+ sources like this):
 ✅ GOOD: 2-3+ sources in your response
 ❌ BAD: Only 1 source (keep searching!)
 ❌ BAD: Empty sources array {"sources": []} (unless product truly doesn't exist anywhere)
+❌ BAD: Homepage URLs like "https://www.nutritionix.com/" - use the SPECIFIC product page!
 
 Accept ANY length ingredient list - even "Water, Barley, Hops, Yeast" is valid.
+
+CRITICAL: Each "url" field MUST be the specific product page URL where you found the ingredients.
+Do NOT use homepage URLs - use the actual product page with the ingredient information.
 
 REMINDER: You MUST search multiple websites and return 2-3+ sources in the sources array. Do not stop after finding just one source!`;
 
@@ -712,7 +719,7 @@ Format your response as JSON:
   "sources": [
     {
       "name": "Website Name (e.g., 'Kroger', 'Amazon', 'Stacy's Official Site')",
-      "url": "https://...",
+      "url": "https://...",  // MUST be SPECIFIC product page URL, NOT homepage
       "ingredientsText": "COMPLETE FULL ingredient list here - every single ingredient",
       "explicitAllergenStatement": "CONTAINS: TREE NUTS (ALMONDS)" (if found, otherwise empty string),
       "explicitDietaryLabels": "Vegan, Gluten-Free" (if found, otherwise empty string),
@@ -723,6 +730,9 @@ Format your response as JSON:
     }
   ]
 }
+
+CRITICAL: The "url" field MUST be the specific product page URL where you found the ingredients.
+Do NOT use homepage URLs like "https://www.nutritionix.com/" - use the actual product page.
 
 If you cannot find any ingredient information for this product, return empty sources array: {"sources": []}
 Accept sources with ANY length ingredient list - even very short lists like "Water, Barley, Hops, Yeast" are valid.`;
