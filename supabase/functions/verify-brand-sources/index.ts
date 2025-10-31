@@ -796,18 +796,11 @@ async function searchGeneralWebPerplexity(
     // Step 2: Use Chat API to extract ingredients from each search result
     const sources: Source[] = [];
 
-    for (const result of searchData.results.slice(0, 5)) { // Process top 5 results
-      log(`  🔍 Analyzing: ${result.title}`);
+    for (const result of searchData.results.slice(0, 8)) { // Process top 8 results
+      log(`  🔍 Fetching full page: ${result.title}`);
       log(`     URL: ${result.url}`);
 
-      // Check if snippet contains ingredient information
-      const snippet = result.snippet || '';
-      if (snippet.length < 50) {
-        log(`     ❌ Snippet too short (${snippet.length} chars)`);
-        continue;
-      }
-
-      // Use Chat API to extract structured ingredient data from the snippet
+      // Use Chat API with web search to actually browse to the URL and extract ingredients
       const extractResp = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
         headers: {
@@ -818,24 +811,29 @@ async function searchGeneralWebPerplexity(
           model: 'sonar',
           messages: [{
             role: 'user',
-            content: `Extract ingredient and allergen information from this web page content about ${brand} ${productName}:
+            content: `Go to this URL and extract the complete ingredient list: ${result.url}
 
-Title: ${result.title}
-URL: ${result.url}
-Content: ${snippet}
+This is for the product: ${brand} ${productName} (barcode: ${barcode})
 
 Return ONLY a JSON object with this structure (no other text):
 {
   "hasIngredients": true/false,
-  "ingredientsText": "exact verbatim ingredient list if found",
-  "explicitAllergenStatement": "any CONTAINS or allergen warning statements found",
-  "explicitDietaryLabels": "any vegan/vegetarian/pescatarian labels found",
+  "ingredientsText": "COMPLETE verbatim ingredient list - copy EVERY ingredient exactly as written",
+  "explicitAllergenStatement": "any CONTAINS or allergen warning statements",
+  "explicitDietaryLabels": "any vegan/vegetarian/pescatarian labels",
   "crossContaminationWarnings": "any 'may contain' or 'processed in facility' warnings",
-  "allergens": ["milk", "eggs", "fish", "shellfish", "tree nuts", "peanuts", "wheat", "soybeans", "sesame"],
-  "diets": ["vegan", "vegetarian", "pescatarian"]
+  "allergens": [],
+  "diets": []
 }
 
-ALLERGEN DETECTION (detect from ingredients if present):
+CRITICAL - INGREDIENT EXTRACTION:
+- Find the "Ingredients:" section on the page
+- Copy the ENTIRE ingredient list EXACTLY as written
+- Include ALL ingredients, sub-ingredients in parentheses, everything
+- Do NOT abbreviate, summarize, or skip any ingredients
+- If you see "Ingredients: Water, Salt, Sugar" - copy that EXACT text
+
+ALLERGEN DETECTION (only include if found in ingredients):
 - "milk": milk, butter, cheese, whey, casein, lactose, cream
 - "eggs": egg, albumin, mayonnaise
 - "fish": fish, anchovy, cod, salmon, tuna
@@ -847,17 +845,14 @@ ALLERGEN DETECTION (detect from ingredients if present):
 - "sesame": sesame, tahini
 
 DIETARY COMPATIBILITY (infer from ingredients):
-- Vegan: NO animal products (no meat, fish, dairy, eggs, honey, gelatin)
-- Vegetarian: NO meat or fish (may have dairy/eggs)
-- Pescatarian: NO meat (may have fish, dairy, eggs)
+- Vegan: NO animal products
+- Vegetarian: NO meat/fish
+- Pescatarian: NO meat
 
-IMPORTANT:
-- Copy ingredient list EXACTLY as written
-- Only include allergens that are actually present
-- Set hasIngredients to false if no ingredients found`
+If no ingredient list found on this page, return hasIngredients: false`
           }],
           temperature: 0.1,
-          max_tokens: 1500
+          max_tokens: 2000
         })
       });
 
