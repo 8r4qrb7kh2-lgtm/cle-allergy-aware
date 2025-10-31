@@ -795,8 +795,17 @@ async function searchGeneralWebPerplexity(
 
     // Step 2: Use Chat API to extract ingredients from each search result
     const sources: Source[] = [];
+    const processedUrls = new Set<string>();
 
     for (const result of searchData.results.slice(0, 8)) { // Process top 8 results
+      // Skip duplicate URLs
+      const normalizedUrl = result.url.toLowerCase().trim();
+      if (processedUrls.has(normalizedUrl)) {
+        log(`  ⏭️  Skipping duplicate URL: ${result.url}`);
+        continue;
+      }
+      processedUrls.add(normalizedUrl);
+
       log(`  🔍 Fetching full page: ${result.title}`);
       log(`     URL: ${result.url}`);
 
