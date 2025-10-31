@@ -453,14 +453,15 @@ async function searchSourceTypePerplexity(
   searchQuery: string,
   productName: string,
   brand: string,
-  barcode: string
+  barcode: string,
+  addLog?: (msg: string) => void
 ): Promise<Source[]> {
-  console.log(`Starting ${sourceType} search with Perplexity...`);
-  console.log(`Search query: ${searchQuery}`);
-  
+  const log = addLog || console.log;
+  log(`🔍 Starting ${sourceType} search with Perplexity...`);
+
   // If the caller asked for general web search, use the bulk flow with a general prompt
   if (sourceType.toLowerCase().includes('general web')) {
-    return searchGeneralWebPerplexity(searchQuery, productName, brand, barcode);
+    return searchGeneralWebPerplexity(searchQuery, productName, brand, barcode, addLog);
   }
 
   // Otherwise treat sourceType as a list of retailers
@@ -754,9 +755,11 @@ async function searchGeneralWebPerplexity(
   searchQuery: string,
   productName: string,
   brand: string,
-  barcode: string
+  barcode: string,
+  addLog?: (msg: string) => void
 ): Promise<Source[]> {
-  console.log(`General Web search with Perplexity: ${searchQuery}`);
+  const log = addLog || console.log;
+  log(`🔎 Calling Perplexity API with query: "${searchQuery}"`);
 
   const generalPrompt = `You are searching the web for ingredient information about this product: ${brand} ${productName} (Barcode: ${barcode})
 
@@ -822,39 +825,69 @@ IMPORTANT REMINDERS:
     });
 
     if (!resp.ok) {
-      console.log('General Web Perplexity search failed:', resp.status);
+      log(`❌ Perplexity API error: ${resp.status} ${resp.statusText}`);
       return [];
     }
 
     const data = await resp.json();
+    log(`📨 Perplexity API response received`);
+
     const text = data.choices?.[0]?.message?.content || '';
+    log(`📝 Response text length: ${text.length} characters`);
+    log(`📄 Response preview: ${text.substring(0, 200)}...`);
+
     const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) return [];
-    const parsed = JSON.parse(jsonMatch[0]);
-    const out: Source[] = [];
-    if (Array.isArray(parsed.sources)) {
-      for (const s of parsed.sources) {
-        if (!s.ingredientsText || s.ingredientsText.trim().length <= 10) continue;
-        const url: string = s.url || '';
-        const isSearchUrl = url.includes('/s?') || url.includes('/search?') || url.includes('searchTerm=') || url.includes('/search/');
-        if (isSearchUrl) continue;
-        if (!titlesLikelyMatch(brand, productName, s.productTitle || s.title)) continue;
-        out.push({
-          name: s.name,
-          url: url,
-          productTitle: s.productTitle || s.title || '',
-          ingredientsText: s.ingredientsText,
-          explicitAllergenStatement: s.explicitAllergenStatement || '',
-          explicitDietaryLabels: s.explicitDietaryLabels || '',
-          crossContaminationWarnings: s.crossContaminationWarnings || '',
-          allergens: s.allergens || [],
-          diets: s.diets || [],
-          confidence: s.confidence || 80,
-          dataAvailable: true
-        });
-      }
+    if (!jsonMatch) {
+      log(`❌ No JSON found in Perplexity response`);
+      return [];
     }
-    console.log(`General Web Perplexity: ${out.length} sources`);
+
+    log(`✅ Found JSON in response, parsing...`);
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    if (!parsed.sources || !Array.isArray(parsed.sources)) {
+      log(`❌ No 'sources' array in parsed JSON`);
+      return [];
+    }
+
+    log(`📊 Perplexity returned ${parsed.sources.length} potential sources`);
+
+    const out: Source[] = [];
+    for (const s of parsed.sources) {
+      if (!s.ingredientsText || s.ingredientsText.trim().length <= 10) {
+        log(`  ❌ ${s.name || 'Unknown'} - No ingredients or too short (${s.ingredientsText?.length || 0} chars)`);
+        continue;
+      }
+
+      const url: string = s.url || '';
+      const isSearchUrl = url.includes('/s?') || url.includes('/search?') || url.includes('searchTerm=') || url.includes('/search/');
+      if (isSearchUrl) {
+        log(`  ❌ ${s.name || 'Unknown'} - Search URL rejected: ${url}`);
+        continue;
+      }
+
+      if (!titlesLikelyMatch(brand, productName, s.productTitle || s.title)) {
+        log(`  ❌ ${s.name || 'Unknown'} - Title mismatch: "${s.productTitle || s.title || 'N/A'}"`);
+        continue;
+      }
+
+      log(`  ✅ ${s.name} - Valid source! Ingredients: ${s.ingredientsText.length} chars`);
+      out.push({
+        name: s.name,
+        url: url,
+        productTitle: s.productTitle || s.title || '',
+        ingredientsText: s.ingredientsText,
+        explicitAllergenStatement: s.explicitAllergenStatement || '',
+        explicitDietaryLabels: s.explicitDietaryLabels || '',
+        crossContaminationWarnings: s.crossContaminationWarnings || '',
+        allergens: s.allergens || [],
+        diets: s.diets || [],
+        confidence: s.confidence || 80,
+        dataAvailable: true
+      });
+    }
+
+    log(`✅ Accepted ${out.length} sources from Perplexity`);
     return out;
   } catch (e) {
     console.log('General Web Perplexity error:', (e as any).message);
@@ -1150,18 +1183,18 @@ async function searchSourceType(
   productName: string,
   brand: string,
   barcode: string,
-  provider: SearchProvider = 'claude'
+  provider: SearchProvider = 'claude',
+  addLog?: (msg: string) => void
 ): Promise<Source[]> {
-  console.log(`🎯 [ROUTER] Provider requested: ${provider}, PERPLEXITY_API_KEY exists: ${!!PERPLEXITY_API_KEY}, ANTHROPIC_API_KEY exists: ${!!ANTHROPIC_API_KEY}`);
-  
+  const log = addLog || console.log;
+  log(`🎯 Provider: ${provider}, API Key available: ${provider === 'perplexity' ? !!PERPLEXITY_API_KEY : !!ANTHROPIC_API_KEY}`);
+
   if (provider === 'perplexity' && PERPLEXITY_API_KEY) {
-    console.log(`✅ [ROUTER] Using Perplexity for ${sourceType}`);
-    return searchSourceTypePerplexity(sourceType, searchQuery, productName, brand, barcode);
+    return searchSourceTypePerplexity(sourceType, searchQuery, productName, brand, barcode, addLog);
   } else if (provider === 'claude' && ANTHROPIC_API_KEY) {
-    console.log(`✅ [ROUTER] Using Claude for ${sourceType}`);
     return searchSourceTypeClaude(sourceType, searchQuery, productName, brand, barcode);
   } else {
-    console.log(`⚠️ [ROUTER] Provider ${provider} not available or API key missing. Falling back to Claude.`);
+    log(`⚠️ Provider ${provider} not available or API key missing. Falling back to Claude.`);
     return searchSourceTypeClaude(sourceType, searchQuery, productName, brand, barcode);
   }
 }
@@ -1229,7 +1262,7 @@ serve(async (req) => {
     addLog('🌐 PHASE 1: Searching the web for ingredient sources...');
     addLog(`📝 Search query: "${brand} ${productName} ingredients"`);
     const phase1Promises = [
-      searchSourceType('General Web', `${brand} ${productName} ingredients`, productName, brand, barcode, searchProvider)
+      searchSourceType('General Web', `${brand} ${productName} ingredients`, productName, brand, barcode, searchProvider, addLog)
     ];
 
     const phase1Results = await Promise.all(phase1Promises);
@@ -1283,8 +1316,8 @@ serve(async (req) => {
       addLog(`📝 Additional searches: "${brand} ${productName} ingredient list" and "${brand} ${productName} ingredients allergens"`);
 
       const phase2Promises = [
-        searchSourceType('General Web', `${brand} ${productName} ingredient list`, productName, brand, barcode, searchProvider),
-        searchSourceType('General Web', `${brand} ${productName} ingredients allergens site`, productName, brand, barcode, searchProvider)
+        searchSourceType('General Web', `${brand} ${productName} ingredient list`, productName, brand, barcode, searchProvider, addLog),
+        searchSourceType('General Web', `${brand} ${productName} ingredients allergens site`, productName, brand, barcode, searchProvider, addLog)
       ];
 
       const phase2Results = await Promise.all(phase2Promises);
@@ -1323,11 +1356,14 @@ serve(async (req) => {
 
     // PHASE 3: If still not enough, do additional targeted searches
     if (matchingSources.length < MINIMUM_SOURCES_REQUIRED) {
-      console.log(`\nPHASE 3: Only ${matchingSources.length} matches after Phase 2. Trying additional general queries...`);
+      addLog('');
+      addLog(`⚠️ Still only ${matchingSources.length} matching sources after Phase 2.`);
+      addLog('🌐 PHASE 3: Trying additional search variations...');
+      addLog(`📝 Searches: "nutrition facts" and "label ingredients PDF"`);
 
       const phase3Promises = [
-        searchSourceType('General Web', `${brand} ${productName} nutrition facts ingredients`, productName, brand, barcode, searchProvider),
-        searchSourceType('General Web', `${brand} ${productName} label ingredients PDF`, productName, brand, barcode, searchProvider)
+        searchSourceType('General Web', `${brand} ${productName} nutrition facts ingredients`, productName, brand, barcode, searchProvider, addLog),
+        searchSourceType('General Web', `${brand} ${productName} label ingredients PDF`, productName, brand, barcode, searchProvider, addLog)
       ];
 
       const phase3Results = await Promise.all(phase3Promises);

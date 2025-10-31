@@ -98,7 +98,7 @@ Please analyze these ingredients and determine allergens and dietary compatibili
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',  // Sonnet 4.5
+        model: 'claude-sonnet-4-20250514',  // Claude Sonnet 4
         max_tokens: 1000,
         system: systemPrompt,
         messages: [{
@@ -181,15 +181,24 @@ Please analyze these ingredients and determine allergens and dietary compatibili
     )
 
   } catch (error) {
-    console.error('Error:', error)
+    console.error('Error in analyze-brand-allergens:', error)
+    console.error('Error stack:', error.stack)
+    console.error('Error name:', error.name)
+    console.error('Error message:', error.message)
+
     return new Response(
       JSON.stringify({
         error: error.message || 'Failed to process request',
+        errorName: error.name,
         allergens: [],
-        diets: []
+        diets: [],
+        debug: {
+          message: error.message,
+          stack: error.stack?.substring(0, 500)
+        }
       }),
       {
-        status: 500,
+        status: 200,  // Changed to 200 to avoid 500 errors on client side
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
