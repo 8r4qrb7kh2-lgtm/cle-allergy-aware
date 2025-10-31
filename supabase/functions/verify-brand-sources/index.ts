@@ -278,12 +278,32 @@ Retailer: ${retailerName}
 
 Search for: ${searchQuery}
 
-Extract the COMPLETE ingredient list word-for-word. Also look for:
-- Allergen statements (CONTAINS:, allergen warnings)
-- Dietary labels (Vegan, Vegetarian, etc.)
-- Cross-contamination warnings
+CRITICAL INSTRUCTIONS:
+1. Extract the COMPLETE ingredient list word-for-word (do NOT abbreviate)
+2. Look for explicit allergen statements (CONTAINS:, allergen warnings)
+3. Look for dietary labels (Vegan, Vegetarian, Pescatarian)
+4. Look for cross-contamination warnings (May contain...)
 
-Return JSON with this exact format:
+ALLERGEN DETECTION (TOP 9 ONLY):
+Analyze ingredients and detect ONLY these allergens:
+- "milk" (milk, butter, cheese, whey, casein, lactose, cream)
+- "eggs" (egg, albumin, mayonnaise)
+- "fish" (fish, anchovy, cod, salmon, tuna)
+- "shellfish" (shrimp, crab, lobster, clam, oyster)
+- "tree nuts" (almonds, cashews, walnuts, pecans, pistachios, hazelnuts, macadamia)
+- "peanuts" (peanut, peanut butter, peanut oil)
+- "wheat" (wheat, wheat flour - NOT barley, rye, or oats)
+- "soybeans" (soy, soybean, soy lecithin, tofu, edamame)
+- "sesame" (sesame, tahini, sesame oil)
+
+DIETARY COMPATIBILITY:
+- Vegan: NO animal products (no meat, fish, dairy, eggs, honey, gelatin)
+  → If vegan, also vegetarian and pescatarian
+- Vegetarian: NO meat or fish (may have dairy/eggs)
+  → If vegetarian, also pescatarian
+- Pescatarian: NO meat (may have fish, dairy, eggs)
+
+Return JSON:
 {
   "name": "${retailerName}",
   "url": "https://...",
@@ -291,8 +311,8 @@ Return JSON with this exact format:
   "explicitAllergenStatement": "if found",
   "explicitDietaryLabels": "if found",
   "crossContaminationWarnings": "if found",
-  "allergens": ["tree nuts"],
-  "diets": ["vegan"],
+  "allergens": ["tree nuts", "milk"],
+  "diets": ["pescatarian"],
   "confidence": 90
 }
 
@@ -432,29 +452,32 @@ CRITICAL REQUIREMENTS:
 4. Look for cross-contamination warnings:
    - "May contain..."
    - "Processed in a facility that also processes..."
-5. ANALYZE INGREDIENTS for allergens:
-   - Tree Nuts: almonds, cashews, walnuts, pecans, pistachios
-   - Wheat: ONLY when "wheat" or "wheat flour" is explicitly listed (NOT barley, NOT rye, NOT oats - these are different grains)
-   - Soy: soy, soybean oil, soy lecithin
-   - Milk: milk, butter, cheese, whey, casein
-   - Eggs: egg, albumin
-   - Fish: fish, anchovy, cod
-   - Shellfish: shrimp, crab, lobster
-   - Peanuts: peanut
-   - Sesame: sesame, tahini
+5. ANALYZE INGREDIENTS for allergens (TOP 9 FDA ALLERGENS ONLY):
+   - "milk": milk, butter, cheese, whey, casein, lactose, cream, yogurt
+   - "eggs": egg, albumin, mayonnaise, meringue
+   - "fish": fish, anchovy, cod, salmon, tuna, bass
+   - "shellfish": shrimp, crab, lobster, clam, oyster, mussel
+   - "tree nuts": almonds, cashews, walnuts, pecans, pistachios, hazelnuts, macadamia
+   - "peanuts": peanut, peanut butter, peanut oil
+   - "wheat": wheat, wheat flour (NOT barley, rye, or oats)
+   - "soybeans": soy, soybean, soy lecithin, tofu, edamame
+   - "sesame": sesame, tahini, sesame oil
 
-   IMPORTANT: Barley is NOT wheat. Only detect wheat allergen when the word "wheat" appears in ingredients.
+   IMPORTANT: Use exact allergen names above (e.g., "tree nuts" not "almonds", "soybeans" not "soy")
 6. DETERMINE DIETARY COMPATIBILITY (use logical rules):
-   - Vegan: NO animal products (no meat, fish, dairy, eggs, honey)
-     → If VEGAN, automatically also VEGETARIAN and PESCATARIAN
+   - Vegan: NO animal products (no meat, fish, dairy, eggs, honey, gelatin, whey)
+     → If vegan → return ["vegan", "vegetarian", "pescatarian"]
    - Vegetarian: NO meat or fish (may have dairy/eggs)
-     → If VEGETARIAN (not vegan), automatically also PESCATARIAN
+     → If vegetarian (not vegan) → return ["vegetarian", "pescatarian"]
    - Pescatarian: NO meat (may have fish, dairy, eggs)
+     → If pescatarian only → return ["pescatarian"]
+   - If contains meat/poultry → return []
 
-   IMPORTANT: Apply these rules:
-   * If vegan → return ["vegan", "vegetarian", "pescatarian"]
-   * If vegetarian but has dairy/eggs → return ["vegetarian", "pescatarian"]
-   * If pescatarian only → return ["pescatarian"]
+   IMPORTANT: Check carefully:
+   - If has milk/cheese/whey/butter → NOT vegan (but may be vegetarian)
+   - If has eggs → NOT vegan (but may be vegetarian)
+   - If has fish → NOT vegan/vegetarian (but may be pescatarian)
+   - If has meat/chicken/beef/pork → return []
 7. Set confidence level (0-100) based on:
    - 90-100: Found exact product match with complete ingredient list
    - 70-89: Found product but some uncertainty (different size/flavor variation)
@@ -653,29 +676,32 @@ CRITICAL REQUIREMENTS:
 4. Look for cross-contamination warnings:
    - "May contain..."
    - "Processed in a facility that also processes..."
-5. ANALYZE INGREDIENTS for allergens:
-   - Tree Nuts: almonds, cashews, walnuts, pecans, pistachios
-   - Wheat: ONLY when "wheat" or "wheat flour" is explicitly listed (NOT barley, NOT rye, NOT oats - these are different grains)
-   - Soy: soy, soybean oil, soy lecithin
-   - Milk: milk, butter, cheese, whey, casein
-   - Eggs: egg, albumin
-   - Fish: fish, anchovy, cod
-   - Shellfish: shrimp, crab, lobster
-   - Peanuts: peanut
-   - Sesame: sesame, tahini
+5. ANALYZE INGREDIENTS for allergens (TOP 9 FDA ALLERGENS ONLY):
+   - "milk": milk, butter, cheese, whey, casein, lactose, cream, yogurt
+   - "eggs": egg, albumin, mayonnaise, meringue
+   - "fish": fish, anchovy, cod, salmon, tuna, bass
+   - "shellfish": shrimp, crab, lobster, clam, oyster, mussel
+   - "tree nuts": almonds, cashews, walnuts, pecans, pistachios, hazelnuts, macadamia
+   - "peanuts": peanut, peanut butter, peanut oil
+   - "wheat": wheat, wheat flour (NOT barley, rye, or oats)
+   - "soybeans": soy, soybean, soy lecithin, tofu, edamame
+   - "sesame": sesame, tahini, sesame oil
 
-   IMPORTANT: Barley is NOT wheat. Only detect wheat allergen when the word "wheat" appears in ingredients.
+   IMPORTANT: Use exact allergen names above (e.g., "tree nuts" not "almonds", "soybeans" not "soy")
 6. DETERMINE DIETARY COMPATIBILITY (use logical rules):
-   - Vegan: NO animal products (no meat, fish, dairy, eggs, honey)
-     → If VEGAN, automatically also VEGETARIAN and PESCATARIAN
+   - Vegan: NO animal products (no meat, fish, dairy, eggs, honey, gelatin, whey)
+     → If vegan → return ["vegan", "vegetarian", "pescatarian"]
    - Vegetarian: NO meat or fish (may have dairy/eggs)
-     → If VEGETARIAN (not vegan), automatically also PESCATARIAN
+     → If vegetarian (not vegan) → return ["vegetarian", "pescatarian"]
    - Pescatarian: NO meat (may have fish, dairy, eggs)
+     → If pescatarian only → return ["pescatarian"]
+   - If contains meat/poultry → return []
 
-   IMPORTANT: Apply these rules:
-   * If vegan → return ["vegan", "vegetarian", "pescatarian"]
-   * If vegetarian but has dairy/eggs → return ["vegetarian", "pescatarian"]
-   * If pescatarian only → return ["pescatarian"]
+   IMPORTANT: Check carefully:
+   - If has milk/cheese/whey/butter → NOT vegan (but may be vegetarian)
+   - If has eggs → NOT vegan (but may be vegetarian)
+   - If has fish → NOT vegan/vegetarian (but may be pescatarian)
+   - If has meat/chicken/beef/pork → return []
 7. Set confidence level (0-100) based on:
    - 90-100: Found exact product match with complete ingredient list
    - 70-89: Found product but some uncertainty (different size/flavor variation)
