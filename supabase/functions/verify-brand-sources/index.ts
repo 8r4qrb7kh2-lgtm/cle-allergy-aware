@@ -763,6 +763,7 @@ async function searchGeneralWebPerplexity(
 
   try {
     // Step 1: Use Perplexity Search API to find relevant web pages
+    // Search specifically for retailer sites that show barcodes
     const searchResp = await fetch('https://api.perplexity.ai/search', {
       method: 'POST',
       headers: {
@@ -770,8 +771,8 @@ async function searchGeneralWebPerplexity(
         'Authorization': `Bearer ${PERPLEXITY_API_KEY}`,
       },
       body: JSON.stringify({
-        query: `${brand} ${productName} ingredients barcode ${barcode}`,
-        max_results: 10,
+        query: `${brand} ${productName} UPC ${barcode} walmart target amazon kroger ingredients`,
+        max_results: 15,
         max_tokens_per_page: 2048
       })
     });
@@ -797,7 +798,7 @@ async function searchGeneralWebPerplexity(
     const sources: Source[] = [];
     const processedUrls = new Set<string>();
 
-    for (const result of searchData.results.slice(0, 8)) { // Process top 8 results
+    for (const result of searchData.results.slice(0, 12)) { // Process top 12 results
       // Skip duplicate URLs
       const normalizedUrl = result.url.toLowerCase().trim();
       if (processedUrls.has(normalizedUrl)) {
@@ -822,11 +823,18 @@ async function searchGeneralWebPerplexity(
             role: 'user',
             content: `Go to this URL and extract the complete ingredient list: ${result.url}
 
-This is for the product: ${brand} ${productName} (barcode: ${barcode})
+This is for the product: ${brand} ${productName}
+BARCODE/UPC: ${barcode}
+
+⚠️ CRITICAL - VERIFY THIS IS THE EXACT PRODUCT:
+1. Check if the barcode/UPC ${barcode} appears on the page
+2. Make sure the product name matches "${brand} ${productName}"
+3. If this is a DIFFERENT product variation, return hasIngredients: false
 
 Return ONLY a JSON object with this structure (no other text):
 {
   "hasIngredients": true/false,
+  "barcodeFound": true/false,
   "ingredientsText": "COMPLETE verbatim ingredient list - copy EVERY ingredient exactly as written",
   "explicitAllergenStatement": "any CONTAINS or allergen warning statements",
   "explicitDietaryLabels": "any vegan/vegetarian/pescatarian labels",
@@ -841,6 +849,7 @@ CRITICAL - INGREDIENT EXTRACTION:
 - Include ALL ingredients, sub-ingredients in parentheses, everything
 - Do NOT abbreviate, summarize, or skip any ingredients
 - If you see "Ingredients: Water, Salt, Sugar" - copy that EXACT text
+- If the barcode doesn't match, return hasIngredients: false
 
 ALLERGEN DETECTION (only include if found in ingredients):
 - "milk": milk, butter, cheese, whey, casein, lactose, cream
@@ -888,8 +897,14 @@ If no ingredient list found on this page, return hasIngredients: false`
 
       const allergens = Array.isArray(extracted.allergens) ? extracted.allergens : [];
       const diets = Array.isArray(extracted.diets) ? extracted.diets : [];
+      const barcodeFound = extracted.barcodeFound === true;
 
       log(`     ✅ Found ingredients! (${extracted.ingredientsText.length} chars)`);
+      if (barcodeFound) {
+        log(`        ✓ Barcode ${barcode} verified on page`);
+      } else {
+        log(`        ⚠️ Barcode not found on page - may be different product variant`);
+      }
       if (allergens.length > 0) {
         log(`        Allergens: ${allergens.join(', ')}`);
       }
