@@ -32,7 +32,7 @@
     touch-action: pan-x pan-y;
   }
   *{box-sizing:border-box; touch-action: pan-x pan-y;}
-  .menuWrap, .menuInner, .overlayLayer, .overlay, .tip {
+  .menuWrap, .menuInner, .overlayLayer, .tip {
     touch-action: pan-x pan-y;
   }
   .wrap{min-height:100%;display:flex;flex-direction:column;width:100%}
@@ -94,8 +94,14 @@
   .menuInner{position:relative;display:inline-block;user-select:none;line-height:0;transform-origin:top left;min-width:100%}
   .menuImg{display:block;max-width:100%;height:auto;width:100%}
   .overlayLayer{position:absolute;left:0;top:0;pointer-events:none;line-height:normal;width:100%;height:100%}
-  .overlay{position:absolute;border:1.5px solid;border-radius:4px;background:transparent;pointer-events:auto;box-sizing:border-box}
-  .overlay:hover{box-shadow:0 0 0 3px #ffffff22,0 6px 16px rgba(0,0,0,.35)}
+  .overlay{position:absolute;border:1.5px solid;border-radius:4px;background:transparent;pointer-events:auto;box-sizing:border-box;touch-action:manipulation}
+  .overlay:hover{box-shadow:none}
+  .overlay.selected{animation:overlayPulse 1.5s ease-in-out infinite;background:transparent !important}
+  @keyframes overlayPulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0.5);border-width:1.5px}
+    50%{box-shadow:0 0 0 4px rgba(255,255,255,0.9);border-width:2.5px}
+  }
+  /* Remove tip pulse animation - no longer needed */
   .mobileMenuNotice{margin:16px 0;display:flex;flex-direction:column;gap:12px;align-items:stretch}
   .mobileMenuNotice .mobileMenuOpenBtn{width:100%}
   #mobileViewerChrome{position:fixed;inset:0;z-index:3400;display:none;pointer-events:none}
@@ -126,17 +132,18 @@
   body.mobileViewerActive .qrPromoBackdrop,
   body.mobileViewerActive .qrBanner{display:none !important}
   .ovBadge{position:absolute;top:3px;right:3px;width:18px;height:18px;background:#3651ff;border:1.5px solid #dbe2ff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;cursor:pointer;z-index:10;pointer-events:auto;line-height:1}
-  .ovBadge:hover{background:#4e65ff;box-shadow:0 0 6px #3651ff}
+  .ovBadge:hover{background:#4e65ff}
   .ovWarning{position:absolute;top:3px;left:3px;width:18px;height:18px;background:#facc15;border:1.5px solid #fef08a;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;cursor:pointer;z-index:10;pointer-events:auto;line-height:1;color:#000;}
   .ovWarning:hover{background:#fbbf24;box-shadow:0 0 6px #facc15}
 
   /* Tooltip (with mobile X). We'll shrink it based on visual viewport scale. */
   .tip{position:absolute;z-index:3400;pointer-events:auto;background:rgba(15,21,52,0.98);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid #2a3466;border-radius:10px;padding:10px;box-shadow:var(--shadow);display:none;max-width:280px;transform-origin:top left}
+  /* Removed .tip.pulse animation - no longer needed */
   .tipHead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
   .tTitle{font-weight:800}
   .tClose{border:1px solid #2a3466;background:#16205a;color:#fff;border-radius:8px;padding:4px 8px;cursor:pointer;line-height:1}
   .tClose:hover{border-color:var(--hover)}
-  .love-button-tooltip{border:1px solid #2a3466;background:#16205a;color:#fff;border-radius:8px;padding:4px 8px;cursor:pointer;line-height:1;margin-right:8px}
+  .love-button-tooltip{border:1px solid #2a3466;background:#16205a;color:#fff;border-radius:8px;padding:4px 8px;cursor:pointer;line-height:1;margin-right:8px;touch-action:manipulation;-webkit-tap-highlight-color:transparent;pointer-events:auto;position:relative;z-index:10}
   .love-button-tooltip:hover{border-color:var(--hover)}
   .love-button-tooltip.loved{background:rgba(236,72,153,0.2);border-color:#ec4899;color:#ec4899}
   .love-button-tooltip.loved:hover{background:rgba(236,72,153,0.3)}
@@ -273,7 +280,7 @@
   .editBox:hover{background:rgba(255,193,7,0.08);border-color:#ffc107}
   .editBox.active{background:rgba(76,175,80,0.12);border-color:#4CAF50}
   .editBadge{position:absolute;top:2px;right:2px;width:18px;height:18px;background:#3651ff;border:1.5px solid #dbe2ff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer;z-index:10;line-height:1}
-  .editBadge:hover{background:#4e65ff;box-shadow:0 0 6px #3651ff}
+  .editBadge:hover{background:#4e65ff}
   .handle{position:absolute;width:14px;height:14px;background:#3651ff;border:2px solid #dbe2ff;border-radius:4px}
   .handle.se{right:-7px;bottom:-7px;cursor:nwse-resize}
   .handle.ne{right:-7px;top:-7px;cursor:nesw-resize}
@@ -349,7 +356,6 @@
     .ovBadge,.ovWarning{top:1px;width:6px;height:6px;border:0.5px solid;font-size:5px}
     .ovBadge{right:1px;border-color:#dbe2ff}
     .ovWarning{left:1px;border-color:#fef08a}
-    .ovBadge:hover{box-shadow:0 0 4px #3651ff}
     .ovWarning:hover{box-shadow:0 0 4px #facc15}
     .banner{flex-direction:column;align-items:stretch}
   }
@@ -581,9 +587,6 @@ function ensureMobileInfoPanel(){
     mobileInfoPanel.className='mobileInfoPanel';
     mobileInfoPanel.setAttribute('aria-live','polite');
     mobileInfoPanel.style.position='fixed';
-    mobileInfoPanel.style.left='12px';
-    mobileInfoPanel.style.right='12px';
-    mobileInfoPanel.style.bottom='12px';
     mobileInfoPanel.style.width='auto';
     mobileInfoPanel.style.zIndex='3500';
     mobileInfoPanel.style.background='rgba(11,16,32,0.94)';
@@ -592,6 +595,16 @@ function ensureMobileInfoPanel(){
     mobileInfoPanel.style.paddingBottom='calc(24px + env(safe-area-inset-bottom,0))';
     mobileInfoPanel.style.borderRadius='20px';
     mobileInfoPanel.style.display='none';
+  }
+  // Set positioning based on full-screen mode
+  if(document.body.classList.contains('mobileViewerActive')){
+    mobileInfoPanel.style.setProperty('left', '0', 'important');
+    mobileInfoPanel.style.setProperty('right', '0', 'important');
+    mobileInfoPanel.style.setProperty('bottom', '0', 'important');
+  } else {
+    mobileInfoPanel.style.left='12px';
+    mobileInfoPanel.style.right='12px';
+    mobileInfoPanel.style.bottom='12px';
   }
   mobileInfoPanel.innerHTML='';
   mobileInfoPanel.classList.remove('show');
@@ -747,11 +760,27 @@ function openMobileViewer(){
   updateFullScreenAllergySummary();
   setMobileZoom(1,true);
   if(prefersMobileInfo()){
-    if(currentMobileInfoItem){
-      renderMobileInfo(currentMobileInfoItem);
-    } else {
-      renderMobileInfo(null);
-    }
+    // Force re-render to update panel size for full-screen mode
+    // Use multiple timing approaches to ensure it updates
+    const updatePanel = () => {
+      if(currentMobileInfoItem && mobileInfoPanel){
+        // Update positioning to full width for full-screen mode - use setProperty with important
+        mobileInfoPanel.style.setProperty('left', '0', 'important');
+        mobileInfoPanel.style.setProperty('right', '0', 'important');
+        mobileInfoPanel.style.setProperty('bottom', '0', 'important');
+        // Force re-render to apply full width
+        renderMobileInfo(currentMobileInfoItem);
+      } else {
+        renderMobileInfo(null);
+      }
+    };
+    // Try immediately
+    requestAnimationFrame(() => {
+      requestAnimationFrame(updatePanel);
+    });
+    // Also try after a short delay as backup
+    setTimeout(updatePanel, 50);
+    setTimeout(updatePanel, 150);
   }
   const wrap=document.getElementById('menu');
   if(wrap){
@@ -876,12 +905,13 @@ function closeQrPromo(reason='dismiss'){
 // Handle navigation in standalone mode
 const isStandalone = (window === window.parent);
 const send=(p)=>{
-  if (isStandalone) {
+    if (isStandalone) {
     // Handle navigation directly in standalone mode
     if (p.type === 'navigate') {
       if (p.to === '/restaurants') window.location.href = 'restaurants.html';
       else if (p.to === '/favorites') window.location.href = 'favorites.html';
       else if (p.to === '/dish-search') window.location.href = 'dish-search.html';
+      else if (p.to === '/loved-dishes') window.location.href = 'loved-dishes.html';
       else if (p.to === '/report-issue') window.location.href = 'report-issue.html';
       else if (p.to === '/accounts') {
         const params=new URLSearchParams();
@@ -5917,6 +5947,7 @@ function renderTopbar(){
       navItems.push({t:'Dish search',to:'/dish-search'});
       navItems.push({t:'All restaurants',to:'/restaurants'});
       navItems.push({t:'Favorite restaurants',to:'/favorites'});
+      navItems.push({t:'Favorite dishes',to:'/loved-dishes'});
     } else {
       navItems.push({t:'All restaurants',to:'/restaurants'});
     }
@@ -5947,6 +5978,41 @@ function renderTopbar(){
 
 /* tooltips */
 const pageTip=document.getElementById('tip');
+// Track if tip has been clicked/selected to stop pulsing
+let tipInteracted = false;
+// Track if tip is pinned open (clicked, should stay visible when mouse leaves)
+let tipPinned = false;
+// Track which overlay item is currently pinned (by comparing item data)
+let pinnedOverlayItem = null;
+
+// Set up click handlers for tip pinning
+if(pageTip){
+  // Removed hover pulsing animation handlers
+  
+  // Pin tip open when user clicks anywhere in the tip
+  pageTip.addEventListener('click', (e) => {
+    // Don't pin if clicking the close button (let close handler handle it)
+    if(e.target && e.target.classList.contains('tClose')){
+      hideTip(true);
+      return;
+    }
+    tipInteracted = true;
+    tipPinned = true;
+    // pinnedOverlayItem is already set when showTipIn is called with isClick=true
+  });
+  
+  // Also handle touch interactions
+  pageTip.addEventListener('touchstart', (e) => {
+    if(e.target && e.target.classList.contains('tClose')){
+      hideTip(true);
+      return;
+    }
+    tipInteracted = true;
+    tipPinned = true;
+    // pinnedOverlayItem is already set when showTipIn is called with isClick=true
+  });
+}
+
 function prefersMobileInfo(){
   try{
     const hasCoarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
@@ -5959,12 +6025,24 @@ function prefersMobileInfo(){
   }
 }
 function renderMobileInfo(item){
+  // Make function available globally for MutationObserver
+  window.renderMobileInfo = renderMobileInfo;
+  window.currentMobileInfoItem = item;
   ensureMobileInfoPanel();
   if(!mobileInfoPanel) return;
   mobileInfoPanel.style.position='fixed';
-  mobileInfoPanel.style.left='12px';
-  mobileInfoPanel.style.right='12px';
-  mobileInfoPanel.style.bottom='12px';
+  /* Use full width in full-screen mode, otherwise use margins */
+  const isFullScreen = document.body.classList.contains('mobileViewerActive');
+  if(isFullScreen){
+    // Force full width in full-screen mode - use !important via setProperty
+    mobileInfoPanel.style.setProperty('left', '0', 'important');
+    mobileInfoPanel.style.setProperty('right', '0', 'important');
+    mobileInfoPanel.style.setProperty('bottom', '0', 'important');
+  } else {
+    mobileInfoPanel.style.left='12px';
+    mobileInfoPanel.style.right='12px';
+    mobileInfoPanel.style.bottom='12px';
+  }
   mobileInfoPanel.style.zIndex='3500';
   if(!prefersMobileInfo()){
     mobileInfoPanel.classList.remove('show');
@@ -5978,26 +6056,18 @@ function renderMobileInfo(item){
     mobileInfoPanel.innerHTML='';
     mobileInfoPanel.style.display='none';
     mobileInfoPanel.classList.remove('show');
+    // Remove selected class from all overlays when mobile panel is closed
+    document.querySelectorAll('.overlay').forEach(ov=>ov.classList.remove('selected'));
     return;
   }
   currentMobileInfoItem=item;
   const bodyHTML=tooltipBodyHTML(item,state.allergies||[],state.diets||[]);
   
-  // Generate love button HTML if user is logged in
-  const restaurantId = state.restaurant?._id || state.restaurant?.id || null;
-  const dishName = item.id || item.name || 'Unnamed dish';
-  const dishKey = restaurantId ? `${String(restaurantId)}:${dishName}` : null;
-  const isLoved = dishKey && window.lovedDishesSet && window.lovedDishesSet.has(dishKey);
-  const loveButtonId = dishKey ? `love-btn-mobile-${dishKey.replace(/[^a-zA-Z0-9]/g, '-')}` : null;
-  const loveButtonHTML = (loveButtonId && state.user?.loggedIn && restaurantId) 
-    ? `<button type="button" class="love-button-tooltip ${isLoved ? 'loved' : ''}" id="${loveButtonId}" data-restaurant-id="${restaurantId}" data-dish-name="${esc(dishName)}" aria-label="${isLoved ? 'Remove from library' : 'Add to library'}" style="background:rgba(76,90,212,0.3);border:1px solid rgba(76,90,212,0.5);color:var(--ink);width:36px;height:36px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;flex-shrink:0;margin-right:8px"><img src="images/heart-icon.svg" alt="${isLoved ? 'Loved' : 'Not loved'}" style="width:18px;height:18px;display:block;" /></button>`
-    : '';
-  
   mobileInfoPanel.innerHTML=`
     <div class="mobileInfoHeaderRow">
       <div class="mobileInfoHeader">${esc(item.id||'Item')}</div>
       <div style="display:flex;align-items:center;gap:0;">
-        ${loveButtonHTML}
+        ${state.user?.loggedIn ? '<div id="mobileLoveButtonContainer" style="margin-right:8px;"></div>' : ''}
         <button type="button" class="mobileInfoClose" aria-label="Close dish details">×</button>
       </div>
     </div>
@@ -6006,22 +6076,52 @@ function renderMobileInfo(item){
     </div>
   `;
   
-  // Attach love button handler if present
-  const loveBtn = mobileInfoPanel.querySelector('.love-button-tooltip');
-  if(loveBtn && window.supabaseClient && state.user?.loggedIn) {
-    const restaurantIdAttr = loveBtn.getAttribute('data-restaurant-id');
-    const dishNameAttr = loveBtn.getAttribute('data-dish-name');
-    if(restaurantIdAttr && dishNameAttr) {
-      loveBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        toggleLoveDishInTooltip(state.user, restaurantIdAttr, dishNameAttr, loveBtn);
-      });
+  // Create love button separately if user is logged in
+  if(state.user?.loggedIn && window.supabaseClient) {
+    const restaurantId = state.restaurant?._id || state.restaurant?.id || null;
+    const dishName = item.id || item.name || 'Unnamed dish';
+    const dishKey = restaurantId ? `${String(restaurantId)}:${dishName}` : null;
+    const isLoved = dishKey && window.lovedDishesSet && window.lovedDishesSet.has(dishKey);
+    
+    if(restaurantId && dishName) {
+      const loveBtnContainer = mobileInfoPanel.querySelector('#mobileLoveButtonContainer');
+      if(loveBtnContainer) {
+        const loveBtn = document.createElement('button');
+        loveBtn.type = 'button';
+        loveBtn.className = `love-button-tooltip ${isLoved ? 'loved' : ''}`;
+        loveBtn.style.cssText = 'width:36px;height:36px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;touch-action:manipulation;-webkit-tap-highlight-color:transparent;pointer-events:auto;position:relative;z-index:9999';
+        loveBtn.setAttribute('aria-label', isLoved ? 'Remove from favorites' : 'Add to favorites');
+        
+        const heartImg = document.createElement('img');
+        heartImg.src = 'images/heart-icon.svg';
+        heartImg.alt = isLoved ? 'Loved' : 'Not loved';
+        heartImg.style.cssText = 'width:18px;height:18px;display:block;pointer-events:none';
+        loveBtn.appendChild(heartImg);
+        
+        loveBtnContainer.appendChild(loveBtn);
+        
+        // Attach handler immediately
+        const handleLoveClick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleLoveDishInTooltip(state.user, restaurantId, dishName, loveBtn);
+        };
+        loveBtn.addEventListener('click', handleLoveClick, true);
+        loveBtn.addEventListener('touchend', handleLoveClick, true);
+      }
     }
   }
   mobileInfoPanel.style.background='rgba(11,16,32,0.94)';
   mobileInfoPanel.style.backdropFilter='blur(14px)';
   mobileInfoPanel.style.webkitBackdropFilter='blur(14px)';
+  // Ensure positioning is correct, especially after full-screen mode activates
+  const isFullScreenCheck = document.body.classList.contains('mobileViewerActive');
+  if(isFullScreenCheck){
+    // Force full width in full-screen mode - use setProperty with important
+    mobileInfoPanel.style.setProperty('left', '0', 'important');
+    mobileInfoPanel.style.setProperty('right', '0', 'important');
+    mobileInfoPanel.style.setProperty('bottom', '0', 'important');
+  }
   adjustMobileInfoPanelForZoom();
   mobileInfoPanel.style.display='block';
   mobileInfoPanel.classList.add('show');
@@ -6061,7 +6161,7 @@ if(window.visualViewport){
   visualViewport.addEventListener('scroll', ()=>syncMobileInfoPanel(), {passive:true});
 }
 ensureMobileInfoPanel();
-function showTipIn(el, x, y, title, bodyHTML, anchorRect=null){
+function showTipIn(el, x, y, title, bodyHTML, anchorRect=null, isClick=false, item=null){
   const vv=window.visualViewport;
   const zoom = vv && vv.scale ? vv.scale : 1;
   const offsetLeft = vv && typeof vv.offsetLeft === 'number' ? vv.offsetLeft : 0;
@@ -6077,7 +6177,7 @@ function showTipIn(el, x, y, title, bodyHTML, anchorRect=null){
   const isLoved = dishKey && window.lovedDishesSet && window.lovedDishesSet.has(dishKey);
   const loveButtonId = dishKey ? `love-btn-tooltip-${dishKey.replace(/[^a-zA-Z0-9]/g, '-')}` : null;
   const loveButtonHTML = (loveButtonId && state.user?.loggedIn && restaurantId) 
-    ? `<button type="button" class="love-button-tooltip ${isLoved ? 'loved' : ''}" id="${loveButtonId}" data-restaurant-id="${restaurantId}" data-dish-name="${esc(dishName)}" aria-label="${isLoved ? 'Remove from library' : 'Add to library'}"><img src="images/heart-icon.svg" alt="${isLoved ? 'Loved' : 'Not loved'}" style="width:14px;height:14px;display:block;" /></button>`
+    ? `<button type="button" class="love-button-tooltip ${isLoved ? 'loved' : ''}" id="${loveButtonId}" data-restaurant-id="${restaurantId}" data-dish-name="${esc(dishName)}" aria-label="${isLoved ? 'Remove from favorites' : 'Add to favorites'}"><img src="images/heart-icon.svg" alt="${isLoved ? 'Loved' : 'Not loved'}" style="width:14px;height:14px;display:block;" /></button>`
     : '';
   
   el.innerHTML = `
@@ -6092,17 +6192,34 @@ function showTipIn(el, x, y, title, bodyHTML, anchorRect=null){
   `;
   el.style.display = 'block';
   
+  // If this is a click, pin the tip
+  if(isClick && item){
+    tipPinned = true;
+    tipInteracted = true;
+    pinnedOverlayItem = item; // Track which item is pinned
+  }
+  
+  // Only reset interaction state if not already pinned (preserve pinned state)
+  // This allows the tip to stay open when clicked
+  if(!tipPinned){
+    tipInteracted = false;
+    pinnedOverlayItem = null;
+  }
+  
+  // Removed pulsing animation from tip pop-up
+  
   // Attach love button handler if present
   const loveBtn = el.querySelector('.love-button-tooltip');
   if(loveBtn && window.supabaseClient && state.user?.loggedIn) {
     const restaurantIdAttr = loveBtn.getAttribute('data-restaurant-id');
     const dishNameAttr = loveBtn.getAttribute('data-dish-name');
     if(restaurantIdAttr && dishNameAttr) {
-      loveBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+      const handleLoveClick = (e) => {
+        if(e){e.preventDefault(); e.stopPropagation();}
         toggleLoveDishInTooltip(state.user, restaurantIdAttr, dishNameAttr, loveBtn);
-      });
+      };
+      loveBtn.addEventListener('click', handleLoveClick);
+      loveBtn.addEventListener('touchend', handleLoveClick, {passive:false});
     }
   }
 
@@ -6195,11 +6312,31 @@ function showTipIn(el, x, y, title, bodyHTML, anchorRect=null){
   });
 
   if(el.querySelector('.tClose')) {
-    el.querySelector('.tClose').onclick = () => { el.style.display='none'; };
+    el.querySelector('.tClose').onclick = () => { 
+      // Use hideTip with force=true to properly clean up all state including selected class
+      hideTip(true);
+    };
   }
 }
 
-function hideTip(){ pageTip.style.display='none'; }
+function hideTip(force = false){ 
+  // Don't hide if tip is pinned open (user clicked on it), unless forced
+  if(tipPinned && !force){
+    return;
+  }
+  // Don't hide if mouse is currently over the tip itself, unless forced
+  if(pageTip && pageTip.matches(':hover') && !force){
+    return;
+  }
+  pageTip.style.display='none';
+  // Reset interaction state when tip is hidden
+  tipInteracted = false;
+  tipPinned = false;
+  pinnedOverlayItem = null;
+  // Removed pulse class removal
+  // Remove selected from all overlays when tip is hidden
+  document.querySelectorAll('.overlay').forEach(ov=>ov.classList.remove('selected'));
+}
 
 /* list */
 function renderCardsPage(){
@@ -6383,10 +6520,22 @@ function drawMenu(container,imageURL){
         if(typeof evt.preventDefault==='function') evt.preventDefault();
         if(typeof evt.stopPropagation==='function') evt.stopPropagation();
       }
+      
       if(currentMobileInfoItem===item && mobileInfoPanel?.classList.contains('show')){
         renderMobileInfo(null);
       } else {
         hideTip();
+        
+        // Add selected class to overlay for pulse animation on mobile AFTER hideTip
+        const overlayBox = target?.classList?.contains('overlay') ? target : (target?.closest ? target.closest('.overlay') : null);
+        const isClick = evt && (evt.type === 'click' || evt.type === 'touchend');
+        if(overlayBox && isClick){
+          document.querySelectorAll('.overlay').forEach(ov=>ov.classList.remove('selected'));
+          overlayBox.classList.add('selected');
+          // Force reflow to ensure animation starts
+          void overlayBox.offsetWidth;
+        }
+        
         renderMobileInfo(item);
       }
       return;
@@ -6403,8 +6552,45 @@ function drawMenu(container,imageURL){
       : (evt?.currentTarget?.getBoundingClientRect ? evt.currentTarget.getBoundingClientRect() : null);
     const clientX = client?.clientX ?? 0;
     const clientY = client?.clientY ?? 0;
-    showTipIn(pageTip, clientX, clientY, item.id||'Item', tooltipBodyHTML(item,state.allergies||[],state.diets||[]), rect);
+    
+    // Pass whether this is a click to showTipIn
+    const isClick = evt && (evt.type === 'click' || evt.type === 'touchend');
+    
+    // If tip is pinned to a different overlay, don't show new tip unless clicking
+    if(tipPinned && pinnedOverlayItem && !isClick){
+      const currentItemId = item.id || item.name || '';
+      const pinnedItemId = pinnedOverlayItem.id || pinnedOverlayItem.name || '';
+      if(currentItemId !== pinnedItemId){
+        // Different overlay, but not clicking - ignore hover completely
+        return;
+      }
+    }
+    
+    showTipIn(pageTip, clientX, clientY, item.id||'Item', tooltipBodyHTML(item,state.allergies||[],state.diets||[]), rect, isClick, item);
+    
+    // Find the overlay box element (target might be badge or warning)
+    const overlayBox = target?.classList?.contains('overlay') ? target : (target?.closest ? target.closest('.overlay') : null);
+    if(overlayBox){
+      // Remove selected from all overlays only if this is a click (not just hover)
+      if(isClick){
+        document.querySelectorAll('.overlay').forEach(ov=>ov.classList.remove('selected'));
+        // Add selected to clicked overlay
+        overlayBox.classList.add('selected');
+        // Force reflow to ensure animation starts
+        void overlayBox.offsetWidth;
+      } else {
+        // On hover, only add selected if not pinned to any overlay
+        // When pinned, don't change selection at all - keep the pinned overlay selected
+        if(!tipPinned){
+          document.querySelectorAll('.overlay').forEach(ov=>ov.classList.remove('selected'));
+          overlayBox.classList.add('selected');
+        }
+      }
+    }
   };
+
+  // Make showOverlayDetails globally accessible for auto-opening overlays from dish search
+  window.showOverlayDetails = showOverlayDetails;
 
   function renderLayer(){
     [...layer.querySelectorAll('.overlay')].forEach(n=>n.remove());
@@ -6435,8 +6621,12 @@ function drawMenu(container,imageURL){
         warning.className='ovWarning';
         warning.title='Cross-contamination warning';
         warning.textContent='⚠';
-        warning.addEventListener('click',(e)=>{showOverlayDetails(e,it,e.currentTarget);});
-        warning.addEventListener('touchend',(e)=>{showOverlayDetails(e,it,e.currentTarget);});
+        warning.addEventListener('click',(e)=>{showOverlayDetails(e,it,box);});
+        warning.addEventListener('touchend',(e)=>{
+          e.preventDefault();
+          e.stopPropagation();
+          showOverlayDetails(e,it,box);
+        }, {passive:false});
         box.appendChild(warning);
       }
 
@@ -6444,20 +6634,40 @@ function drawMenu(container,imageURL){
       badge.className='ovBadge'; 
       badge.title='Details'; 
       badge.textContent='i';
-      badge.addEventListener('click',(e)=>{showOverlayDetails(e,it,e.currentTarget);});
-      badge.addEventListener('touchend',(e)=>{showOverlayDetails(e,it,e.currentTarget);});
+      badge.addEventListener('click',(e)=>{showOverlayDetails(e,it,box);});
+      badge.addEventListener('touchend',(e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        showOverlayDetails(e,it,box);
+      }, {passive:false});
       box.appendChild(badge);
 
       box.addEventListener('mousemove',(e)=>{
         if(prefersMobileInfo()) return;
+        // If a different overlay is pinned, don't show hover tips
+        if(tipPinned && pinnedOverlayItem && pinnedOverlayItem !== it){
+          return;
+        }
         const rect = (e.currentTarget && e.currentTarget.getBoundingClientRect)
           ? e.currentTarget.getBoundingClientRect()
           : box.getBoundingClientRect();
-        showTipIn(pageTip, e.clientX, e.clientY, it.id||'Item', tooltipBodyHTML(it,state.allergies||[],state.diets||[]), rect);
+        // mousemove is hover, not click
+        showTipIn(pageTip, e.clientX, e.clientY, it.id||'Item', tooltipBodyHTML(it,state.allergies||[],state.diets||[]), rect, false, it);
       });
-      box.addEventListener('mouseleave',hideTip);
-      box.addEventListener('click',(e)=>{showOverlayDetails(e,it,e.currentTarget);});
-      box.addEventListener('touchend',(e)=>{showOverlayDetails(e,it,e.currentTarget);});
+      box.addEventListener('mouseleave',()=>{
+        // hideTip already checks if tipPinned is true before hiding
+        hideTip();
+      });
+      box.addEventListener('click',(e)=>{
+        // showOverlayDetails will handle pinning via showTipIn
+        showOverlayDetails(e,it,box);
+      });
+      box.addEventListener('touchend',(e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        // showOverlayDetails will handle pinning via showTipIn
+        showOverlayDetails(e,it,box);
+      }, {passive:false});
 
       layer.appendChild(box);
     });
@@ -6525,7 +6735,12 @@ function drawMenu(container,imageURL){
 function renderRestaurant(){
   renderTopbar();
   const root=document.getElementById('root');
-  const rs=state.restaurant||{}; state.ack=false;
+  const rs=state.restaurant||{}; 
+  
+  // Auto-acknowledge if coming from dish search (has dishName parameter)
+  const urlParams = new URLSearchParams(window.location.search);
+  const dishName = urlParams.get('dishName');
+  state.ack = !!dishName; // Auto-acknowledge if coming from dish search
 
   root.innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:10px">
@@ -6548,7 +6763,7 @@ function renderRestaurant(){
     </div>
     <div class="banner">
       <span>Reference only. Ingredients & practices can change. Always inform staff about your allergens.</span>
-      <button class="ackBtn off" id="ackBtn">I understand</button>
+      <button class="ackBtn ${state.ack ? 'on' : 'off'}" id="ackBtn">${state.ack ? 'Acknowledged' : 'I understand'}</button>
     </div>
     <div id="legendRow" style="display:none" class="legend">
       <span><span class="key ok"></span> Meets all requirements</span>
@@ -6561,6 +6776,17 @@ function renderRestaurant(){
     <div class="menuWrap" id="menu"></div>
     <div class="mobileMenuNotice" id="mobileMenuNotice" aria-hidden="true" style="display:none">
       <button class="btn btnPrimary mobileMenuOpenBtn" type="button" style="width:100%;max-width:100%">Open menu full screen</button>
+    </div>
+    <div id="restaurantActions" style="display:none;margin-top:20px;gap:12px;flex-wrap:nowrap;justify-content:center;align-items:center;flex-direction:row">
+      <button class="btn btnPrimary" id="restaurantWebsiteBtn" style="flex:1;min-width:120px;max-width:200px">
+        <span style="display:inline-flex;align-items:center;gap:6px">🌐 Visit Website</span>
+      </button>
+      <button class="btn btnPrimary" id="restaurantCallBtn" style="flex:1;min-width:120px;max-width:200px">
+        <span style="display:inline-flex;align-items:center;gap:6px">📞 Call Restaurant</span>
+      </button>
+      <button class="btn btnPrimary" id="restaurantDeliveryBtn" style="flex:1;min-width:120px;max-width:200px">
+        <span style="display:inline-flex;align-items:center;gap:6px">🚗 Order Delivery</span>
+      </button>
     </div>
   `;
 
@@ -6575,12 +6801,14 @@ function renderRestaurant(){
   mobileInfoPanel.classList.remove('show');
   mobileInfoPanel.style.display='none';
   mobileInfoPanel.innerHTML='';
-  document.getElementById('ackBtn').onclick=()=>{
-    if(!state.ack){send({type:'ack'}); state.ack=true;}
-    const b=document.getElementById('ackBtn'); b.textContent='Acknowledged'; b.classList.remove('off'); b.classList.add('on');
+  
+  // If already acknowledged (from dish search), show menu immediately
+  if(state.ack){
+    send({type:'ack'});
     menu.classList.add('show');
     document.getElementById('legendRow').style.display='flex';
     document.getElementById('confirmedRow').style.display='block';
+    document.getElementById('restaurantActions').style.display='flex';
     drawMenu(menu, rs.menuImage);
     const hasMenuImage=!!rs.menuImage;
     if(hasMenuImage){
@@ -6588,20 +6816,72 @@ function renderRestaurant(){
       updateZoomIndicator();
       const notice=document.getElementById('mobileMenuNotice');
       if(notice){
-        notice.style.display='flex';
-        notice.setAttribute('aria-hidden','false');
-        notice.dataset.enabled='1';
-        const openBtn=notice.querySelector('.mobileMenuOpenBtn');
-        if(openBtn){
-          if(!openBtn.__openHandler){
-            const handler=(e)=>{
-              if(e && typeof e.preventDefault==='function') e.preventDefault();
-              if(e && typeof e.stopPropagation==='function') e.stopPropagation();
-              openMobileViewer();
-            };
-            openBtn.__openHandler=handler;
-            openBtn.addEventListener('click', handler);
+        if(prefersMobileInfo()){
+          notice.style.display='flex';
+          notice.setAttribute('aria-hidden','false');
+          notice.dataset.enabled='1';
+          const openBtn=notice.querySelector('.mobileMenuOpenBtn');
+          if(openBtn){
+            if(!openBtn.__openHandler){
+              const handler=(e)=>{
+                if(e && typeof e.preventDefault==='function') e.preventDefault();
+                if(e && typeof e.stopPropagation==='function') e.stopPropagation();
+                openMobileViewer();
+              };
+              openBtn.__openHandler=handler;
+              openBtn.addEventListener('click', handler);
+            }
           }
+          // Auto-open mobile viewer if coming from dish search with dishName
+          // Delay to allow overlay selection to complete first
+          if(dishName){
+            setTimeout(() => {
+              openMobileViewer();
+            }, 700);
+          }
+        } else {
+          notice.style.display='none';
+          notice.setAttribute('aria-hidden','true');
+          delete notice.dataset.enabled;
+        }
+      }
+    }
+  }
+  
+  document.getElementById('ackBtn').onclick=()=>{
+    if(!state.ack){send({type:'ack'}); state.ack=true;}
+    const b=document.getElementById('ackBtn'); b.textContent='Acknowledged'; b.classList.remove('off'); b.classList.add('on');
+    menu.classList.add('show');
+    document.getElementById('legendRow').style.display='flex';
+    document.getElementById('confirmedRow').style.display='block';
+    document.getElementById('restaurantActions').style.display='flex';
+    drawMenu(menu, rs.menuImage);
+    const hasMenuImage=!!rs.menuImage;
+    if(hasMenuImage){
+      ensureMobileViewerChrome();
+      updateZoomIndicator();
+      const notice=document.getElementById('mobileMenuNotice');
+      if(notice){
+        if(prefersMobileInfo()){
+          notice.style.display='flex';
+          notice.setAttribute('aria-hidden','false');
+          notice.dataset.enabled='1';
+          const openBtn=notice.querySelector('.mobileMenuOpenBtn');
+          if(openBtn){
+            if(!openBtn.__openHandler){
+              const handler=(e)=>{
+                if(e && typeof e.preventDefault==='function') e.preventDefault();
+                if(e && typeof e.stopPropagation==='function') e.stopPropagation();
+                openMobileViewer();
+              };
+              openBtn.__openHandler=handler;
+              openBtn.addEventListener('click', handler);
+            }
+          }
+        } else {
+          notice.style.display='none';
+          notice.setAttribute('aria-hidden','true');
+          delete notice.dataset.enabled;
         }
       }
     } else {
@@ -8769,7 +9049,10 @@ window.addEventListener('message',(ev)=>{
   if((state.qr||urlQR) && (!state.diets||!state.diets.length)){
     try{const s=sessionStorage.getItem('qrDiets'); if(s) state.diets=JSON.parse(s)||[];}catch(_){}
   }
-  if(m.page==='restaurant'||m.restaurant){state.ack=false;}
+  // Only reset ack if not coming from dish search (which has dishName parameter)
+  const urlParamsForAck = new URLSearchParams(window.location.search);
+  const dishNameFromUrl = urlParamsForAck.get('dishName');
+  if((m.page==='restaurant'||m.restaurant) && !dishNameFromUrl){state.ack=false;}
   if(m.type==='allergiesSaved'){state.allergies=m.allergies||[];}
   if(m.type==='aiAssistResult'){handleAiAssistantResult(m); return;}
   if(m.type==='aiAssistError'){handleAiAssistantError(m); return;}
@@ -8827,22 +9110,51 @@ window.addEventListener('message',(ev)=>{
     console.log('Set __startInEditor and __pendingDishToOpen flags');
   } else if (dishName && !openAI) {
     // Coming from dish search - open the overlay tooltip
-    console.log('Dish search deep link detected, dishName:', dishName);
-    
     // Wait for overlays to be loaded and rendered
+    let retryCount = 0;
+    const MAX_RETRIES = 50; // Max 10 seconds (50 * 200ms)
+    
     const tryOpenOverlay = () => {
-      // Check if state and restaurant overlays are available
-      if (!window.state || !window.state.restaurant || !Array.isArray(window.state.restaurant.overlays) || window.state.restaurant.overlays.length === 0) {
-        // Try again after a short delay
-        setTimeout(tryOpenOverlay, 100);
+      retryCount++;
+      if (retryCount > MAX_RETRIES) {
+        console.error('Failed to open overlay after maximum retries');
         return;
       }
       
-      const overlays = window.state.restaurant.overlays;
+      // Check if state and restaurant overlays are available
+      if (!state || !state.restaurant || !Array.isArray(state.restaurant.overlays) || state.restaurant.overlays.length === 0) {
+        // Try again after a short delay
+        setTimeout(tryOpenOverlay, 200);
+        return;
+      }
+      
+      // Check if menu is shown (acknowledged) - overlays are only rendered when menu is visible
+      const menu = document.getElementById('menu');
+      if (!menu || !menu.classList.contains('show')) {
+        setTimeout(tryOpenOverlay, 200);
+        return;
+      }
+      
+      // Check if pageTip is available
+      const pageTip = document.getElementById('tip');
+      if (!pageTip) {
+        setTimeout(tryOpenOverlay, 200);
+        return;
+      }
+      
+      // Check if menu image is loaded - overlay boxes are only rendered after image loads
+      const menuInner = document.querySelector('.menuInner');
+      const menuImg = menuInner ? menuInner.querySelector('.menuImg') : null;
+      if (!menuImg || !menuImg.complete || !menuImg.naturalWidth || menuImg.clientWidth === 0 || menuImg.clientHeight === 0) {
+        setTimeout(tryOpenOverlay, 200);
+        return;
+      }
+      
+      const overlays = state.restaurant.overlays;
       const searchName = (dishName || '').toLowerCase().trim();
       
       const matchIndex = overlays.findIndex(item => {
-        const itemId = (item.id || '').toLowerCase().trim();
+        const itemId = (item.id || item.name || '').toLowerCase().trim();
         
         // Exact match
         if (searchName && itemId === searchName) {
@@ -8863,27 +9175,59 @@ window.addEventListener('message',(ev)=>{
       
       if (matchIndex !== -1) {
         const item = overlays[matchIndex];
-        console.log('Auto-opening dish overlay for:', item.id);
         
-        // Find the overlay box element
-        const layer = document.getElementById('layer');
+        // Find the overlay box element - layer has class 'overlayLayer'
+        const layer = document.querySelector('.overlayLayer');
         if (layer) {
           const boxes = layer.querySelectorAll('.overlay');
-          if (boxes[matchIndex] && typeof showOverlayDetails === 'function') {
-            // Call showOverlayDetails to open the tooltip
+          // Check if showOverlayDetails is available (either locally or globally)
+          const showOverlayFn = window.showOverlayDetails;
+          if (boxes.length > 0 && boxes[matchIndex] && typeof showOverlayFn === 'function') {
+            // Call showOverlayDetails to open the tooltip (it will handle pinning)
             const box = boxes[matchIndex];
-            showOverlayDetails(null, item, box);
+            // Create a fake event object to indicate this is a click
+            // Use 'touchend' type to trigger mobile panel instead of desktop tooltip
+            const fakeEvent = { type: 'touchend', pointerType: 'touch' };
+            try {
+              showOverlayFn(fakeEvent, item, box);
+              // Since we're coming from dish search, full-screen will open soon
+              // Set up a MutationObserver to update panel size when full-screen activates
+              const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                  if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                    if (document.body.classList.contains('mobileViewerActive')) {
+                      const panel = document.getElementById('mobileInfoPanel');
+                      if (panel) {
+                        // Force full width using setProperty with important
+                        panel.style.setProperty('left', '0', 'important');
+                        panel.style.setProperty('right', '0', 'important');
+                        panel.style.setProperty('bottom', '0', 'important');
+                        // Re-render to ensure full width
+                        if (window.renderMobileInfo && window.currentMobileInfoItem) {
+                          window.renderMobileInfo(window.currentMobileInfoItem);
+                        }
+                      }
+                      observer.disconnect();
+                    }
+                  }
+                });
+              });
+              observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+              return; // Successfully opened, stop retrying
+            } catch (error) {
+              console.error('Error opening overlay:', error);
+              setTimeout(tryOpenOverlay, 200);
+            }
           } else {
-            // If boxes aren't rendered yet, wait a bit more
-            setTimeout(tryOpenOverlay, 100);
+            // If boxes aren't rendered yet or function not available, wait a bit more
+            setTimeout(tryOpenOverlay, 200);
           }
         } else {
           // Layer not ready yet, wait a bit more
-          setTimeout(tryOpenOverlay, 100);
+          setTimeout(tryOpenOverlay, 200);
         }
       } else {
         console.log('Could not find dish to auto-open:', dishName);
-        console.log('Available dishes:', overlays.map(o => o.id));
       }
     };
     
