@@ -136,6 +136,13 @@
   .tTitle{font-weight:800}
   .tClose{border:1px solid #2a3466;background:#16205a;color:#fff;border-radius:8px;padding:4px 8px;cursor:pointer;line-height:1}
   .tClose:hover{border-color:var(--hover)}
+  .love-button-tooltip{border:1px solid #2a3466;background:#16205a;color:#fff;border-radius:8px;padding:4px 8px;cursor:pointer;line-height:1;margin-right:8px}
+  .love-button-tooltip:hover{border-color:var(--hover)}
+  .love-button-tooltip.loved{background:rgba(236,72,153,0.2);border-color:#ec4899;color:#ec4899}
+  .love-button-tooltip.loved:hover{background:rgba(236,72,153,0.3)}
+  @media (max-width:640px){
+    .love-button-tooltip.loved{background:rgba(236,72,153,0.3);border-color:#ec4899}
+  }
   .tooltipList{margin:4px 0 0 18px;padding:0;list-style:disc}
   .tooltipList li{margin:3px 0}
   .tooltipDangerText{color:var(--bad);font-weight:500}
@@ -442,6 +449,22 @@ if (!slug) {
         .maybeSingle();
       allergies = record?.allergens || [];
       diets = record?.diets || [];
+      
+      // Load loved dishes
+      try {
+        const { data: lovedData } = await supabaseClient
+          .from('user_loved_dishes')
+          .select('restaurant_id, dish_name')
+          .eq('user_id', user.id);
+        if(lovedData) {
+          window.lovedDishesSet = new Set(lovedData.map(d => `${String(d.restaurant_id)}:${d.dish_name}`));
+        } else {
+          window.lovedDishesSet = new Set();
+        }
+      } catch(err) {
+        console.warn('Failed to load loved dishes', err);
+        window.lovedDishesSet = new Set();
+      }
 
       const { data: managerRecord, error: managerError } = await supabaseClient
         .from('restaurant_managers')
@@ -543,6 +566,7 @@ function detectAllergensInText(text){
   return [...found];
 }
 const state={page:null,restaurants:[],restaurant:null,allergies:[],diets:[],ack:false,user:{loggedIn:false},canEdit:false,qr:false,_hydrated:false,aiAssistEndpoint:null};
+window.lovedDishesSet = window.lovedDishesSet || new Set();
 let mobileInfoPanel=null;
 let currentMobileInfoItem=null;
 let mobileViewerChrome=null;
@@ -857,6 +881,7 @@ const send=(p)=>{
     if (p.type === 'navigate') {
       if (p.to === '/restaurants') window.location.href = 'restaurants.html';
       else if (p.to === '/favorites') window.location.href = 'favorites.html';
+      else if (p.to === '/dish-search') window.location.href = 'dish-search.html';
       else if (p.to === '/report-issue') window.location.href = 'report-issue.html';
       else if (p.to === '/accounts') {
         const params=new URLSearchParams();
@@ -5833,6 +5858,49 @@ function tooltipBodyHTML(item,sel,userDiets){
   return html;
 }
 
+async function toggleLoveDishInTooltip(user, restaurantId, dishName, button) {
+  if(!window.lovedDishesSet) window.lovedDishesSet = new Set();
+  const dishKey = `${String(restaurantId)}:${dishName}`;
+  const isLoved = window.lovedDishesSet.has(dishKey);
+  
+  button.disabled = true;
+  
+  try {
+    if (isLoved) {
+      const { error } = await window.supabaseClient
+        .from('user_loved_dishes')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('restaurant_id', restaurantId)
+        .eq('dish_name', dishName);
+      
+      if (error) throw error;
+      window.lovedDishesSet.delete(dishKey);
+      button.classList.remove('loved');
+      const img = button.querySelector('img');
+      if(img) img.src = 'images/heart-icon.svg';
+    } else {
+      const { error } = await window.supabaseClient
+        .from('user_loved_dishes')
+        .upsert({
+          user_id: user.id,
+          restaurant_id: restaurantId,
+          dish_name: dishName
+        }, { onConflict: 'user_id,restaurant_id,dish_name' });
+      
+      if (error) throw error;
+      window.lovedDishesSet.add(dishKey);
+      button.classList.add('loved');
+      const img = button.querySelector('img');
+      if(img) img.src = 'images/heart-icon.svg';
+    }
+  } catch (err) {
+    console.error('Failed to update loved dish', err);
+  } finally {
+    button.disabled = false;
+  }
+}
+
 function renderTopbar(){
   const el=document.getElementById('topbar'); el.innerHTML='';
   const isQrExperience=!!(state.qr||urlQR);
@@ -5844,11 +5912,13 @@ function renderTopbar(){
   if(!isQrExperience){
     const navWrap=div('','topNav');
     const tabs=div('','tabs');
-    const navItems=[
-      {t:'All restaurants',to:'/restaurants'}
-    ];
+    const navItems=[];
     if(state.user?.loggedIn){
+      navItems.push({t:'Dish search',to:'/dish-search'});
+      navItems.push({t:'All restaurants',to:'/restaurants'});
       navItems.push({t:'Favorite restaurants',to:'/favorites'});
+    } else {
+      navItems.push({t:'All restaurants',to:'/restaurants'});
     }
     navItems.forEach(n=>{
       const b=div(n.t,'tab');
@@ -5912,15 +5982,43 @@ function renderMobileInfo(item){
   }
   currentMobileInfoItem=item;
   const bodyHTML=tooltipBodyHTML(item,state.allergies||[],state.diets||[]);
+  
+  // Generate love button HTML if user is logged in
+  const restaurantId = state.restaurant?._id || state.restaurant?.id || null;
+  const dishName = item.id || item.name || 'Unnamed dish';
+  const dishKey = restaurantId ? `${String(restaurantId)}:${dishName}` : null;
+  const isLoved = dishKey && window.lovedDishesSet && window.lovedDishesSet.has(dishKey);
+  const loveButtonId = dishKey ? `love-btn-mobile-${dishKey.replace(/[^a-zA-Z0-9]/g, '-')}` : null;
+  const loveButtonHTML = (loveButtonId && state.user?.loggedIn && restaurantId) 
+    ? `<button type="button" class="love-button-tooltip ${isLoved ? 'loved' : ''}" id="${loveButtonId}" data-restaurant-id="${restaurantId}" data-dish-name="${esc(dishName)}" aria-label="${isLoved ? 'Remove from library' : 'Add to library'}" style="background:rgba(76,90,212,0.3);border:1px solid rgba(76,90,212,0.5);color:var(--ink);width:36px;height:36px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;flex-shrink:0;margin-right:8px"><img src="images/heart-icon.svg" alt="${isLoved ? 'Loved' : 'Not loved'}" style="width:18px;height:18px;display:block;" /></button>`
+    : '';
+  
   mobileInfoPanel.innerHTML=`
     <div class="mobileInfoHeaderRow">
       <div class="mobileInfoHeader">${esc(item.id||'Item')}</div>
-      <button type="button" class="mobileInfoClose" aria-label="Close dish details">×</button>
+      <div style="display:flex;align-items:center;gap:0;">
+        ${loveButtonHTML}
+        <button type="button" class="mobileInfoClose" aria-label="Close dish details">×</button>
+      </div>
     </div>
     <div class="mobileInfoContent">
       ${bodyHTML}
     </div>
   `;
+  
+  // Attach love button handler if present
+  const loveBtn = mobileInfoPanel.querySelector('.love-button-tooltip');
+  if(loveBtn && window.supabaseClient && state.user?.loggedIn) {
+    const restaurantIdAttr = loveBtn.getAttribute('data-restaurant-id');
+    const dishNameAttr = loveBtn.getAttribute('data-dish-name');
+    if(restaurantIdAttr && dishNameAttr) {
+      loveBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleLoveDishInTooltip(state.user, restaurantIdAttr, dishNameAttr, loveBtn);
+      });
+    }
+  }
   mobileInfoPanel.style.background='rgba(11,16,32,0.94)';
   mobileInfoPanel.style.backdropFilter='blur(14px)';
   mobileInfoPanel.style.webkitBackdropFilter='blur(14px)';
@@ -5972,14 +6070,41 @@ function showTipIn(el, x, y, title, bodyHTML, anchorRect=null){
   const viewportHeight = vv && vv.height ? vv.height : window.innerHeight;
   const scrollX = window.scrollX || window.pageXOffset || document.documentElement.scrollLeft || 0;
   const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+  // Generate love button HTML if user is logged in
+  const restaurantId = state.restaurant?._id || state.restaurant?.id || null;
+  const dishName = title || 'Unnamed dish';
+  const dishKey = restaurantId ? `${String(restaurantId)}:${dishName}` : null;
+  const isLoved = dishKey && window.lovedDishesSet && window.lovedDishesSet.has(dishKey);
+  const loveButtonId = dishKey ? `love-btn-tooltip-${dishKey.replace(/[^a-zA-Z0-9]/g, '-')}` : null;
+  const loveButtonHTML = (loveButtonId && state.user?.loggedIn && restaurantId) 
+    ? `<button type="button" class="love-button-tooltip ${isLoved ? 'loved' : ''}" id="${loveButtonId}" data-restaurant-id="${restaurantId}" data-dish-name="${esc(dishName)}" aria-label="${isLoved ? 'Remove from library' : 'Add to library'}"><img src="images/heart-icon.svg" alt="${isLoved ? 'Loved' : 'Not loved'}" style="width:14px;height:14px;display:block;" /></button>`
+    : '';
+  
   el.innerHTML = `
     <div class="tipHead">
       <div class="tTitle">${esc(title||'Item')}</div>
-      <button class="tClose" type="button">✕</button>
+      <div style="display:flex;align-items:center;gap:0;">
+        ${loveButtonHTML}
+        <button class="tClose" type="button">✕</button>
+      </div>
     </div>
     ${bodyHTML}
   `;
   el.style.display = 'block';
+  
+  // Attach love button handler if present
+  const loveBtn = el.querySelector('.love-button-tooltip');
+  if(loveBtn && window.supabaseClient && state.user?.loggedIn) {
+    const restaurantIdAttr = loveBtn.getAttribute('data-restaurant-id');
+    const dishNameAttr = loveBtn.getAttribute('data-dish-name');
+    if(restaurantIdAttr && dishNameAttr) {
+      loveBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleLoveDishInTooltip(state.user, restaurantIdAttr, dishNameAttr, loveBtn);
+      });
+    }
+  }
 
   const isMobile = window.innerWidth <= 640;
   el.style.transform = '';
@@ -6002,6 +6127,13 @@ function showTipIn(el, x, y, title, bodyHTML, anchorRect=null){
     closeEl.style.padding = isMobile ? '3px 6px' : '4px 8px';
     closeEl.style.fontSize = isMobile ? '12px' : '14px';
     closeEl.style.borderRadius = isMobile ? '5px' : '6px';
+  }
+  
+  const loveBtnEl = el.querySelector('.love-button-tooltip');
+  if(loveBtnEl) {
+    loveBtnEl.style.padding = isMobile ? '3px 6px' : '4px 8px';
+    loveBtnEl.style.fontSize = isMobile ? '12px' : '14px';
+    loveBtnEl.style.borderRadius = isMobile ? '5px' : '6px';
   }
 
   const noteEls = el.querySelectorAll('.note');
@@ -8672,7 +8804,7 @@ window.addEventListener('message',(ev)=>{
   updateFullScreenAllergySummary();
 });
 
-// Auto-open specific dish editor if coming from WordPress
+// Auto-open specific dish editor if coming from WordPress, or overlay if coming from dish search
 (function() {
   const urlParams = new URLSearchParams(window.location.search);
   const openAI = urlParams.get('openAI');
@@ -8693,6 +8825,76 @@ window.addEventListener('message',(ev)=>{
     };
 
     console.log('Set __startInEditor and __pendingDishToOpen flags');
+  } else if (dishName && !openAI) {
+    // Coming from dish search - open the overlay tooltip
+    console.log('Dish search deep link detected, dishName:', dishName);
+    
+    // Wait for overlays to be loaded and rendered
+    const tryOpenOverlay = () => {
+      // Check if state and restaurant overlays are available
+      if (!window.state || !window.state.restaurant || !Array.isArray(window.state.restaurant.overlays) || window.state.restaurant.overlays.length === 0) {
+        // Try again after a short delay
+        setTimeout(tryOpenOverlay, 100);
+        return;
+      }
+      
+      const overlays = window.state.restaurant.overlays;
+      const searchName = (dishName || '').toLowerCase().trim();
+      
+      const matchIndex = overlays.findIndex(item => {
+        const itemId = (item.id || '').toLowerCase().trim();
+        
+        // Exact match
+        if (searchName && itemId === searchName) {
+          return true;
+        }
+        // Contains match (either direction)
+        if (searchName && (itemId.includes(searchName) || searchName.includes(itemId))) {
+          return true;
+        }
+        // Fuzzy match - remove spaces and special chars
+        const normalizedItem = itemId.replace(/[^a-z0-9]/g, '');
+        const normalizedSearch = searchName.replace(/[^a-z0-9]/g, '');
+        if (normalizedItem && normalizedSearch && normalizedItem === normalizedSearch) {
+          return true;
+        }
+        return false;
+      });
+      
+      if (matchIndex !== -1) {
+        const item = overlays[matchIndex];
+        console.log('Auto-opening dish overlay for:', item.id);
+        
+        // Find the overlay box element
+        const layer = document.getElementById('layer');
+        if (layer) {
+          const boxes = layer.querySelectorAll('.overlay');
+          if (boxes[matchIndex] && typeof showOverlayDetails === 'function') {
+            // Call showOverlayDetails to open the tooltip
+            const box = boxes[matchIndex];
+            showOverlayDetails(null, item, box);
+          } else {
+            // If boxes aren't rendered yet, wait a bit more
+            setTimeout(tryOpenOverlay, 100);
+          }
+        } else {
+          // Layer not ready yet, wait a bit more
+          setTimeout(tryOpenOverlay, 100);
+        }
+      } else {
+        console.log('Could not find dish to auto-open:', dishName);
+        console.log('Available dishes:', overlays.map(o => o.id));
+      }
+    };
+    
+    // Start trying after page load
+    if (document.readyState === 'complete') {
+      setTimeout(tryOpenOverlay, 500);
+    } else {
+      window.addEventListener('load', () => {
+        setTimeout(tryOpenOverlay, 500);
+      });
+    }
   }
 })();
 </script>
