@@ -781,6 +781,28 @@ function openMobileViewer(){
     // Also try after a short delay as backup
     setTimeout(updatePanel, 50);
     setTimeout(updatePanel, 150);
+    // Re-apply selected class to overlay if one was selected before (for dish search navigation)
+    // This is needed because setMobileZoom calls renderLayer which removes all selected classes
+    if(currentMobileInfoItem && window.__lastSelectedOverlay){
+      const reapplySelection = () => {
+        const layer = document.querySelector('.overlayLayer');
+        if(layer){
+          const boxes = layer.querySelectorAll('.overlay');
+          boxes.forEach((box, idx) => {
+            if(idx === window.__lastSelectedOverlay.index){
+              document.querySelectorAll('.overlay').forEach(ov=>ov.classList.remove('selected'));
+              box.classList.add('selected');
+            }
+          });
+        }
+      };
+      // Reapply after renderLayer has finished (which runs in requestAnimationFrame after setMobileZoom)
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(reapplySelection);
+        });
+      });
+    }
   }
   const wrap=document.getElementById('menu');
   if(wrap){
@@ -6058,6 +6080,8 @@ function renderMobileInfo(item){
     mobileInfoPanel.classList.remove('show');
     // Remove selected class from all overlays when mobile panel is closed
     document.querySelectorAll('.overlay').forEach(ov=>ov.classList.remove('selected'));
+    // Clear tracked overlay selection
+    window.__lastSelectedOverlay = null;
     return;
   }
   currentMobileInfoItem=item;
@@ -6534,6 +6558,16 @@ function drawMenu(container,imageURL){
           overlayBox.classList.add('selected');
           // Force reflow to ensure animation starts
           void overlayBox.offsetWidth;
+          // Track which overlay was selected for re-applying after renderLayer
+          const layer = document.querySelector('.overlayLayer');
+          if(layer){
+            const boxes = layer.querySelectorAll('.overlay');
+            boxes.forEach((box, idx) => {
+              if(box === overlayBox){
+                window.__lastSelectedOverlay = { index: idx, item: item };
+              }
+            });
+          }
         }
         
         renderMobileInfo(item);
