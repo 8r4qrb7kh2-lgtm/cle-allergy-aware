@@ -1152,7 +1152,8 @@ const aiAssistState={
   imageData:null,
   imageFileName:null,
   mediaStream:null,
-  detectedDietaryOptions:[]
+  detectedDietaryOptions:[],
+  barcodeResults:{} // Store barcode lookup results by rowIdx
 };
 
 const AI_BRAND_LIMIT=6;
@@ -2199,7 +2200,8 @@ function updateAiPreview(){
     diets: [],
     details: {},
     removable: [],
-    crossContamination: []
+    crossContamination: [],
+    ingredientsBlockingDiets: {}
   };
 
   // Aggregate allergens from all ingredients (OR logic - any ingredient with allergen adds it to dish)
@@ -2238,31 +2240,76 @@ function updateAiPreview(){
   // For dietary preferences, use AND logic - dish is only vegan if ALL ingredients are vegan
   // Start with all possible diets, then remove any that aren't supported by ALL ingredients
   let dishDiets = new Set(['Vegan', 'Vegetarian', 'Pescatarian']);
+  
+  // Track which ingredients block each diet and whether they're removable
+  const ingredientsBlockingDiets = {
+    'Vegan': [],
+    'Vegetarian': [],
+    'Pescatarian': []
+  };
+  
   rows.forEach(row => {
     const ingredientDiets = new Set(row.diets || []);
-    // Remove any diets this ingredient doesn't support
+    const isIngredientRemovable = row.removable === true;
+    const ingredientName = row.name || '';
+    
+    // Track which diets this ingredient blocks
     dishDiets.forEach(diet => {
       if(!ingredientDiets.has(diet)){
-        dishDiets.delete(diet);
+        // This ingredient doesn't support this diet - track it
+        if(!ingredientsBlockingDiets[diet]) {
+          ingredientsBlockingDiets[diet] = [];
+        }
+        ingredientsBlockingDiets[diet].push({
+          name: ingredientName,
+          removable: isIngredientRemovable
+        });
       }
     });
   });
 
-  // Validate dietary preferences against allergens - remove incompatible diets
+  // Validate dietary preferences against allergens AND blocking ingredients
+  // Build set of removable allergens for quick lookup
+  const removableAllergenSet = new Set(tempOverlay.removable.map(r => norm(r.allergen)));
+  
   const allergenConflicts = {
     'Vegan': ['dairy', 'egg', 'fish', 'shellfish'],
     'Vegetarian': ['fish', 'shellfish'],
     'Pescatarian': []
   };
+  
   dishDiets.forEach(diet => {
     const conflicts = allergenConflicts[diet] || [];
-    const hasConflict = conflicts.some(allergen => tempOverlay.allergens.includes(allergen));
-    if(hasConflict){
+    const conflictingAllergens = conflicts.filter(allergen => {
+      const normalizedAllergen = norm(allergen);
+      return tempOverlay.allergens.some(a => norm(a) === normalizedAllergen);
+    });
+    
+    // Check if ALL blocking ingredients are removable
+    const blockingIngredients = ingredientsBlockingDiets[diet] || [];
+    const allBlockingIngredientsRemovable = blockingIngredients.length > 0 &&
+      blockingIngredients.every(ing => ing.removable);
+    
+    // Check if ALL conflicting allergens are removable
+    const allConflictingAllergensRemovable = conflictingAllergens.length > 0 &&
+      conflictingAllergens.every(allergen => removableAllergenSet.has(norm(allergen)));
+    
+    // Only keep diet if:
+    // 1. There are NO blocking ingredients AND no conflicting allergens, OR
+    // 2. ALL blocking ingredients are removable AND all conflicting allergens are removable
+    const hasBlockers = blockingIngredients.length > 0 || conflictingAllergens.length > 0;
+    const allBlockersRemovable = 
+      (blockingIngredients.length === 0 || allBlockingIngredientsRemovable) &&
+      (conflictingAllergens.length === 0 || allConflictingAllergensRemovable);
+    
+    if(hasBlockers && !allBlockersRemovable){
       dishDiets.delete(diet);
     }
   });
 
+  // Store information about which ingredients block diets for use in preview
   tempOverlay.diets = Array.from(dishDiets);
+  tempOverlay.ingredientsBlockingDiets = ingredientsBlockingDiets;
 
   // Add details text
   Object.keys(allergenDetails).forEach(key => {
@@ -2306,6 +2353,20 @@ function renderAiTable(rows){
   if(!aiAssistTableBody || !aiAssistResultsEl) return;
   const source=Array.isArray(rows)?rows:collectAiTableData();
   const data=source.map(item=>({...item}));
+  
+  // Preserve loading states and barcode results before clearing
+  const loadingStates = {};
+  const existingRows = aiAssistTableBody.querySelectorAll('tr');
+  existingRows.forEach((tr, idx) => {
+    const loadingArea = tr.querySelector('.barcodeLoadingArea');
+    if (loadingArea) {
+      loadingStates[idx] = {
+        html: loadingArea.outerHTML,
+        rowIdx: idx
+      };
+    }
+  });
+  
   aiAssistTableBody.innerHTML='';
   aiAssistState.brandSuggestions={};
   data.forEach((row,idx)=>{
@@ -2545,6 +2606,21 @@ function renderAiTable(rows){
       </td>
     `;
     aiAssistTableBody.appendChild(tr);
+    
+    // Restore loading state if it existed for this row
+    if (loadingStates[idx]) {
+      const rowElement = tr.querySelector('.aiIngredientRow');
+      if (rowElement && loadingStates[idx].html) {
+        // Parse the saved HTML and append it
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = loadingStates[idx].html;
+        const loadingArea = tempDiv.firstElementChild;
+        if (loadingArea) {
+          rowElement.appendChild(loadingArea);
+        }
+      }
+    }
+    
     // NOTE: updateAiBrandPreview() is obsolete now that we support multiple brands
     // It was overwriting the brand images we just rendered. Removed.
   });
@@ -3364,9 +3440,23 @@ async function openAiBarcodeScanner(rowIdx){
     <div style="width:100%;max-width:600px;display:flex;flex-direction:column;gap:16px">
       <div style="text-align:center">
         <h3 style="margin:0 0 8px 0;font-size:1.4rem;color:#fff">Scan Barcode</h3>
-        <p style="margin:0;color:#a8b2d6;font-size:0.95rem">Ingredient: <strong style="color:#fff">${esc(ingredientName)}</strong></p>
+        <div style="margin:0;color:#a8b2d6;font-size:0.95rem">
+          Ingredient: <strong style="color:#fff">${esc(ingredientName)}</strong>
+          <div id="barcodeLoadingBar" style="display:none;margin-top:8px">
+            <div style="background:rgba(76,90,212,0.2);border-radius:4px;height:6px;width:100%;overflow:hidden">
+              <div id="barcodeLoadingBarFill" style="background:#4c5ad4;height:100%;width:0%;transition:width 0.3s;animation:pulse 1.5s infinite"></div>
+            </div>
+            <div style="font-size:0.8rem;color:#6b7ce6;margin-top:4px">Looking up product...</div>
+          </div>
+        </div>
         <p style="margin:8px 0 0 0;color:#a8b2d6;font-size:0.9rem">Point your camera at the product barcode</p>
       </div>
+      <style>
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+      </style>
       <div style="position:relative;background:#000;border-radius:16px;overflow:hidden;width:100%">
         <video id="barcodeScannerVideo" autoplay playsinline muted style="width:100%;height:60vh;max-height:500px;display:block;object-fit:cover"></video>
         <div id="barcodeScannerOverlay" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:70%;height:40%;border:3px solid #4c5ad4;border-radius:12px;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,0.5)"></div>
@@ -3375,6 +3465,11 @@ async function openAiBarcodeScanner(rowIdx){
       <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
         <button type="button" class="btn aiBarcodeScannerUpload" style="background:#17663a;border-color:#1a7b46;padding:12px 32px;font-size:1rem">📁 Upload Image</button>
         <button type="button" class="btn aiBarcodeScannerCancel" style="background:#ef4444;border-color:#dc2626;padding:12px 32px;font-size:1rem">Cancel</button>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:center;align-items:center;padding:12px;background:rgba(255,152,0,0.1);border-radius:8px;border:1px solid rgba(255,152,0,0.3)">
+        <label style="color:#ffb84d;font-size:0.85rem;font-weight:500">🧪 Test Mode:</label>
+        <input type="text" id="barcodeTestInput" placeholder="Enter barcode (e.g., 041570147078)" style="flex:1;max-width:250px;padding:8px 12px;border:1px solid rgba(255,255,255,0.2);border-radius:6px;background:rgba(0,0,0,0.3);color:#fff;font-size:0.9rem" maxlength="20">
+        <button type="button" id="barcodeTestBtn" style="background:#ff9800;border:none;padding:8px 16px;border-radius:6px;color:#fff;font-size:0.9rem;font-weight:500;cursor:pointer">Test Lookup</button>
       </div>
       <input type="file" id="barcodeImageUpload" accept="image/*" style="display:none">
     </div>
@@ -3391,9 +3486,14 @@ async function openAiBarcodeScanner(rowIdx){
 
   const video = scannerModal.querySelector('#barcodeScannerVideo');
   const statusDiv = scannerModal.querySelector('#barcodeScannerStatus');
+  const loadingBar = scannerModal.querySelector('#barcodeLoadingBar');
+  const loadingBarFill = scannerModal.querySelector('#barcodeLoadingBarFill');
   const cancelBtn = scannerModal.querySelector('.aiBarcodeScannerCancel');
   const uploadBtn = scannerModal.querySelector('.aiBarcodeScannerUpload');
   const fileInput = scannerModal.querySelector('#barcodeImageUpload');
+  
+  // Track active lookups to allow multiple simultaneous scans
+  let activeLookups = new Set();
 
   // Ensure video attributes are set for mobile compatibility
   video.setAttribute('autoplay', '');
@@ -3409,6 +3509,8 @@ async function openAiBarcodeScanner(rowIdx){
       codeReader = null;
     }
     scanning = false;
+    
+    // Stop video stream tracks
     if(video.srcObject){
       video.srcObject.getTracks().forEach(track => track.stop());
       video.srcObject = null;
@@ -3430,196 +3532,78 @@ async function openAiBarcodeScanner(rowIdx){
 
   // Handle barcode lookup
   const handleBarcodeResult = async (barcode) => {
-    statusDiv.textContent = `Found barcode: ${barcode}`;
-    statusDiv.style.background = 'rgba(34,197,94,0.9)';
-
-    // Stop scanning (but keep modal open for feedback)
-    stopScanning();
-
-    // Look up product by barcode
-    statusDiv.textContent = 'Looking up product...';
-    statusDiv.style.background = 'rgba(59,130,246,0.9)';
-    aiAssistSetStatus('Looking up product by barcode…');
+    // Don't stop scanning - allow continuous scanning
+    // Only add to active lookups if not already processing this barcode
+    if (activeLookups.has(barcode)) {
+      console.log(`Barcode ${barcode} already being processed, skipping`);
+      return;
+    }
+    
+    activeLookups.add(barcode);
+    
+    // Close scanner modal immediately when lookup starts
+    closeModal();
+    
+    // Show loading bar in the ingredient row (not in modal)
+    showBarcodeLoadingInRow(rowIdx, ingredientName);
 
     try {
+      // Call lookup immediately - exactly like test page
+      // No other async operations before this
+      const startTime = Date.now();
       const result = await fetchProductByBarcode(barcode);
-      if(result){
-        const product = result.product;
-        const source = result.source;
-
-        // Close modal on success
-        closeModal();
-
-        // Use Claude AI to analyze ingredients (Sonnet 4.5)
-        aiAssistSetStatus(`Found in ${source}. Analyzing ingredients with Claude AI…`);
-
-        // Show progress bar
-        const progressBar = document.getElementById('aiProgressBar');
-        const progressBarFill = document.getElementById('aiProgressBarFill');
-        if (progressBar && progressBarFill) {
-          progressBar.classList.add('show');
-          progressBarFill.style.width = '30%';
-        }
-
-        let parsedAllergens = [];
-        let diets = [];
-
-        try {
-          const analysisResult = await window.supabaseClient.functions.invoke('analyze-brand-allergens', {
-            body: {
-              ingredientText: product.ingredients_text || '',
-              productName: product.product_name || '',
-              labels: product.labels_tags || [],
-              categories: product.categories_tags || []
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
+      console.log(`Barcode lookup completed in ${elapsed}s`);
+      
+      activeLookups.delete(barcode);
+      
+      // Skip needsPhoto check - always proceed with results
+      
+      // Handle success case - show button in row instead of immediate popup
+      if(result && result.success && result.ingredientList){
+        // Extract product info from result
+        const productName = result.productName || result.product?.product_name || 'Unknown Product';
+        const ingredientList = result.ingredientList;
+        
+        // Extract brand from product name
+        let brand = '';
+        if (productName) {
+          const nameParts = productName.split(' ');
+          if (nameParts.length > 0 && nameParts[0]) {
+            brand = nameParts[0];
+            if (nameParts.length > 1 && nameParts[1] && nameParts[1].length > 0 && nameParts[1][0] && nameParts[1][0].toUpperCase() === nameParts[1][0]) {
+              brand = `${nameParts[0]} ${nameParts[1]}`;
             }
-          });
-
-          // Update progress
-          if (progressBarFill) progressBarFill.style.width = '90%';
-
-          if (analysisResult.error) {
-            console.error('Claude AI analysis error:', analysisResult.error);
-            parsedAllergens = [];
-            diets = [];
-          } else {
-            const { allergens, diets: aiDiets, reasoning } = analysisResult.data || {};
-            parsedAllergens = allergens || [];
-            diets = aiDiets || [];
-            console.log('Claude AI analysis:', { allergens: parsedAllergens, diets, reasoning });
           }
-
-          // Complete progress
-          if (progressBarFill) progressBarFill.style.width = '100%';
-          setTimeout(() => {
-            if (progressBar) progressBar.classList.remove('show');
-            if (progressBarFill) progressBarFill.style.width = '0%';
-          }, 300);
-
-        } catch (aiError) {
-          console.error('Failed to analyze with Claude AI:', aiError);
-          parsedAllergens = [];
-          diets = [];
-
-          // Hide progress bar on error
-          if (progressBar) progressBar.classList.remove('show');
-          if (progressBarFill) progressBarFill.style.width = '0%';
         }
-
-
-        // Convert to the format expected by applyBrandSuggestionConfirmed
+        
+        // Create suggestion object
         const suggestion = {
-          name: product.product_name || product.name || 'Unknown Product',
-          brand: product.brands || product.brand || '',
-          barcode: barcode,
-          image: product.image_url || product.image || '',
-          ingredientsImage: product.image_ingredients_url || product.ingredientsImage || '',
-          ingredientsList: product.ingredients_text ? [product.ingredients_text] : (product.ingredientsList || []),
-          allergens: parsedAllergens,
-          diets: diets,
-          productUrl: `https://world.openfoodfacts.org/product/${barcode}`
+          name: productName,
+          brand: brand,
+          brandImage: result.sources && result.sources.length > 0 ? result.sources[0].url : '',
+          ingredientsImage: '',
+          ingredientsList: [ingredientList]
         };
-
-        // Check if Open Food Facts has complete data
-        const hasImage = suggestion.ingredientsImage && suggestion.ingredientsImage.trim().length > 0;
-        const hasIngredientsList = suggestion.ingredientsList && suggestion.ingredientsList.length > 0 && suggestion.ingredientsList[0].trim().length > 0;
-        const hasCompleteData = hasImage && hasIngredientsList;
-
-        if(hasCompleteData){
-          // Open Food Facts has complete data - offer choice between quick and multi-source
-          showMultiSourceVerificationOption(rowIdx, suggestion, barcode);
-          aiAssistSetStatus('Product found! Choose verification method.','success');
-        } else {
-          // Open Food Facts data is incomplete - go directly to multi-source verification
-          aiAssistSetStatus('Open Food Facts data incomplete. Searching brand website and retailers...', 'info');
-          verifyProductFromMultipleSources(rowIdx, suggestion, barcode);
-        }
+        
+        // Show results button in the ingredient row instead of immediate popup
+        showBarcodeResultsButtonInRow(rowIdx, suggestion, result);
+        
+        aiAssistSetStatus(`Barcode lookup completed for ${productName}`, 'success');
+        return;
       } else {
-        // Product not found in Open Food Facts - offer multi-source web search
-        statusDiv.innerHTML = `
-          <div style="text-align: center;">
-            <p style="margin: 0 0 12px 0; font-size: 0.95rem; font-weight: 500;">
-              Product not found in Open Food Facts database
-            </p>
-            <p style="margin: 0 0 16px 0; font-size: 0.85rem; color: #a0a0a0;">
-              Barcode: ${barcode}
-            </p>
-            <button id="webSearchBtn" style="
-              background: #667eea;
-              color: white;
-              border: none;
-              padding: 12px 24px;
-              border-radius: 8px;
-              font-size: 0.95rem;
-              font-weight: 500;
-              cursor: pointer;
-              margin-right: 12px;
-            ">
-              Search Web Instead
-            </button>
-            <button id="cancelBtn" style="
-              background: rgba(255,255,255,0.1);
-              color: white;
-              border: 1px solid rgba(255,255,255,0.2);
-              padding: 12px 24px;
-              border-radius: 8px;
-              font-size: 0.95rem;
-              font-weight: 500;
-              cursor: pointer;
-            ">
-              Cancel
-            </button>
-          </div>
-        `;
-        statusDiv.style.background = 'rgba(255,152,0,0.9)';
-        statusDiv.style.padding = '20px';
-        statusDiv.style.fontSize = '0.95rem';
-
-        // Handle web search button
-        document.getElementById('webSearchBtn').addEventListener('click', async () => {
-          // Prompt for product name and brand since Open Food Facts doesn't have it
-          const productInfo = prompt('Enter product name (e.g., "Guinness Draught Stout"):');
-          if (!productInfo || productInfo.trim().length === 0) {
-            return;
-          }
-
-          // Try to parse brand from product name
-          const parts = productInfo.trim().split(' ');
-          const brand = parts[0];
-          const name = productInfo.trim();
-
-          // Close scanner modal
-          closeModal();
-
-          // Create minimal suggestion object for multi-source verification
-          const minimalSuggestion = {
-            name: name,
-            brand: brand,
-            brandImage: '',
-            ingredientsImage: '',
-            ingredientsList: []
-          };
-
-          aiAssistSetStatus('Searching web for product...', 'info');
-          verifyProductFromMultipleSources(rowIdx, minimalSuggestion, barcode);
-        });
-
-        // Handle cancel button
-        document.getElementById('cancelBtn').addEventListener('click', () => {
-          closeModal();
-        });
-
-        aiAssistSetStatus('Product not found in Open Food Facts. Try web search instead.','warn');
+        // Product not found - show error in row instead of modal (modal already closed)
+        hideBarcodeLoadingInRow(rowIdx);
+        showBarcodeErrorInRow(rowIdx, result?.message || 'Product not found. Please try again or check the barcode.');
+        aiAssistSetStatus(result?.message || 'Barcode lookup failed. Try again.', 'warn');
+        return;
       }
-    } catch(err){
-      console.error('Barcode lookup failed', err);
-      statusDiv.textContent = 'Network error. Check connection and try again.';
-      statusDiv.style.background = 'rgba(220,82,82,0.9)';
-      aiAssistSetStatus('Barcode lookup failed. Try again.','warn');
-
-      // Close modal after 3 seconds
-      setTimeout(() => {
-        closeModal();
-      }, 3000);
+    } catch (error) {
+      console.error('Barcode lookup error:', error);
+      hideBarcodeLoadingInRow(rowIdx);
+      showBarcodeErrorInRow(rowIdx, 'Barcode lookup failed. Please try again.');
+      aiAssistSetStatus('Barcode lookup failed. Try again.', 'error');
+      activeLookups.delete(barcode);
     }
   };
 
@@ -3628,6 +3612,47 @@ async function openAiBarcodeScanner(rowIdx){
   // Upload button triggers file input
   uploadBtn.addEventListener('click', () => {
     fileInput.click();
+  });
+
+  // Test mode: manual barcode entry (for testing/debugging)
+  const testInput = scannerModal.querySelector('#barcodeTestInput');
+  const testBtn = scannerModal.querySelector('#barcodeTestBtn');
+  
+  testBtn.addEventListener('click', async () => {
+    const barcode = testInput.value.trim().replace(/\s+/g, '');
+    if (!barcode) {
+      statusDiv.textContent = 'Please enter a barcode number';
+      statusDiv.style.background = 'rgba(220,82,82,0.9)';
+      setTimeout(() => {
+        statusDiv.textContent = 'Point your camera at barcode or upload an image...';
+        statusDiv.style.background = 'rgba(76,90,212,0.9)';
+      }, 2000);
+      return;
+    }
+    
+    // Validate barcode format (basic check - numeric, 8-14 digits)
+    if (!/^\d{8,14}$/.test(barcode)) {
+      statusDiv.textContent = 'Invalid barcode format. Please enter 8-14 digits.';
+      statusDiv.style.background = 'rgba(220,82,82,0.9)';
+      setTimeout(() => {
+        statusDiv.textContent = 'Point your camera at barcode or upload an image...';
+        statusDiv.style.background = 'rgba(76,90,212,0.9)';
+      }, 2000);
+      return;
+    }
+    
+    // Don't stop scanning for test mode - allow continuous scanning
+    // Just process in background
+    handleBarcodeResult(barcode).catch(err => {
+      console.error('Test barcode processing error:', err);
+    });
+  });
+  
+  // Allow Enter key to trigger test lookup
+  testInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      testBtn.click();
+    }
   });
 
   // Handle file upload
@@ -3731,22 +3756,45 @@ async function openAiBarcodeScanner(rowIdx){
     statusDiv.style.background = 'rgba(76,90,212,0.9)';
     scanning = true;
 
-    // Start scanning
-    codeReader.decodeFromVideoDevice(selectedDeviceId, video, async (result, err) => {
-      if(!scanning) return;
+    // Start scanning - let ZXing handle the camera stream
+    try {
+      codeReader.decodeFromVideoDevice(selectedDeviceId, video, async (result, err) => {
+        if(!scanning) return;
 
-      if(result){
-        const barcode = result.text;
-        await handleBarcodeResult(barcode);
-      }
+        if(result){
+          const barcode = result.text;
+          // Don't stop scanning - allow continuous scanning for multiple ingredients
+          // Just process the barcode in the background
+          handleBarcodeResult(barcode).catch(err => {
+            console.error('Barcode processing error:', err);
+          });
+        }
 
-      if(err && !(err instanceof ZXing.NotFoundException)){
-        console.error('Barcode scan error:', err);
-      }
-    });
+        if(err && !(err instanceof ZXing.NotFoundException)){
+          console.error('Barcode scan error:', err);
+        }
+      });
+
+      // Update status to show camera is working
+      setTimeout(() => {
+        if (scanning && video.readyState >= 2) {
+          // Video is playing, camera is working
+          statusDiv.textContent = 'Point camera at barcode...';
+          statusDiv.style.background = 'rgba(76,90,212,0.9)';
+        }
+      }, 1000);
+
+    } catch(scanError) {
+      // Only show error if ZXing actually fails to start
+      console.error('Failed to start ZXing scanner:', scanError);
+      statusDiv.textContent = 'Camera access denied or not available';
+      statusDiv.style.background = 'rgba(220,82,82,0.9)';
+      aiAssistSetStatus('Failed to access camera. Please check permissions.','warn');
+    }
 
   } catch(err){
-    console.error('Failed to start barcode scanner:', err);
+    // This catch is for errors before scanning starts (like listVideoInputDevices)
+    console.error('Failed to initialize barcode scanner:', err);
     statusDiv.textContent = 'Camera access denied or not available';
     statusDiv.style.background = 'rgba(220,82,82,0.9)';
     aiAssistSetStatus('Failed to access camera. Please check permissions.','warn');
@@ -3754,7 +3802,7 @@ async function openAiBarcodeScanner(rowIdx){
 }
 
 // Main function: Lookup barcode using Supabase Edge Function
-// This avoids CORS issues by doing the API calls server-side
+// Simplified version matching the working test page implementation
 async function fetchProductByBarcode(barcode){
   console.log(`\n=== Looking up barcode: ${barcode} ===`);
 
@@ -3768,10 +3816,55 @@ async function fetchProductByBarcode(barcode){
       return null;
     }
 
-    if (result.data && result.data.found && result.data.product) {
-      console.log(`✓ Found in ${result.data.source}`);
-      return { product: result.data.product, source: result.data.source };
+    const data = result.data;
+    
+    // Handle success case with ingredient list
+    if (data && data.success && data.ingredientList) {
+      console.log(`✓ Product found and verified: ${data.productName}`);
+      console.log(`  Sources verified: ${data.sources ? data.sources.length : 0}`);
+      console.log(`  Consistency: ${data.consistencyInfo ? `${data.consistencyInfo.matchingSources}/${data.consistencyInfo.totalSources} sources agree` : 'N/A'}`);
+      
+      // Extract brand from product name (e.g., "Quaker Instant Oatmeal" -> "Quaker")
+      let brand = '';
+      if (data.productName) {
+        const nameParts = data.productName.split(' ');
+        // Common brand patterns: first word if capitalized, or first 2 words for compound brands
+        if (nameParts.length > 0 && nameParts[0]) {
+          brand = nameParts[0];
+          // Handle compound brands (e.g., "Blue Diamond", "Kraft Foods")
+          if (nameParts.length > 1 && nameParts[1] && nameParts[1].length > 0 && nameParts[1][0] && nameParts[1][0].toUpperCase() === nameParts[1][0]) {
+            brand = `${nameParts[0]} ${nameParts[1]}`;
+          }
+        }
+      }
+      
+      // Get product image from API response (Open Food Facts)
+      const productImage = data.productImage || '';
+      
+      // Return in format expected by existing code
+      return {
+        success: true,
+        needsPhoto: false,
+        ingredientList: data.ingredientList,
+        product: {
+          product_name: data.productName,
+          name: data.productName,
+          ingredients_text: data.ingredientList,
+          ingredientsList: [data.ingredientList],
+          brands: brand,
+          brand: brand,
+          image_url: productImage,
+          image: productImage,
+          barcode: barcode
+        },
+        source: data.sources && data.sources.length > 0 ? `${data.sources.length} sources (Claude web search)` : 'Open Food Facts',
+        sources: data.sources || [],
+        consistencyInfo: data.consistencyInfo,
+        productName: data.productName
+      };
     }
+    
+    // Skip needsPhoto check - always proceed with results
 
     console.log('✗ Product not found in any database');
     return null;
@@ -3779,6 +3872,949 @@ async function fetchProductByBarcode(barcode){
     console.error('Barcode lookup error:', err);
     return null;
   }
+}
+
+// Show loading bar in ingredient row
+function showBarcodeLoadingInRow(rowIdx, ingredientName) {
+  console.log(`showBarcodeLoadingInRow called with rowIdx: ${rowIdx}, ingredientName: ${ingredientName}`);
+  const rows = collectAiTableData();
+  const row = rows[rowIdx];
+  if (!row) {
+    console.error(`Row ${rowIdx} not found in table data`);
+    return;
+  }
+  
+  // Find the row element - look for the tr with data-index matching rowIdx
+  const aiAssistTable = document.getElementById('aiAssistTable');
+  if (!aiAssistTable) {
+    console.error('aiAssistTable not found');
+    return;
+  }
+  
+  // Find the tr element with matching data-index
+  const trElement = aiAssistTable.querySelector(`tr[data-index="${rowIdx}"]`);
+  if (!trElement) {
+    console.error(`tr[data-index="${rowIdx}"] not found`);
+    return;
+  }
+  
+  // Find the aiIngredientRow inside this tr
+  const rowElement = trElement.querySelector('.aiIngredientRow');
+  if (!rowElement) {
+    console.error(`aiIngredientRow not found inside tr[data-index="${rowIdx}"]`);
+    return;
+  }
+  
+  console.log('Found rowElement:', rowElement);
+  
+  // Find or create the loading area - append to aiIngredientRow (at bottom)
+  let loadingArea = rowElement.querySelector('.barcodeLoadingArea');
+  if (!loadingArea) {
+    loadingArea = document.createElement('div');
+    loadingArea.className = 'barcodeLoadingArea';
+    loadingArea.style.cssText = `
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: rgba(76,90,212,0.1);
+      border-radius: 8px;
+      border: 1px solid rgba(76,90,212,0.3);
+    `;
+    
+    // Append to the end of aiIngredientRow (after aiIngredientMain)
+    rowElement.appendChild(loadingArea);
+  }
+  
+  loadingArea.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="flex:1;background:rgba(76,90,212,0.2);border-radius:4px;height:6px;overflow:hidden">
+          <div class="barcodeLoadingBarFill" data-row-idx="${rowIdx}" style="background:#4c5ad4;height:100%;width:0%;transition:width 0.5s ease-out"></div>
+        </div>
+        <span style="font-size:0.9rem;color:#6b7ce6;white-space:nowrap">Looking up ${esc(ingredientName)}...</span>
+      </div>
+      <div style="font-size:0.8rem;color:#9ca3af;font-style:italic;margin-left:0">💡 You can continue scanning other items while this lookup is in progress</div>
+    </div>
+  `;
+  
+  // Animate loading bar gradually - simulate realistic progress
+  const fillBar = loadingArea.querySelector('.barcodeLoadingBarFill');
+  if (fillBar) {
+    const startTime = Date.now();
+    const estimatedDuration = 45000; // Estimate 45 seconds for lookup
+    let progressInterval = null;
+    
+    // Progress function that updates based on elapsed time
+    const updateProgress = () => {
+      const elapsed = Date.now() - startTime;
+      let progress = Math.min(95, (elapsed / estimatedDuration) * 95); // Cap at 95% until actually done
+      
+      // Make progress more gradual with some realistic stages
+      if (elapsed < 2000) {
+        progress = Math.min(progress, 10); // Slow start (0-10% in first 2 seconds)
+      } else if (elapsed < 10000) {
+        progress = Math.min(progress, 10 + ((elapsed - 2000) / 8000) * 30); // 10-40% in next 8 seconds
+      } else if (elapsed < 25000) {
+        progress = Math.min(progress, 40 + ((elapsed - 10000) / 15000) * 30); // 40-70% in next 15 seconds
+      } else if (elapsed < 40000) {
+        progress = Math.min(progress, 70 + ((elapsed - 25000) / 15000) * 20); // 70-90% in next 15 seconds
+      } else {
+        progress = Math.min(progress, 90 + ((elapsed - 40000) / 5000) * 5); // 90-95% in remaining time
+      }
+      
+      fillBar.style.width = `${progress}%`;
+      
+      // Continue updating until lookup completes (will be stopped when done)
+      if (progress < 95 && fillBar.parentElement && fillBar.parentElement.parentElement) {
+        // Continue with interval instead of requestAnimationFrame for smoother updates
+      } else if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+      }
+    };
+    
+    // Start with a small delay, then update regularly
+    setTimeout(() => {
+      updateProgress();
+      progressInterval = setInterval(() => {
+        if (fillBar.parentElement && fillBar.parentElement.parentElement) {
+          updateProgress();
+        } else {
+          if (progressInterval) {
+            clearInterval(progressInterval);
+            progressInterval = null;
+          }
+        }
+      }, 500); // Update every 500ms
+      
+      // Store interval ID on the fill bar for cleanup if needed
+      fillBar.dataset.intervalId = progressInterval;
+    }, 100);
+  }
+}
+
+// Hide loading bar in ingredient row
+function hideBarcodeLoadingInRow(rowIdx) {
+  const aiAssistTable = document.getElementById('aiAssistTable');
+  if (!aiAssistTable) return;
+  
+  // Find the tr element with matching data-index
+  const trElement = aiAssistTable.querySelector(`tr[data-index="${rowIdx}"]`);
+  if (!trElement) return;
+  
+  const rowElement = trElement.querySelector('.aiIngredientRow');
+  if (!rowElement) return;
+  
+  const loadingArea = rowElement.querySelector('.barcodeLoadingArea');
+  if (loadingArea) {
+    // Complete progress to 100% before removing
+    const fillBar = loadingArea.querySelector('.barcodeLoadingBarFill');
+    if (fillBar) {
+      // Clear any intervals
+      if (fillBar.dataset.intervalId) {
+        clearInterval(parseInt(fillBar.dataset.intervalId));
+      }
+      // Complete to 100%
+      fillBar.style.width = '100%';
+      // Wait a moment before removing so user sees completion
+      setTimeout(() => {
+        if (loadingArea.parentElement) {
+          loadingArea.remove();
+        }
+      }, 300);
+      return;
+    }
+    loadingArea.remove();
+  }
+}
+
+// Show error message in ingredient row
+function showBarcodeErrorInRow(rowIdx, errorMessage) {
+  const aiAssistTable = document.getElementById('aiAssistTable');
+  if (!aiAssistTable) return;
+  
+  // Find the tr element with matching data-index
+  const trElement = aiAssistTable.querySelector(`tr[data-index="${rowIdx}"]`);
+  if (!trElement) return;
+  
+  const rowElement = trElement.querySelector('.aiIngredientRow');
+  if (!rowElement) return;
+  
+  let loadingArea = rowElement.querySelector('.barcodeLoadingArea');
+  if (!loadingArea) {
+    loadingArea = document.createElement('div');
+    loadingArea.className = 'barcodeLoadingArea';
+    loadingArea.style.cssText = `
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: rgba(220,82,82,0.1);
+      border-radius: 8px;
+      border: 1px solid rgba(220,82,82,0.3);
+    `;
+    
+    // Append to the end of aiIngredientRow (at bottom)
+    rowElement.appendChild(loadingArea);
+  }
+  
+  loadingArea.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="color:#dc5252;font-size:0.95rem;font-weight:500">⚠️ ${esc(errorMessage)}</span>
+    </div>
+  `;
+}
+
+// Show button to view barcode results in ingredient row
+function showBarcodeResultsButtonInRow(rowIdx, suggestion, barcodeResult) {
+  const rows = collectAiTableData();
+  const row = rows[rowIdx];
+  if (!row) return;
+  
+  // Store result in state
+  if (!aiAssistState.barcodeResults) {
+    aiAssistState.barcodeResults = {};
+  }
+  aiAssistState.barcodeResults[rowIdx] = { suggestion, barcodeResult };
+  
+  // Find the row element - look for the tr with data-index matching rowIdx
+  const aiAssistTable = document.getElementById('aiAssistTable');
+  if (!aiAssistTable) return;
+  
+  // Find the tr element with matching data-index
+  const trElement = aiAssistTable.querySelector(`tr[data-index="${rowIdx}"]`);
+  if (!trElement) return;
+  
+  // Find the aiIngredientRow inside this tr
+  const rowElement = trElement.querySelector('.aiIngredientRow');
+  if (!rowElement) return;
+  
+  // Find or create the results area - append to aiIngredientRow (at bottom)
+  let loadingArea = rowElement.querySelector('.barcodeLoadingArea');
+  if (!loadingArea) {
+    loadingArea = document.createElement('div');
+    loadingArea.className = 'barcodeLoadingArea';
+    loadingArea.style.cssText = `
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: rgba(76,90,212,0.1);
+      border-radius: 8px;
+      border: 1px solid rgba(76,90,212,0.3);
+    `;
+    
+    // Append to the end of aiIngredientRow (after aiIngredientMain)
+    rowElement.appendChild(loadingArea);
+  }
+  
+  const productName = barcodeResult.productName || suggestion.name || 'Product';
+  const sourceCount = barcodeResult.sources?.length || 0;
+  
+  loadingArea.innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;justify-content:space-between">
+      <div style="flex:1">
+        <div style="font-size:0.95rem;color:#4caf50;font-weight:600;margin-bottom:4px">✓ ${esc(productName)}</div>
+        <div style="font-size:0.85rem;color:#a8b2d6">Found ${sourceCount} source${sourceCount !== 1 ? 's' : ''}</div>
+      </div>
+      <button type="button" class="viewBarcodeResultsBtn" data-row-idx="${rowIdx}" style="
+        padding: 10px 20px;
+        background: #4c5ad4;
+        border: none;
+        border-radius: 6px;
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+      " onmouseover="this.style.background='#5d6ae5'" onmouseout="this.style.background='#4c5ad4'">View Results</button>
+    </div>
+  `;
+  
+  // Add click handler
+  const viewBtn = loadingArea.querySelector('.viewBarcodeResultsBtn');
+  if (viewBtn) {
+    viewBtn.addEventListener('click', () => {
+      const stored = aiAssistState.barcodeResults?.[rowIdx];
+      if (stored) {
+        showBarcodeSourcesModal(rowIdx, stored.suggestion, stored.barcodeResult);
+        // Remove the banner after viewing results once
+        if (loadingArea && loadingArea.parentNode) {
+          loadingArea.remove();
+        }
+      }
+    });
+  }
+}
+
+// Show barcode lookup sources modal
+function showBarcodeSourcesModal(rowIdx, suggestion, barcodeResult) {
+  const sources = barcodeResult.sources || [];
+  const productName = barcodeResult.productName || suggestion.name;
+  let ingredientList = barcodeResult.ingredientList || '';
+  const consistencyInfo = barcodeResult.consistencyInfo || {};
+  
+  // If there's a conflict where all are different except one, use the consensus list
+  const hasConflict = consistencyInfo.differentSources && 
+                      consistencyInfo.differentSources > 1 && 
+                      consistencyInfo.matchingSources >= 1 &&
+                      consistencyInfo.matchingSources < consistencyInfo.totalSources;
+  
+  if (hasConflict && consistencyInfo.differences) {
+    const consensusDiff = consistencyInfo.differences.find(d => d.groupSize === consistencyInfo.matchingSources);
+    if (consensusDiff) {
+      ingredientList = consensusDiff.ingredientsText;
+      // Update suggestion with consensus list
+      suggestion.ingredientsList = [consensusDiff.ingredientsText];
+    }
+  }
+  
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10002;
+    padding: 20px;
+  `;
+
+  const modalContent = document.createElement('div');
+  modalContent.style.cssText = `
+    background: #0c102a;
+    border: 2px solid #4c5ad4;
+    border-radius: 16px;
+    max-width: 900px;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 24px;
+    color: #fff;
+    width: 100%;
+  `;
+
+  // Build sources HTML
+  const sourcesHtml = sources.map((source, idx) => {
+    const urlObj = source.url ? (() => {
+      try { return new URL(source.url); } catch { return null; }
+    })() : null;
+    const domain = urlObj ? urlObj.hostname.replace('www.', '') : '';
+    const faviconUrl = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=32` : '';
+    
+    return `
+      <div style="
+        background: rgba(76,212,90,0.1);
+        border: 2px solid rgba(76,212,90,0.4);
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 12px;
+      ">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          ${faviconUrl ? `
+            <img src="${esc(faviconUrl)}" alt="${esc(source.sourceName || '')}" 
+                 style="width: 32px; height: 32px; border-radius: 4px; flex-shrink: 0;"
+                 onerror="this.style.display='none';">
+          ` : ''}
+          <div style="flex: 1;">
+            <div style="font-weight: 600; color: #4caf50; font-size: 1.05rem; margin-bottom: 4px;">
+              ${esc(source.sourceName || `Source ${idx + 1}`)}
+            </div>
+            ${source.url ? `
+              <div style="font-size: 0.85rem; word-break: break-all;">
+                <a href="${esc(source.url)}" target="_blank" 
+                   style="color: ${source.urlValid === false ? '#999' : '#6b7ce6'}; text-decoration: ${source.urlValid === false ? 'line-through' : 'none'};" 
+                   rel="noopener noreferrer"
+                   title="${source.urlValid === false ? 'Link may be inaccessible' : ''}">
+                  ${esc(source.url)}
+                </a>
+                ${source.urlValid === false ? '<span style="color: #ff9800; font-size: 0.75rem; margin-left: 8px;">(Link may be dead)</span>' : ''}
+              </div>
+            ` : ''}
+          </div>
+        </div>
+        ${source.ingredientsText ? `
+          <div style="
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 12px;
+          ">
+            <div style="font-weight: 600; color: #a0a0a0; font-size: 0.85rem; margin-bottom: 8px;">
+              Ingredient List:
+            </div>
+            <div style="
+              font-size: 0.9rem;
+              color: #e0e0e0;
+              line-height: 1.6;
+              font-family: 'Monaco', 'Courier New', monospace;
+              white-space: pre-wrap;
+              word-wrap: break-word;
+              padding: 0;
+              margin: 0;
+              text-indent: 0;
+            ">
+              ${esc(source.ingredientsText)}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }).join('');
+
+  modalContent.innerHTML = `
+    <div style="margin-bottom: 20px;">
+      <h3 style="margin: 0 0 8px 0; color: #4c5ad4; font-size: 1.4rem;">✓ Product Found!</h3>
+      <p style="margin: 0; font-size: 1.1rem; color: #fff; font-weight: 600;">${esc(productName)}</p>
+      ${suggestion.brand ? `<p style="margin: 4px 0 0 0; color: #a0a0a0; font-size: 0.9rem;">Brand: ${esc(suggestion.brand)}</p>` : ''}
+    </div>
+
+    ${consistencyInfo.totalSources ? `
+      <div style="background: rgba(76,212,90,0.15); border: 1px solid rgba(76,212,90,0.4); border-radius: 8px; padding: 12px; margin-bottom: 20px;">
+        <div style="font-weight: 600; color: #4caf50; margin-bottom: 4px;">
+          Verification: ${consistencyInfo.matchingSources || 0} out of ${consistencyInfo.totalSources || 0} sources agree
+        </div>
+    ${(() => {
+      // Detect conflict: all different except one (consensus exists but others differ)
+      const hasConflict = consistencyInfo.differentSources && 
+                          consistencyInfo.differentSources > 1 && 
+                          consistencyInfo.matchingSources >= 1 &&
+                          consistencyInfo.matchingSources < consistencyInfo.totalSources;
+      const consensusDiff = hasConflict && consistencyInfo.differences ? 
+        consistencyInfo.differences.find(d => d.groupSize === consistencyInfo.matchingSources) : null;
+      
+      if (hasConflict && consensusDiff) {
+        return `
+          <div style="font-size: 0.9rem; color: #ff9800; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,152,0,0.3);">
+            <div style="font-weight: 600; margin-bottom: 8px; color: #ff9800;">
+              ⚠️ Conflict Detected: All ingredient lists differ except one
+            </div>
+            <div style="background: rgba(76,212,90,0.2); border: 1px solid rgba(76,212,90,0.4); border-radius: 6px; padding: 12px; margin-bottom: 12px;">
+              <div style="font-weight: 600; color: #4caf50; margin-bottom: 8px;">
+                ✓ Consensus List (${consensusDiff.groupSize} source${consensusDiff.groupSize !== 1 ? 's' : ''} agree) - Will be used:
+              </div>
+              <div style="font-size: 0.85rem; color: #e0e0e0; font-family: 'Monaco', 'Courier New', monospace; white-space: pre-wrap; word-wrap: break-word; padding: 0; margin: 0; text-indent: 0;">
+                ${esc(consensusDiff.ingredientsText)}
+              </div>
+              <button type="button" class="confirmConsensusBtn" style="
+                padding: 8px 16px;
+                margin-top: 12px;
+                background: #4c5ad4;
+                border: none;
+                border-radius: 6px;
+                color: #fff;
+                font-weight: 600;
+                cursor: pointer;
+                font-size: 0.85rem;
+                transition: all 0.2s;
+              ">Confirm and apply this ingredient list</button>
+            </div>
+            <div style="font-weight: 600; margin-top: 12px; margin-bottom: 8px; color: #ff9800;">
+              Other variations found (${consistencyInfo.differentSources - 1} total):
+            </div>
+            ${consistencyInfo.differences && consistencyInfo.differences.length > 0 ? consistencyInfo.differences
+              .filter(diff => diff.groupSize !== consistencyInfo.matchingSources)
+              .map((diff, idx) => `
+              <div style="margin-bottom: 8px; padding: 12px; background: rgba(255,152,0,0.1); border-radius: 4px; border-left: 3px solid #ff9800;">
+                <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 4px;">
+                  Variation ${idx + 1} (${diff.groupSize} source${diff.groupSize !== 1 ? 's' : ''}): ${esc(diff.sourceName)}
+                </div>
+                <div style="font-size: 0.75rem; color: #ccc; font-family: 'Monaco', 'Courier New', monospace; white-space: pre-wrap; word-wrap: break-word; padding: 0; margin: 0; text-indent: 0;">
+                  ${esc(diff.ingredientsText)}
+                </div>
+              </div>
+            `).join('') : ''}
+          </div>
+        `;
+      } else if (consistencyInfo.differentSources && consistencyInfo.differentSources > 1) {
+        return `
+          <div style="font-size: 0.85rem; color: #ff9800; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,152,0,0.3);">
+            <div style="font-weight: 600; margin-bottom: 8px;">⚠️ Found ${consistencyInfo.differentSources} different ingredient variations:</div>
+            ${consistencyInfo.differences && consistencyInfo.differences.length > 0 ? consistencyInfo.differences.map((diff, idx) => `
+              <div style="margin-bottom: 8px; padding: 12px; background: rgba(255,152,0,0.1); border-radius: 4px; border-left: 3px solid #ff9800;">
+                <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 4px;">
+                  Variation ${idx + 1} (${diff.groupSize} source${diff.groupSize !== 1 ? 's' : ''}): ${esc(diff.sourceName)}
+                </div>
+                <div style="font-size: 0.8rem; color: #ccc; font-family: 'Monaco', 'Courier New', monospace; white-space: pre-wrap; word-wrap: break-word; padding: 0; margin: 0; text-indent: 0;">
+                  ${esc(diff.ingredientsText)}
+                </div>
+              </div>
+            `).join('') : ''}
+          </div>
+        `;
+      }
+      return '';
+    })()}
+      </div>
+    ` : ''}
+
+    <div style="margin-bottom: 20px;">
+      <div style="font-weight: 600; color: #4c5ad4; font-size: 1.05rem; margin-bottom: 12px;">
+        Consolidated Ingredient List:
+      </div>
+      <div style="
+        background: rgba(76,90,212,0.1);
+        border: 1px solid rgba(76,90,212,0.3);
+        border-radius: 8px;
+        padding: 16px;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        color: #e0e0e0;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        position: relative;
+      ">
+        ${esc(ingredientList)}
+        <button type="button" class="confirmIngredientListBtn" style="
+          padding: 8px 16px;
+          margin-top: 12px;
+          background: #4c5ad4;
+          border: none;
+          border-radius: 6px;
+          color: #fff;
+          font-weight: 600;
+          cursor: pointer;
+          font-size: 0.85rem;
+          transition: all 0.2s;
+        ">Confirm and apply this ingredient list</button>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 24px;">
+      <div style="font-weight: 600; color: #4c5ad4; font-size: 1.05rem; margin-bottom: 12px;">
+        Sources Verified (${sources.length} total):
+      </div>
+      <p style="font-size: 0.85rem; color: #999; margin-bottom: 12px; font-style: italic;">
+        ⚠️ Note: URLs are provided for reference. Some links may be outdated or inaccessible due to website changes.
+      </p>
+      ${sourcesHtml}
+    </div>
+
+    <div style="display: flex; gap: 12px; justify-content: flex-end;">
+      <button type="button" class="cancelBtn" style="
+        padding: 14px 24px;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 8px;
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      ">Cancel</button>
+      <button type="button" class="confirmApplyBtn" style="
+        padding: 14px 24px;
+        background: #4c5ad4;
+        border: none;
+        border-radius: 8px;
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      " onmouseover="this.style.background='#5d6ae5'" onmouseout="this.style.background='#4c5ad4'">Confirm and Apply</button>
+    </div>
+  `;
+
+  modal.appendChild(modalContent);
+  document.body.appendChild(modal);
+
+  // Close modal handlers
+  const cancelBtn = modalContent.querySelector('.cancelBtn');
+  const confirmBtn = modalContent.querySelector('.confirmBtn');
+  const confirmConsensusBtn = modalContent.querySelector('.confirmConsensusBtn');
+  const confirmApplyBtn = modalContent.querySelector('.confirmApplyBtn');
+  const confirmIngredientListBtn = modalContent.querySelector('.confirmIngredientListBtn');
+
+  // Handle ingredient list confirmation button (for non-conflict cases)
+  if (confirmIngredientListBtn) {
+    let ingredientListConfirmed = false;
+    
+    confirmIngredientListBtn.addEventListener('mouseenter', () => {
+      if (!ingredientListConfirmed) {
+        confirmIngredientListBtn.style.background = '#5d6ae5';
+      }
+    });
+    
+    confirmIngredientListBtn.addEventListener('mouseleave', () => {
+      if (!ingredientListConfirmed) {
+        confirmIngredientListBtn.style.background = '#4c5ad4';
+      }
+    });
+    
+    confirmIngredientListBtn.addEventListener('click', async () => {
+      ingredientListConfirmed = true;
+      confirmIngredientListBtn.style.background = '#4caf50';
+      confirmIngredientListBtn.innerHTML = '✓ Confirmed';
+      confirmIngredientListBtn.style.cursor = 'default';
+      
+      // Show loading message next to button
+      const loadingMsg = document.createElement('span');
+      loadingMsg.textContent = 'Loading detected allergens and dietary preferences...';
+      loadingMsg.style.cssText = 'margin-left: 12px; color: #9ca3af; font-size: 0.85rem; font-style: italic;';
+      confirmIngredientListBtn.parentElement.appendChild(loadingMsg);
+      
+      // User confirmed the ingredient list - proceed with allergen/diet preview
+      const finalIngredientList = ingredientList || suggestion.ingredientsList?.[0] || '';
+      
+      try {
+        const analysisResult = await window.supabaseClient.functions.invoke('analyze-brand-allergens', {
+          body: {
+            ingredientText: finalIngredientList,
+            productName: productName,
+            labels: [],
+            categories: []
+          }
+        });
+
+        if (!analysisResult.error && analysisResult.data) {
+          const { allergens, diets } = analysisResult.data;
+          
+          // Remove loading message
+          if (loadingMsg.parentElement) {
+            loadingMsg.remove();
+          }
+          
+          showAllergenDietPreview(rowIdx, suggestion, {
+            allergens: allergens || [],
+            diets: diets || [],
+            ingredientList: finalIngredientList,
+            productName: productName
+          });
+          
+          document.body.removeChild(modal);
+          closeModal();
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to analyze allergens/diets:', err);
+        // Remove loading message on error
+        if (loadingMsg.parentElement) {
+          loadingMsg.remove();
+        }
+      }
+      
+      // If analysis fails, proceed normally
+      if (loadingMsg.parentElement) {
+        loadingMsg.remove();
+      }
+      document.body.removeChild(modal);
+      closeModal();
+      
+      const sourceCount = sources.length;
+      aiAssistSetStatus(`Product found! Verified from ${sourceCount} source${sourceCount !== 1 ? 's' : ''}.`, 'success');
+      
+      setTimeout(() => {
+        applyBrandSuggestionConfirmed(rowIdx, suggestion);
+      }, 0);
+    });
+  }
+
+  // Handle consensus confirmation button
+  if (confirmConsensusBtn) {
+    let consensusConfirmed = false;
+    
+    confirmConsensusBtn.addEventListener('mouseenter', () => {
+      if (!consensusConfirmed) {
+        confirmConsensusBtn.style.background = '#5d6ae5';
+      }
+    });
+    
+    confirmConsensusBtn.addEventListener('mouseleave', () => {
+      if (!consensusConfirmed) {
+        confirmConsensusBtn.style.background = '#4c5ad4';
+      }
+    });
+    
+    confirmConsensusBtn.addEventListener('click', async () => {
+      consensusConfirmed = true;
+      confirmConsensusBtn.style.background = '#4caf50';
+      confirmConsensusBtn.innerHTML = '✓ Confirmed';
+      confirmConsensusBtn.style.cursor = 'default';
+      
+      // Show loading message next to button
+      const loadingMsg = document.createElement('span');
+      loadingMsg.textContent = 'Loading detected allergens and dietary preferences...';
+      loadingMsg.style.cssText = 'margin-left: 12px; color: #9ca3af; font-size: 0.85rem; font-style: italic;';
+      confirmConsensusBtn.parentElement.appendChild(loadingMsg);
+      
+      // User confirmed the consensus list - proceed with allergen/diet preview
+      const finalIngredientList = ingredientList || suggestion.ingredientsList?.[0] || '';
+      
+      try {
+        const analysisResult = await window.supabaseClient.functions.invoke('analyze-brand-allergens', {
+          body: {
+            ingredientText: finalIngredientList,
+            productName: productName,
+            labels: [],
+            categories: []
+          }
+        });
+
+        if (!analysisResult.error && analysisResult.data) {
+          const { allergens, diets } = analysisResult.data;
+          
+          // Remove loading message
+        if (loadingMsg.parentElement) {
+          loadingMsg.remove();
+        }
+        
+        showAllergenDietPreview(rowIdx, suggestion, {
+            allergens: allergens || [],
+            diets: diets || [],
+            ingredientList: finalIngredientList,
+            productName: productName
+          });
+          
+          document.body.removeChild(modal);
+          closeModal();
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to analyze allergens/diets:', err);
+        // Remove loading message on error
+        if (loadingMsg.parentElement) {
+          loadingMsg.remove();
+        }
+      }
+      
+      // If analysis fails, proceed normally
+      if (loadingMsg.parentElement) {
+        loadingMsg.remove();
+      }
+      document.body.removeChild(modal);
+      closeModal();
+      
+      const sourceCount = sources.length;
+      aiAssistSetStatus(`Product found! Verified from ${sourceCount} source${sourceCount !== 1 ? 's' : ''}.`, 'success');
+      
+      setTimeout(() => {
+        applyBrandSuggestionConfirmed(rowIdx, suggestion);
+      }, 0);
+    });
+  }
+
+  cancelBtn.addEventListener('click', () => {
+    document.body.removeChild(modal);
+    closeModal(); // Close barcode scanner modal too
+  });
+
+  // Handle "Confirm and Apply" button
+  if (confirmApplyBtn) {
+    confirmApplyBtn.addEventListener('click', async () => {
+      // Show loading state
+      confirmApplyBtn.style.background = '#4caf50';
+      confirmApplyBtn.innerHTML = 'Loading...';
+      confirmApplyBtn.disabled = true;
+      
+      // Analyze allergens and diets
+      const finalIngredientList = ingredientList || suggestion.ingredientsList?.[0] || '';
+      
+      try {
+        const analysisResult = await window.supabaseClient.functions.invoke('analyze-brand-allergens', {
+          body: {
+            ingredientText: finalIngredientList,
+            productName: productName,
+            labels: [],
+            categories: []
+          }
+        });
+
+        if (!analysisResult.error && analysisResult.data) {
+          const { allergens, diets } = analysisResult.data;
+          
+          // Show allergen/diet preview before applying
+          document.body.removeChild(modal);
+          closeModal();
+          
+          showAllergenDietPreview(rowIdx, suggestion, {
+            allergens: allergens || [],
+            diets: diets || [],
+            ingredientList: finalIngredientList,
+            productName: productName
+          });
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to analyze allergens/diets:', err);
+      }
+      
+      // If analysis fails, apply directly
+      document.body.removeChild(modal);
+      closeModal();
+      
+      const sourceCount = sources.length;
+      aiAssistSetStatus(`Product found! Verified from ${sourceCount} source${sourceCount !== 1 ? 's' : ''}.`, 'success');
+      
+      setTimeout(() => {
+        applyBrandSuggestionConfirmed(rowIdx, suggestion);
+      }, 0);
+    });
+  }
+
+  // confirmBtn was removed - button no longer exists in the modal
+
+  // Close on outside click
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      document.body.removeChild(modal);
+      closeModal();
+    }
+  });
+}
+
+// Show allergen and dietary preference preview before applying
+function showAllergenDietPreview(rowIdx, suggestion, analysisData) {
+  const { allergens, diets, ingredientList, productName } = analysisData;
+  
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10003;
+    padding: 20px;
+  `;
+
+  const modalContent = document.createElement('div');
+  modalContent.style.cssText = `
+    background: #0c102a;
+    border: 2px solid #4c5ad4;
+    border-radius: 16px;
+    max-width: 700px;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 24px;
+    color: #fff;
+    width: 100%;
+  `;
+
+  const allergensList = allergens.length > 0 ? allergens.map(a => `
+    <div style="
+      display: inline-block;
+      padding: 6px 12px;
+      margin: 4px;
+      background: rgba(220,82,82,0.2);
+      border: 1px solid rgba(220,82,82,0.4);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      color: #ff6b6b;
+      font-weight: 500;
+    ">${esc(a)}</div>
+  `).join('') : '<div style="color: #9ca3af; font-weight: 600;">✓ No allergens detected</div>';
+
+  const dietsList = diets.length > 0 ? diets.map(d => `
+    <div style="
+      display: inline-block;
+      padding: 6px 12px;
+      margin: 4px;
+      background: rgba(76,212,90,0.2);
+      border: 1px solid rgba(76,212,90,0.4);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      color: #4caf50;
+      font-weight: 500;
+    ">${esc(d)}</div>
+  `).join('') : '<div style="color: #999;">No dietary preferences detected</div>';
+
+  modalContent.innerHTML = `
+    <div style="margin-bottom: 20px;">
+      <h3 style="margin: 0 0 8px 0; color: #4c5ad4; font-size: 1.4rem;">📋 Allergen & Diet Preview</h3>
+      <p style="margin: 0; font-size: 1rem; color: #fff; font-weight: 600;">${esc(productName)}</p>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+      <div style="font-weight: 600; color: #4c5ad4; font-size: 1.05rem; margin-bottom: 12px;">
+        Ingredient List:
+      </div>
+      <div style="
+        background: rgba(76,90,212,0.1);
+        border: 1px solid rgba(76,90,212,0.3);
+        border-radius: 8px;
+        padding: 16px;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        color: #e0e0e0;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      ">
+        ${esc(ingredientList)}
+      </div>
+    </div>
+
+    <div style="margin-bottom: 24px;">
+      <div style="font-weight: 600; color: #dc5252; font-size: 1.05rem; margin-bottom: 12px;">
+        🚨 Detected Allergens:
+      </div>
+      <div style="margin-bottom: 20px;">
+        ${allergensList}
+      </div>
+
+      <div style="font-weight: 600; color: #4caf50; font-size: 1.05rem; margin-bottom: 12px;">
+        📋 Dietary Preferences:
+      </div>
+      <div>
+        ${dietsList}
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 12px; justify-content: flex-end;">
+      <button type="button" class="cancelPreviewBtn" style="
+        padding: 14px 24px;
+        background: rgba(255,255,255,0.1);
+        border: 1px solid rgba(255,255,255,0.2);
+        border-radius: 8px;
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      ">Cancel</button>
+      <button type="button" class="applyPreviewBtn" style="
+        padding: 14px 24px;
+        background: #4c5ad4;
+        border: none;
+        border-radius: 8px;
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      ">Apply with Detected Allergens & Diets</button>
+    </div>
+  `;
+
+  modal.appendChild(modalContent);
+  document.body.appendChild(modal);
+
+  const cancelBtn = modalContent.querySelector('.cancelPreviewBtn');
+  const applyBtn = modalContent.querySelector('.applyPreviewBtn');
+
+  cancelBtn.addEventListener('click', () => {
+    document.body.removeChild(modal);
+  });
+
+  applyBtn.addEventListener('click', () => {
+    document.body.removeChild(modal);
+    
+    // Update suggestion with detected allergens and diets
+    suggestion.allergens = allergens;
+    suggestion.diets = diets;
+    
+    const sourceCount = suggestion.ingredientsList ? suggestion.ingredientsList.length : 0;
+    aiAssistSetStatus(`Product applied with detected allergens and dietary preferences.`, 'success');
+    
+    setTimeout(() => {
+      applyBrandSuggestionConfirmed(rowIdx, suggestion);
+    }, 0);
+  });
+
+  // Close on outside click
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      document.body.removeChild(modal);
+    }
+  });
 }
 
 function applyBrandSuggestion(rowIdx, suggestionIdx){
@@ -3847,11 +4883,10 @@ function showMultiSourceVerificationOption(rowIdx, suggestion, barcode) {
           font-size: 0.95rem;
           cursor: pointer;
         ">
-          <option value="perplexity">⚡ Perplexity AI (Faster - Recommended)</option>
-          <option value="claude">🧠 Claude Sonnet 4 (More Thorough)</option>
+          <option value="claude">🧠 Claude (Web Search Enabled)</option>
         </select>
         <div style="margin-top: 6px; font-size: 0.8rem; color: #7c8db5; font-style: italic;">
-          Perplexity is typically 2-3x faster for web searches
+          Claude uses web search to find ingredient information from multiple sources
         </div>
       </div>
 
@@ -3991,15 +5026,20 @@ function showMultiSourceErrorModal(errorMessage, provider, openFoodFactsSuggesti
 
   // Check if it's an API key error
   const isApiKeyError = errorMessage.includes('API_KEY') || errorMessage.includes('not configured');
-  const providerName = provider === 'perplexity' ? 'Perplexity AI' : 'Claude';
-  const apiKeyName = provider === 'perplexity' ? 'PERPLEXITY_API_KEY' : 'ANTHROPIC_API_KEY';
+  const providerName = 'Claude';
+  const apiKeyName = 'ANTHROPIC_API_KEY';
+
+  // Defensive check for openFoodFactsSuggestion
+  const safeSuggestion = openFoodFactsSuggestion || {};
+  const productName = safeSuggestion.name || safeSuggestion.product_name || 'Unknown Product';
+  const productBrand = safeSuggestion.brand || '';
 
   modalContent.innerHTML = `
     <div style="text-align: center; margin-bottom: 20px;">
       <div style="font-size: 3rem; color: #dc5252; margin-bottom: 12px;">⚠</div>
       <h2 style="margin: 0 0 8px 0; color: #dc5252; font-size: 1.5rem;">Multi-Source Verification Failed</h2>
       <p style="margin: 0; color: #a0a0a0; font-size: 0.95rem;">
-        ${esc(openFoodFactsSuggestion.brand)} ${esc(openFoodFactsSuggestion.name)}
+        ${productBrand ? esc(productBrand) + ' ' : ''}${esc(productName)}
       </p>
     </div>
 
@@ -4018,7 +5058,7 @@ function showMultiSourceErrorModal(errorMessage, provider, openFoodFactsSuggesti
           <ol style="margin: 0; padding-left: 20px;">
             <li style="margin-bottom: 8px;">Go to your <a href="https://supabase.com/dashboard/project/fgoiyycctnwnghrvsilt/settings/functions" target="_blank" style="color: #7c9cff; text-decoration: underline;">Supabase Functions Settings</a></li>
             <li style="margin-bottom: 8px;">Add environment variable: <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 3px;">${apiKeyName}</code></li>
-            ${provider === 'perplexity' ? `<li style="margin-bottom: 8px;">Get API key from: <a href="https://www.perplexity.ai/settings/api" target="_blank" style="color: #7c9cff; text-decoration: underline;">Perplexity API Settings</a></li>` : ''}
+            <li style="margin-bottom: 8px;">Get API key from: <a href="https://console.anthropic.com/" target="_blank" style="color: #7c9cff; text-decoration: underline;">Anthropic Console</a></li>
           </ol>
         </div>
       </div>
@@ -4028,24 +5068,6 @@ function showMultiSourceErrorModal(errorMessage, provider, openFoodFactsSuggesti
       <p style="margin: 0 0 12px 0; color: #a0a0a0; font-size: 0.95rem;">What would you like to do?</p>
       
       <div style="display: flex; flex-direction: column; gap: 12px;">
-        ${provider === 'perplexity' ? `
-          <button type="button" class="tryClaude" style="
-            padding: 16px;
-            background: rgba(76,90,212,0.2);
-            border: 2px solid #4c5ad4;
-            border-radius: 12px;
-            color: #fff;
-            text-align: left;
-            cursor: pointer;
-            transition: all 0.2s;
-          ">
-            <div style="font-weight: 600; font-size: 1.05rem; margin-bottom: 6px;">🧠 Try Claude Instead</div>
-            <div style="font-size: 0.85rem; color: #a0a0a0; line-height: 1.4;">
-              Use Claude Sonnet for multi-source verification (requires Claude API key)
-            </div>
-          </button>
-        ` : ''}
-        
         <button type="button" class="useQuick" style="
           padding: 16px;
           background: rgba(76,212,90,0.2);
@@ -4080,17 +5102,8 @@ function showMultiSourceErrorModal(errorMessage, provider, openFoodFactsSuggesti
   modal.appendChild(modalContent);
   document.body.appendChild(modal);
 
-  const tryClaudeBtn = modalContent.querySelector('.tryClaude');
   const useQuickBtn = modalContent.querySelector('.useQuick');
   const closeBtn = modalContent.querySelector('.closeError');
-
-  // Try Claude button (only shown if user tried Perplexity)
-  if (tryClaudeBtn) {
-    tryClaudeBtn.addEventListener('click', () => {
-      document.body.removeChild(modal);
-      verifyProductFromMultipleSources(rowIdx, openFoodFactsSuggestion, openFoodFactsSuggestion.barcode, 'claude');
-    });
-  }
 
   // Use quick verification
   useQuickBtn.addEventListener('click', () => {
@@ -4143,14 +5156,19 @@ function showInsufficientSourcesModal(verificationData, openFoodFactsSuggestion)
   `;
 
   const sourcesFound = verificationData.sources || [];
-  const sourcesWithData = sourcesFound.filter(s => s.dataAvailable);
+  const sourcesWithData = sourcesFound.filter(s => s && s.dataAvailable);
+
+  // Defensive check for openFoodFactsSuggestion
+  const safeSuggestion = openFoodFactsSuggestion || {};
+  const productName = safeSuggestion.name || safeSuggestion.product_name || 'Unknown Product';
+  const productBrand = safeSuggestion.brand || '';
 
   modalContent.innerHTML = `
     <div style="text-align: center; margin-bottom: 20px;">
       <div style="font-size: 3rem; color: #dc5252; margin-bottom: 12px;">⚠</div>
       <h2 style="margin: 0 0 8px 0; color: #dc5252; font-size: 1.5rem;">Insufficient Sources Found</h2>
       <p style="margin: 0; color: #a0a0a0; font-size: 0.95rem;">
-        Cannot verify ingredient list for ${esc(openFoodFactsSuggestion.brand)} ${esc(openFoodFactsSuggestion.name)}
+        Cannot verify ingredient list for ${productBrand ? esc(productBrand) + ' ' : ''}${esc(productName)}
       </p>
     </div>
 
@@ -4169,10 +5187,10 @@ function showInsufficientSourcesModal(verificationData, openFoodFactsSuggestion)
         <div style="font-weight: 600; margin-bottom: 12px; color: #a0a0a0; font-size: 0.9rem;">Sources Found:</div>
         ${sourcesWithData.map(source => `
           <div style="background: rgba(76,212,90,0.1); border: 1px solid rgba(76,212,90,0.3); border-radius: 6px; padding: 10px; margin-bottom: 8px;">
-            <div style="font-weight: 600; color: #4caf50; font-size: 0.95rem;">${esc(source.name)}</div>
+            <div style="font-weight: 600; color: #4caf50; font-size: 0.95rem;">${esc(source?.name || 'Unknown Source')}</div>
             <div style="font-size: 0.8rem; color: #808080; word-break: break-all; margin-top: 4px;">
-              <a href="${esc(source.url)}" target="_blank" style="color: #6b7ce6; text-decoration: none;">
-                ${esc(source.url.length > 50 ? source.url.substring(0, 50) + '...' : source.url)}
+              <a href="${esc(source?.url || '#')}" target="_blank" style="color: #6b7ce6; text-decoration: none;">
+                ${esc(source?.url || 'No URL')}
               </a>
             </div>
           </div>
@@ -4333,32 +5351,34 @@ function hideRowLoadingBar(rowIdx) {
 }
 
 // Verify product from multiple sources using AI
-async function verifyProductFromMultipleSources(rowIdx, openFoodFactsSuggestion, barcode, provider = 'perplexity') {
+async function verifyProductFromMultipleSources(rowIdx, openFoodFactsSuggestion, barcode, provider = 'claude') {
   // Show loading bar at the ingredient row
   showRowLoadingBar(rowIdx, 'Starting multi-source verification...');
   updateRowLoadingBar(rowIdx, 10, 'Starting multi-source verification...');
 
   aiAssistSetStatus('Searching multiple sources...', 'info');
 
-  // Progress simulation with realistic updates
-  const progressSteps = [
-    { progress: 10, message: 'Searching brand official website...', delay: 500 },
-    { progress: 20, message: 'Searching nutrition databases...', delay: 1500 },
-    { progress: 30, message: 'Validating sources...', delay: 2500 },
-    { progress: 40, message: 'Searching health & nutrition sites...', delay: 4000 },
-    { progress: 50, message: 'Validating new sources...', delay: 5500 },
-    { progress: 60, message: 'Searching grocery & retail sites...', delay: 7000 },
-    { progress: 70, message: 'Validating additional sources...', delay: 8500 },
-    { progress: 80, message: 'Analyzing ingredient data...', delay: 10000 },
-    { progress: 90, message: 'Consolidating results...', delay: 11500 }
-  ];
+  // Initialize progress tracking
+  let progressTimers = [];
+  let currentProgress = 10;
+  let lastUpdateTime = Date.now();
+  
+  // Real-time progress updater that increments based on time elapsed
+  // This gives smooth progress while waiting for actual backend response
+  const progressUpdater = setInterval(() => {
+    const elapsed = Date.now() - lastUpdateTime;
+    // Increment progress slowly (reaches ~80% after ~15 seconds of waiting)
+    if (currentProgress < 80) {
+      currentProgress = Math.min(80, currentProgress + 1);
+      updateRowLoadingBar(rowIdx, currentProgress, 'Searching web sources...');
+    }
+  }, 800); // Update every 800ms
+  
+  // Set initial progress
+  updateRowLoadingBar(rowIdx, 10, 'Starting search...');
 
-  // Start progress simulation
-  const progressTimers = progressSteps.map(step => {
-    return setTimeout(() => {
-      updateRowLoadingBar(rowIdx, step.progress, step.message);
-    }, step.delay);
-  });
+  // Defensive check for openFoodFactsSuggestion (needed in both try and catch blocks)
+  const safeSuggestion = openFoodFactsSuggestion || {};
 
   try {
     // Verify Supabase client is available
@@ -4367,21 +5387,21 @@ async function verifyProductFromMultipleSources(rowIdx, openFoodFactsSuggestion,
     }
     
     console.log('Calling verify-brand-sources function with:', {
-      productName: openFoodFactsSuggestion.name,
-      brand: openFoodFactsSuggestion.brand,
+      productName: safeSuggestion.name || safeSuggestion.product_name || 'Unknown Product',
+      brand: safeSuggestion.brand || '',
       barcode: barcode,
       provider: provider
     });
     
     const requestBody = {
-      productName: openFoodFactsSuggestion.name,
-      brand: openFoodFactsSuggestion.brand,
+      productName: safeSuggestion.name || safeSuggestion.product_name || 'Unknown Product',
+      brand: safeSuggestion.brand || '',
       barcode: barcode,
       provider: provider,
       openFoodFactsData: {
-        image_url: openFoodFactsSuggestion.image,
-        ingredients_text: openFoodFactsSuggestion.ingredientsList?.[0] || '',
-        product_name: openFoodFactsSuggestion.name
+        image_url: safeSuggestion.image || '',
+        ingredients_text: safeSuggestion.ingredientsList?.[0] || '',
+        product_name: safeSuggestion.name || safeSuggestion.product_name || 'Unknown Product'
       }
     };
     
@@ -4393,8 +5413,40 @@ async function verifyProductFromMultipleSources(rowIdx, openFoodFactsSuggestion,
     
     console.log('Function response received:', result);
 
-    // Clear any remaining progress timers
+    // Clear progress updater
+    clearInterval(progressUpdater);
     progressTimers.forEach(timer => clearTimeout(timer));
+
+    // Parse search logs for real-time progress updates
+    const verificationData = result.data;
+    if (verificationData && verificationData.searchLogs && verificationData.searchLogs.length > 0) {
+      // Update progress based on log milestones
+      const logs = verificationData.searchLogs;
+      let progress = currentProgress;
+      
+      // Map log events to progress percentages
+      const logProgressMap = {
+        'PHASE 1': 30,
+        'Deduplicating': 40,
+        'PHASE 1 ANALYSIS': 50,
+        'SUCCESS': 75,
+        'PHASE 2': 60,
+        'FINAL ANALYSIS': 70,
+        'VERIFICATION SUCCESSFUL': 85
+      };
+      
+      // Check for milestone keywords in logs
+      for (const log of logs) {
+        for (const [keyword, progressValue] of Object.entries(logProgressMap)) {
+          if (log.includes(keyword) && progressValue > progress) {
+            progress = progressValue;
+            break;
+          }
+        }
+      }
+      
+      currentProgress = progress;
+    }
 
     updateRowLoadingBar(rowIdx, 95, 'Processing verification results...');
 
@@ -4404,35 +5456,39 @@ async function verifyProductFromMultipleSources(rowIdx, openFoodFactsSuggestion,
       
       // Show detailed error modal
       const errorMessage = result.error.message || result.error.toString();
-      showMultiSourceErrorModal(errorMessage, provider, openFoodFactsSuggestion, rowIdx);
+      showMultiSourceErrorModal(errorMessage, provider, safeSuggestion, rowIdx);
       aiAssistSetStatus('Multi-source verification failed. See error details.', 'warn');
       return;
     }
 
-    const verificationData = result.data;
     console.log('Multi-source verification result:', verificationData);
 
-    // Update search logs if available
-    if (verificationData.searchLogs && verificationData.searchLogs.length > 0) {
+    // Update search logs if available (already processed above for progress)
+    if (verificationData && verificationData.searchLogs && verificationData.searchLogs.length > 0) {
       updateRowSearchLogs(rowIdx, verificationData.searchLogs);
     }
 
     // Check if we got an insufficient sources error
-    if (verificationData.error && verificationData.error.includes('Insufficient sources')) {
+    if (verificationData && verificationData.error && verificationData.error.includes('Insufficient sources')) {
       // Keep the logs visible when showing the error
-      showInsufficientSourcesModal(verificationData, openFoodFactsSuggestion);
-      aiAssistSetStatus(`Only found ${verificationData.sourcesFound} sources. Need ${verificationData.minimumSourcesRequired}.`, 'warn');
+      showInsufficientSourcesModal(verificationData, safeSuggestion);
+      aiAssistSetStatus(`Only found ${verificationData.sourcesFound || 0} sources. Need ${verificationData.minimumSourcesRequired || 0}.`, 'warn');
       return;
     }
 
     // Show enhanced confirmation modal with all sources
     updateRowLoadingBar(rowIdx, 100, 'Verification complete!');
     setTimeout(() => hideRowLoadingBar(rowIdx), 500);
-    showMultiSourceConfirmationModal(rowIdx, verificationData, openFoodFactsSuggestion);
-    aiAssistSetStatus(`Found ${verificationData.sources.length} sources. Review verification.`, 'success');
+    showMultiSourceConfirmationModal(rowIdx, verificationData, safeSuggestion);
+    aiAssistSetStatus(`Found ${verificationData?.sources?.length || 0} sources. Review verification.`, 'success');
 
   } catch (error) {
     console.error('Failed to verify from multiple sources:', error);
+    
+    // Clear progress updater and timers
+    if (typeof progressUpdater !== 'undefined') clearInterval(progressUpdater);
+    if (progressTimers) progressTimers.forEach(timer => clearTimeout(timer));
+    
     hideRowLoadingBar(rowIdx);
     
     // Show detailed error modal with more context
@@ -4451,7 +5507,7 @@ async function verifyProductFromMultipleSources(rowIdx, openFoodFactsSuggestion,
       errorMessage = `Network/Request Error:\n\n${errorMessage}\n\nFull error details:\n${fullError}\n\nThis could be due to:\n1. Network connectivity issues\n2. CORS configuration\n3. Function deployment issue\n4. Supabase client configuration`;
     }
     
-    showMultiSourceErrorModal(errorMessage, provider, openFoodFactsSuggestion, rowIdx);
+    showMultiSourceErrorModal(errorMessage, provider, safeSuggestion, rowIdx);
     aiAssistSetStatus('Multi-source verification failed. See error details.', 'warn');
   }
 }
@@ -4459,6 +5515,41 @@ async function verifyProductFromMultipleSources(rowIdx, openFoodFactsSuggestion,
 // Enhanced modal showing multiple source verification
 function showMultiSourceConfirmationModal(rowIdx, verificationData, openFoodFactsSuggestion) {
   const { product, sources, consistency, consolidatedIngredients, crossContaminationWarnings, allergens, allergensInferred, diets, dietsInferred, visualMatching } = verificationData;
+
+  // Safety check: Ensure product object exists with default values
+  const safeProduct = product || {
+    name: openFoodFactsSuggestion?.name || openFoodFactsSuggestion?.product_name || 'Unknown Product',
+    brand: openFoodFactsSuggestion?.brand || 'Unknown Brand',
+    barcode: openFoodFactsSuggestion?.barcode || ''
+  };
+
+  // Safety check: Ensure consistency object exists with default values
+  // But if there are no sources, we can't have a match - set to error state
+  const hasSources = Array.isArray(sources) && sources.length > 0;
+  const safeConsistency = consistency || (hasSources ? {
+    score: 100,
+    allMatch: true,
+    differences: []
+  } : {
+    score: 0,
+    allMatch: false,
+    differences: []
+  });
+
+  // Safety check: Ensure sources is an array
+  const safeSources = Array.isArray(sources) ? sources : [];
+
+  // Safety check: Ensure visualMatching object exists with default values
+  const safeVisualMatching = visualMatching || {
+    imagesAvailable: 0,
+    primaryImage: null
+  };
+
+  // Safety check: Ensure arrays exist with default values
+  const safeAllergens = Array.isArray(allergens) ? allergens : [];
+  const safeDiets = Array.isArray(diets) ? diets : [];
+  const safeCrossContaminationWarnings = Array.isArray(crossContaminationWarnings) ? crossContaminationWarnings : [];
+  const safeConsolidatedIngredients = consolidatedIngredients || '';
 
   const modal = document.createElement('div');
   modal.style.cssText = `
@@ -4476,8 +5567,8 @@ function showMultiSourceConfirmationModal(rowIdx, verificationData, openFoodFact
     overflow: hidden;
   `;
 
-  const consistencyColor = consistency.score >= 85 ? '#4caf50' : consistency.score >= 70 ? '#ff9800' : '#dc5252';
-  const consistencyIcon = consistency.score >= 85 ? '✓' : consistency.score >= 70 ? '⚠' : '✗';
+  const consistencyColor = safeConsistency.score >= 85 ? '#4caf50' : safeConsistency.score >= 70 ? '#ff9800' : '#dc5252';
+  const consistencyIcon = safeConsistency.score >= 85 ? '✓' : safeConsistency.score >= 70 ? '⚠' : '✗';
 
   const modalContent = document.createElement('div');
   modalContent.style.cssText = `
@@ -4493,10 +5584,13 @@ function showMultiSourceConfirmationModal(rowIdx, verificationData, openFoodFact
   `;
 
   // Build sources HTML - separate verified vs suggested sources
-  const sourcesWithData = sources.filter(s => s.dataAvailable);
-  const suggestedSources = sources.filter(s => !s.dataAvailable);
+  const sourcesWithData = safeSources.filter(s => s && s.dataAvailable);
+  const suggestedSources = safeSources.filter(s => s && !s.dataAvailable);
 
-  const verifiedSourcesHtml = sourcesWithData.map((source, idx) => `
+  const verifiedSourcesHtml = sourcesWithData.map((source, idx) => {
+    // Try multiple image sources
+    const imageUrl = source.productImage || source.image_url || (idx === 0 && safeVisualMatching.primaryImage ? safeVisualMatching.primaryImage : '');
+    return `
     <div style="
       background: rgba(76,212,90,0.1);
       border: 2px solid rgba(76,212,90,0.4);
@@ -4505,18 +5599,20 @@ function showMultiSourceConfirmationModal(rowIdx, verificationData, openFoodFact
       margin-bottom: 8px;
     ">
       <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-        ${source.productImage ? `
-          <img src="${esc(source.productImage)}" alt="Product"
+        ${imageUrl ? `
+          <img src="${esc(imageUrl)}" alt="Product"
                style="width: 60px; height: 60px; object-fit: contain; border-radius: 6px; background: white; padding: 4px; cursor: pointer;"
-               onclick="window.open('${esc(source.productImage)}', '_blank')">
+               onerror="this.onerror=null; this.style.display='none';"
+               onload="this.style.display='block';"
+               onclick="window.open('${esc(imageUrl)}', '_blank')">
         ` : ''}
         <div style="flex: 1;">
           <div style="font-weight: 600; color: #4caf50; margin-bottom: 4px;">
-            ✓ ${esc(source.name)} <span style="font-size: 0.75rem; color: #4caf50; font-weight: normal;">(Data Available)</span>
+            ✓ ${esc(source.name)}
           </div>
           <div style="font-size: 0.85rem; color: #a0a0a0; word-break: break-all;">
             <a href="${esc(source.url)}" target="_blank" style="color: #6b7ce6; text-decoration: none;">
-              ${esc(source.url.length > 60 ? source.url.substring(0, 60) + '...' : source.url)}
+              ${esc(source.url)}
             </a>
           </div>
         </div>
@@ -4524,13 +5620,14 @@ function showMultiSourceConfirmationModal(rowIdx, verificationData, openFoodFact
       <div style="font-size: 0.85rem; color: #ccc; line-height: 1.5; margin-top: 8px; word-wrap: break-word; white-space: pre-wrap;">
         <strong>Ingredients:</strong> ${esc(source.ingredientsText)}
       </div>
-      ${source.crossContaminationWarnings && source.crossContaminationWarnings.length > 0 ? `
+      ${source.crossContaminationWarnings && source.crossContaminationWarnings.length > 0 && !source.crossContaminationWarnings.toLowerCase().includes('not listed') ? `
         <div style="font-size: 0.85rem; color: #ff9800; margin-top: 6px;">
           <strong>⚠️ Warning:</strong> ${esc(source.crossContaminationWarnings)}
         </div>
       ` : ''}
     </div>
-  `).join('');
+  `;
+  }).join('');
 
   const suggestedSourcesHtml = suggestedSources.length > 0 ? `
     <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(76,90,212,0.3);">
@@ -4577,7 +5674,21 @@ function showMultiSourceConfirmationModal(rowIdx, verificationData, openFoodFact
   const sourcesHtml = verifiedSourcesHtml + suggestedSourcesHtml;
 
   // Build ingredient mismatches section - always show
-  const mismatchesHtml = consistency.differences.length > 0 ? `
+  // Don't show "Perfect Match" if there are no sources
+  const mismatchesHtml = safeSources.length === 0 ? `
+    <div style="
+      background: rgba(220,82,82,0.1);
+      border: 1px solid rgba(220,82,82,0.3);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 20px;
+    ">
+      <div style="font-weight: 600; color: #dc5252; margin-bottom: 4px;">⚠ No Sources Available</div>
+      <p style="margin: 0; font-size: 0.85rem; color: #a0a0a0;">
+        Unable to verify this product. No sources with ingredient data were found.
+      </p>
+    </div>
+  ` : safeConsistency.differences && safeConsistency.differences.length > 0 ? `
     <div style="
       background: rgba(255,152,0,0.1);
       border: 1px solid rgba(255,152,0,0.3);
@@ -4590,7 +5701,7 @@ function showMultiSourceConfirmationModal(rowIdx, verificationData, openFoodFact
         These are minor wording differences between sources. The core ingredients are the same.
       </p>
       <div style="font-size: 0.85rem; line-height: 1.8; color: #ccc;">
-        ${consistency.differences.map(diff => {
+        ${safeConsistency.differences.map(diff => {
           // Parse || separated comparisons (format: "Source1: phrase||Source2: phrase")
           if (diff.includes('||')) {
             const comparisons = diff.split('||');
@@ -4630,13 +5741,13 @@ function showMultiSourceConfirmationModal(rowIdx, verificationData, openFoodFact
       <h3 style="margin: 0 0 8px 0; color: ${consistencyColor}; font-size: 1.4rem;">
         ${consistencyIcon} Multi-Source Verification Results
       </h3>
-      <p style="margin: 0; font-size: 1.05rem; font-weight: 600;">${esc(product.name)}</p>
-      ${product.brand ? `<p style="margin: 4px 0 0 0; color: #a0a0a0; font-size: 0.9rem;">${esc(product.brand)}</p>` : ''}
+      <p style="margin: 0; font-size: 1.05rem; font-weight: 600;">${esc(safeProduct.name)}</p>
+      ${safeProduct.brand ? `<p style="margin: 4px 0 0 0; color: #a0a0a0; font-size: 0.9rem;">${esc(safeProduct.brand)}</p>` : ''}
     </div>
 
     <!-- Source Consistency -->
     <div style="
-      background: rgba(${consistency.allMatch ? '76,212,90' : '220,82,82'},0.15);
+      background: rgba(${safeConsistency.allMatch ? '76,212,90' : '220,82,82'},0.15);
       border: 2px solid ${consistencyColor};
       border-radius: 12px;
       padding: 16px;
@@ -4644,17 +5755,17 @@ function showMultiSourceConfirmationModal(rowIdx, verificationData, openFoodFact
       text-align: center;
     ">
       <div style="font-size: 1.5rem; font-weight: 700; color: ${consistencyColor}; margin-bottom: 4px;">
-        ${consistency.allMatch ? '✓ All Sources Match!' : '⚠ Sources Have Differences'}
+        ${safeSources.length === 0 ? '⚠ No Sources Found' : safeConsistency.allMatch ? '✓ All Sources Match!' : '⚠ Sources Have Differences'}
       </div>
       <div style="font-size: 0.85rem; color: #a0a0a0;">
-        ${sources.length} sources analyzed
+        ${safeSources.length === 0 ? 'No sources were found to verify this product' : `${safeSources.length} source${safeSources.length !== 1 ? 's' : ''} analyzed`}
       </div>
     </div>
 
     <!-- Product Images Carousel -->
-    ${visualMatching.imagesAvailable > 0 ? `
+    ${safeVisualMatching.imagesAvailable > 0 ? `
       <div style="margin-bottom: 20px;">
-        <p style="margin: 0 0 12px 0; font-weight: 600; color: #4c5ad4;">📸 Product Images (${visualMatching.imagesAvailable} available):</p>
+        <p style="margin: 0 0 12px 0; font-weight: 600; color: #4c5ad4;">📸 Product Images (${safeVisualMatching.imagesAvailable} available):</p>
         <div style="
           display: flex;
           gap: 12px;
@@ -4663,7 +5774,7 @@ function showMultiSourceConfirmationModal(rowIdx, verificationData, openFoodFact
           background: rgba(0,0,0,0.2);
           border-radius: 8px;
         ">
-          ${sources.filter(s => s.productImage).map((source, idx) => `
+          ${safeSources.filter(s => s && s.productImage).map((source, idx) => `
             <div style="flex-shrink: 0; text-align: center;">
               <img src="${esc(source.productImage)}" alt="${esc(source.name)}"
                    style="
@@ -4691,7 +5802,7 @@ function showMultiSourceConfirmationModal(rowIdx, verificationData, openFoodFact
 
     <!-- Sources -->
     <div style="margin-bottom: 20px;">
-      <p style="margin: 0 0 12px 0; font-weight: 600; color: #4c5ad4;">📋 Sources Found (${sources.length}):</p>
+      <p style="margin: 0 0 12px 0; font-weight: 600; color: #4c5ad4;">📋 Sources Found (${safeSources.length}):</p>
       ${sourcesHtml}
     </div>
 
@@ -4707,30 +5818,30 @@ function showMultiSourceConfirmationModal(rowIdx, verificationData, openFoodFact
     ">
       <p style="margin: 0 0 8px 0; font-weight: 600; color: #4c5ad4;">📝 Consolidated Ingredient List:</p>
       <p style="margin: 0; font-size: 0.9rem; line-height: 1.6; word-wrap: break-word; white-space: pre-wrap;">
-        ${esc(consolidatedIngredients)}
+        ${esc(safeConsolidatedIngredients)}
       </p>
 
       <!-- Allergens Section - Always Show -->
-      <p style="margin: 12px 0 0 0; font-weight: 600; color: ${allergens.length > 0 ? '#dc5252' : '#a0a0a0'};">
-        ${allergens.length > 0 ? '🚨 Detected Allergens' : 'ℹ️ Allergens'} ${allergens.length > 0 ? (allergensInferred ? '<span style="font-weight: normal; font-size: 0.85rem;">(inferred from ingredients)</span>' : '<span style="font-weight: normal; font-size: 0.85rem;">(from explicit product labels)</span>') : ''}:
+      <p style="margin: 12px 0 0 0; font-weight: 600; color: ${safeAllergens.length > 0 ? '#dc5252' : '#a0a0a0'};">
+        ${safeAllergens.length > 0 ? '🚨 Detected Allergens' : 'ℹ️ Allergens'} ${safeAllergens.length > 0 ? (allergensInferred ? '<span style="font-weight: normal; font-size: 0.85rem;">(inferred from ingredients)</span>' : '<span style="font-weight: normal; font-size: 0.85rem;">(from explicit product labels)</span>') : ''}:
       </p>
-      <p style="margin: 4px 0 0 0; font-size: 0.9rem; color: ${allergens.length > 0 ? '#dc5252' : '#a0a0a0'};">
-        ${allergens.length > 0 ? allergens.map(a => esc(a)).join(', ') : 'No allergens detected'}
+      <p style="margin: 4px 0 0 0; font-size: 0.9rem; color: ${safeAllergens.length > 0 ? '#dc5252' : '#a0a0a0'};">
+        ${safeAllergens.length > 0 ? safeAllergens.map(a => esc(a)).join(', ') : 'No allergens detected'}
       </p>
 
-      ${crossContaminationWarnings && crossContaminationWarnings.length > 0 ? `
+      ${safeCrossContaminationWarnings && safeCrossContaminationWarnings.length > 0 ? `
         <p style="margin: 12px 0 0 0; font-weight: 600; color: #ff9800;">⚠️ Cross-Contamination Warning:</p>
         <p style="margin: 4px 0 0 0; font-size: 0.9rem; color: #ff9800;">
-          ${esc(crossContaminationWarnings)}
+          ${safeCrossContaminationWarnings.map(w => esc(w)).join(', ')}
         </p>
       ` : ''}
 
       <!-- Dietary Compatibility Section - Always Show -->
-      <p style="margin: 12px 0 0 0; font-weight: 600; color: ${diets.length > 0 ? '#4caf50' : '#a0a0a0'};">
-        ${diets.length > 0 ? '✓ Dietary Compatibility' : 'ℹ️ Dietary Compatibility'} ${diets.length > 0 ? (dietsInferred ? '<span style="font-weight: normal; font-size: 0.85rem;">(inferred from ingredients)</span>' : '<span style="font-weight: normal; font-size: 0.85rem;">(from explicit product labels)</span>') : ''}:
+      <p style="margin: 12px 0 0 0; font-weight: 600; color: ${safeDiets.length > 0 ? '#4caf50' : '#a0a0a0'};">
+        ${safeDiets.length > 0 ? '✓ Dietary Compatibility' : 'ℹ️ Dietary Compatibility'} ${safeDiets.length > 0 ? (dietsInferred ? '<span style="font-weight: normal; font-size: 0.85rem;">(inferred from ingredients)</span>' : '<span style="font-weight: normal; font-size: 0.85rem;">(from explicit product labels)</span>') : ''}:
       </p>
-      <p style="margin: 4px 0 0 0; font-size: 0.9rem; color: ${diets.length > 0 ? '#4caf50' : '#a0a0a0'};">
-        ${diets.length > 0 ? diets.map(d => esc(d)).join(', ') : 'Not compatible with any dietary preferences'}
+      <p style="margin: 4px 0 0 0; font-size: 0.9rem; color: ${safeDiets.length > 0 ? '#4caf50' : '#a0a0a0'};">
+        ${safeDiets.length > 0 ? safeDiets.map(d => esc(d)).join(', ') : 'Not compatible with any dietary preferences'}
       </p>
     </div>
 
@@ -4784,13 +5895,23 @@ function showMultiSourceConfirmationModal(rowIdx, verificationData, openFoodFact
   const cancelBtn = modalContent.querySelector('.confirmCancel');
   const verifyCheckboxes = modalContent.querySelectorAll('.verifyCheckbox');
 
-  // Enable/disable confirm button based on checkboxes
+  // Enable/disable confirm button based on checkboxes and sources
   const updateConfirmButton = () => {
     const allChecked = Array.from(verifyCheckboxes).every(cb => cb.checked);
-    confirmBtn.disabled = !allChecked;
-    confirmBtn.style.opacity = allChecked ? '1' : '0.5';
-    confirmBtn.style.cursor = allChecked ? 'pointer' : 'not-allowed';
+    const hasValidSources = safeSources.length > 0;
+    const canConfirm = allChecked && hasValidSources;
+    confirmBtn.disabled = !canConfirm;
+    confirmBtn.style.opacity = canConfirm ? '1' : '0.5';
+    confirmBtn.style.cursor = canConfirm ? 'pointer' : 'not-allowed';
+    if (!hasValidSources && confirmBtn.textContent.includes('Confirm')) {
+      confirmBtn.title = 'Cannot confirm: No sources found for verification';
+    } else {
+      confirmBtn.title = '';
+    }
   };
+  
+  // Initial update to set correct state
+  updateConfirmButton();
 
   verifyCheckboxes.forEach(cb => {
     cb.addEventListener('change', updateConfirmButton);
@@ -4802,22 +5923,22 @@ function showMultiSourceConfirmationModal(rowIdx, verificationData, openFoodFact
 
     // Build suggestion object with multi-source data
     const enhancedSuggestion = {
-      name: product.name,
-      brand: product.brand,
-      barcode: product.barcode,
-      image: visualMatching.primaryImage || openFoodFactsSuggestion.image,
-      ingredientsImage: sources[0]?.productImage || openFoodFactsSuggestion.ingredientsImage,
-      ingredientsList: [consolidatedIngredients],
-      allergens: allergens,
-      diets: diets,
+      name: safeProduct.name,
+      brand: safeProduct.brand,
+      barcode: safeProduct.barcode,
+      image: safeVisualMatching.primaryImage || openFoodFactsSuggestion?.image,
+      ingredientsImage: safeSources[0]?.productImage || openFoodFactsSuggestion.ingredientsImage,
+      ingredientsList: [safeConsolidatedIngredients],
+      allergens: safeAllergens,
+      diets: safeDiets,
       multiSourceVerified: true,
-      consistencyScore: consistency.score,
-      sourcesCount: sources.length
+      consistencyScore: safeConsistency.score,
+      sourcesCount: safeSources.length
     };
 
     document.body.removeChild(modal);
     applyBrandSuggestionConfirmed(rowIdx, enhancedSuggestion);
-    aiAssistSetStatus(`Applied brand with ${sources.length}-source verification`, 'success');
+    aiAssistSetStatus(`Applied brand with ${safeSources.length}-source verification`, 'success');
   });
 
   // Handle cancel
@@ -5875,11 +6996,46 @@ function tooltipBodyHTML(item,sel,userDiets){
         const conflictingAllergens = conflicts.filter(allergen => itemAllergens.includes(allergen));
 
         // Check if ALL conflicting allergens are removable
-        const canBeMade = conflictingAllergens.length > 0 &&
-                          conflictingAllergens.every(allergen => removableAllergens.has(allergen));
+        const allConflictingAllergensRemovable = conflictingAllergens.length > 0 &&
+                          conflictingAllergens.every(allergen => removableAllergens.has(norm(allergen)));
+
+        // Check if ALL blocking ingredients are removable (if we have this info from AI assistant)
+        const blockingIngredients = item.ingredientsBlockingDiets?.[userDiet] || [];
+        const allBlockingIngredientsRemovable = blockingIngredients.length > 0 &&
+          blockingIngredients.every(ing => ing.removable);
+
+        // The dish can be made to meet the diet ONLY if:
+        // 1. ALL conflicting allergens (if any) are removable, AND
+        // 2. ALL blocking ingredients (if any) are removable
+        // If we have blocking ingredients info from AI assistant, use it strictly
+        // Otherwise, we can only check allergens - if no conflicting allergens but diet still not met,
+        // we can't determine if blocking ingredients are removable, so show "is not"
+        let canBeMade = false;
+        
+        // Check if we have detailed ingredient blocking info (from AI assistant)
+        const hasBlockingIngredientsInfo = item.ingredientsBlockingDiets !== undefined;
+        
+        if (hasBlockingIngredientsInfo) {
+          // We have detailed info - use it strictly
+          // Can be made only if:
+          // 1. ALL blocking ingredients (if any) are removable, AND
+          // 2. ALL conflicting allergens (if any) are removable
+          const noBlockingIngredients = blockingIngredients.length === 0;
+          const noConflictingAllergens = conflictingAllergens.length === 0;
+          
+          canBeMade = 
+            (noBlockingIngredients || allBlockingIngredientsRemovable) &&
+            (noConflictingAllergens || allConflictingAllergensRemovable);
+        } else {
+          // No blocking ingredients info - can only check allergens
+          // If there are conflicting allergens, check if they're all removable
+          // If no conflicting allergens but diet still not met, we can't determine if blocking ingredients are removable
+          // So only show "can be made" if conflicting allergens exist AND are all removable
+          canBeMade = conflictingAllergens.length > 0 && allConflictingAllergensRemovable;
+        }
 
         if(canBeMade){
-          // All conflicting allergens can be substituted out - show yellow (same as allergen warning color)
+          // All blocking ingredients/allergens can be substituted out - show yellow (same as allergen warning color)
           html+=`<div style="margin-bottom:6px;color:#facc15;font-size:0.9rem">${emoji} This dish can be made <strong>${esc(dietLower)}</strong></div>`;
         } else {
           // Cannot be made to meet the diet - show red
