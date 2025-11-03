@@ -1,9 +1,12 @@
 /**
  * Shared navigation module for consistent navigation across all pages
  * Usage: call setupNav(currentPage, user) where currentPage is one of:
- * 'restaurants', 'favorites', 'dish-search', 'how-it-works', 'account', 'report-issue'
- * Updated: 2025-01-22 - Added dish-search to navigation
+ * 'restaurants', 'favorites', 'dish-search', 'loved-dishes', 'how-it-works', 'account', 'report-issue', 'admin'
+ * Updated: 2025-01-22 - Added dish-search and loved-dishes to navigation
+ * Updated: 2025-02-01 - Added admin dashboard link (only visible for admin email)
  */
+
+const ADMIN_EMAIL = 'matt.29.ds@gmail.com';
 
 export function setupNav(currentPage, user = null) {
   const navContainer = document.querySelector('.simple-nav');
@@ -20,9 +23,15 @@ export function setupNav(currentPage, user = null) {
     { id: 'dish-search', label: 'Dish search', href: 'dish-search.html', requiresAuth: true },
     { id: 'restaurants', label: 'All restaurants', href: 'restaurants.html', requiresAuth: true },
     { id: 'favorites', label: 'Favorite restaurants', href: 'favorites.html', requiresAuth: true },
+    { id: 'loved-dishes', label: 'Favorite dishes', href: 'loved-dishes.html', requiresAuth: true },
     // { id: 'how-it-works', label: 'How it works', href: 'how-it-works.html' }, // Hidden for now
     { id: 'account', label: 'Account settings', href: 'account.html' }
   ];
+
+  // Add admin dashboard link only for admin user
+  if (user && user.email === ADMIN_EMAIL) {
+    navItems.push({ id: 'admin', label: 'Admin', href: 'admin-dashboard.html', requiresAuth: true, adminOnly: true });
+  }
 
   navItems.forEach(item => {
     // Skip items that require auth if user is not logged in

@@ -65,6 +65,7 @@
 
   .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:#1a2351;cursor:pointer;color:#fff}
   .btnPrimary{background:#3651ff;border-color:#4e65ff}
+  .btnSecondary{background:#4c5ad4;border-color:#5c6ce8}
   .btnDanger{background:#8b1d1d;border-color:#a12525}
   .btnSuccess{background:#17663a;border-color:#1a7b46}
   .mgrRow{display:flex;justify-content:flex-end;margin:12px 0;gap:10px;flex-wrap:wrap}
@@ -404,6 +405,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const { createClient } = supabase;
 const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 window.supabaseClient = supabaseClient;
+window.SUPABASE_KEY = SUPABASE_KEY;
 
 // Get slug from URL
 const urlParams = new URLSearchParams(window.location.search);
@@ -958,15 +960,62 @@ const send=(p)=>{
           if(!client) throw new Error('Supabase client not ready.');
           const restaurantId = state.restaurant?._id || state.restaurant?.id || null;
           if(!restaurantId) throw new Error('Restaurant not loaded yet.');
-          const payload = { overlays: p.overlays || [] };
+          
+          // Ensure aiIngredients and aiIngredientSummary are preserved on all overlays
+          const overlaysToSave = (p.overlays || []).map(overlay => {
+            // Create a new object to ensure all fields are preserved
+            const savedOverlay = { ...overlay };
+            // Explicitly preserve aiIngredients if it exists
+            if (overlay.aiIngredients !== undefined) {
+              savedOverlay.aiIngredients = overlay.aiIngredients;
+            }
+            // Explicitly preserve aiIngredientSummary if it exists
+            if (overlay.aiIngredientSummary !== undefined) {
+              savedOverlay.aiIngredientSummary = overlay.aiIngredientSummary;
+            }
+            return savedOverlay;
+          });
+          
+          const payload = { overlays: overlaysToSave };
           if (p.menuImage) payload.menu_image = p.menuImage;
+          
+          console.log('Saving overlays with aiIngredients preservation:', overlaysToSave.map(o => ({
+            id: o.id,
+            hasAiIngredients: !!o.aiIngredients,
+            aiIngredientsLength: o.aiIngredients ? (typeof o.aiIngredients === 'string' ? o.aiIngredients.length : JSON.stringify(o.aiIngredients).length) : 0
+          })));
+          
           const { data, error } = await client
             .from('restaurants')
             .update(payload)
             .eq('id', restaurantId)
             .select()
             .single();
-          if(error) throw error;
+          
+          if(error) {
+            console.error('Supabase update error:', error);
+            console.error('Error details:', {
+              message: error.message,
+              code: error.code,
+              details: error.details,
+              hint: error.hint,
+              payloadSize: JSON.stringify(payload).length,
+              overlaysCount: overlaysToSave.length,
+              sampleOverlay: overlaysToSave[0] ? {
+                id: overlaysToSave[0].id,
+                hasAiIngredients: !!overlaysToSave[0].aiIngredients,
+                aiIngredientsLength: overlaysToSave[0].aiIngredients ? (typeof overlaysToSave[0].aiIngredients === 'string' ? overlaysToSave[0].aiIngredients.length : JSON.stringify(overlaysToSave[0].aiIngredients).length) : 0
+              } : null
+            });
+            throw error;
+          }
+          
+          console.log('Saved overlays response:', data.overlays?.map(o => ({
+            id: o.id,
+            hasAiIngredients: !!o.aiIngredients,
+            aiIngredientsLength: o.aiIngredients ? (typeof o.aiIngredients === 'string' ? o.aiIngredients.length : JSON.stringify(o.aiIngredients).length) : 0
+          })));
+          
           const updatedRestaurant = normalizeRestaurant(data);
           window.postMessage({type:'overlaysSaved', restaurant: updatedRestaurant}, '*');
 
@@ -1012,7 +1061,16 @@ const send=(p)=>{
           }
         }catch(err){
           console.error('Saving overlays failed', err);
-          window.postMessage({type:'saveFailed', message: err.message}, '*');
+          console.error('Error details:', {
+            message: err.message,
+            code: err.code,
+            details: err.details,
+            hint: err.hint,
+            stack: err.stack,
+            payloadSize: JSON.stringify(payload).length,
+            overlaysCount: overlaysToSave.length
+          });
+          window.postMessage({type:'saveFailed', message: err.message || 'Unknown error occurred', error: err}, '*');
         }
       })();
       return;
@@ -1724,12 +1782,18 @@ function ensureAiAssistElements(){
         aiAssistState.savedToDish = false;
         return;
       }
-      if(event.target.classList.contains('aiBrandSearchBtn') || event.target.closest('.aiBrandSearchBtn')){
-        openAiBrandSearch(idx);
-        return;
-      }
       if(event.target.classList.contains('aiBrandBarcodeBtn') || event.target.closest('.aiBrandBarcodeBtn')){
         openAiBarcodeScanner(idx);
+        return;
+      }
+      if(event.target.classList.contains('aiAppealScanBtn') || event.target.closest('.aiAppealScanBtn')){
+        const rowIdx = Number(event.target.dataset.rowIdx || event.target.closest('.aiAppealScanBtn')?.dataset.rowIdx || idx);
+        openAiAppealModal(rowIdx);
+        return;
+      }
+      if(event.target.classList.contains('aiRemoveAppealBtn') || event.target.closest('.aiRemoveAppealBtn')){
+        const rowIdx = Number(event.target.dataset.rowIdx || event.target.closest('.aiRemoveAppealBtn')?.dataset.rowIdx || idx);
+        removeAppeal(rowIdx);
         return;
       }
       if(event.target.classList.contains('aiRemoveBrand') || event.target.closest('.aiRemoveBrand')){
@@ -1794,6 +1858,13 @@ function ensureAiAssistElements(){
       }
       if(event.target.classList.contains('aiConfirmBtn')){
         const btn = event.target;
+        
+        // Check if button is disabled (scan required but not completed)
+        if(btn.disabled){
+          aiAssistSetStatus('Please complete barcode scan or appeal before confirming this ingredient.', 'warn');
+          return;
+        }
+        
         const isConfirmed = btn.dataset.confirmed === 'true';
 
         // Toggle state
@@ -2108,6 +2179,13 @@ function collectAiTableData(){
     // Preserve AI-detected allergens and diets (originally detected by AI from recipe)
     const aiDetectedAllergens = row.dataset.aiDetectedAllergens ? JSON.parse(row.dataset.aiDetectedAllergens) : [];
     const aiDetectedDiets = row.dataset.aiDetectedDiets ? JSON.parse(row.dataset.aiDetectedDiets) : [];
+    
+    // Preserve needsScan and userOverriddenScan fields
+    const needsScan = row.dataset.needsScan === 'true' || row.dataset.needsScan === true;
+    const userOverriddenScan = row.dataset.userOverriddenScan === 'true' || row.dataset.userOverriddenScan === true;
+    const appealReviewStatus = row.dataset.appealReviewStatus || null;
+    const appealReviewNotes = row.dataset.appealReviewNotes || null;
+    console.log(`COLLECT row ${idx}: dataset.needsScan="${row.dataset.needsScan}", dataset.userOverriddenScan="${row.dataset.userOverriddenScan}" -> boolean needsScan=${needsScan}, userOverriddenScan=${userOverriddenScan}`);
 
     // IMPORTANT: Merge brand allergens/diets into the collected allergens/diets
     // This ensures that brand allergens are always included even if checkboxes weren't checked yet
@@ -2160,7 +2238,7 @@ function collectAiTableData(){
 
     console.log(`Row ${idx} merged allergens:`, mergedAllergens, 'merged diets:', mergedDiets);
 
-    data.push({index:idx,name,allergens:mergedAllergens,diets:mergedDiets,brands,confirmed,removable,aiDetectedAllergens,aiDetectedDiets});
+    data.push({index:idx,name,allergens:mergedAllergens,diets:mergedDiets,brands,confirmed,removable,aiDetectedAllergens,aiDetectedDiets,needsScan,userOverriddenScan,appealReviewStatus,appealReviewNotes});
   });
   console.log('collectAiTableData final data:', data);
   return data;
@@ -2353,6 +2431,7 @@ function renderAiTable(rows){
   if(!aiAssistTableBody || !aiAssistResultsEl) return;
   const source=Array.isArray(rows)?rows:collectAiTableData();
   const data=source.map(item=>({...item}));
+  console.log('renderAiTable called with rows:', rows && rows.length ? rows.map(r => ({name: r.name, needsScan: r.needsScan, userOverriddenScan: r.userOverriddenScan})) : 'no rows');
   
   // Preserve loading states and barcode results before clearing
   const loadingStates = {};
@@ -2403,6 +2482,21 @@ function renderAiTable(rows){
     // Store in dataset so we can preserve them across re-renders
     tr.dataset.aiDetectedAllergens = JSON.stringify(baseAiDetectedAllergens);
     tr.dataset.aiDetectedDiets = JSON.stringify(baseAiDetectedDiets);
+    
+    // Preserve needsScan and userOverriddenScan in dataset
+    if(row.needsScan !== undefined){
+      tr.dataset.needsScan = String(row.needsScan);
+    }
+    if(row.userOverriddenScan !== undefined){
+      tr.dataset.userOverriddenScan = String(row.userOverriddenScan);
+    }
+    // Preserve appeal review status and notes
+    if(row.appealReviewStatus){
+      tr.dataset.appealReviewStatus = row.appealReviewStatus;
+    }
+    if(row.appealReviewNotes){
+      tr.dataset.appealReviewNotes = row.appealReviewNotes;
+    }
 
     // Helper function to normalize allergen using aliases (same as in collectAiTableData)
     const normalizeAllergen = (allergen) => {
@@ -2502,11 +2596,21 @@ function renderAiTable(rows){
       `;
       console.log(`  - Brand item HTML length: ${brandItemHTML.length}`);
       return brandItemHTML;
-    }).join('') : '<div class="aiNoBrands">No brands added yet</div>';
+    }).join('') : '';
 
     console.log(`Total brandsHTML length: ${brandsHTML.length}`);
 
     const isConfirmed = row.confirmed || false;
+    const needsScan = row.needsScan === true || row.needsScan === 'true';
+    const needsScanDefined = row.needsScan !== undefined && row.needsScan !== null;
+    const userOverriddenScan = row.userOverriddenScan === true || row.userOverriddenScan === 'true';
+    // Only show scan recommendation if AI recommended it AND user hasn't overridden it
+    const showScanRecommendation = needsScan && !userOverriddenScan;
+    // Check if scan requirement is satisfied (either scan completed or appealed/overridden)
+    const hasBrandsOrOverridden = brands.length > 0 || userOverriddenScan;
+    const scanRequirementSatisfied = !needsScan || hasBrandsOrOverridden;
+    // Disable confirm button if scan is required but not completed
+    const canConfirm = scanRequirementSatisfied;
 
     // Collect all allergens and diets from brands as well as base ingredient
     // This ensures checkboxes are checked for allergens/diets detected in brands
@@ -2530,9 +2634,11 @@ function renderAiTable(rows){
     });
 
     // Check if there's a remembered brand for this ingredient
+    // Only show it if it hasn't already been added to the brands array
     const rememberedBrand = getRememberedBrand(row.name);
-    const rememberBrandHTML = rememberedBrand && rememberedBrand.brand ? `
-      <div class="aiRememberedBrand" data-row-idx="${idx}" style="margin:8px 0;display:flex;align-items:start;gap:8px;padding:8px;background:rgba(76,175,80,0.05);border-radius:6px;border:1px dashed #4caf50">
+    const brandAlreadyAdded = rememberedBrand && rememberedBrand.brand && brands.some(b => b.name === rememberedBrand.brand);
+    const rememberBrandHTML = rememberedBrand && rememberedBrand.brand && !brandAlreadyAdded ? `
+      <div class="aiRememberedBrand" data-row-idx="${idx}" style="margin-top:8px;margin-bottom:12px;display:flex;align-items:start;gap:8px;padding:8px;background:rgba(76,175,80,0.05);border-radius:6px;border:1px dashed #4caf50">
         <div style="position:relative;flex-shrink:0">
           ${rememberedBrand.brandImage ?
             `<img src="${esc(rememberedBrand.brandImage)}" alt="${esc(rememberedBrand.brand)}" style="width:60px;height:60px;object-fit:contain;border-radius:4px;background:white">` :
@@ -2554,26 +2660,69 @@ function renderAiTable(rows){
       <td colspan="7">
         <div class="aiIngredientRow">
           <div class="aiIngredientMain">
-            <input type="text" class="aiIngredientName" placeholder="Ingredient name" value="${esc((row.name||'').toLowerCase())}">
-            ${rememberBrandHTML}
-            <div class="aiBrandCell">
-              <div class="aiBrandsList">
-                ${brandsHTML}
-              </div>
-              <div class="aiBrandActions">
-                <button type="button" class="btn aiBrandSearchBtn">Search brand name</button>
-                <button type="button" class="btn aiBrandBarcodeBtn" style="background:#17663a;border-color:#1a7b46">Scan item barcode</button>
-              </div>
+            <input type="text" class="aiIngredientName" placeholder="Ingredient name" value="${esc((row.name||'').toLowerCase())}" style="line-height:1;vertical-align:top">
+            <div class="aiBrandCell" style="${brands.length === 0 && (showScanRecommendation || (needsScanDefined && needsScan === false && !userOverriddenScan)) ? 'gap:0;align-items:flex-start' : ''}">
+              ${brandsHTML ? `<div class="aiBrandsList">${brandsHTML}</div>` : ''}
+              ${showScanRecommendation && brands.length === 0 ? `<div style="background:#f59e0b;border:2px solid #f59e0b;border-radius:6px;padding:8px 12px;margin-bottom:12px;margin-top:0;line-height:1;vertical-align:top">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:1.2rem">📷</span>
+                  <div style="font-weight:600;color:#fff;font-size:0.9rem;flex:1">Barcode scan required</div>
+                  <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+                    <button type="button" class="btn aiAppealScanBtn" data-row-idx="${idx}" style="background:#dc2626;border-color:#dc2626;padding:6px 12px;font-size:0.85rem;white-space:nowrap;width:auto;min-width:80px">Appeal</button>
+                    <button type="button" class="btn aiBrandBarcodeBtn" style="background:#17663a;border-color:#1a7b46;padding:6px 12px;font-size:0.85rem;white-space:nowrap;width:auto;min-width:80px">Scan</button>
+                  </div>
+                </div>
+              </div>` : needsScanDefined && needsScan === false && !userOverriddenScan ? `<div style="background:#6b7280;border:2px solid #6b7280;border-radius:6px;padding:8px 12px;margin-bottom:12px;margin-top:0;line-height:1;vertical-align:top">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <span style="font-size:1rem">✓</span>
+                    <span style="color:#fff;font-weight:500;font-size:0.85rem">Barcode scan optional</span>
+                  </div>
+                  <button type="button" class="btn aiBrandBarcodeBtn" style="background:#17663a;border-color:#1a7b46;padding:6px 12px;font-size:0.85rem;white-space:nowrap">${brands.length > 0 ? 'Scan another item' : 'Scan'}</button>
+                </div>
+              </div>` : userOverriddenScan && !row.appealReviewStatus ? `<div style="background:#6b7280;border:2px solid #6b7280;border-radius:6px;padding:6px 12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:0.85rem">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span style="font-size:1rem">✗</span>
+                  <span style="color:#fff;font-weight:500">Scan recommendation overridden by manager</span>
+                </div>
+                <button type="button" class="btn aiRemoveAppealBtn" data-row-idx="${idx}" style="background:#ef4444;border-color:#dc2626;color:#fff;padding:4px 12px;font-size:0.8rem;white-space:nowrap;margin-left:8px">Remove appeal</button>
+              </div>` : ''}
+              ${row.appealReviewStatus ? `
+                <div style="background:${row.appealReviewStatus === 'approved' ? '#d1fae5' : '#fee2e2'};border:2px solid ${row.appealReviewStatus === 'approved' ? '#6ee7b7' : '#fca5a5'};border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:0.85rem">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:${row.appealReviewNotes ? '8px' : '0'};">
+                    <span style="font-size:1rem">${row.appealReviewStatus === 'approved' ? '✓' : '✗'}</span>
+                    <span style="color:${row.appealReviewStatus === 'approved' ? '#065f46' : '#991b1b'};font-weight:600">Appeal ${row.appealReviewStatus === 'approved' ? 'approved' : 'denied'}</span>
+                  </div>
+                  ${row.appealReviewNotes ? `<div style="color:${row.appealReviewStatus === 'approved' ? '#047857' : '#7f1d1d'};font-size:0.8rem;margin-top:4px;font-style:italic">${esc(row.appealReviewNotes)}</div>` : ''}
+                </div>
+                ${row.appealReviewStatus === 'approved' ? `<div style="background:#6b7280;border:2px solid #6b7280;border-radius:6px;padding:8px 12px;margin-bottom:12px;margin-top:0;line-height:1;vertical-align:top">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <span style="font-size:1rem">✓</span>
+                      <span style="color:#fff;font-weight:500;font-size:0.85rem">Barcode scan optional</span>
+                    </div>
+                    <button type="button" class="btn aiBrandBarcodeBtn" style="background:#17663a;border-color:#1a7b46;padding:6px 12px;font-size:0.85rem;white-space:nowrap">${brands.length > 0 ? 'Scan another item' : 'Scan'}</button>
+                  </div>
+                </div>` : ''}
+              ` : ''}
+              ${!userOverriddenScan && !row.appealReviewStatus && needsScanDefined === false ? `<div style="background:#9ca3af;border:2px solid #9ca3af;border-radius:6px;padding:6px 12px;margin-bottom:12px;display:flex;align-items:center;gap:8px;font-size:0.85rem">
+                <span style="font-size:1rem">ℹ</span>
+                <span style="color:#fff;font-weight:500">Scan status: Not determined by AI (manual ingredient entry)</span>
+              </div>` : ''}
+              ${brands.length > 0 ? `<div class="aiBrandActions" style="margin-top:12px">
+                <button type="button" class="btn aiBrandBarcodeBtn" style="background:#17663a;border-color:#1a7b46">Scan another item</button>
+              </div>` : ''}
+              ${rememberBrandHTML}
             </div>
-            ${(aiDetectedAllergens.size > 0 || aiDetectedDiets.size > 0) ? '<div style="color:#4caf50;font-size:0.85rem;margin:16px 0 12px 0;font-weight:600;padding:8px 12px;background:rgba(76,175,80,0.1);border-radius:6px;border-left:3px solid #4caf50">✓ Green = AI detected from recipe or brand labels</div>' : ''}
             <div style="display:flex;gap:20px;margin-top:0">
               <div style="flex:1">
                 <div class="aiAllergenChecklist">
                   ${ALLERGENS.map(allergen=>{
                     const checked=allAllergens.has(norm(allergen))?'checked':'';
                     const aiDetected=aiDetectedAllergens.has(norm(allergen))?'aiDetected':'';
+                    const tooltip = aiDetected ? 'title="Suggested by AI"' : '';
                     console.log(`Allergen ${allergen}: aiDetected="${aiDetected}", checked="${checked}" (looking for norm(${allergen})="${norm(allergen)}" in`, Array.from(allAllergens), ')'  );
-                    return `<label class="${aiDetected}"><input type="checkbox" class="aiAllergenCheckbox" value="${esc(allergen)}" ${checked}>${esc(cap(allergen))}</label>`;
+                    return `<label class="${aiDetected}" ${tooltip}><input type="checkbox" class="aiAllergenCheckbox" value="${esc(allergen)}" ${checked}>${esc(cap(allergen))}</label>`;
                   }).join('')}
                 </div>
               </div>
@@ -2582,8 +2731,9 @@ function renderAiTable(rows){
                   ${DIETS.map(diet=>{
                     const checked=allDiets.has(diet)?'checked':'';
                     const aiDetected=aiDetectedDiets.has(diet)?'aiDetected':'';
+                    const tooltip = aiDetected ? 'title="Suggested by AI"' : '';
                     console.log(`Diet ${diet}: aiDetected="${aiDetected}", checked="${checked}" (looking for "${diet}" in`, Array.from(allDiets), ')');
-                    return `<label class="${aiDetected}"><input type="checkbox" class="aiDietCheckbox" value="${esc(diet)}" ${checked}>${esc(diet)}</label>`;
+                    return `<label class="${aiDetected}" ${tooltip}><input type="checkbox" class="aiDietCheckbox" value="${esc(diet)}" ${checked}>${esc(diet)}</label>`;
                   }).join('')}
                 </div>
               </div>
@@ -2597,7 +2747,8 @@ function renderAiTable(rows){
               </div>
             </div>
             <div class="aiConfirmCell" style="text-align:center">
-              <button type="button" class="btn aiConfirmBtn ${isConfirmed ? 'confirmed' : 'unconfirmed'}" data-confirmed="${isConfirmed ? 'true' : 'false'}" style="padding:8px 16px;font-size:0.9rem;font-weight:600;border-radius:6px;${isConfirmed ? 'background:#4caf50;border-color:#4caf50;color:white;' : 'background:#f59e0b;border-color:#f59e0b;color:white;'}">${isConfirmed ? '✓ Confirmed' : 'Confirm'}</button>
+              <button type="button" class="btn aiConfirmBtn ${isConfirmed ? 'confirmed' : 'unconfirmed'}" data-confirmed="${isConfirmed ? 'true' : 'false'}" ${!canConfirm ? 'disabled' : ''} title="${!canConfirm ? 'Please complete barcode scan or appeal before confirming' : ''}" style="padding:8px 16px;font-size:0.9rem;font-weight:600;border-radius:6px;${!canConfirm ? 'background:#6b7280;border-color:#6b7280;color:white;cursor:not-allowed;opacity:0.6;' : isConfirmed ? 'background:#4caf50;border-color:#4caf50;color:white;' : 'background:#f59e0b;border-color:#f59e0b;color:white;'}">${isConfirmed ? '✓ Confirmed' : 'Confirm'}</button>
+              ${!canConfirm && needsScan ? `<div style="font-size:0.75rem;color:#ef4444;margin-top:4px;text-align:center">Scan required</div>` : ''}
             </div>
             <button type="button" class="btn aiDeleteRow">Remove</button>
           </div>
@@ -2679,7 +2830,7 @@ function heuristicallyExtractIngredients(text){
   return Array.from(unique.values());
 }
 
-function openAiAssistant(context){
+async function openAiAssistant(context){
   console.log('!!! openAiAssistant called', new Error().stack);
   ensureAiAssistElements();
   if(!aiAssistBackdrop) return;
@@ -2860,6 +3011,76 @@ function openAiAssistant(context){
   const hasExistingData = existingIngredients && Array.isArray(existingIngredients) && existingIngredients.length > 0;
 
   if(hasExistingData){
+    // Restore appeal states from database before rendering
+    const restaurantId = state.restaurant?._id || state.restaurant?.id || null;
+    if(restaurantId && window.supabaseClient){
+      try {
+        // Load appeals for this restaurant (any status - appeals persist even after review)
+        // Include review_status, review_notes, and reviewed_at to show appeal review information
+        const { data: appeals } = await window.supabaseClient
+          .from('ingredient_scan_appeals')
+          .select('ingredient_name, ingredient_row_index, review_status, review_notes, reviewed_at')
+          .eq('restaurant_id', restaurantId);
+        
+        if(appeals && appeals.length > 0){
+          // Create a map of ingredient name -> appeal data (including review status)
+          const appealMap = new Map();
+          appeals.forEach(appeal => {
+            const key = appeal.ingredient_name?.toLowerCase().trim() || '';
+            if(key){
+              appealMap.set(key, appeal);
+            }
+          });
+          
+          // Update existing ingredients with appeal state from database
+          // BUT preserve any appeal state that's already in aiIngredients (userOverriddenScan/needsScan)
+          // The database check is just a fallback for legacy data
+          existingIngredients.forEach(ingredient => {
+            const ingredientName = (ingredient.name || '').toLowerCase().trim();
+            const appealData = appealMap.get(ingredientName);
+            
+            // IMPORTANT: Only set appeal state from database if it's not already in aiIngredients
+            // The aiIngredients data is the source of truth since it's saved when "Save to Dish" is clicked
+            const alreadyHasAppealState = ingredient.userOverriddenScan === true || ingredient.needsScan === false;
+            
+            // Load appeal review status if the appeal has been reviewed
+            if(appealData && appealData.review_status && (appealData.review_status === 'approved' || appealData.review_status === 'rejected')){
+              // Only set if not already in ingredient data (preserve existing if present)
+              if(!ingredient.appealReviewStatus){
+                ingredient.appealReviewStatus = appealData.review_status;
+                ingredient.appealReviewNotes = appealData.review_notes || null;
+                ingredient.appealReviewedAt = appealData.reviewed_at || null;
+                console.log(`LOAD: Loaded appeal review status for "${ingredient.name}": ${appealData.review_status}`);
+              }
+            }
+            
+            if(appealData && !alreadyHasAppealState){
+              // Only apply appeal state if no brands are added
+              // If brands are added, the scan requirement is already satisfied
+              const hasBrands = Array.isArray(ingredient.brands) && ingredient.brands.length > 0;
+              if(!hasBrands){
+                ingredient.userOverriddenScan = true;
+                ingredient.needsScan = false;
+                console.log(`LOAD: Restored appeal state from database for "${ingredient.name}"`);
+              } else {
+                // Brand added means scan is satisfied, don't need appeal
+                console.log(`LOAD: Skipping appeal restoration for "${ingredient.name}" - has brands`);
+              }
+            } else if(alreadyHasAppealState) {
+              console.log(`LOAD: Preserving existing appeal state from aiIngredients for "${ingredient.name}":`, {
+                userOverriddenScan: ingredient.userOverriddenScan,
+                needsScan: ingredient.needsScan,
+                appealReviewStatus: ingredient.appealReviewStatus
+              });
+            }
+          });
+        }
+      } catch(err) {
+        console.warn('Failed to load appeals:', err);
+        // Continue anyway
+      }
+    }
+    
     // Skip input screen and go directly to ingredient editing table
     renderAiTable(existingIngredients);
     // Show the results section
@@ -3404,6 +3625,442 @@ async function openAiBrandSearch(rowIdx){
   setTimeout(() => searchInput.focus(), 100);
 }
 
+async function removeAppeal(rowIdx){
+  const rows = collectAiTableData();
+  if(!rows[rowIdx]){
+    aiAssistSetStatus('Could not find ingredient to remove appeal from.', 'warn');
+    return;
+  }
+
+  const ingredientName = rows[rowIdx].name;
+  if(!ingredientName){
+    aiAssistSetStatus('Could not find ingredient name.', 'warn');
+    return;
+  }
+
+  // Confirm removal
+  if(!confirm(`Remove the appeal for "${ingredientName}"? This will restore the scan requirement.`)){
+    return;
+  }
+
+  // Delete appeal from database
+  const restaurantId = state.restaurant?._id || state.restaurant?.id || null;
+  if(restaurantId && window.supabaseClient){
+    try {
+      const { error: deleteError } = await window.supabaseClient
+        .from('ingredient_scan_appeals')
+        .delete()
+        .eq('restaurant_id', restaurantId)
+        .eq('ingredient_name', ingredientName)
+        .eq('ingredient_row_index', rowIdx);
+
+      if(deleteError){
+        console.error('Failed to delete appeal from database:', deleteError);
+        // Continue with UI update even if database delete fails
+      } else {
+        console.log('Appeal deleted from database successfully');
+      }
+    } catch(deleteErr){
+      console.error('Exception deleting appeal from database:', deleteErr);
+      // Continue with UI update even if database delete fails
+    }
+  }
+
+  // Remove the appeal state
+  const data = collectAiTableData();
+  if(data[rowIdx]){
+    data[rowIdx].userOverriddenScan = false;
+    // Restore needsScan to true (the AI originally recommended scanning)
+    data[rowIdx].needsScan = true;
+    // Reset confirmed state since we're changing the scan requirement
+    data[rowIdx].confirmed = false;
+    console.log('REMOVE APPEAL: Removed appeal state for row', rowIdx, data[rowIdx]);
+    renderAiTable(data);
+    
+    // Ensure the confirm button UI is reset
+    setTimeout(() => {
+      const tableRows = document.querySelectorAll('#aiIngredientList tr');
+      if(tableRows[rowIdx]) {
+        resetConfirmButton(tableRows[rowIdx]);
+      }
+    }, 100);
+  }
+
+  // Email notification removed per user request - don't send emails when appeals are removed
+
+  aiAssistSetStatus(`Appeal removed for "${ingredientName}". Scan requirement restored.`, 'success');
+  
+  // Mark as unsaved so manager is prompted to save changes
+  aiAssistState.savedToDish = false;
+}
+
+async function openAiAppealModal(rowIdx){
+  ensureAiAssistElements();
+  const rows=collectAiTableData();
+  if(!rows[rowIdx]){
+    aiAssistSetStatus('Select an ingredient first.','warn');
+    return;
+  }
+
+  const ingredientName = rows[rowIdx].name;
+  if(!ingredientName){
+    aiAssistSetStatus('Add an ingredient name before appealing.','warn');
+    return;
+  }
+
+  // Create a full-screen modal overlay for the appeal
+  const appealModal = document.createElement('div');
+  appealModal.id = 'appealScanModal';
+  appealModal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.95);
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  `;
+
+  appealModal.innerHTML = `
+    <div style="width:100%;max-width:600px;display:flex;flex-direction:column;gap:16px">
+      <div style="text-align:center">
+        <h3 style="margin:0 0 8px 0;font-size:1.4rem;color:#fff">Appeal AI Scanning Decision</h3>
+        <div style="margin:0;color:#a8b2d6;font-size:0.95rem">
+          Ingredient: <strong style="color:#fff">${esc(ingredientName)}</strong>
+        </div>
+        <p style="margin:8px 0 0 0;color:#a8b2d6;font-size:0.9rem">Please take a photo of the food product(s) used for this part of the dish</p>
+      </div>
+      <div style="position:relative;background:#000;border-radius:12px;overflow:hidden;margin:16px 0">
+        <video id="appealCameraVideo" autoplay playsinline muted style="width:100%;height:60vh;max-height:500px;display:none;object-fit:cover"></video>
+        <canvas id="appealCameraCanvas" style="display:none"></canvas>
+        <img id="appealPhotoPreview" style="width:100%;height:60vh;max-height:500px;object-fit:contain;display:none" alt="Preview">
+        <div id="appealCameraPlaceholder" style="width:100%;height:60vh;max-height:500px;display:flex;align-items:center;justify-content:center;background:#1a1a1a;color:#a8b2d6;font-size:1.1rem">No photo taken yet</div>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+        <button type="button" class="btn aiAppealCameraBtn" style="background:#4c5ad4;border-color:#4c5ad4;padding:12px 32px;font-size:1rem">📷 Use Camera</button>
+        <button type="button" class="btn aiAppealUploadBtn" style="background:#4c5ad4;border-color:#4c5ad4;padding:12px 32px;font-size:1rem">📁 Upload Photo</button>
+        <button type="button" class="btn aiAppealCaptureBtn" style="background:#4c5ad4;border-color:#4c5ad4;padding:12px 32px;font-size:1rem;display:none">Capture Photo</button>
+        <button type="button" class="btn aiAppealSubmitBtn" style="background:#17663a;border-color:#1a7b46;padding:12px 32px;font-size:1rem;display:none">Submit Appeal</button>
+        <button type="button" class="btn aiAppealCancelBtn" style="background:#ef4444;border-color:#dc2626;padding:12px 32px;font-size:1rem">Cancel</button>
+      </div>
+      <div id="appealStatus" style="text-align:center;color:#a8b2d6;font-size:0.9rem;min-height:24px"></div>
+      <input type="file" id="appealImageUpload" accept="image/*" style="display:none">
+    </div>
+  `;
+
+  // Lock background scrolling
+  scrollLockPosition = window.pageYOffset || document.documentElement.scrollTop;
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${scrollLockPosition}px`;
+  document.body.style.width = '100%';
+  document.body.style.overflow = 'hidden';
+  document.body.appendChild(appealModal);
+
+  const video = appealModal.querySelector('#appealCameraVideo');
+  const canvas = appealModal.querySelector('#appealCameraCanvas');
+  const preview = appealModal.querySelector('#appealPhotoPreview');
+  const placeholder = appealModal.querySelector('#appealCameraPlaceholder');
+  const cameraBtn = appealModal.querySelector('.aiAppealCameraBtn');
+  const uploadBtn = appealModal.querySelector('.aiAppealUploadBtn');
+  const captureBtn = appealModal.querySelector('.aiAppealCaptureBtn');
+  const submitBtn = appealModal.querySelector('.aiAppealSubmitBtn');
+  const cancelBtn = appealModal.querySelector('.aiAppealCancelBtn');
+  const fileInput = appealModal.querySelector('#appealImageUpload');
+  const statusDiv = appealModal.querySelector('#appealStatus');
+
+  let mediaStream = null;
+  let capturedPhoto = null;
+
+  const stopCamera = () => {
+    if(mediaStream){
+      mediaStream.getTracks().forEach(track => track.stop());
+      mediaStream = null;
+    }
+    if(video) video.srcObject = null;
+  };
+
+  const closeModal = () => {
+    stopCamera();
+    if(appealModal && appealModal.parentNode){
+      appealModal.parentNode.removeChild(appealModal);
+    }
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    document.body.style.overflow = '';
+    window.scrollTo(0, scrollLockPosition);
+  };
+
+  const showPreview = (dataUrl) => {
+    capturedPhoto = dataUrl;
+    placeholder.style.display = 'none';
+    video.style.display = 'none';
+    preview.style.display = 'block';
+    preview.src = dataUrl;
+    captureBtn.style.display = 'none';
+    submitBtn.style.display = 'inline-block';
+    cameraBtn.style.display = 'inline-block';
+    uploadBtn.style.display = 'inline-block';
+  };
+
+  cameraBtn.addEventListener('click', async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      mediaStream = stream;
+      video.srcObject = stream;
+      video.play();
+      placeholder.style.display = 'none';
+      video.style.display = 'block';
+      preview.style.display = 'none';
+      captureBtn.style.display = 'inline-block';
+      submitBtn.style.display = 'none';
+      statusDiv.textContent = 'Position the ingredient in view and click Capture';
+    } catch(err) {
+      console.error('Camera access failed', err);
+      statusDiv.textContent = 'Could not access camera: ' + (err.message || err);
+      statusDiv.style.color = '#ef4444';
+    }
+  });
+
+  captureBtn.addEventListener('click', () => {
+    if(video && video.videoWidth > 0){
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      showPreview(dataUrl);
+      stopCamera();
+    }
+  });
+
+  uploadBtn.addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(file){
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        showPreview(event.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  submitBtn.addEventListener('click', async () => {
+    if(!capturedPhoto){
+      statusDiv.textContent = 'Please take or upload a photo first';
+      statusDiv.style.color = '#ef4444';
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+    statusDiv.textContent = 'Submitting appeal...';
+    statusDiv.style.color = '#a8b2d6';
+
+    try {
+      // Wait for Supabase client to be available
+      let client = null;
+      if(window.supabaseClient){
+        client = window.supabaseClient;
+      } else if(window.getSupabaseClient){
+        client = await window.getSupabaseClient();
+      } else {
+        // Wait a bit for client to initialize
+        await new Promise(resolve => {
+          const check = setInterval(() => {
+            if(window.supabaseClient){
+              clearInterval(check);
+              client = window.supabaseClient;
+              resolve();
+            }
+          }, 50);
+          setTimeout(() => {
+            clearInterval(check);
+            resolve();
+          }, 2000);
+        });
+        if(!client) throw new Error('Supabase client not available');
+      }
+      
+      const restaurantId = state.restaurant?._id || state.restaurant?.id || null;
+      
+      // Upload photo to Supabase storage
+      // Convert data URL to blob
+      const photoBlob = await (await fetch(capturedPhoto)).blob();
+      const fileName = `appeal-${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`;
+      
+      // Try to upload to storage
+      let photoUrl = null;
+      try {
+        const { data: uploadData, error: uploadError } = await client.storage
+          .from('ingredient-appeals')
+          .upload(fileName, photoBlob, {
+            contentType: 'image/jpeg',
+            upsert: false
+          });
+
+        if(uploadError) {
+          console.error('Storage upload failed (400 Bad Request), using data URL instead:', uploadError);
+          console.error('Upload error details:', {
+            message: uploadError.message,
+            statusCode: uploadError.statusCode,
+            error: uploadError.error
+          });
+          // Fallback: use data URL directly if storage fails
+          // This is fine - the database can store data URLs
+          photoUrl = capturedPhoto;
+        } else {
+          // Get public URL
+          const { data: urlData } = client.storage
+            .from('ingredient-appeals')
+            .getPublicUrl(fileName);
+          photoUrl = urlData.publicUrl;
+          console.log('Photo uploaded successfully to storage:', photoUrl);
+        }
+      } catch(storageErr) {
+        console.error('Storage operation failed with exception, using data URL instead:', storageErr);
+        // Fallback: use data URL directly if storage bucket doesn't exist or other error
+        photoUrl = capturedPhoto;
+      }
+      
+      // Always ensure we have a photo URL before proceeding
+      if(!photoUrl) {
+        console.warn('No photo URL available, using data URL');
+        photoUrl = capturedPhoto;
+      }
+
+      // Save appeal to database
+      // Note: Even if this fails, we'll still update the UI state
+      let dbSuccess = false;
+      try {
+        const { error: dbError } = await client
+          .from('ingredient_scan_appeals')
+          .insert([{
+            restaurant_id: restaurantId,
+            ingredient_name: ingredientName,
+            ingredient_row_index: rowIdx,
+            photo_url: photoUrl,
+            ai_recommended_scan: true,
+            manager_disagrees: true,
+            submitted_at: new Date().toISOString()
+          }]);
+
+        if(dbError) {
+          console.error('Database insert failed (RLS policy?), but continuing with UI update:', dbError);
+          console.error('Database error details:', {
+            message: dbError.message,
+            code: dbError.code,
+            details: dbError.details,
+            hint: dbError.hint
+          });
+          // Don't throw - we'll still update the UI state
+        } else {
+          dbSuccess = true;
+          console.log('Appeal record saved to database successfully');
+        }
+      } catch(dbErr) {
+        console.error('Database insert exception (RLS policy?), but continuing with UI update:', dbErr);
+        // Don't throw - we'll still update the UI state
+      }
+
+      // Send email notification
+      try {
+        const restaurantName = state.restaurant?.name || 'Unknown Restaurant';
+        const restaurantSlug = state.restaurant?.slug || slug || '';
+        
+        const SUPABASE_URL = 'https://fgoiyycctnwnghrvsilt.supabase.co';
+        await fetch(`${SUPABASE_URL}/functions/v1/send-notification-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'apikey': SUPABASE_KEY
+          },
+          body: JSON.stringify({
+            type: 'appeal',
+            restaurantName: restaurantName,
+            ingredientName: ingredientName,
+            photoUrl: photoUrl,
+            restaurantSlug: restaurantSlug
+          })
+        }).catch(err => {
+          console.warn('Failed to send email notification:', err);
+          // Don't fail the appeal submission if email fails
+        });
+      } catch(emailErr) {
+        console.warn('Email notification error:', emailErr);
+        // Don't fail the appeal submission if email fails
+      }
+
+      if(dbSuccess) {
+        statusDiv.textContent = '✓ Appeal submitted successfully! We will review it.';
+      } else {
+        statusDiv.textContent = '✓ Appeal recorded locally (database save failed, but your changes are saved). Please save your dish to persist changes.';
+        console.warn('Appeal was not saved to database, but UI state was updated. Manager should save dish to persist.');
+      }
+      statusDiv.style.color = '#4caf50';
+      
+      // Update the row to remove the scan recommendation
+      const data = collectAiTableData();
+      console.log('APPEAL: After appeal, before update - data[rowIdx]:', data[rowIdx]);
+      if(data[rowIdx]){
+        data[rowIdx].needsScan = false;
+        data[rowIdx].userOverriddenScan = true;
+        // Reset confirmed state - user needs to confirm again after appealing
+        data[rowIdx].confirmed = false;
+        console.log('APPEAL: After setting userOverriddenScan - data[rowIdx]:', JSON.stringify(data[rowIdx], null, 2));
+        renderAiTable(data);
+        
+        // Ensure the confirm button UI is reset
+        setTimeout(() => {
+          const tableRows = document.querySelectorAll('#aiIngredientList tr');
+          if(tableRows[rowIdx]) {
+            resetConfirmButton(tableRows[rowIdx]);
+          }
+        }, 100);
+      }
+      
+      // Re-collect after re-render to verify it's saved
+      const verifyData = collectAiTableData();
+      console.log('APPEAL: After renderAiTable - verifyData[rowIdx]:', JSON.stringify(verifyData[rowIdx], null, 2));
+      console.log('APPEAL: Verifying needsScan and userOverriddenScan are preserved:', {
+        needsScan: verifyData[rowIdx]?.needsScan,
+        userOverriddenScan: verifyData[rowIdx]?.userOverriddenScan,
+        confirmed: verifyData[rowIdx]?.confirmed
+      });
+
+      // Mark as unsaved so manager is prompted to save changes
+      aiAssistState.savedToDish = false;
+
+      setTimeout(() => {
+        closeModal();
+        aiAssistSetStatus('Appeal submitted. You can continue working on this ingredient.', 'success');
+      }, 2000);
+
+    } catch(err) {
+      console.error('Appeal submission failed', err);
+      statusDiv.textContent = 'Failed to submit appeal: ' + (err.message || err);
+      statusDiv.style.color = '#ef4444';
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Submit Appeal';
+    }
+  });
+
+  cancelBtn.addEventListener('click', closeModal);
+  appealModal.addEventListener('click', (e) => {
+    if(e.target === appealModal) closeModal();
+  });
+}
+
 async function openAiBarcodeScanner(rowIdx){
   ensureAiAssistElements();
   const rows=collectAiTableData();
@@ -3569,9 +4226,9 @@ async function openAiBarcodeScanner(rowIdx){
         let brand = '';
         if (productName) {
           const nameParts = productName.split(' ');
-          if (nameParts.length > 0 && nameParts[0]) {
+          if (nameParts.length > 0) {
             brand = nameParts[0];
-            if (nameParts.length > 1 && nameParts[1] && nameParts[1].length > 0 && nameParts[1][0] && nameParts[1][0].toUpperCase() === nameParts[1][0]) {
+            if (nameParts.length > 1 && nameParts[1] && nameParts[1][0] === nameParts[1][0].toUpperCase()) {
               brand = `${nameParts[0]} ${nameParts[1]}`;
             }
           }
@@ -3829,10 +4486,10 @@ async function fetchProductByBarcode(barcode){
       if (data.productName) {
         const nameParts = data.productName.split(' ');
         // Common brand patterns: first word if capitalized, or first 2 words for compound brands
-        if (nameParts.length > 0 && nameParts[0]) {
+        if (nameParts.length > 0) {
           brand = nameParts[0];
           // Handle compound brands (e.g., "Blue Diamond", "Kraft Foods")
-          if (nameParts.length > 1 && nameParts[1] && nameParts[1].length > 0 && nameParts[1][0] && nameParts[1][0].toUpperCase() === nameParts[1][0]) {
+          if (nameParts.length > 1 && nameParts[1][0] === nameParts[1][0].toUpperCase()) {
             brand = `${nameParts[0]} ${nameParts[1]}`;
           }
         }
@@ -6234,6 +6891,7 @@ function applyBrandSuggestionConfirmed(rowIdx, suggestion){
   }
 
   // Re-render the table with updated data
+  // This will automatically update the confirm button state based on scan requirements
   renderAiTable(allData);
 
   // Close the inline brand results
@@ -6262,7 +6920,7 @@ async function requestAiExtraction(payload){
     return await res.json();
   }
 
-  // Use proxy to avoid CORS issues
+  // Use proxy to avoid CORS issues, with fallback to direct Edge Function call
   try {
     const response = await fetch('/api/ai-proxy', {
       method: 'POST',
@@ -6282,13 +6940,41 @@ async function requestAiExtraction(payload){
 
     const data = await response.json();
     return data;
-  } catch(err) {
-    console.error('AI extraction via proxy failed:', err);
-    // Provide more specific error message
-    if(err.message && err.message.includes('JSON')) {
-      throw new Error('Invalid response from AI service. Please try again.');
+  } catch(proxyErr) {
+    console.warn('AI extraction via proxy failed, trying direct Edge Function call:', proxyErr);
+    
+    // Fallback: Call Edge Function directly (may have CORS issues but worth trying)
+    try {
+      const SUPABASE_URL = 'https://fgoiyycctnwnghrvsilt.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnb2l5eWNjdG53bmdocnZzaWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0MzY1MjYsImV4cCI6MjA3NjAxMjUyNn0.xlSSXr0Gl7j-vsckrj-2anpPmp4BG2SUIdN-_dquSA8';
+      
+      const directResponse = await fetch(`${SUPABASE_URL}/functions/v1/ai-ingredient-assistant`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'apikey': SUPABASE_ANON_KEY
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if(!directResponse.ok){
+        const text = await directResponse.text().catch(() => directResponse.statusText);
+        throw new Error(text || 'Edge Function returned an error');
+      }
+
+      const data = await directResponse.json();
+      console.log('✓ Successfully called Edge Function directly (proxy was unavailable)');
+      return data;
+    } catch(directErr) {
+      console.error('Both proxy and direct Edge Function calls failed:', { proxyErr, directErr });
+      // Provide more specific error message
+      if(proxyErr.message && proxyErr.message.includes('JSON')) {
+        throw new Error('Invalid response from AI service. Please try again.');
+      }
+      // Show the proxy error as the main issue
+      throw proxyErr;
     }
-    throw err; // Throw original error with its message
   }
 }
 
@@ -6325,7 +7011,9 @@ async function handleRecipePhotoUpload(file){
           ...ing,
           name: ing.name ? ing.name.toLowerCase() : ing.name,
           // Add dish-level dietary options to each ingredient
-          diets: dishDietaryOptions
+          diets: dishDietaryOptions,
+          // Ensure needsScan is a boolean (default to false if not provided)
+          needsScan: ing.needsScan === true || ing.needsScan === 'true'
         })) : [];
 
         renderAiTable(rows);
@@ -6524,10 +7212,12 @@ async function handleAiProcess(){
         // Get dietary options from AI
         const dishDietaryOptions = (result?.dietaryOptions && Array.isArray(result.dietaryOptions)) ? result.dietaryOptions : [];
 
-        // Add dietary options to each ingredient
+        // Add dietary options to each ingredient and preserve needsScan
         const rows = Array.isArray(result?.ingredients) ? result.ingredients.map(ing => ({
           ...ing,
-          diets: dishDietaryOptions
+          diets: dishDietaryOptions,
+          // Preserve needsScan from AI (default to false if not provided)
+          needsScan: ing.needsScan === true || ing.needsScan === 'true'
         })) : [];
 
         if(rows.length > 0){
@@ -6602,7 +7292,7 @@ async function handleAiProcess(){
 
         const rows=Array.isArray(result?.ingredients)?result.ingredients:[];
 
-        // Clean up ingredient names - remove extra text like "(optional)", "(garnish)", etc.
+        // Clean up ingredient names and ensure needsScan is set
         rows.forEach(row => {
           if(row.name){
             // Remove text in parentheses and trim
@@ -6610,6 +7300,8 @@ async function handleAiProcess(){
             // Remove common prefixes/suffixes
             row.name = row.name.replace(/\s*(optional|garnish|topping|for serving|for garnish)\s*$/gi, '').trim();
           }
+          // Ensure needsScan is a boolean (default to false if not provided)
+          row.needsScan = row.needsScan === true || row.needsScan === 'true';
         });
 
         // NOTE: Brands from memory are now shown as thumbnails with + buttons
@@ -6636,15 +7328,29 @@ async function handleAiProcess(){
         if (progressBar) progressBar.classList.remove('show');
         if (progressBarFill) progressBarFill.style.width = '0%';
 
+        // Check for specific error types
+        const errorMsg = err.message || String(err);
+        let statusMsg = '';
+        
+        if(errorMsg.includes('Anthropic API key') || errorMsg.includes('API key not configured')){
+          statusMsg = 'AI service error: Anthropic API key not configured. Please check Supabase Edge Function settings.';
+        } else if(errorMsg.includes('Failed to proxy') || errorMsg.includes('proxy')){
+          statusMsg = 'AI service error: Proxy endpoint unavailable. Check if /api/ai-proxy is deployed.';
+        } else if(errorMsg.includes('network') || errorMsg.includes('fetch')){
+          statusMsg = 'AI service error: Network connection failed. Please check your internet connection.';
+        } else {
+          statusMsg = 'AI service error: ' + (errorMsg.substring(0, 100) || 'Unknown error');
+        }
+
         if(text){
           const ingredients=heuristicallyExtractIngredients(text);
           // Render new data directly (existing data was cleared at start)
           renderAiTable(ingredients);
 
-          let statusMsg = 'AI service unavailable—generated a draft using local parsing. Review before applying.';
+          statusMsg += ' Fallback: Generated a draft using local parsing. Review before applying.';
           aiAssistSetStatus(statusMsg, 'warn');
         } else {
-          aiAssistSetStatus('AI assistant request failed: '+(err.message||err),'warn');
+          aiAssistSetStatus(statusMsg || ('AI assistant request failed: ' + errorMsg), 'warn');
         }
       }
     })();
@@ -6657,7 +7363,7 @@ function handleAiAssistantResult(payload){
   aiAssistState.pendingRequestId=null;
   const rows=Array.isArray(payload.ingredients)?payload.ingredients:[];
 
-  // Clean up ingredient names - remove extra text like "(optional)", "(garnish)", etc.
+  // Clean up ingredient names and ensure needsScan is set
   rows.forEach(row => {
     if(row.name){
       // Remove text in parentheses and trim
@@ -6665,6 +7371,8 @@ function handleAiAssistantResult(payload){
       // Remove common prefixes/suffixes
       row.name = row.name.replace(/\s*(optional|garnish|topping|for serving|for garnish)\s*$/gi, '').trim();
     }
+    // Ensure needsScan is a boolean (default to false if not provided)
+    row.needsScan = row.needsScan === true || row.needsScan === 'true';
   });
 
   // NOTE: Brands from memory are now shown as thumbnails with + buttons
@@ -6790,6 +7498,7 @@ function applyAiIngredientsToOverlay(){
   aiAssistState.savedToDish = true;
 
   console.log('aiAssistState.context?.onApply exists?', !!aiAssistState.context?.onApply);
+  console.log('SAVE TO DISH: About to save rows - checking for userOverriddenScan:', rows.map(r => ({name: r.name, userOverriddenScan: r.userOverriddenScan})));
 
   if(aiAssistState.context?.onApply){
     // Pass ingredients, dietary options, and cross-contamination data to the overlay
@@ -7126,6 +7835,10 @@ function renderTopbar(){
       navItems.push({t:'All restaurants',to:'/restaurants'});
       navItems.push({t:'Favorite restaurants',to:'/favorites'});
       navItems.push({t:'Favorite dishes',to:'/loved-dishes'});
+      // Add admin link only for admin email
+      if(state.user?.email === 'matt.29.ds@gmail.com'){
+        navItems.push({t:'Admin',to:'/admin-dashboard',external:true});
+      }
     } else {
       navItems.push({t:'All restaurants',to:'/restaurants'});
     }
@@ -7977,6 +8690,9 @@ function renderRestaurant(){
       <button class="btn btnPrimary" id="restaurantDeliveryBtn" style="flex:1;min-width:120px;max-width:200px">
         <span style="display:inline-flex;align-items:center;gap:6px">🚗 Order Delivery</span>
       </button>
+      <button class="btn btnPrimary" id="restaurantFeedbackBtn" style="flex:1;min-width:120px;max-width:200px">
+        <span style="display:inline-flex;align-items:center;gap:6px">💬 Give Feedback</span>
+      </button>
     </div>
   `;
 
@@ -8122,6 +8838,170 @@ function renderRestaurant(){
     const mgr=document.getElementById('mgrEdit');
     if(mgr) mgr.onclick=()=>{state.page='editor'; renderEditor();};
   }
+
+  // Wire up restaurant action buttons
+  const websiteBtn=document.getElementById('restaurantWebsiteBtn');
+  if(websiteBtn) websiteBtn.onclick=()=>{if(rs.website) window.open(rs.website, '_blank');};
+
+  const callBtn=document.getElementById('restaurantCallBtn');
+  if(callBtn) callBtn.onclick=()=>{if(rs.phone) window.location.href=`tel:${rs.phone}`;};
+
+  const deliveryBtn=document.getElementById('restaurantDeliveryBtn');
+  if(deliveryBtn) deliveryBtn.onclick=()=>{if(rs.delivery_url) window.open(rs.delivery_url, '_blank');};
+
+  const feedbackBtn=document.getElementById('restaurantFeedbackBtn');
+  if(feedbackBtn) feedbackBtn.onclick=()=>openFeedbackModal();
+}
+
+// Feedback modal for anonymous customer feedback
+function openFeedbackModal(){
+  const mb=document.getElementById('modalBack');
+  if(!mb) return;
+  const body=document.getElementById('modalBody');
+  document.getElementById('modalTitle').textContent='Share Your Experience';
+  
+  body.innerHTML=`
+    <div style="max-width:520px;margin:0 auto">
+      <p style="color:#a8b2d6;margin:0 0 20px;line-height:1.6;text-align:center">
+        Help us ensure restaurant safety by sharing your experience with how this restaurant handles allergies. Your feedback is completely anonymous and will not be shared with the restaurant.
+      </p>
+      <form id="feedbackForm" style="display:flex;flex-direction:column;gap:16px">
+        <textarea 
+          id="feedbackText" 
+          placeholder="For example: 'The staff was very knowledgeable about cross-contamination', 'I had a reaction to something not listed', 'They made great accommodations for my allergies'..."
+          style="width:100%;min-height:140px;padding:12px;border-radius:10px;border:1px solid #2a3261;background:#0f163a;color:#e9ecff;font-family:inherit;resize:vertical;font-size:15px"
+          required
+        ></textarea>
+        <div id="feedbackStatus" style="font-size:14px;min-height:20px;text-align:center"></div>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <button type="button" class="btn" onclick="document.getElementById('modalBack').style.display='none'" style="padding:10px 20px;cursor:pointer">
+            Cancel
+          </button>
+          <button type="submit" class="btn btnSecondary" style="padding:10px 20px;cursor:pointer">
+            Send Feedback
+          </button>
+        </div>
+      </form>
+    </div>
+  `;
+  
+  configureModalClose({visible:true,onClick:()=>{
+    mb.style.display='none';
+    mb.onclick=null;
+    const form=document.getElementById('feedbackForm');
+    if(form) form.innerHTML='';
+  }});
+  
+  mb.style.display='flex';
+  
+  // Handle form submission
+  const form=document.getElementById('feedbackForm');
+  const statusDiv=document.getElementById('feedbackStatus');
+  const feedbackText=document.getElementById('feedbackText');
+  
+  if(form){
+    form.onsubmit=async(e)=>{
+      e.preventDefault();
+      const text=(feedbackText?.value || '').trim();
+      if(!text){
+        if(statusDiv) statusDiv.textContent='Please enter your feedback.';
+        if(feedbackText) feedbackText.focus();
+        return;
+      }
+
+      if(statusDiv) statusDiv.textContent='Sending...';
+      if(form.querySelector('button[type="submit"]')){
+        form.querySelector('button[type="submit"]').disabled=true;
+      }
+
+      try{
+        const client = window.supabaseClient;
+        if(!client) throw new Error('Database connection not ready');
+        
+        const restaurantId = state.restaurant?._id || state.restaurant?.id || null;
+        if(!restaurantId) throw new Error('Restaurant information not available');
+
+        console.log('Submitting feedback for restaurant ID:', restaurantId);
+
+        const { data, error } = await client
+          .from('anonymous_feedback')
+          .insert([{
+            restaurant_id: restaurantId,
+            feedback_text: text
+          }]);
+
+        if(error) {
+          console.error('Supabase error details:', error);
+          throw error;
+        }
+
+        console.log('Feedback submitted successfully:', data);
+
+        // Send email notification
+        try {
+          const restaurantName = state.restaurant?.name || 'Restaurant';
+          const restaurantSlug = state.restaurant?.slug || '';
+          
+          await fetch('https://fgoiyycctnwnghrvsilt.supabase.co/functions/v1/send-notification-email', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${SUPABASE_KEY}`,
+              'apikey': SUPABASE_KEY
+            },
+            body: JSON.stringify({
+              type: 'feedback',
+              restaurantName: restaurantName,
+              feedbackText: text,
+              restaurantSlug: restaurantSlug
+            })
+          });
+          console.log('Notification email sent');
+        } catch(emailErr) {
+          console.error('Failed to send notification email:', emailErr);
+          // Don't fail the whole submission if email fails
+        }
+
+        if(statusDiv){
+          statusDiv.textContent='✓ Thank you for your feedback!';
+          statusDiv.style.color='#22c55e';
+        }
+        if(feedbackText) feedbackText.value='';
+        
+        setTimeout(()=>{
+          mb.style.display='none';
+          mb.onclick=null;
+        },1500);
+      }catch(err){
+        console.error('Feedback submission error:',err);
+        if(statusDiv){
+          let errorMsg = 'Sorry, something went wrong. Please try again.';
+          if(err.message === 'relation "anonymous_feedback" does not exist'){
+            errorMsg = 'Feature not available yet. Database setup in progress.';
+          } else if(err.message){
+            errorMsg = `Error: ${err.message}`;
+          }
+          statusDiv.textContent = errorMsg;
+          statusDiv.style.color='#ef4444';
+        }
+        if(form.querySelector('button[type="submit"]')){
+          form.querySelector('button[type="submit"]').disabled=false;
+        }
+      }
+    };
+  }
+  
+  mb.onclick=(e)=>{
+    if(e.target===mb){
+      mb.style.display='none';
+      mb.onclick=null;
+    }
+  };
+  
+  // Auto-focus textarea
+  if(feedbackText){
+    setTimeout(()=>feedbackText.focus(),100);
+  }
 }
 
 /* editor */
@@ -8216,6 +9096,15 @@ function renderEditor(){
   const img=new Image(); img.src=rs.menuImage||''; img.className='menuImg'; inner.appendChild(img);
 
   const overlays=JSON.parse(JSON.stringify(rs.overlays||[]));
+  
+  // Log aiIngredients preservation when entering editor mode
+  console.log('renderEditor: Checking aiIngredients in loaded overlays:', overlays.map(o => ({
+    id: o.id,
+    hasAiIngredients: !!o.aiIngredients,
+    aiIngredientsType: typeof o.aiIngredients,
+    aiIngredientsPreview: o.aiIngredients ? (typeof o.aiIngredients === 'string' ? o.aiIngredients.substring(0, 100) + '...' : JSON.stringify(o.aiIngredients).substring(0, 100)) : null
+  })));
+  
   let dirty=false; function setDirty(v=true){dirty=v; document.getElementById('saveBtn').style.display=dirty?'inline-flex':'none';}
 
   // Track all changes as they happen
@@ -8291,7 +9180,14 @@ function renderEditor(){
       // Update originalOverlaysRef after successful save
       originalOverlaysRef = JSON.stringify(overlays);
       setTimeout(()=>{saveBtn.disabled=false;saveBtn.textContent='Save to site';saveBtn.classList.remove('btnSuccess','btnDanger');saveBtn.classList.add('btnPrimary');pendingChanges=[];setDirty(false);},900);}
-    else if(s==='error'){saveBtn.disabled=false;saveBtn.textContent='Retry save';saveBtn.classList.remove('btnSuccess','btnPrimary');saveBtn.classList.add('btnDanger');}
+    else if(s==='error'){
+      saveBtn.disabled=false;
+      saveBtn.textContent='Retry save';
+      saveBtn.classList.remove('btnSuccess','btnPrimary');
+      saveBtn.classList.add('btnDanger');
+      // Make error state more visible
+      saveBtn.title='Save failed. Click to retry. Check console (F12) for error details.';
+    }
   }
   function formatChangesForLog(changesList){
     const firstName=state.user?.user_metadata?.first_name||'';
@@ -8333,9 +9229,40 @@ function renderEditor(){
       } else {
         changesList=describeOverlayChanges(JSON.parse(originalOverlaysRef),overlays);
       }
+      console.log('SAVE BUTTON CLICKED: changesList.length =', changesList.length);
+      console.log('SAVE BUTTON: originalOverlaysRef length =', originalOverlaysRef ? originalOverlaysRef.length : 'null');
+      console.log('SAVE BUTTON: current overlays length =', overlays ? overlays.length : 'null');
       if(!changesList.length){
-        setSaveState('saved');
-        return;
+        console.warn('SAVE BUTTON: No changes detected! Checking if aiIngredients differs...');
+        // Check if aiIngredients changed even if describeOverlayChanges didn't catch it
+        try {
+          const originalOverlays = JSON.parse(originalOverlaysRef || '[]');
+          const hasAiIngredientsChange = overlays.some((overlay, idx) => {
+            const original = originalOverlays[idx];
+            if(!original) return false;
+            const currentAiIngredients = overlay.aiIngredients;
+            const originalAiIngredients = original.aiIngredients;
+            const changed = JSON.stringify(currentAiIngredients) !== JSON.stringify(originalAiIngredients);
+            if(changed) {
+              console.log(`SAVE BUTTON: Found aiIngredients change in overlay ${overlay.id || idx}:`, {
+                original: originalAiIngredients ? (typeof originalAiIngredients === 'string' ? originalAiIngredients.substring(0, 100) : JSON.stringify(originalAiIngredients).substring(0, 100)) : 'null',
+                current: currentAiIngredients ? (typeof currentAiIngredients === 'string' ? currentAiIngredients.substring(0, 100) : JSON.stringify(currentAiIngredients).substring(0, 100)) : 'null'
+              });
+            }
+            return changed;
+          });
+          if(hasAiIngredientsChange) {
+            console.log('SAVE BUTTON: Found aiIngredients changes - forcing save even though describeOverlayChanges returned empty');
+            // Force a save by creating a minimal change entry
+            changesList = [{type: 'aiIngredients update', items: ['Updated ingredient data']}];
+          }
+        } catch(e) {
+          console.error('SAVE BUTTON: Error checking aiIngredients changes:', e);
+        }
+        if(!changesList.length){
+          setSaveState('saved');
+          return;
+        }
       }
       // Debug: Log what we're saving
       console.log('Saving overlays:', JSON.stringify(overlays, null, 2));
@@ -8343,8 +9270,26 @@ function renderEditor(){
         console.log(`Overlay ${idx} (${overlay.id}):`, {
           crossContamination: overlay.crossContamination,
           noCrossContamination: overlay.noCrossContamination,
-          removable: overlay.removable
+          removable: overlay.removable,
+          hasAiIngredients: !!overlay.aiIngredients,
+          aiIngredientsSample: overlay.aiIngredients ? (typeof overlay.aiIngredients === 'string' ? overlay.aiIngredients.substring(0, 200) : String(overlay.aiIngredients).substring(0, 200)) : 'none'
         });
+        // Log one example with parsed aiIngredients if it exists
+        if(overlay.aiIngredients && typeof overlay.aiIngredients === 'string'){
+          try{
+            const parsed = JSON.parse(overlay.aiIngredients);
+            const sampleIngredient = parsed[0];
+            if(sampleIngredient){
+              console.log(`  First ingredient sample:`, {
+                name: sampleIngredient.name,
+                needsScan: sampleIngredient.needsScan,
+                userOverriddenScan: sampleIngredient.userOverriddenScan
+              });
+            }
+          }catch(e){
+            console.log('  Failed to parse aiIngredients:', e);
+          }
+        }
       });
       const formattedChanges=formatChangesForLog(changesList);
       send({type:'saveOverlays',overlays,menuImage:rs.menuImage||'',changes:formattedChanges});
@@ -9682,10 +10627,34 @@ function renderEditor(){
       return;
     }
       // Save AI ingredients data to the overlay object immediately
+      console.log('applyIngredientsFromAi saving rows:', rows.map(r => ({
+        name: r.name, 
+        needsScan: r.needsScan, 
+        userOverriddenScan: r.userOverriddenScan,
+        confirmed: r.confirmed
+      })));
+      // Verify appeal state is included
+      const appealRows = rows.filter(r => r.userOverriddenScan === true);
+      if(appealRows.length > 0) {
+        console.log('APPLY: Found appeal rows being saved:', appealRows.map(r => ({
+          name: r.name,
+          needsScan: r.needsScan,
+          userOverriddenScan: r.userOverriddenScan
+        })));
+      }
       if(list){
         list.dataset.aiIngredients = JSON.stringify(rows);
       }
       it.aiIngredients = JSON.stringify(rows);
+      console.log('Saved it.aiIngredients (full):', it.aiIngredients);
+      // Also verify the parsed data includes appeal state
+      try {
+        const parsed = JSON.parse(it.aiIngredients);
+        const appealInSaved = parsed.filter(r => r.userOverriddenScan === true);
+        console.log('APPLY: Verified appeal state in saved data:', appealInSaved.length, 'rows with userOverriddenScan=true');
+      } catch(e) {
+        console.error('APPLY: Failed to parse saved aiIngredients:', e);
+      }
       const allergenDetailsMap={};
       const activeAllergens=new Set();
       const removableIngredients=new Set(); // Track removable ingredients
@@ -9952,7 +10921,15 @@ function renderEditor(){
         existingIngredientRows = JSON.parse(it.aiIngredients);
         console.log('Found saved AI ingredients:', existingIngredientRows);
         existingIngredientRows.forEach((row, idx) => {
-          console.log(`  Row ${idx}: name="${row.name}", removable=${row.removable}, allergens=`, row.allergens);
+          const hasAppeal = row.userOverriddenScan === true || row.needsScan === false;
+          console.log(`  Row ${idx}: name="${row.name}", removable=${row.removable}, needsScan=${row.needsScan}, userOverriddenScan=${row.userOverriddenScan}, allergens=`, row.allergens);
+          if(hasAppeal) {
+            console.log(`  ✅ Row ${idx} ("${row.name}") has APPEAL STATE:`, {
+              needsScan: row.needsScan,
+              userOverriddenScan: row.userOverriddenScan,
+              confirmed: row.confirmed
+            });
+          }
         });
       }catch(e){
         console.warn('Failed to parse existing AI ingredients:', e);
@@ -10250,13 +11227,40 @@ window.addEventListener('message',(ev)=>{
   if(m.type==='overlaysSaved'){
     try{setSaveState('saved');}catch(_){ }
     if(m.restaurant){
-      state.restaurant=normalizeRestaurant(m.restaurant) || state.restaurant;
+      const normalized = normalizeRestaurant(m.restaurant);
+      if(normalized){
+        // Log aiIngredients preservation status
+        console.log('overlaysSaved: Checking aiIngredients preservation:', normalized.overlays?.map(o => ({
+          id: o.id,
+          hasAiIngredients: !!o.aiIngredients,
+          aiIngredientsType: typeof o.aiIngredients
+        })));
+        state.restaurant = normalized;
+      } else {
+        state.restaurant = state.restaurant;
+      }
       rebuildBrandMemoryFromRestaurant();
     }
     // Re-render overlays to update colors based on new data
     if(window.__rerenderLayer__) window.__rerenderLayer__();
   }
-  if(m.type==='saveFailed'){try{setSaveState('error');}catch(_){ }}
+  if(m.type==='saveFailed'){
+    try{
+      setSaveState('error');
+      // Log the error details
+      console.error('Save failed message received:', m.message, m.error);
+      console.error('Full error object:', JSON.stringify(m.error, null, 2));
+      
+      // Show user-friendly error with more details
+      let errorMsg = m.message || 'Unknown error occurred';
+      if(m.error){
+        if(m.error.code) errorMsg += `\nError code: ${m.error.code}`;
+        if(m.error.hint) errorMsg += `\nHint: ${m.error.hint}`;
+        if(m.error.details) errorMsg += `\nDetails: ${JSON.stringify(m.error.details)}`;
+      }
+      alert(`❌ Failed to save changes!\n\n${errorMsg}\n\nPlease check the browser console (F12) for full error details.`);
+    }catch(_){ }
+  }
   if(m.type==='confirmationSaved'){
     if(m.timestamp && state.restaurant) state.restaurant.lastConfirmed=m.timestamp;
     if(m.restaurant){
