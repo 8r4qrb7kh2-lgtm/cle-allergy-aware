@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "npx http-server public -p 8080 -o",
     "deploy": "vercel --prod",
-    "test": "node browser-extension/menu-change-monitor/test/contentScript.test.js",
+    "test": "node browser-extension/menu-change-monitor/test/contentScript.test.js && node tests/tablet-simulation.flow.test.mjs",
     "build": "cd clarivore-menu-monitor && npm install --omit=dev",
     "start": "cd clarivore-menu-monitor && npm start"
   },

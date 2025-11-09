@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kitchen Tablet Simulation - Clarivore</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="page-shell">
+  <header class="simple-topbar">
+    <div class="simple-topbar-inner">
+      <a class="simple-brand" href="restaurants.html">
+        <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt="Clarivore logo">
+        <span>Clarivore</span>
+      </a>
+      <div class="simple-nav"></div>
+    </div>
+  </header>
+
+  <main class="page-main">
+    <div class="page-content">
+      <div class="simulation-layout">
+        <section class="simulation-primary">
+          <header class="simulation-header">
+            <h1>Allergy Certification Tablet Workflow</h1>
+            <p class="muted-text">
+              Walk through the end-to-end experience: the diner submits their allergy checklist,
+              the server validates and schedules the request, and the kitchen confirms via FaceID-enabled hardware buttons.
+            </p>
+          </header>
+
+          <section class="panel">
+            <h2>Diner order builder</h2>
+            <p class="muted-text">Fill in the details the diner would provide from their phone.</p>
+
+            <form id="order-form" class="order-form" autocomplete="off">
+              <div class="form-grid">
+                <label>
+                  <span>Customer name</span>
+                  <input id="customer-name" name="customerName" type="text" required placeholder="e.g. Jordan Smith">
+                </label>
+
+                <label>
+                  <span>Restaurant</span>
+                  <input id="restaurant-name" name="restaurantName" type="text" required placeholder="e.g. Olive & Thyme">
+                </label>
+              </div>
+
+              <fieldset class="dining-mode">
+                <legend>Dining mode</legend>
+                <label>
+                  <input type="radio" name="diningMode" value="dine-in" checked>
+                  <span>Dine-in (table service)</span>
+                </label>
+                <label>
+                  <input type="radio" name="diningMode" value="delivery">
+                  <span>Delivery / pickup coordination</span>
+                </label>
+              </fieldset>
+
+              <div class="conditional-inputs">
+                <label data-mode="dine-in">
+                  <span>Table or check number</span>
+                  <input id="table-number" type="text" placeholder="e.g. Table 18 or Check 437">
+                </label>
+                <label data-mode="delivery" hidden>
+                  <span>Delivery instructions</span>
+                  <textarea id="delivery-notes" rows="2" placeholder="e.g. Hand off to courier at host stand. Call on arrival."></textarea>
+                </label>
+              </div>
+
+              <div>
+                <span class="field-label">Allergies to flag</span>
+                <div id="allergy-chips" class="chip-cloud"></div>
+              </div>
+
+              <label>
+                <span>Additional notes for the kitchen</span>
+                <textarea id="custom-notes" rows="3" placeholder="Optional context such as brand-specific sensitivities."></textarea>
+              </label>
+
+              <div class="form-actions">
+                <button id="request-code-btn" class="primary-btn" type="button">Request server code</button>
+                <div id="request-status" class="status-text" role="status" aria-live="polite"></div>
+              </div>
+
+              <div id="code-entry-block" class="code-entry" hidden>
+                <div>
+                  <p class="muted-text">
+                    Share code <strong id="generated-code"></strong> with your server. Once they read it back to you, enter it below to
+                    push the order to their tablet.
+                  </p>
+                </div>
+                <label>
+                  <span>Enter server-provided code</span>
+                  <input id="server-code-input" type="text" inputmode="numeric" maxlength="4" placeholder="1234">
+                </label>
+                <div class="form-actions">
+                  <button id="submit-to-server-btn" class="secondary-btn" type="button">Submit to server tablet</button>
+                  <div id="submission-status" class="status-text" role="status" aria-live="polite"></div>
+                </div>
+              </div>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <h2>Live order feed</h2>
+              <button id="start-new-order-btn" class="secondary-btn" type="button">Start new order</button>
+            </div>
+            <div id="user-order-list" class="order-list"></div>
+            <div id="user-order-detail" class="order-detail"></div>
+          </section>
+        </section>
+
+        <aside class="tablet-sidebar">
+          <section class="tablet-panel" data-device="server">
+            <header class="tablet-header">
+              <h2>Server station tablet</h2>
+              <p class="muted-text">Mounted next to the POS with physical button panel for gloved use.</p>
+            </header>
+            <div id="server-tablet-queue" class="tablet-orders"></div>
+          </section>
+
+          <section class="tablet-panel" data-device="kitchen">
+            <header class="tablet-header">
+              <h2>Kitchen line tablet</h2>
+              <p class="muted-text">Includes FaceID checks for certified chefs.</p>
+            </header>
+            <div id="kitchen-tablet-queue" class="tablet-orders"></div>
+          </section>
+        </aside>
+      </div>
+
+      <footer class="simulation-footer panel">
+        <h2>Manual test checklist</h2>
+        <ul>
+          <li>Request a server code and confirm both diner view and server tablet display the same value.</li>
+          <li>Submit the order with the correct code and approve it from the server panel to dispatch it to the kitchen.</li>
+          <li>Have a chef acknowledge via FaceID and review that the diner timeline updates to “Acknowledged”.</li>
+          <li>Send a yes/no question from the kitchen and answer it from the diner panel.</li>
+          <li>Observe the status badges update in sync across all three surfaces.</li>
+        </ul>
+      </footer>
+    </div>
+  </main>
+
+  <script type="module" src="js/tablet-simulation.js"></script>
+</body>
+</html>

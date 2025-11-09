@@ -20,6 +20,7 @@ export function setupNav(currentPage, user = null) {
     { id: 'dish-search', label: 'Dish search', href: 'dish-search.html', requiresAuth: true },
     { id: 'restaurants', label: 'All restaurants', href: 'restaurants.html', requiresAuth: true },
     { id: 'favorites', label: 'Favorite restaurants', href: 'favorites.html', requiresAuth: true },
+    { id: 'tablet-simulation', label: 'Kitchen tablets', href: 'tablet-simulation.html' },
     // { id: 'how-it-works', label: 'How it works', href: 'how-it-works.html' }, // Hidden for now
     { id: 'account', label: 'Account settings', href: 'account.html' }
   ];
