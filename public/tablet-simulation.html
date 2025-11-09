@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kitchen Tablet Allergy Workflow Simulation - Clarivore</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="page-shell">
+  <header class="simple-topbar">
+    <div class="simple-topbar-inner">
+      <a class="simple-brand" href="restaurants.html">
+        <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt="Clarivore logo">
+        <span>Clarivore</span>
+      </a>
+      <div class="simple-nav"></div>
+    </div>
+  </header>
+
+  <main class="page-main">
+    <div class="page-content">
+      <section class="tablet-experience">
+        <header class="tablet-experience__intro">
+          <h1>Kitchen Allergy Tablet Workflow</h1>
+          <p class="muted-text">Simulate the complete diner → server → kitchen loop with allergy acknowledgements, physical hardware buttons, and FaceID certification.</p>
+        </header>
+
+        <div class="tablet-layout">
+          <aside class="tablet-sidebar" data-role="server">
+            <header class="tablet-sidebar__head">
+              <h2>Server tablet</h2>
+              <p class="muted-text">Mounted next to the POS terminal where orders are keyed in.</p>
+            </header>
+
+            <div class="tablet-card" id="server-code-block">
+              <div class="tablet-card__title">Customer check-in</div>
+              <p class="tablet-card__subtitle">Generate the hand-off code after reviewing the guest’s order.</p>
+              <button class="primary-btn" id="generate-code-btn" type="button">Generate 4-digit code</button>
+              <div class="code-display" id="server-code-display" data-empty="true">Code pending</div>
+            </div>
+
+            <div class="tablet-card" id="server-approval-block">
+              <div class="tablet-card__title">POS sync</div>
+              <p class="tablet-card__subtitle">Confirm you have keyed the order and are ready for the kitchen to be notified.</p>
+              <button class="primary-btn" id="server-approve-btn" type="button" disabled>Send to kitchen tablet</button>
+              <div class="status-pill" id="server-approval-status" data-state="idle">Waiting for diner submission</div>
+            </div>
+
+            <div class="tablet-card">
+              <div class="tablet-card__title">Server activity</div>
+              <ul class="tablet-timeline" id="server-timeline"></ul>
+            </div>
+          </aside>
+
+          <section class="tablet-main" aria-live="polite">
+            <header class="tablet-main__head">
+              <h2>Diner view</h2>
+              <p class="muted-text">Guests use their own device to describe allergies and monitor acknowledgements.</p>
+            </header>
+
+            <form class="tablet-card tablet-card--form" id="diner-form">
+              <div class="tablet-card__title">Allergy notice</div>
+              <div class="form-grid">
+                <label>
+                  Guest name
+                  <input type="text" id="guest-name" placeholder="Jamie Rivera" autocomplete="name" required>
+                </label>
+
+                <label>
+                  Dining mode
+                  <select id="dining-mode" required>
+                    <option value="dine-in">Dining in</option>
+                    <option value="takeout">Takeout pickup</option>
+                    <option value="delivery">Delivery order</option>
+                  </select>
+                </label>
+              </div>
+
+              <label>
+                Order summary
+                <textarea id="order-summary" rows="4" placeholder="e.g., 1x Grilled Salmon, 1x Quinoa Salad" required></textarea>
+              </label>
+
+              <fieldset class="allergen-fieldset">
+                <legend>Allergens to flag</legend>
+                <div class="allergen-chip-grid" id="allergen-chip-grid">
+                  <!-- Populated in JS -->
+                </div>
+                <p class="muted-text helper-text">Toggle every allergen that applies to this order. Multiple selections allowed.</p>
+              </fieldset>
+
+              <label>
+                Notes for the kitchen
+                <textarea id="guest-notes" rows="2" placeholder="Any cross-contamination concerns or special handling requests"></textarea>
+              </label>
+
+              <div class="form-actions">
+                <button class="primary-btn" id="request-code-btn" type="submit">Request server hand-off code</button>
+                <button class="secondary-btn" id="reset-simulation-btn" type="button">Start over</button>
+              </div>
+              <p class="status-text" id="diner-form-status"></p>
+            </form>
+
+            <div class="tablet-card" id="user-code-step" hidden>
+              <div class="tablet-card__title">Enter the server’s code</div>
+              <p class="muted-text">Once the server reads the 4-digit code aloud, enter it below to release the order.</p>
+              <div class="code-entry">
+                <input type="text" id="diner-code-input" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="----">
+                <button class="primary-btn" id="submit-order-btn" type="button">Submit to server</button>
+              </div>
+              <p class="status-text" id="diner-code-status"></p>
+            </div>
+
+            <div class="tablet-card" id="diner-alerts-block" hidden>
+              <div class="tablet-card__title">Kitchen follow-up</div>
+              <div id="diner-alerts-content"></div>
+            </div>
+
+            <div class="tablet-card">
+              <div class="tablet-card__title">Diner activity</div>
+              <ul class="tablet-timeline" id="diner-timeline"></ul>
+            </div>
+          </section>
+
+          <aside class="tablet-sidebar" data-role="kitchen">
+            <header class="tablet-sidebar__head">
+              <h2>Kitchen tablet + button panel</h2>
+              <p class="muted-text">Hands-free acknowledgement with a ruggedized hardware controller.</p>
+            </header>
+
+            <div class="tablet-card" id="kitchen-order-block">
+              <div class="tablet-card__title">Current order</div>
+              <div id="kitchen-order-content" class="kitchen-order-empty">Waiting for server approval…</div>
+            </div>
+
+            <div class="tablet-card" id="hardware-panel-block">
+              <div class="tablet-card__title">Physical button panel</div>
+              <p class="tablet-card__subtitle">Simulate the hardware workflow the chef performs with gloved hands.</p>
+              <div class="hardware-panel">
+                <button class="hardware-button" id="hardware-ready-btn" type="button" disabled>1. Press “Allergies Posted”</button>
+                <button class="hardware-button" id="hardware-faceid-btn" type="button" disabled>2. Start FaceID scan</button>
+                <button class="hardware-button" id="hardware-ack-btn" type="button" disabled>3. Confirm acknowledgement</button>
+              </div>
+              <div class="status-pill" id="faceid-status" data-state="idle">Waiting for hardware button press</div>
+            </div>
+
+            <div class="tablet-card" id="kitchen-message-block">
+              <div class="tablet-card__title">Optional follow-up to diner</div>
+              <p class="tablet-card__subtitle">Kitchen can send a quick yes/no confirmation if needed.</p>
+              <textarea id="kitchen-question-input" rows="2" placeholder="e.g., Can we substitute sunflower oil for butter?" disabled></textarea>
+              <button class="primary-btn" id="send-question-btn" type="button" disabled>Send voice-to-text question</button>
+              <div class="status-text" id="kitchen-question-status"></div>
+              <div class="kitchen-response-bubble" id="kitchen-response-display" hidden></div>
+            </div>
+
+            <div class="tablet-card">
+              <div class="tablet-card__title">Kitchen activity</div>
+              <ul class="tablet-timeline" id="kitchen-timeline"></ul>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script type="module">
+    import { setupNav } from './js/shared-nav.js';
+    setupNav('tablet-sim', null);
+  </script>
+  <script type="module" src="js/tablet-simulation.js"></script>
+</body>
+</html>

@@ -21,7 +21,8 @@ export function setupNav(currentPage, user = null) {
     { id: 'restaurants', label: 'All restaurants', href: 'restaurants.html', requiresAuth: true },
     { id: 'favorites', label: 'Favorite restaurants', href: 'favorites.html', requiresAuth: true },
     // { id: 'how-it-works', label: 'How it works', href: 'how-it-works.html' }, // Hidden for now
-    { id: 'account', label: 'Account settings', href: 'account.html' }
+    { id: 'account', label: 'Account settings', href: 'account.html' },
+    { id: 'tablet-sim', label: 'Tablet simulation', href: 'tablet-simulation.html' }
   ];
 
   navItems.forEach(item => {

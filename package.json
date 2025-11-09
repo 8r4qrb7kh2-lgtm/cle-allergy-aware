@@ -5,6 +5,7 @@
     "dev": "npx http-server public -p 8080 -o",
     "deploy": "vercel --prod",
     "test": "node browser-extension/menu-change-monitor/test/contentScript.test.js",
+    "test:tablet-sim": "node --test tests/tabletSimulation.test.js",
     "build": "cd clarivore-menu-monitor && npm install --omit=dev",
     "start": "cd clarivore-menu-monitor && npm start"
   },
@@ -15,6 +16,7 @@
     "@supabase/supabase-js": "^2.39.0"
   },
   "devDependencies": {
-    "http-server": "^14.1.1"
+    "http-server": "^14.1.1",
+    "jsdom": "^24.0.0"
   }
 }
