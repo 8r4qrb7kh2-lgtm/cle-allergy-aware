@@ -452,6 +452,11 @@
                 ${reviewedDate ? `<span><strong>Reviewed:</strong> ${reviewedDate}</span>` : ''}
                 <span class="appeal-status ${status}">${status}</span>
               </div>
+              ${appeal.manager_message ? `
+                <div class="item-content" style="margin-top: 12px;">
+                  <strong>Manager Message:</strong> ${escapeHtml(appeal.manager_message)}
+                </div>
+              ` : ''}
               ${appeal.photo_url ? `
                 <div style="margin-top: 12px;">
                   <strong>Photo:</strong>
@@ -555,6 +560,7 @@
 
               if (ingredientIndex >= 0 && ingredientIndex < aiIngredients.length) {
                 const ingredient = aiIngredients[ingredientIndex];
+                console.log(`FOUND ingredient "${ingredientName}" at index ${ingredientIndex}, current confirmed=${ingredient.confirmed}`);
                 
                 // If approved, set appeal review status and mark as overridden
                 if (status === 'approved') {
@@ -564,14 +570,18 @@
                   ingredient.userOverriddenScan = true;
                   ingredient.needsScan = false;
                 }
-                // If denied, restore the scan requirement and clear appeal flags
+                // If denied, restore the scan requirement but keep appeal status
                 else if (status === 'rejected') {
-                  // Clear any appeal-related flags to fully restore scan requirement
-                  delete ingredient.appealReviewStatus;
-                  delete ingredient.appealReviewNotes;
-                  delete ingredient.appealReviewedAt;
+                  // Keep appeal review status to show denied message
+                  ingredient.appealReviewStatus = status;
+                  ingredient.appealReviewNotes = reviewNotes || null;
+                  ingredient.appealReviewedAt = new Date().toISOString();
+                  // Restore scan requirement
                   ingredient.userOverriddenScan = false;
                   ingredient.needsScan = true;
+                  // Reset confirmed state - manager must scan again after denial
+                  console.log(`ADMIN DENY: Setting confirmed=false for "${ingredientName}"`);
+                  ingredient.confirmed = false;
                 }
 
                 // Save back to overlay

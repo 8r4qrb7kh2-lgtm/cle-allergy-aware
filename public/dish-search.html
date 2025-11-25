@@ -58,8 +58,9 @@
     .dish-info-section {
       margin-bottom: 0;
       min-width: 0;
-      word-wrap: break-word;
-      overflow-wrap: break-word;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
     }
     .dish-info-section:last-child {
       margin-bottom: 0;
@@ -73,8 +74,16 @@
     .dish-info-section .note {
       font-size: 0.9rem;
       line-height: 1.6;
-      word-wrap: break-word;
-      overflow-wrap: break-word;
+      width: 100%;
+      display: block;
+    }
+    .dish-info-section .note > div,
+    .dish-info-section > div {
+      width: 100%;
+      display: block;
+      box-sizing: border-box;
+      white-space: nowrap;
+      overflow: visible;
     }
     .tooltipDangerText {
       color: #e85d5d;
@@ -194,6 +203,82 @@
         gap: 16px !important;
       }
     }
+    .dish-view-button-container {
+      display: flex;
+      flex-direction: row;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .view-dish-btn {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      line-height: 1 !important;
+      margin: 0;
+      box-sizing: border-box;
+      height: auto;
+    }
+    .dish-view-disclaimer {
+      font-size: 0.85rem;
+      color: var(--muted);
+      flex: 1;
+      min-width: 200px;
+      line-height: 1.5;
+      display: none;
+      margin: 0;
+      padding: 0;
+      align-items: center;
+    }
+    .dish-view-disclaimer.show {
+      display: flex;
+      align-items: center;
+    }
+    .ack-button {
+      padding: 10px 20px;
+      font-size: 0.9rem;
+      text-align: center;
+      background: #8b1d1d;
+      border: 1px solid #a12525;
+      color: white;
+      border-radius: 999px;
+      font-weight: bold;
+      cursor: pointer;
+      display: none;
+      box-shadow: 0 6px 20px rgba(139, 29, 29, 0.25);
+      transition: transform 0.2s, box-shadow 0.2s, background 0.2s, border-color 0.2s;
+      animation: ackPulse 1.8s ease-in-out infinite;
+      line-height: 1;
+      align-self: center;
+      margin: 0;
+      box-sizing: border-box;
+    }
+    .ack-button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 24px rgba(139, 29, 29, 0.35);
+      background: #a12525;
+      border-color: #b82e2e;
+    }
+    .ack-button.show {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      line-height: 1 !important;
+    }
+    .ack-button.acknowledged {
+      background: #17663a;
+      border-color: #1a7b46;
+      animation: none;
+    }
+    .ack-button.acknowledged:hover {
+      background: #1a7b46;
+      border-color: #1f8f50;
+    }
+    @keyframes ackPulse {
+      0% { box-shadow: 0 0 0 0 rgba(255, 180, 180, 0.45); }
+      50% { box-shadow: 0 0 0 8px rgba(255, 180, 180, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 180, 180, 0); }
+    }
   </style>
 </head>
 <body class="page-shell">
@@ -217,6 +302,13 @@
       <div class="search-controls">
         <input id="search-input" type="text" placeholder="Describe what you want (e.g., spicy vegan noodles, nut-free dessert)">
         <button id="search-button" class="cta-button">Search</button>
+      </div>
+      
+      <div id="filter-controls" style="max-width:900px;margin:0 auto 16px;display:flex;justify-content:center;align-items:center;gap:8px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.9rem;color:var(--text);">
+          <input type="checkbox" id="show-accommodated-checkbox" style="width:18px;height:18px;cursor:pointer;accent-color:#3651ff;">
+          <span>Show dishes that contain ingredients that conflict with your allergens or dietary preferences but can be accommodated for you</span>
+        </label>
       </div>
       
       <p id="status-message" class="status-text" style="text-align:center;margin-bottom:16px;"></p>
@@ -243,6 +335,7 @@
   <script type="module">
     import supabaseClient from './js/supabase-client.js';
     import { setupNav } from './js/shared-nav.js';
+    import { fetchManagerRestaurants } from './js/manager-context.js';
 
     const ALLERGEN_EMOJI = {
       'dairy': '🥛',
@@ -262,12 +355,29 @@
     let restaurantsData = [];
     let lovedDishes = new Set();
     let currentUser = null;
+    let showAccommodatedDishes = false; // Track checkbox state
+    let currentSearchResults = null; // Store current search results for re-filtering
 
     const statusEl = document.getElementById('status-message');
     const searchInput = document.getElementById('search-input');
     const searchButton = document.getElementById('search-button');
     const dishResultsList = document.getElementById('dish-results-list');
     const emptyState = document.getElementById('empty-state');
+    const showAccommodatedCheckbox = document.getElementById('show-accommodated-checkbox');
+    
+    // Update filter state when checkbox changes
+    if(showAccommodatedCheckbox){
+      showAccommodatedCheckbox.addEventListener('change', (e) => {
+        showAccommodatedDishes = e.target.checked;
+        // Re-render existing results with new filter (don't trigger new search)
+        if(currentSearchResults && currentSearchResults.length > 0){
+          renderDishResults(currentSearchResults, false);
+        } else {
+          // If no search results yet, just re-render the "similar dishes" section
+          loadSimilarUsersLovedDishes();
+        }
+      });
+    }
 
     function setStatus(message = '', variant = '') {
       if (!statusEl) return;
@@ -314,7 +424,8 @@
         const allergenConflicts = {
           'Vegan': ['dairy', 'egg', 'fish', 'shellfish'],
           'Vegetarian': ['fish', 'shellfish'],
-          'Pescatarian': []
+          'Pescatarian': [],
+          'Gluten-free': ['wheat']
         };
         
         for (const diet of userDiets) {
@@ -355,14 +466,14 @@
         if (unsafeHits.length) {
           const list = unsafeHits.map(a => {
             const emoji = ALLERGEN_EMOJI[a.toLowerCase()] || '⚠️';
-            return `<div style="margin-bottom:4px">${emoji} Contains <strong>${escapeHtml(a.toLowerCase())}</strong> (cannot be substituted out)</div>`;
+            return `<div style="margin-bottom:4px;width:100%;display:block">${emoji} Contains <strong>${escapeHtml(a.toLowerCase())}</strong> (cannot be substituted out)</div>`;
           }).join('');
           allergenHTML += `<div class="note tooltipDangerText">${list}</div>`;
         }
         if (removableHits.length) {
           const list = removableHits.map(a => {
             const emoji = ALLERGEN_EMOJI[a.toLowerCase()] || '⚠️';
-            return `<div style="margin-bottom:4px">${emoji} Contains <strong>${escapeHtml(a.toLowerCase())}</strong> (can be substituted out)</div>`;
+            return `<div style="margin-bottom:4px;width:100%;display:block">${emoji} Contains <strong>${escapeHtml(a.toLowerCase())}</strong> (can be substituted out)</div>`;
           }).join('');
           allergenHTML += `<div class="note tooltipWarnText">${list}</div>`;
         }
@@ -380,7 +491,8 @@
         const allergenConflicts = {
           'Vegan': ['dairy', 'egg', 'fish', 'shellfish'],
           'Vegetarian': ['fish', 'shellfish'],
-          'Pescatarian': []
+          'Pescatarian': [],
+          'Gluten-free': ['wheat']
         };
 
         userDiets.forEach(userDiet => {
@@ -389,11 +501,12 @@
             'Vegan': '🌱',
             'Vegetarian': '🥬',
             'Pescatarian': '🐟',
+            'Gluten-free': '🌾',
           }[userDiet] || '✓';
           const dietLower = userDiet.toLowerCase();
 
           if (isDietMet) {
-            dietHTML += `<div style="margin-bottom:6px;color:#4cc85a;font-size:0.9rem">${emoji} This dish is <strong>${escapeHtml(dietLower)}</strong></div>`;
+            dietHTML += `<div style="margin-bottom:6px;color:#4cc85a;font-size:0.9rem;width:100%;display:block">${emoji} This dish is <strong>${escapeHtml(dietLower)}</strong></div>`;
           } else {
             const conflicts = allergenConflicts[userDiet] || [];
             const itemAllergens = item.allergens || [];
@@ -402,9 +515,9 @@
                              conflictingAllergens.every(allergen => removableAllergens.has(normalize(allergen)));
 
             if (canBeMade) {
-              dietHTML += `<div style="margin-bottom:6px;color:#facc15;font-size:0.9rem">${emoji} This dish can be made <strong>${escapeHtml(dietLower)}</strong></div>`;
+              dietHTML += `<div style="margin-bottom:6px;color:#facc15;font-size:0.9rem;width:100%;display:block">${emoji} This dish can be made <strong>${escapeHtml(dietLower)}</strong></div>`;
             } else {
-              dietHTML += `<div style="margin-bottom:6px;color:#e85d5d;font-size:0.9rem">${emoji} This dish is not <strong>${escapeHtml(dietLower)}</strong></div>`;
+              dietHTML += `<div style="margin-bottom:6px;color:#e85d5d;font-size:0.9rem;width:100%;display:block">${emoji} This dish is not <strong>${escapeHtml(dietLower)}</strong></div>`;
             }
           }
         });
@@ -481,7 +594,7 @@
           button.classList.remove('loved');
           const img = button.querySelector('img');
           if(img) img.src = 'images/heart-icon.svg';
-          setStatus('Removed from your library', 'success');
+          setStatus('Removed from your favorites', 'success');
         } else {
           const { error } = await supabaseClient
             .from('user_loved_dishes')
@@ -496,7 +609,7 @@
           button.classList.add('loved');
           const img = button.querySelector('img');
           if(img) img.src = 'images/heart-icon.svg';
-          setStatus('Added to your library!', 'success');
+          setStatus('Added to your favorites!', 'success');
         }
       } catch (err) {
         console.error('Failed to update loved dish', err);
@@ -532,11 +645,11 @@
       }) || null;
     }
 
-    async function renderDishResults(results) {
+    async function renderDishResults(results, cameFromSearch = false) {
       if (!results || results.length === 0) {
         dishResultsList.innerHTML = '';
         emptyState.style.display = 'block';
-        return;
+        return false; // No results displayed
       }
 
       emptyState.style.display = 'none';
@@ -558,15 +671,125 @@
         }
       }
 
+      // First pass: compute actualStatus for all dishes and store it
+      const dishesWithStatus = allDishes.map(dish => {
+        // Compute actualStatus (same logic as in the rendering)
+        // Start with API status if it's valid, otherwise unknown
+        let actualStatus = (dish.status === 'meets_all_requirements' || dish.status === 'can_accommodate') 
+          ? dish.status 
+          : 'unknown';
+        
+        // If we have overlay data, validate/override the status based on actual data
+        if (dish.overlay) {
+          const item = dish.overlay;
+          const userAllergenSet = new Set(userAllergies.map(normalize));
+          const itemAllergens = item.allergens || [];
+          const removableAllergens = new Set((item.removable || []).map(r => normalize(r.allergen || '')));
+          
+          const hits = itemAllergens.filter(a => userAllergenSet.has(normalize(a)));
+          const unsafeHits = hits.filter(a => !removableAllergens.has(normalize(a)));
+          const removableHits = hits.filter(a => removableAllergens.has(normalize(a)));
+          
+          if (userAllergies.length > 0 || (userDiets && userDiets.length > 0)) {
+            let meetsAllRequirements = true;
+            
+            if (userAllergies.length > 0 && unsafeHits.length > 0) {
+              meetsAllRequirements = false;
+            }
+            
+            if (userDiets && userDiets.length > 0) {
+              const itemDietSet = new Set(item.diets || []);
+              for (const userDiet of userDiets) {
+                const isDietMet = itemDietSet.has(userDiet);
+                if (!isDietMet) {
+                  meetsAllRequirements = false;
+                  break;
+                }
+              }
+            }
+            
+            if (meetsAllRequirements) {
+              actualStatus = 'meets_all_requirements';
+            } else if (unsafeHits.length === 0) {
+              let canAccommodate = false;
+              if (!userDiets || userDiets.length === 0) {
+                canAccommodate = removableHits.length > 0;
+              } else {
+                const itemDietSet = new Set(item.diets || []);
+                const allergenConflicts = {
+                  'Vegan': ['dairy', 'egg', 'fish', 'shellfish'],
+                  'Vegetarian': ['fish', 'shellfish'],
+                  'Pescatarian': [],
+                  'Gluten-free': ['wheat']
+                };
+                let allDietsCanBeMade = true;
+                let needsModification = false;
+                
+                for (const userDiet of userDiets) {
+                  const isDietMet = itemDietSet.has(userDiet);
+                  if (!isDietMet) {
+                    const conflicts = allergenConflicts[userDiet] || [];
+                    const conflictingAllergens = conflicts.filter(allergen => itemAllergens.includes(allergen));
+                    const canBeMade = conflictingAllergens.length > 0 &&
+                                     conflictingAllergens.every(allergen => removableAllergens.has(normalize(allergen)));
+                    if (canBeMade) {
+                      needsModification = true;
+                    } else {
+                      allDietsCanBeMade = false;
+                      break;
+                    }
+                  }
+                }
+                
+                if (allDietsCanBeMade) {
+                  canAccommodate = needsModification || removableHits.length > 0;
+                }
+              }
+              
+              actualStatus = canAccommodate ? 'can_accommodate' : 'unknown';
+            } else {
+              actualStatus = 'unknown';
+            }
+          }
+        }
+        
+        return { ...dish, computedStatus: actualStatus };
+      });
+
+      // Filter dishes based on computed accommodation status
+      // Always exclude dishes that can't be accommodated (status is neither 'meets_all_requirements' nor 'can_accommodate')
+      let filteredDishes = dishesWithStatus.filter(dish => {
+        const status = dish.computedStatus;
+        // Only show dishes that can be accommodated at minimum
+        if (status !== 'meets_all_requirements' && status !== 'can_accommodate') {
+          return false; // Can't be accommodated - always exclude
+        }
+        // If checkbox is unchecked, only show meets_all_requirements
+        if (!showAccommodatedDishes && status === 'can_accommodate') {
+          return false;
+        }
+        return true;
+      });
+
       // Sort: exact matches first, then accommodated
-      allDishes.sort((a, b) => {
-        const aExact = a.status === 'meets_all_requirements' ? 1 : 0;
-        const bExact = b.status === 'meets_all_requirements' ? 1 : 0;
+      filteredDishes.sort((a, b) => {
+        const aExact = a.computedStatus === 'meets_all_requirements' ? 1 : 0;
+        const bExact = b.computedStatus === 'meets_all_requirements' ? 1 : 0;
         if (aExact !== bExact) return bExact - aExact;
         return (a.name || '').localeCompare(b.name || '');
       });
 
-      dishResultsList.innerHTML = allDishes.map((dish, index) => {
+      // Check if no filtered dishes remain - show empty state
+      if (filteredDishes.length === 0) {
+        dishResultsList.innerHTML = '';
+        if (cameFromSearch) {
+          emptyState.innerHTML = '<p>No relevant results found. Try adjusting your search or dietary preferences.</p>';
+        }
+        emptyState.style.display = 'block';
+        return false; // No results displayed after filtering
+      }
+
+      dishResultsList.innerHTML = filteredDishes.map((dish, index) => {
         // Generate overlay tooltip info if available
         let overlayInfo = { allergenHTML: '', dietHTML: '', crossHTML: '' };
         if (dish.overlay) {
@@ -576,15 +799,11 @@
           overlayInfo.allergenHTML = '<div class="note">Additional allergen and dietary information not available for this dish.</div>';
         }
         
-        // Determine actual status based on overlay data and user preferences
-        // Prefer API status if available and valid
-        let actualStatus = 'unknown';
-        if (dish.status === 'meets_all_requirements' || dish.status === 'can_accommodate') {
-          actualStatus = dish.status;
-        }
+        // Use the pre-computed status
+        let actualStatus = dish.computedStatus || dish.status || 'unknown';
         
-        // If we have overlay data, validate/override the status based on actual data
-        if (dish.overlay) {
+        // If we have overlay data and status wasn't pre-computed, validate status
+        if (dish.overlay && !dish.computedStatus) {
           const item = dish.overlay;
           const allergens = item.allergens || [];
           const removableSet = new Set((item.removable || []).map(r => normalize(r.allergen || '')));
@@ -597,7 +816,8 @@
           const allergenConflicts = {
             'Vegan': ['dairy', 'egg', 'fish', 'shellfish'],
             'Vegetarian': ['fish', 'shellfish'],
-            'Pescatarian': []
+            'Pescatarian': [],
+            'Gluten-free': ['wheat']
           };
           
           // If user has preferences, validate against overlay data
@@ -694,11 +914,11 @@
           infoLayout = '<div class="dish-info" style="display:flex;flex-direction:row;gap:16px;align-items:flex-start;">';
           // LEFT: Allergen Information first (flexbox row puts first element on left)
           if (hasAllergenInfo) {
-            infoLayout += `<div class="dish-info-section" style="flex:1;min-width:0;word-wrap:break-word;overflow-wrap:break-word;">${overlayInfo.allergenHTML}${overlayInfo.crossHTML}</div>`;
+            infoLayout += `<div class="dish-info-section" style="flex:1;min-width:0;">${overlayInfo.allergenHTML}${overlayInfo.crossHTML}</div>`;
           }
           // RIGHT: Dietary Preferences second (flexbox row puts second element on right)
           if (hasDietInfo) {
-            infoLayout += `<div class="dish-info-section" style="flex:1;min-width:0;word-wrap:break-word;overflow-wrap:break-word;">${overlayInfo.dietHTML}</div>`;
+            infoLayout += `<div class="dish-info-section" style="flex:1;min-width:0;">${overlayInfo.dietHTML}</div>`;
           }
           infoLayout += '</div>';
         } else {
@@ -722,8 +942,8 @@
             <div class="dish-header">
               <h3 class="dish-name">${escapeHtml(dish.name || 'Unnamed dish')}</h3>
               <div style="display:flex;align-items:center;gap:8px;">
-                ${statusClass ? `<span class="dish-status-badge ${statusClass}">${statusLabel}</span>` : ''}
-                <button type="button" class="love-button ${isLoved ? 'loved' : ''}" id="${loveButtonId}" data-restaurant-id="${dish.restaurant_id}" data-dish-name="${escapeHtml(dish.name)}" aria-label="${isLoved ? 'Remove from library' : 'Add to library'}">
+                ${statusClass && statusClass === 'accommodated' ? `<span class="dish-status-badge ${statusClass}">${statusLabel}</span>` : ''}
+                <button type="button" class="love-button ${isLoved ? 'loved' : ''}" id="${loveButtonId}" data-restaurant-id="${dish.restaurant_id}" data-dish-name="${escapeHtml(dish.name)}" aria-label="${isLoved ? 'Remove from favorites' : 'Add to favorites'}">
                   <img src="images/heart-icon.svg" alt="${isLoved ? 'Loved' : 'Not loved'}" style="width:18px;height:18px;display:block;" />
                 </button>
               </div>
@@ -734,16 +954,20 @@
             </div>
             ${infoLayout}
             <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
-              <a href="${dishViewUrl}" class="cta-button" style="display:inline-block;padding:10px 20px;font-size:0.9rem;text-decoration:none;text-align:center;background:#3651ff;border:1px solid #4e65ff;color:white;border-radius:999px;font-weight:bold;box-shadow:0 6px 20px rgba(54,81,255,0.25);transition:transform 0.2s,box-shadow 0.2s;">
-                View dish on restaurant page
-              </a>
+              <div class="dish-view-button-container">
+                <button type="button" class="cta-button view-dish-btn" style="padding:10px 20px;font-size:0.9rem;text-align:center;background:#3651ff;border:1px solid #4e65ff;color:white;border-radius:999px;font-weight:bold;box-shadow:0 6px 20px rgba(54,81,255,0.25);transition:transform 0.2s,box-shadow 0.2s;font-family:inherit;cursor:pointer;" data-dish-url="${dishViewUrl}">
+                  View dish on restaurant page
+                </button>
+                <span class="dish-view-disclaimer">Reference only. Ingredients & practices can change. Always inform staff about your allergens.</span>
+                <button type="button" class="ack-button" data-dish-url="${dishViewUrl}">I understand</button>
+              </div>
             </div>
           </div>
         `;
       }).join('');
       
       // Attach love button handlers
-      allDishes.forEach((dish, index) => {
+      filteredDishes.forEach((dish, index) => {
         const dishKey = getDishKey(dish.restaurant_id, dish.name);
         const loveButtonId = `love-btn-${dishKey.replace(/[^a-zA-Z0-9]/g, '-')}`;
         const loveBtn = document.getElementById(loveButtonId);
@@ -754,6 +978,40 @@
           });
         }
       });
+      
+      // Attach view dish button handlers
+      document.querySelectorAll('.view-dish-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const container = btn.parentElement;
+          const ackButton = container.querySelector('.ack-button');
+          const disclaimer = container.querySelector('.dish-view-disclaimer');
+          if (ackButton) {
+            ackButton.classList.add('show');
+          }
+          if (disclaimer) {
+            disclaimer.classList.add('show');
+          }
+        });
+      });
+      
+      // Attach I understand button handlers
+      document.querySelectorAll('.ack-button').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const url = btn.getAttribute('data-dish-url');
+          if (url && url !== '#') {
+            btn.classList.add('acknowledged');
+            btn.textContent = 'Acknowledged';
+            // Navigate after a brief moment to show the acknowledged state
+            setTimeout(() => {
+              window.location.href = url;
+            }, 300);
+          }
+        });
+      });
+      
+      return true; // Results were displayed successfully
     }
 
     async function loadSimilarUsersLovedDishes() {
@@ -844,7 +1102,98 @@
           });
         }
 
-        if (dishesToShow.length === 0) {
+        // Compute status and filter dishes (same logic as main search results)
+        const dishesWithStatus = dishesToShow.map(dish => {
+          let actualStatus = 'unknown';
+          if (dish.overlay) {
+            const item = dish.overlay;
+            const userAllergenSet = new Set(userAllergies.map(normalize));
+            const itemAllergens = item.allergens || [];
+            const removableAllergens = new Set((item.removable || []).map(r => normalize(r.allergen || '')));
+            
+            const hits = itemAllergens.filter(a => userAllergenSet.has(normalize(a)));
+            const unsafeHits = hits.filter(a => !removableAllergens.has(normalize(a)));
+            const removableHits = hits.filter(a => removableAllergens.has(normalize(a)));
+            
+            if (userAllergies.length > 0 || (userDiets && userDiets.length > 0)) {
+              let meetsAllRequirements = true;
+              
+              if (userAllergies.length > 0 && unsafeHits.length > 0) {
+                meetsAllRequirements = false;
+              }
+              
+              if (userDiets && userDiets.length > 0) {
+                const itemDietSet = new Set(item.diets || []);
+                for (const userDiet of userDiets) {
+                  const isDietMet = itemDietSet.has(userDiet);
+                  if (!isDietMet) {
+                    meetsAllRequirements = false;
+                    break;
+                  }
+                }
+              }
+              
+              if (meetsAllRequirements) {
+                actualStatus = 'meets_all_requirements';
+              } else if (unsafeHits.length === 0) {
+                let canAccommodate = false;
+                if (!userDiets || userDiets.length === 0) {
+                  canAccommodate = removableHits.length > 0;
+                } else {
+                  const itemDietSet = new Set(item.diets || []);
+                  const allergenConflicts = {
+                    'Vegan': ['dairy', 'egg', 'fish', 'shellfish'],
+                    'Vegetarian': ['fish', 'shellfish'],
+                    'Pescatarian': [],
+                    'Gluten-free': ['wheat']
+                  };
+                  let allDietsCanBeMade = true;
+                  let needsModification = false;
+                  
+                  for (const userDiet of userDiets) {
+                    const isDietMet = itemDietSet.has(userDiet);
+                    if (!isDietMet) {
+                      const conflicts = allergenConflicts[userDiet] || [];
+                      const conflictingAllergens = conflicts.filter(allergen => itemAllergens.includes(allergen));
+                      const canBeMade = conflictingAllergens.length > 0 &&
+                                       conflictingAllergens.every(allergen => removableAllergens.has(normalize(allergen)));
+                      if (canBeMade) {
+                        needsModification = true;
+                      } else {
+                        allDietsCanBeMade = false;
+                        break;
+                      }
+                    }
+                  }
+                  
+                  if (allDietsCanBeMade) {
+                    canAccommodate = needsModification || removableHits.length > 0;
+                  }
+                }
+                
+                actualStatus = canAccommodate ? 'can_accommodate' : 'unknown';
+              } else {
+                actualStatus = 'unknown';
+              }
+            }
+          }
+          return { ...dish, computedStatus: actualStatus };
+        });
+
+        // Filter dishes - always exclude dishes that can't be accommodated
+        const filteredDishes = dishesWithStatus.filter(dish => {
+          const status = dish.computedStatus;
+          if (status !== 'meets_all_requirements' && status !== 'can_accommodate') {
+            return false; // Can't be accommodated - always exclude
+          }
+          // If checkbox is unchecked, only show meets_all_requirements
+          if (!showAccommodatedDishes && status === 'can_accommodate') {
+            return false;
+          }
+          return true;
+        });
+
+        if (filteredDishes.length === 0) {
           emptyState.innerHTML = '<p>Enter a search query above to find dishes that match your preferences.</p>';
           emptyState.style.display = 'block';
           return;
@@ -854,7 +1203,7 @@
         emptyState.innerHTML = `
           <h2 style="margin-bottom:16px;font-size:1.2rem;color:var(--text);">Dishes loved by users with similar preferences</h2>
           <div style="display:flex;flex-direction:column;gap:12px;">
-            ${dishesToShow.map(dish => {
+            ${filteredDishes.map(dish => {
               const restaurantLink = dish.restaurant_slug 
                 ? `<a href="restaurant.html?slug=${dish.restaurant_slug}" class="restaurant-link">${escapeHtml(dish.restaurant_name)}</a>`
                 : `<span>${escapeHtml(dish.restaurant_name)}</span>`;
@@ -868,74 +1217,8 @@
                 overlayInfo = tooltipBodyHTML(dish.overlay, userAllergies, userDiets);
               }
 
-              // Determine status for empty state dishes (no API status available, use overlay data only)
-              let actualStatus = 'unknown';
-              if (dish.overlay) {
-                const item = dish.overlay;
-                const allergens = item.allergens || [];
-                const removableSet = new Set((item.removable || []).map(r => normalize(r.allergen || '')));
-                const allergenHits = allergens.filter(a => userAllergies.includes(a));
-                const unsafeHits = allergenHits.filter(a => !removableSet.has(normalize(a)));
-                
-                const itemDietSet = new Set(item.diets || []);
-                const removableAllergens = new Set((item.removable || []).map(r => normalize(r.allergen)));
-                const allergenConflicts = {
-                  'Vegan': ['dairy', 'egg', 'fish', 'shellfish'],
-                  'Vegetarian': ['fish', 'shellfish'],
-                  'Pescatarian': []
-                };
-                
-                // If user has preferences, check overlay data
-                if (userAllergies.length > 0 || (userDiets && userDiets.length > 0)) {
-                  let meetsAllRequirements = true;
-                  
-                  if (userAllergies.length > 0 && unsafeHits.length > 0) {
-                    meetsAllRequirements = false;
-                  }
-                  
-                  if (userDiets && userDiets.length > 0) {
-                    for (const userDiet of userDiets) {
-                      const isDietMet = itemDietSet.has(userDiet);
-                      if (!isDietMet) {
-                        meetsAllRequirements = false;
-                        break;
-                      }
-                    }
-                  }
-                  
-                  if (meetsAllRequirements) {
-                    actualStatus = 'meets_all_requirements';
-                  } else if (unsafeHits.length === 0) {
-                    // No unsafe allergens - check if can accommodate
-                    let canAccommodate = false;
-                    if (!userDiets || userDiets.length === 0) {
-                      canAccommodate = true;
-                    } else {
-                      let allDietsCanBeMade = true;
-                      for (const userDiet of userDiets) {
-                        const isDietMet = itemDietSet.has(userDiet);
-                        if (!isDietMet) {
-                          const conflicts = allergenConflicts[userDiet] || [];
-                          const itemAllergens = item.allergens || [];
-                          const conflictingAllergens = conflicts.filter(allergen => itemAllergens.includes(allergen));
-                          const canBeMade = conflictingAllergens.length > 0 &&
-                                           conflictingAllergens.every(allergen => removableAllergens.has(normalize(allergen)));
-                          if (!canBeMade) {
-                            allDietsCanBeMade = false;
-                            break;
-                          }
-                        }
-                      }
-                      if (allDietsCanBeMade) {
-                        canAccommodate = true;
-                      }
-                    }
-                    if (canAccommodate) {
-                      actualStatus = 'can_accommodate';
-                    }
-                  }
-                }
-              }
+              // Use the pre-computed status
+              let actualStatus = dish.computedStatus || 'unknown';
               
               const statusClass = actualStatus === 'meets_all_requirements' ? 'exact-match' : 
                                  actualStatus === 'can_accommodate' ? 'accommodated' : '';
@@ -951,11 +1234,11 @@
                 infoLayout = '<div class="dish-info" style="display:flex;flex-direction:row;gap:16px;align-items:flex-start;margin-top:12px;">';
                 // LEFT: Allergen Information first
                 if (hasAllergenInfo) {
-                  infoLayout += `<div class="dish-info-section" style="flex:1;min-width:0;word-wrap:break-word;overflow-wrap:break-word;">${overlayInfo.allergenHTML}${overlayInfo.crossHTML}</div>`;
+                  infoLayout += `<div class="dish-info-section" style="flex:1;min-width:0;">${overlayInfo.allergenHTML}${overlayInfo.crossHTML}</div>`;
                 }
                 // RIGHT: Dietary Preferences second
                 if (hasDietInfo) {
-                  infoLayout += `<div class="dish-info-section" style="flex:1;min-width:0;word-wrap:break-word;overflow-wrap:break-word;">${overlayInfo.dietHTML}</div>`;
+                  infoLayout += `<div class="dish-info-section" style="flex:1;min-width:0;">${overlayInfo.dietHTML}</div>`;
                 }
                 infoLayout += '</div>';
               }
@@ -971,7 +1254,7 @@
                   <div class="dish-header">
                     <h3 class="dish-name">${escapeHtml(dish.name)}</h3>
                     <div style="display:flex;align-items:center;gap:8px;">
-                      ${statusLabel ? `<span class="dish-status-badge ${statusClass}">${statusLabel}</span>` : ''}
+                      ${statusClass && statusClass === 'accommodated' && statusLabel ? `<span class="dish-status-badge ${statusClass}">${statusLabel}</span>` : ''}
                       <span style="font-size:0.85rem;color:var(--muted);display:flex;align-items:center;gap:4px;"><img src="images/heart-icon.svg" alt="Loved" style="width:14px;height:14px;display:block;" /> ${dish.love_count} ${dish.love_count === 1 ? 'person' : 'people'}</span>
                       <button type="button" class="love-button ${isLoved ? 'loved' : ''}" id="${loveButtonId}" data-restaurant-id="${dish.restaurant_id}" data-dish-name="${escapeHtml(dish.name)}">
                         <img src="images/heart-icon.svg" alt="${isLoved ? 'Loved' : 'Not loved'}" style="width:18px;height:18px;display:block;" />
@@ -984,9 +1267,13 @@
                   </div>
                   ${infoLayout}
                   <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
-                    <a href="${dishViewUrl}" class="cta-button" style="display:inline-block;padding:10px 20px;font-size:0.9rem;text-decoration:none;text-align:center;background:#3651ff;border:1px solid #4e65ff;color:white;border-radius:999px;font-weight:bold;box-shadow:0 6px 20px rgba(54,81,255,0.25);transition:transform 0.2s,box-shadow 0.2s;">
-                      View dish on restaurant page
-                    </a>
+                    <div class="dish-view-button-container">
+                      <button type="button" class="cta-button view-dish-btn" style="padding:10px 20px;font-size:0.9rem;text-align:center;background:#3651ff;border:1px solid #4e65ff;color:white;border-radius:999px;font-weight:bold;box-shadow:0 6px 20px rgba(54,81,255,0.25);transition:transform 0.2s,box-shadow 0.2s;font-family:inherit;cursor:pointer;" data-dish-url="${dishViewUrl}">
+                        View dish on restaurant page
+                      </button>
+                      <span class="dish-view-disclaimer">Reference only. Ingredients & practices can change. Always inform staff about your allergens.</span>
+                      <button type="button" class="ack-button" data-dish-url="${dishViewUrl}">I understand</button>
+                    </div>
                   </div>
                 </div>
               `;
@@ -1006,6 +1293,38 @@
             });
           }
         });
+        
+        // Attach view dish button handlers for empty state
+        emptyState.querySelectorAll('.view-dish-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const container = btn.parentElement;
+            const ackButton = container.querySelector('.ack-button');
+            const disclaimer = container.querySelector('.dish-view-disclaimer');
+            if (ackButton) {
+              ackButton.classList.add('show');
+            }
+            if (disclaimer) {
+              disclaimer.classList.add('show');
+            }
+          });
+        });
+        
+        // Attach I understand button handlers for empty state
+        emptyState.querySelectorAll('.ack-button').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            const url = btn.getAttribute('data-dish-url');
+            if (url && url !== '#') {
+              btn.classList.add('acknowledged');
+              btn.textContent = 'Acknowledged';
+              // Navigate after a brief moment to show the acknowledged state
+              setTimeout(() => {
+                window.location.href = url;
+              }, 300);
+            }
+          });
+        });
 
         emptyState.style.display = 'block';
       } catch (err) {
@@ -1019,11 +1338,13 @@
       const trimmed = (query || '').trim();
       if (!trimmed) {
         dishResultsList.innerHTML = '';
+        currentSearchResults = null; // Clear stored results
         await loadSimilarUsersLovedDishes();
         return;
       }
 
-      setStatus('Searching menus with AI...', '');
+      setStatus('Searching menus...', '');
+      currentSearchResults = null; // Clear previous results
       
       try {
         const payload = { userQuery: trimmed, userAllergens: userAllergies, userDiets };
@@ -1057,12 +1378,21 @@
         if (data) {
           const results = Array.isArray(data.results) ? data.results : [];
           if (results.length > 0) {
-            await renderDishResults(results);
-            setStatus('Search complete.', 'success');
+            currentSearchResults = results; // Store results for re-filtering
+            const hasResults = await renderDishResults(results, true);
+            // Only show "Search complete" if results were actually displayed
+            if (hasResults) {
+              setStatus('Search complete.', 'success');
+            } else {
+              setStatus('No relevant results found.', 'error');
+            }
             return;
           }
         }
         
+        currentSearchResults = null; // Clear results if no dishes found
+        dishResultsList.innerHTML = '';
+        await renderDishResults([], true); // Show empty state
         setStatus('No dishes found. Try a different search.', 'error');
       } catch (err) {
         console.error('Search failed', err);
@@ -1078,8 +1408,25 @@
         return;
       }
 
+      const OWNER_EMAIL = 'matt.29.ds@gmail.com';
+      const isOwner = user.email === OWNER_EMAIL;
+      const isManager = user.user_metadata?.role === 'manager';
+
+      let managerRestaurants = [];
+      if (isManager || isOwner) {
+        managerRestaurants = await fetchManagerRestaurants(supabaseClient, user.id);
+      }
+
+      if (isManager && !isOwner) {
+        const targetRestaurant = managerRestaurants[0];
+        window.location.href = targetRestaurant
+          ? `restaurant.html?slug=${encodeURIComponent(targetRestaurant.slug)}`
+          : 'server-tablet.html';
+        return;
+      }
+
       currentUser = user;
-      setupNav('dish-search', user);
+      setupNav('dish-search', user, { managerRestaurants });
       await loadUserPreferences(user);
       await loadLovedDishes(user);
       await loadRestaurants();

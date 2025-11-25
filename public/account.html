@@ -209,9 +209,10 @@
   <script type="module">
     import supabaseClient from './js/supabase-client.js';
     import { setupNav, attachSignOutHandler } from './js/shared-nav.js';
+    import { fetchManagerRestaurants } from './js/manager-context.js';
 
     const ALLERGENS = ["dairy", "egg", "peanut", "tree nut", "shellfish", "fish", "soy", "sesame", "wheat"];
-    const DIETS = ["Vegan", "Vegetarian", "Pescatarian"];
+    const DIETS = ["Vegan", "Vegetarian", "Pescatarian", "Gluten-free"];
     const ALLERGEN_EMOJI = {
       'dairy': '🥛',
       'egg': '🥚',
@@ -226,7 +227,8 @@
     const DIET_EMOJI = {
       'Vegan': '🌱',
       'Vegetarian': '🥬',
-      'Pescatarian': '🐟'
+      'Pescatarian': '🐟',
+      'Gluten-free': '🌾'
     };
     let selectedAllergies = [];
     let selectedDiets = [];
@@ -273,7 +275,7 @@
     const resetCancelBtn = document.getElementById('reset-cancel-btn');
     const resetMessage = document.getElementById('reset-message');
 
-    function setNavState(user) {
+    function setNavState(user, managerRestaurants = []) {
       const fromQr = !!returnSlug;
       const showBackToMenu = fromQr && !user;
 
@@ -287,7 +289,7 @@
 
       // Setup navigation with current page indicator
       if (!isRecoveryMode) {
-        setupNav('account', user);
+        setupNav('account', user, { managerRestaurants });
         attachSignOutHandler(supabaseClient);
       }
     }
@@ -295,7 +297,14 @@
     async function checkAuth() {
       const { data: { user } } = await supabaseClient.auth.getUser();
       currentUser = user;
-      setNavState(user);
+      const OWNER_EMAIL = 'matt.29.ds@gmail.com';
+      const isOwner = user?.email === OWNER_EMAIL;
+      const isManager = user?.user_metadata?.role === 'manager';
+      let managerRestaurants = [];
+      if (user && (isManager || isOwner)) {
+        managerRestaurants = await fetchManagerRestaurants(supabaseClient, user.id);
+      }
+      setNavState(user, managerRestaurants);
 
       if (user) {
         if (isRecoveryMode) {
@@ -341,13 +350,23 @@
           populateDetails(user);
           await loadAllergies();
           await loadDiets();
-          if (!returnSlug && redirectParam === 'restaurants') {
-            window.location.href = 'restaurants.html';
-            return;
-          }
-          if (!returnSlug && redirectParam === 'favorites') {
-            window.location.href = 'favorites.html';
-            return;
+          
+          // Handle redirects
+          if (redirectParam) {
+            // If redirect is a full URL, use it directly
+            if (redirectParam.startsWith('http://') || redirectParam.startsWith('https://')) {
+              window.location.href = redirectParam;
+              return;
+            }
+            // Handle specific redirect cases
+            if (redirectParam === 'restaurants') {
+              window.location.href = 'restaurants.html';
+              return;
+            }
+            if (redirectParam === 'favorites') {
+              window.location.href = 'favorites.html';
+              return;
+            }
           }
         }
       } else {
@@ -355,10 +374,17 @@
         dietSection.style.display = 'none';
         signOutSection.style.display = 'none';
         detailsSection.style.display = 'none';
-        signupView.style.display = 'none';
-        authSection.style.display = 'flex';
         passwordResetSection.style.display = 'none';
         document.getElementById('onboarding-section').style.display = 'none';
+        // Check mode parameter to show signup or signin
+        const modeParam = params.get('mode');
+        if(modeParam === 'signup') {
+          authSection.style.display = 'none';
+          signupView.style.display = 'flex';
+        } else {
+          signupView.style.display = 'none';
+          authSection.style.display = 'flex';
+        }
         if (isRecoveryMode) {
           isRecoveryMode = false;
         }
@@ -963,8 +989,18 @@
           console.log('[DEBUG] Invitation marked as used. error:', updateError);
         }
 
-        // Redirect to restaurants page
-        window.location.href = 'restaurants.html';
+        // Redirect based on redirect parameter or default to restaurants
+        if (redirectParam) {
+          if (redirectParam.startsWith('http://') || redirectParam.startsWith('https://')) {
+            window.location.href = redirectParam;
+          } else if (redirectParam === 'favorites') {
+            window.location.href = 'favorites.html';
+          } else {
+            window.location.href = 'restaurants.html';
+          }
+        } else {
+          window.location.href = 'restaurants.html';
+        }
       } catch (error) {
         console.error('Onboarding error:', error);
         onboardingStatus.textContent = error.message || 'Failed to complete setup. Please try again.';

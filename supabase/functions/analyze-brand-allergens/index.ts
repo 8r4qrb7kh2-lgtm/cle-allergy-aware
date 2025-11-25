@@ -40,7 +40,8 @@ CRITICAL: You MUST respond with ONLY valid JSON. No explanations, no markdown, n
 TASK:
 Analyze the ingredient list and determine:
 1. Which allergens are present from this FDA Top 9 list ONLY: dairy, egg, peanut, tree nut, shellfish, fish, wheat, soy, sesame
-2. Which dietary preferences this product is compatible with: Vegan, Vegetarian, Pescatarian
+2. Which dietary preferences this product is compatible with: Vegan, Vegetarian, Pescatarian, Gluten-free
+3. Whether a barcode/ingredient label scan is REQUIRED (needsScan = true) or optional (needsScan = false)
 
 CRITICAL ALLERGEN RULES:
 - ONLY flag allergens from the top 9 list above
@@ -54,27 +55,34 @@ IMPORTANT RULES FOR ALLERGEN DETECTION:
 - "almond milk" DOES contain tree nuts (almonds)
 - Be context-aware: "milk powder" after animal ingredients = dairy, but "almond milk" = tree nut only
 
-DIETARY PREFERENCE RULES:
-- Vegan: NO animal products at all (no meat, fish, dairy, eggs, honey, gelatin, or animal-derived additives)
-- Vegetarian: No meat or fish, but MAY contain dairy and/or eggs
-- Pescatarian: May contain fish/seafood, dairy, and eggs, but NO other meat (chicken, beef, pork, etc.)
+DIETARY COMPATIBILITY RULES (DO NOT SKIP):
+- ALWAYS return every compatible dietary option. Only leave the diets array empty if the ingredient clearly violates ALL diets (e.g., contains mixed meats with gluten and animal products).
+- Plant-based ONLY (no animal-derived terms) → ["Vegan","Vegetarian","Pescatarian"] plus "Gluten-free" if there is no wheat/barley/rye/malt.
+- Contains dairy and/or eggs but NO meat or fish (e.g., cream, butter, cheese, mayo) → ["Vegetarian","Pescatarian"] and add "Gluten-free" if no gluten sources.
+- Contains fish or seafood but no other meat → ["Pescatarian"] (add "Gluten-free" only if appropriate).
+- Contains any meat/poultry/pork/gelatin → usually no Vegan/Vegetarian/Pescatarian, but still include "Gluten-free" when the ingredients are free of gluten grains.
+- Vegan implies Vegetarian and Pescatarian. Vegetarian implies Pescatarian. NEVER mark Vegan if any dairy, egg, meat, fish, honey, or gelatin is present.
 
-IMPORTANT:
-- A vegetarian product (with dairy/eggs) is ALSO pescatarian-compatible
-- If product is vegan, it's also vegetarian AND pescatarian
-- If product is vegetarian (no meat/fish), it's also pescatarian
+GLUTEN RULE:
+- Only mark "Gluten-free" if there are ZERO gluten sources (wheat, barley, rye, malt, breadcrumbs, batter, semolina, couscous, farro, bulgur, etc.). Oats alone are fine if uncontaminated.
+
+BARCODE SCAN RULES:
+- Please require barcode scanning if you think the ingredient will be composed of multiple ingredients. Use common sense and require a barcode scan if you're not sure.
+- PROCESSED DAIRY PRODUCTS (cream, heavy cream, light cream, half-and-half, sour cream, whipping cream, coffee creamers, flavored creams, butter, ghee, yogurt, kefir, labneh, mascarpone, ricotta, cream cheese, cottage cheese, etc.) MUST ALWAYS SET needsScan = true. These products vary by brand and contain multiple sub-ingredients, stabilizers, and preservatives.
+- If the ingredient name ends with "cream" or clearly references a packaged dairy spread, treat it as processed and require a scan even if no sub-ingredients are listed.
 
 EXAMPLES:
-1. "almond milk (water, almonds), oats, dates" → allergens: ["tree nut"], diets: ["Vegan", "Vegetarian", "Pescatarian"]
-2. "yogurt (milk), oats, honey" → allergens: ["dairy"], diets: ["Vegetarian", "Pescatarian"]
+1. "almond milk (water, almonds), oats, dates" → allergens: ["tree nut"], diets: ["Vegan", "Vegetarian", "Pescatarian", "Gluten-free"]
+2. "yogurt (milk), oats, honey" → allergens: ["dairy"], diets: ["Vegetarian", "Pescatarian", "Gluten-free"]
 3. "chicken, salt, pepper" → allergens: [], diets: []
-4. "tuna, water, salt" → allergens: ["fish"], diets: ["Pescatarian"]
-5. "egg, milk, flour" → allergens: ["egg", "dairy", "wheat"], diets: ["Vegetarian", "Pescatarian"]
+4. "tuna, water, salt" → allergens: ["fish"], diets: ["Pescatarian", "Gluten-free"]
+5. "egg, milk, flour" → allergens: ["egg", "dairy", "wheat"], diets: ["Vegetarian", "Pescatarian"] (NOT gluten-free due to flour)
 
 Return a JSON object with this exact structure:
 {
   "allergens": ["allergen1", "allergen2"],
-  "diets": ["Vegan", "Vegetarian", "Pescatarian"],
+  "diets": ["Vegan", "Vegetarian", "Pescatarian", "Gluten-free"],
+  "needsScan": true or false,
   "reasoning": "Brief explanation of your analysis"
 }`
 
@@ -87,9 +95,9 @@ ${categories && categories.length > 0 ? `\nProduct Categories: ${categories.join
 
 Please analyze these ingredients and determine allergens and dietary compatibility.`
 
-    console.log('Calling Claude API (Sonnet 4.5)...')
+    console.log('Calling Claude API (Haiku 4.5)...')
 
-    // Call Claude API with Sonnet 4.5
+    // Call Claude API with Haiku 4.5
     const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -98,7 +106,7 @@ Please analyze these ingredients and determine allergens and dietary compatibili
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',  // Claude Sonnet 4
+        model: 'claude-3-5-haiku-20241022',  // Claude 3.5 Haiku
         max_tokens: 1000,
         system: systemPrompt,
         messages: [{
@@ -117,6 +125,8 @@ Please analyze these ingredients and determine allergens and dietary compatibili
 
     const aiResult = await claudeResponse.json()
     const responseText = aiResult.content[0].text
+    const modelUsed = aiResult.model || 'unknown';
+    console.log('Claude response model:', modelUsed);
 
     console.log('Claude response received, length:', responseText.length)
 
@@ -133,7 +143,9 @@ Please analyze these ingredients and determine allergens and dietary compatibili
 
       console.log('Successfully parsed:', {
         allergens: parsed.allergens,
-        diets: parsed.diets
+        diets: parsed.diets,
+        needsScan: parsed.needsScan,
+        reasoning: parsed.reasoning
       })
     } catch (e) {
       console.error('Failed to parse JSON from Claude response')
@@ -146,6 +158,7 @@ Please analyze these ingredients and determine allergens and dietary compatibili
           error: 'AI returned invalid format',
           allergens: [],
           diets: [],
+          needsScan: false,
           raw_response: responseText.substring(0, 200)
         }),
         {
@@ -165,11 +178,93 @@ Please analyze these ingredients and determine allergens and dietary compatibili
     if (!Array.isArray(parsed.diets)) {
       parsed.diets = []
     }
+    parsed.needsScan = Boolean(parsed.needsScan);
+
+    // Post-process diets to guarantee coverage even if the model omits them
+    const rawText = (ingredientText || '').toLowerCase();
+    const tokenSet = new Set(
+      (ingredientText || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .split(' ')
+        .filter(Boolean)
+    );
+    const hasToken = (...tokens: string[]) => tokens.some(token => tokenSet.has(token));
+    const hasPhrase = (...phrases: string[]) => phrases.some(phrase => rawText.includes(phrase));
+    const allergenSet = new Set(parsed.allergens.map(a => a.toLowerCase()));
+
+    const hasDairy = allergenSet.has('dairy') || hasToken('cream','milk','butter','cheese','yogurt','yoghurt','ghee','casein','whey','custard','kefir','labneh','mascarpone','ricotta','sour','mozzarella');
+    const hasHalfAndHalf = hasPhrase('half and half','half-and-half');
+    const hasEgg = allergenSet.has('egg') || hasToken('egg','eggs','yolk','yolks','albumen');
+    const hasFish = allergenSet.has('fish') || hasToken('fish','salmon','tuna','cod','anchovy','anchovies','sardine','trout','tilapia','halibut','mahi','snapper');
+    const hasShellfish = allergenSet.has('shellfish') || hasToken('shrimp','prawn','lobster','crab','clam','clams','mussel','mussels','scallop','scallops','oyster','oysters');
+    const hasMeat = hasToken('beef','steak','pork','bacon','ham','prosciutto','salami','chicken','turkey','duck','lamb','veal','sausage','sausages','pepperoni','meatball','chorizo','pastrami','corned','brisket','gelatin','gelatine','lard');
+    const hasHoney = hasToken('honey');
+    const hasGelatin = hasToken('gelatin','gelatine','collagen','lard');
+    const containsAnimalProduct = hasMeat || hasFish || hasShellfish || hasDairy || hasHalfAndHalf || hasEgg || hasHoney || hasGelatin;
+
+    const glutenTokens = [
+      'wheat','flour','breadcrumbs','breadcrumb','bread','pasta','spaghetti','noodles','barley','rye','malt',
+      'semolina','spelt','farro','bulgur','couscous','cracker','crackers','pretzel','pretzels','cake','cookies',
+      'biscuit','biscuits','batter','pastry','dough','seitan'
+    ];
+    const hasGluten = allergenSet.has('wheat') || glutenTokens.some(token => tokenSet.has(token));
+
+    const dietsSet = new Set(
+      Array.isArray(parsed.diets) ? parsed.diets.filter(Boolean) : []
+    );
+
+    const addDiet = (diet: string) => dietsSet.add(diet);
+    const removeDiet = (diet: string) => dietsSet.delete(diet);
+
+    if (dietsSet.size === 0) {
+      if (!containsAnimalProduct) {
+        addDiet('Vegan');
+        addDiet('Vegetarian');
+        addDiet('Pescatarian');
+      } else if (!hasMeat && !hasFish && !hasShellfish) {
+        addDiet('Vegetarian');
+        addDiet('Pescatarian');
+      } else if (!hasMeat && (hasFish || hasShellfish)) {
+        addDiet('Pescatarian');
+      }
+    }
+
+    if (hasDairy || hasHalfAndHalf || hasEgg || hasHoney || hasGelatin) {
+      removeDiet('Vegan');
+    }
+    if (hasFish || hasShellfish || hasMeat) {
+      removeDiet('Vegetarian');
+    }
+    if (hasMeat) {
+      removeDiet('Pescatarian');
+    }
+
+    if (dietsSet.has('Vegan')) {
+      addDiet('Vegetarian');
+      addDiet('Pescatarian');
+    }
+    if (dietsSet.has('Vegetarian')) {
+      addDiet('Pescatarian');
+    }
+
+    if (hasGluten) {
+      removeDiet('Gluten-free');
+    } else {
+      addDiet('Gluten-free');
+    }
+
+    parsed.diets = Array.from(dietsSet);
+
+    const needsScan = Boolean(parsed.needsScan);
+    console.log(`needsScan decision (model ${modelUsed}):`, needsScan, '-', parsed.reasoning || 'no reasoning provided');
+    console.log('Final diets after safeguards:', parsed.diets);
 
     return new Response(
       JSON.stringify({
         allergens: parsed.allergens,
         diets: parsed.diets,
+        needsScan,
         reasoning: parsed.reasoning || ''
       }),
       {
@@ -187,11 +282,12 @@ Please analyze these ingredients and determine allergens and dietary compatibili
     console.error('Error message:', error.message)
 
     return new Response(
-      JSON.stringify({
+        JSON.stringify({
         error: error.message || 'Failed to process request',
         errorName: error.name,
         allergens: [],
         diets: [],
+          needsScan: false,
         debug: {
           message: error.message,
           stack: error.stack?.substring(0, 500)

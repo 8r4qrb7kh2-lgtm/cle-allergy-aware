@@ -52,7 +52,7 @@ Return ONLY a JSON object with this structure:
   "allergens": ["dairy", "egg", "wheat", "gluten", "fish", "shellfish", "soy", "tree_nut", "peanut"],
   "removable": [],
   "crossContamination": [],
-  "diets": ["Vegan", "Vegetarian", "Pescatarian"],
+  "diets": ["Vegan", "Vegetarian", "Pescatarian", "Gluten-free"],
   "details": {}
 }
 
@@ -60,7 +60,7 @@ IMPORTANT:
 - Make the bounding box VERY TIGHT around just the dish name and price
 - Coordinates are 0-100% relative to the cropped region you see
 - Be generous with allergens if unsure - better safe than sorry
-- Only include diets if you're confident (e.g., clear vegetarian dish)
+- Only include diets if you're confident (e.g., clear vegetarian dish). Only mark Gluten-free if there are no terms like bread, bun, flour, pasta, batter, or other obvious gluten sources.
 - If the dish has toppings or modifiers listed, include those in details`
 
     // Call Claude API directly

@@ -38,9 +38,18 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // Initialize Supabase client for this page
+    const SUPABASE_URL = 'https://fgoiyycctnwnghrvsilt.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnb2l5eWNjdG53bmdocnZzaWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0MzY1MjYsImV4cCI6MjA3NjAxMjUyNn0.xlSSXr0Gl7j-vsckrj-2anpPmp4BG2SUIdN-_dquSA8';
+    const { createClient } = supabase;
+    window.supabaseClient = window.supabaseClient || createClient(SUPABASE_URL, SUPABASE_KEY);
+    window.SUPABASE_ANON_KEY = SUPABASE_KEY;
+  </script>
   <script type="module">
     import supabaseClient from './js/supabase-client.js';
     import { setupNav, attachSignOutHandler } from './js/shared-nav.js';
+    import { fetchManagerRestaurants } from './js/manager-context.js';
 
     const statusEl = document.getElementById('favorites-status');
     const grid = document.getElementById('favorite-grid');
@@ -66,17 +75,57 @@
     }
 
     const DAY_MS = 24 * 60 * 60 * 1000;
+    // Helper function to get weeks ago text and color
+    // showAll: if true, show text even for dates beyond 30 days (for admin/manager)
+    function getWeeksAgoInfo(date, showAll = false) {
+      if (!date) return { text: 'Never', color: '#888', shouldHide: false };
+      const x = new Date(date);
+      if (Number.isNaN(x.getTime())) return { text: 'Never', color: '#888', shouldHide: false };
+      const now = new Date();
+      
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const compareDate = new Date(x.getFullYear(), x.getMonth(), x.getDate());
+      
+      const diffDays = Math.floor((today - compareDate) / DAY_MS);
+      const diffWeeks = Math.floor(diffDays / 7);
+      
+      // If more than 30 days and not showing all, hide restaurant
+      if (diffDays > 30 && !showAll) {
+        return { text: null, color: null, shouldHide: true };
+      }
+      
+      let text, color;
+      if (diffDays < 7) {
+        text = 'this week';
+        color = '#4caf50'; // Green
+      } else if (diffWeeks === 1) {
+        text = 'last week';
+        color = '#8bc34a'; // Yellow-green
+      } else if (diffWeeks === 2) {
+        text = 'two weeks ago';
+        color = '#ff9800'; // Orange
+      } else if (diffWeeks === 3) {
+        text = 'three weeks ago';
+        color = '#f44336'; // Red
+      } else {
+        // 4+ weeks - show number of weeks for admin/manager, otherwise "three weeks ago"
+        if (showAll) {
+          text = `${diffWeeks} weeks ago`;
+          color = '#f44336'; // Red for all dates beyond 3 weeks
+        } else {
+          // 4 weeks but still within 30 days
+          text = 'three weeks ago';
+          color = '#f44336'; // Red
+        }
+      }
+      
+      return { text, color, shouldHide: false };
+    }
+
     function formatRelativeDate(value){
-      if(!value) return 'Never';
-      const date = new Date(value);
-      if(Number.isNaN(date.getTime())) return 'Never';
-      const today = new Date();
-      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const targetStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-      let diff = Math.round((todayStart - targetStart) / DAY_MS);
-      if(diff <= 0) return 'Today';
-      if(diff === 1) return 'Yesterday';
-      return diff + ' days ago';
+      const info = getWeeksAgoInfo(value);
+      if (info.shouldHide) return null; // Signal to hide
+      return info.text;
     }
 
     function updateFavoriteButton(btn, isActive) {
@@ -153,8 +202,25 @@
       const user = await requireAuth();
       if (!user) return;
 
+      const OWNER_EMAIL = 'matt.29.ds@gmail.com';
+      const isOwner = user.email === OWNER_EMAIL;
+      const isManager = user.user_metadata?.role === 'manager';
+
+      let managerRestaurants = [];
+      if (isManager || isOwner) {
+        managerRestaurants = await fetchManagerRestaurants(supabaseClient, user.id);
+      }
+
+      if (isManager && !isOwner) {
+        const targetRestaurant = managerRestaurants[0];
+        window.location.href = targetRestaurant
+          ? `restaurant.html?slug=${encodeURIComponent(targetRestaurant.slug)}`
+          : 'server-tablet.html';
+        return;
+      }
+
       // Setup navigation with current page indicator
-      setupNav('favorites', user);
+      setupNav('favorites', user, { managerRestaurants });
       attachSignOutHandler(supabaseClient);
 
       const { data: favorites, error: favoritesError } = await supabaseClient
@@ -183,6 +249,24 @@
         .in('id', ids)
         .order('name');
 
+      // Check if user is admin or manager
+      const isAdmin = user.email === OWNER_EMAIL;
+      const isManagerCheck = isManager;
+      
+      // Filter out restaurants that haven't confirmed in 30+ days (unless admin or manager)
+      let filteredRestaurants = restaurants || [];
+      
+      if (!isAdmin && !isManagerCheck) {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        
+        filteredRestaurants = filteredRestaurants.filter(r => {
+          if (!r.last_confirmed) return false; // Hide restaurants that have never confirmed
+          const lastConfirmed = new Date(r.last_confirmed);
+          return lastConfirmed >= thirtyDaysAgo;
+        });
+      }
+
       if (error) {
         console.error('Failed to load restaurant details', error);
         grid.innerHTML = '<p style="color: var(--bad); grid-column:1/-1;">Unable to load favorite restaurants.</p>';
@@ -190,13 +274,13 @@
         return;
       }
 
-      if (!restaurants.length) {
+      if (!filteredRestaurants.length) {
         grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">No favorites yet. Add favorites from the All restaurants page.</div>';
         favoriteIds.clear();
         return;
       }
 
-      grid.innerHTML = restaurants.map(r => {
+      grid.innerHTML = filteredRestaurants.map(r => {
         const restaurantKey = r.id ? String(r.id) : '';
         const isFavorite = restaurantKey && favoriteIds.has(restaurantKey);
         const favoriteButton = restaurantKey ? `
@@ -212,7 +296,13 @@
             </div>
             <div class="restaurant-card-content">
               <h3>${r.name}</h3>
-              <p class="meta">Last confirmed by staff: ${formatRelativeDate(r.last_confirmed)}</p>
+              ${(() => {
+                const isAdmin = user.email === OWNER_EMAIL;
+                const showAll = isAdmin || isManagerCheck;
+                const info = getWeeksAgoInfo(r.last_confirmed, showAll);
+                if (info.shouldHide || !info.text) return '';
+                return `<p class="meta" style="color: ${info.color}">Last confirmed by staff: ${info.text}</p>`;
+              })()}
               <a href="restaurant.html?slug=${r.slug}" class="cta-button" style="padding: 10px 20px; font-size: 0.9rem;">View menu</a>
             </div>
           </div>

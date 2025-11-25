@@ -28,46 +28,12 @@ serve(async (req: Request) => {
     );
 
     // Fetch all restaurants (including overlays which contain dishes)
+    // Only use overlays since they contain confirmed allergen and dietary data from restaurant managers
     const { data: restaurants, error: restaurantsError } = await supabase
       .from("restaurants")
       .select("id, name, slug, last_confirmed, overlays")
       .order("name");
     if (restaurantsError) throw restaurantsError;
-
-    // Fetch latest snapshot per restaurant (order by detected_at DESC first)
-    const { data: snapshots, error: snapshotsError } = await supabase
-      .from("menu_snapshots")
-      .select("id, restaurant_id, dishes_json, detected_at")
-      .order("detected_at", { ascending: false });
-    if (snapshotsError) throw snapshotsError;
-
-    // Reduce to latest snapshot per restaurant
-    const latestByRestaurant = new Map<string, { dishes: Dish[]; detected_at: string }>();
-    for (const s of snapshots || []) {
-      const rid = String(s.restaurant_id);
-      if (!latestByRestaurant.has(rid)) {
-        let dishes: Dish[] = [];
-        if (s.dishes_json) {
-          try {
-            // Supabase may auto-parse JSON columns, so handle both string and object
-            let parsed: any;
-            if (typeof s.dishes_json === 'string') {
-              parsed = JSON.parse(s.dishes_json);
-            } else {
-              parsed = s.dishes_json;
-            }
-            if (Array.isArray(parsed)) {
-              dishes = parsed as Dish[];
-            } else if (parsed && Array.isArray(parsed.dishes)) {
-              dishes = parsed.dishes as Dish[];
-            }
-          } catch (err) {
-            console.error('Failed to parse dishes_json for restaurant', rid, err);
-          }
-        }
-        latestByRestaurant.set(rid, { dishes, detected_at: s.detected_at as string });
-      }
-    }
 
     // Build candidate list for AI; apply quick keyword prefilter to reduce tokens
     const normalizedQueryTerms = tokenize(userQuery);
@@ -84,34 +50,52 @@ serve(async (req: Request) => {
     const candidates: Candidate[] = [];
     for (const r of restaurants || []) {
       const rid = String(r.id);
-      // Try menu_snapshots first, fallback to restaurants.overlays
-      let dishes: Dish[] = [];
-      const latest = latestByRestaurant.get(rid);
-      if (latest && latest.dishes.length > 0) {
-        dishes = latest.dishes;
-      } else if ((r as any).overlays && Array.isArray((r as any).overlays)) {
-        // Fallback: extract from overlays
-        dishes = ((r as any).overlays as any[]).map((ov: any) => ({
-          name: ov.name || ov.id || "",
-          description: ov.description || ov.ingredients || "",
-        })).filter((d: Dish) => d.name);
-      }
-      
-      for (const d of dishes) {
-        const name = (d?.name || "").toString();
-        const desc = (d?.description || "").toString();
-        if (!name) continue;
-        const prefilterScore = simpleScore(`${name} ${desc}`, normalizedQueryTerms);
-        // For single-word queries, include all dishes; for longer queries, require at least one term match
-        const shouldInclude = normalizedQueryTerms.length === 1 ? true : prefilterScore > 0;
-        if (shouldInclude) {
-          candidates.push({
-            restaurant_id: rid,
-            restaurant_name: r.name,
-            restaurant_slug: (r as any).slug || null,
-            dish_name: name,
-            dish_description: desc,
-          });
+      // Only use overlays - they contain confirmed allergen and dietary data from restaurant managers
+      if ((r as any).overlays && Array.isArray((r as any).overlays)) {
+        const overlayDishes = ((r as any).overlays as any[]).map((ov: any) => {
+          // Extract description from various possible fields
+          let description = "";
+          if (ov.description) {
+            description = ov.description;
+          } else if (ov.details && ov.details.__ingredientsSummary) {
+            description = ov.details.__ingredientsSummary;
+          } else if (ov.aiIngredientSummary) {
+            try {
+              // aiIngredientSummary is stored as a JSON string array
+              const summaryArray = JSON.parse(ov.aiIngredientSummary);
+              if (Array.isArray(summaryArray)) {
+                description = summaryArray.join(", ");
+              }
+            } catch (e) {
+              // If parsing fails, use as-is
+              description = ov.aiIngredientSummary;
+            }
+          } else if (ov.ingredients) {
+            description = ov.ingredients;
+          }
+          
+          return {
+            name: ov.name || ov.id || "",
+            description: description,
+          };
+        }).filter((d: Dish) => d.name);
+        
+        for (const d of overlayDishes) {
+          const name = (d?.name || "").toString();
+          const desc = (d?.description || "").toString();
+          if (!name) continue;
+          const prefilterScore = simpleScore(`${name} ${desc}`, normalizedQueryTerms);
+          // For single-word queries, include all dishes; for longer queries, require at least one term match
+          const shouldInclude = normalizedQueryTerms.length === 1 ? true : prefilterScore > 0;
+          if (shouldInclude) {
+            candidates.push({
+              restaurant_id: rid,
+              restaurant_name: r.name,
+              restaurant_slug: (r as any).slug || null,
+              dish_name: name,
+              dish_description: desc,
+            });
+          }
         }
       }
     }
@@ -120,27 +104,48 @@ serve(async (req: Request) => {
     if (candidates.length === 0 && normalizedQueryTerms.length > 1) {
       for (const r of restaurants || []) {
         const rid = String(r.id);
-        let dishes: Dish[] = [];
-        const latest = latestByRestaurant.get(rid);
-        if (latest && latest.dishes.length > 0) {
-          dishes = latest.dishes;
-        } else if ((r as any).overlays && Array.isArray((r as any).overlays)) {
-          dishes = ((r as any).overlays as any[]).map((ov: any) => ({
-            name: ov.name || ov.id || "",
-            description: ov.description || ov.ingredients || "",
-          })).filter((d: Dish) => d.name);
-        }
-        for (const d of dishes) {
-          const name = (d?.name || "").toString();
-          const desc = (d?.description || "").toString();
-          if (!name) continue;
-          candidates.push({
-            restaurant_id: rid,
-            restaurant_name: r.name,
-            restaurant_slug: (r as any).slug || null,
-            dish_name: name,
-            dish_description: desc,
-          });
+        // Only use overlays
+        if ((r as any).overlays && Array.isArray((r as any).overlays)) {
+          const overlayDishes = ((r as any).overlays as any[]).map((ov: any) => {
+            // Extract description from various possible fields
+            let description = "";
+            if (ov.description) {
+              description = ov.description;
+            } else if (ov.details && ov.details.__ingredientsSummary) {
+              description = ov.details.__ingredientsSummary;
+            } else if (ov.aiIngredientSummary) {
+              try {
+                // aiIngredientSummary is stored as a JSON string array
+                const summaryArray = JSON.parse(ov.aiIngredientSummary);
+                if (Array.isArray(summaryArray)) {
+                  description = summaryArray.join(", ");
+                }
+              } catch (e) {
+                // If parsing fails, use as-is
+                description = ov.aiIngredientSummary;
+              }
+            } else if (ov.ingredients) {
+              description = ov.ingredients;
+            }
+            
+            return {
+              name: ov.name || ov.id || "",
+              description: description,
+            };
+          }).filter((d: Dish) => d.name);
+          
+          for (const d of overlayDishes) {
+            const name = (d?.name || "").toString();
+            const desc = (d?.description || "").toString();
+            if (!name) continue;
+            candidates.push({
+              restaurant_id: rid,
+              restaurant_name: r.name,
+              restaurant_slug: (r as any).slug || null,
+              dish_name: name,
+              dish_description: desc,
+            });
+          }
         }
       }
       // Cap fallback to prevent too many candidates
@@ -300,6 +305,8 @@ Tasks:
    - If the dish name or description contains keywords from the user's query (case-insensitive), it IS relevant.
    - For example, if user asks for "lasagna", include dishes named "Lasagna" or containing "lasagna" in the description.
    - Use semantic matching: "pasta" matches "spaghetti", "noodles", etc.
+   - Handle spelling variations: "mousaka" matches "moussaka", "moukaa", and similar phonetic variations.
+   - If the dish name sounds similar to the query (even with different spelling), include it.
 2) Determine COMPATIBILITY:
    - "meets_all_requirements": dish appears to satisfy diets and avoids allergens.
    - "can_accommodate": dish could work with a simple, common modification (e.g., "no cheese").

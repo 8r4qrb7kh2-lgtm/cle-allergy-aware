@@ -2,20 +2,44 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 
+// CORS headers - defined outside handler to ensure they're always available
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Max-Age': '86400',
+};
+
 serve(async (req) => {
-  // Handle CORS
+  // Handle CORS preflight requests FIRST - before any other logic
   if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS preflight request');
     return new Response('ok', {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-      }
+      status: 200,
+      headers: corsHeaders
     })
   }
 
+  // Check for API key early and return proper error if missing
+  if (!ANTHROPIC_API_KEY) {
+    console.error('ANTHROPIC_API_KEY is not set!');
+    return new Response(
+      JSON.stringify({
+        error: 'Server configuration error',
+        message: 'Anthropic API key not configured'
+      }),
+      {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders
+        }
+      }
+    )
+  }
+
   try {
-    const { text, dishName, imageData } = await req.json()
+    const { text, dishName, imageData, generateDescription } = await req.json()
 
     console.log('Request received:', {
       hasImageData: !!imageData,
@@ -24,30 +48,57 @@ serve(async (req) => {
       dishName: dishName || 'none'
     })
 
-    if (!ANTHROPIC_API_KEY) {
-      console.error('ANTHROPIC_API_KEY is not set!')
-      throw new Error('Anthropic API key not configured')
-    }
-
     console.log('API key is configured, proceeding with Claude API call...')
 
-    // Build the prompt based on whether we have an image
-    const systemPrompt = imageData
-      ? `You are an ingredient analysis assistant for a restaurant allergen awareness system.
+    // Check if this is a description generation request
+    const isDescriptionGeneration = generateDescription === true || (text && text.includes('GENERATE_DESCRIPTION_MODE'))
+    
+    let systemPrompt = ''
+    let userPrompt = ''
+    
+    if(isDescriptionGeneration){
+      // For description generation, generate a narrative-style recipe paragraph
+      systemPrompt = `You are a professional recipe writer. Generate complete, detailed recipes written as a single flowing paragraph that mentions ingredients naturally within the preparation steps.
 
-CRITICAL: You MUST respond with ONLY valid JSON. No explanations, no markdown, no text outside the JSON structure.
+The recipe should:
+- Start with "To make [dish name], start by..."
+- Mention ingredients naturally as they're used in the preparation (e.g., "combine ground beef with ground pork, breadcrumbs, grated parmesan cheese, minced garlic...")
+- Describe each preparation step in detail
+- Flow naturally from one step to the next
+- Include specific cooking methods, temperatures, and times where relevant
+- End with serving instructions or finishing touches
+- DO NOT include a separate ingredients list or "Ingredients:" section
+- DO NOT use bullet points or numbered lists
 
-IMPORTANT INSTRUCTIONS:
-1. Read ALL ingredients from the image - whether it's a product label, recipe card, or preparation instructions
-2. If the image shows preparation instructions (like "arrange cheese, add salami, etc."), extract each mentioned food item as a separate ingredient
-3. Create a SEPARATE entry for EACH distinct ingredient (e.g., "spinach", "ricotta", "egg", "parsley" should be 4 separate entries, NOT combined)
-4. INCLUDE optional ingredients, garnishes, and toppings - they still need allergen awareness!
-5. For each ingredient, identify allergens from this list: dairy, egg, peanut, tree nut, shellfish, fish, gluten, soy, sesame, wheat
-6. Also determine which dietary options the overall dish meets from this list: Vegan, Vegetarian, Pescatarian
-7. Even if the image format is unexpected, extract food items mentioned and return valid JSON
-8. If the image is unclear, indicate that in imageQuality but STILL return valid JSON
+Return ONLY plain text. No JSON, no markdown, no code blocks. Write it as a single continuous paragraph that reads like a narrative recipe.`
+      
+      userPrompt = `Generate a complete recipe for "${dishName || 'this dish'}".
 
-CRITICAL: You MUST respond with ONLY the JSON object below. No other text before or after.
+Write it as a single flowing paragraph that starts with "To make [dish name], start by..." and mentions ingredients naturally as they're used in the preparation steps. Do NOT include a separate ingredients list at the beginning. Instead, mention all ingredients naturally within the narrative as you describe the preparation process.
+
+Include ingredient details (e.g., "diced onion", "minced garlic", "crushed tomatoes") as they appear in the steps. Describe the preparation in detail, following the format:
+
+"To make [dish name], start by preparing [component]: combine [ingredients mentioned naturally], then [next step]. [Continue describing steps in detail, mentioning ingredients as they're used]. [Finish with serving instructions]."
+
+Be thorough and specific about ingredient preparation (diced, minced, chopped, etc.) and cooking techniques. Write it all as one continuous paragraph without any lists or sections.`
+    } else {
+      // Original ingredient extraction logic
+      systemPrompt = imageData
+        ? `You are an ingredient analysis assistant for a restaurant allergen awareness system.
+
+Respond with ONLY valid JSON matching the schema below—no extra text.
+
+Read every ingredient mentioned in the image, including optional items or garnishes, and create a separate entry for each.
+
+For each ingredient:
+
+- Decide whether a barcode scan is required. Set needsScan=true when you believe the ingredient is or could be made of multiple sub-ingredients (processed, packaged, blended, or branded products). Set it to false when the ingredient is clearly a single whole item.
+
+- Answer the following questions one-by-one: does this contain dairy?, does this contain egg?, does this contain peanut?, does this contain tree nut?, does this contain shellfish?, does this contain fish?, does this contain soy?, does this contain sesame?, and does this contain wheat? Include the allergen in the list only when the ingredient clearly contains it, but you must consider all nine before responding.
+
+- Answer the following questions one-by-one: is this vegan?, is this vegetarian?, is this pescatarian?, is this gluten-free? Include the diet in the list only when the ingredient clearly complies with it, but you must consider all four before responding.
+
+- Provide a sentence that contains the answers to all of the above questions and your needsScan decision.
 
 Return a JSON object with this exact structure:
 {
@@ -56,53 +107,29 @@ Return a JSON object with this exact structure:
       "name": "single ingredient name (e.g., 'spinach', NOT 'spinach ricotta egg')",
       "brand": "brand name if visible in image, otherwise empty string",
       "allergens": ["allergen1", "allergen2"],
-      "diets": ["Vegan", "Vegetarian", "Pescatarian"],
+      "diets": ["Vegan", "Vegetarian", "Pescatarian", "Gluten-free"],
       "ingredientsList": ["raw sub-ingredients if this is a processed product, otherwise just the ingredient name"],
-      "imageQuality": "good|poor|unreadable"
+      "imageQuality": "good|poor|unreadable",
+      "needsScan": true or false,
+      "reasoning": "One concise sentence explaining how you decided the allergens and diets for this ingredient, referencing specific words from the recipe or label"
     }
   ],
-  "dietaryOptions": ["Vegan", "Vegetarian", "Pescatarian"],
+  "dietaryOptions": ["Vegan", "Vegetarian", "Pescatarian", "Gluten-free"],
   "verifiedFromImage": true
-}
+}`
+        : `You are an ingredient analysis assistant for a restaurant allergen awareness system.
 
-DIETARY OPTIONS RULES (IMPORTANT - Be proactive in assigning these):
-- Vegan: Include if ALL ingredients are plant-based (no meat, dairy, eggs, honey, gelatin, or animal-derived additives)
-- Vegetarian: Include if no meat or fish, even if dairy/eggs are present
-- Pescatarian: Include if contains fish/seafood but no other meat, may contain dairy/eggs
+Read every ingredient mentioned in the dish description, including optional items, garnishes, toppings, and alternatives. Create a separate entry for each ingredient you find.
 
-IMPORTANT: Include the "diets" field for EACH ingredient to show which dietary preferences that ingredient satisfies.
+For each ingredient:
 
-EXAMPLE 1: If you see "30 oz spinach, 15 oz cottage cheese, 1 egg, parsley":
-- {"name": "spinach", "allergens": [], "diets": ["Vegan", "Vegetarian", "Pescatarian"], ...}
-- {"name": "cottage cheese", "allergens": ["dairy"], "diets": ["Vegetarian", "Pescatarian"], ...}
-- {"name": "egg", "allergens": ["egg"], "diets": ["Vegetarian", "Pescatarian"], ...}
-- {"name": "parsley", "allergens": [], "diets": ["Vegan", "Vegetarian", "Pescatarian"], ...}
-dietaryOptions: ["Vegetarian"] (not vegan due to dairy/egg)
+- Decide whether a barcode scan is required. Set needsScan=true when you believe the ingredient is or could be made of multiple sub-ingredients (processed, packaged, blended, or branded products). Set it to false when the ingredient is clearly a single whole item.
 
-EXAMPLE 2: If you see "radish, water, vinegar, salt":
-- All plant-based ingredients with "diets": ["Vegan", "Vegetarian", "Pescatarian"]
-dietaryOptions: ["Vegan", "Vegetarian", "Pescatarian"] (all apply since no animal products)
+- Answer the following questions one-by-one: does this contain dairy?, does this contain egg?, does this contain peanut?, does this contain tree nut?, does this contain shellfish?, does this contain fish?, does this contain soy?, does this contain sesame?, and does this contain wheat? Include the allergen in the list only when the ingredient clearly contains it, but you must consider all nine before responding.
 
-EXAMPLE 3: If you see "rapeseed oil, water, egg yolk, vinegar, salt":
-- "egg yolk" has "diets": ["Vegetarian", "Pescatarian"]
-- Other ingredients have "diets": ["Vegan", "Vegetarian", "Pescatarian"]
-dietaryOptions: ["Vegetarian"] (contains egg, so not vegan)
+- Answer the following questions one-by-one: is this vegan?, is this vegetarian?, is this pescatarian?, is this gluten-free? Include the diet in the list only when the ingredient clearly complies with it, but you must consider all four before responding.
 
-Be VERY conservative with allergens but PROACTIVE with dietary options - if ingredients clearly meet the criteria, include them.`
-      : `You are an ingredient analysis assistant for a restaurant allergen awareness system.
-
-Analyze the dish description and extract:
-1. Individual ingredients (INCLUDING optional ingredients, garnishes, and toppings)
-2. Likely brands (if mentioned)
-3. Potential allergens from this list: dairy, egg, peanut, tree nut, shellfish, fish, gluten, soy, sesame, wheat
-4. Dietary options the dish meets from this list: Vegan, Vegetarian, Pescatarian
-
-IMPORTANT: Include ALL mentioned ingredients, even if they are:
-- Optional ("optionally add paprika")
-- Garnishes ("garnish with parsley")
-- Toppings ("topped with sesame seeds")
-- Alternative options ("serve with cilantro or parsley")
-These still need to be flagged for allergen awareness!
+- Provide a sentence that contains the answers to all of the above questions and your needsScan decision.
 
 Return a JSON object with this exact structure:
 {
@@ -111,42 +138,31 @@ Return a JSON object with this exact structure:
       "name": "ingredient name",
       "brand": "brand name if mentioned, otherwise empty string",
       "allergens": ["allergen1", "allergen2"],
-      "diets": ["Vegan", "Vegetarian", "Pescatarian"],
-      "ingredientsList": ["raw ingredient from label"]
+      "diets": ["Vegan", "Vegetarian", "Pescatarian", "Gluten-free"],
+      "ingredientsList": ["raw ingredient from label"],
+      "needsScan": true or false,
+      "reasoning": "One concise sentence explaining how you decided the allergens and diets for this ingredient, referencing specific words from the recipe text"
     }
   ],
-  "dietaryOptions": ["Vegan", "Vegetarian", "Pescatarian"],
+  "dietaryOptions": ["Vegan", "Vegetarian", "Pescatarian", "Gluten-free"],
   "verifiedFromImage": false
-}
-
-DIETARY OPTIONS RULES (IMPORTANT - Be proactive in assigning these):
-- Vegan: Include if ALL ingredients are plant-based (no meat, dairy, eggs, honey, gelatin, or animal-derived additives)
-- Vegetarian: Include if no meat or fish, even if dairy/eggs are present
-- Pescatarian: Include if contains fish/seafood but no other meat, may contain dairy/eggs
-
-IMPORTANT: Include the "diets" field for EACH ingredient to show which dietary preferences that ingredient satisfies.
-
-EXAMPLES:
-- "radish" → {"allergens": [], "diets": ["Vegan", "Vegetarian", "Pescatarian"], ...}
-- "olive oil" → {"allergens": [], "diets": ["Vegan", "Vegetarian", "Pescatarian"], ...}
-- "egg yolk" → {"allergens": ["egg"], "diets": ["Vegetarian", "Pescatarian"], ...}
-- "chicken" → {"allergens": [], "diets": [], ...}
-- "hummus, optionally garnish with paprika" → Include both hummus AND paprika as separate ingredients
-
-Be conservative with allergens but PROACTIVE with dietary options - if ingredients clearly meet the criteria, include them.`
-
-    const userPrompt = imageData
-      ? `${text ? `Context: ${text}` : ''}
+}`
+      
+      userPrompt = imageData
+        ? `${text ? `Context: ${text}` : ''}
 ${dishName ? `Dish Name: ${dishName}` : ''}
 
 Please analyze the ingredient label image.`
-      : `Dish Name: ${dishName || 'Unknown'}
+        : `Dish Name: ${dishName || 'Unknown'}
 Description: ${text}
 
 Please analyze this dish.`
+    }
 
     // Build content array for Claude
     const content: any[] = []
+
+    const claudeModel = 'claude-haiku-4-5-20251001'
 
     if (imageData) {
       // Extract base64 data from data URL
@@ -173,13 +189,13 @@ Please analyze this dish.`
     })
 
     console.log('Calling Claude API with:', {
-      model: 'claude-sonnet-4-20250514',
+      model: claudeModel,
       contentItems: content.length,
       hasImage: content.some(c => c.type === 'image'),
       systemPromptLength: systemPrompt.length
     })
 
-    // Call Claude API (using Sonnet 4.5 for better accuracy)
+    // Call Claude API (using Haiku 3.5 for faster, cost-effective responses)
     const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -188,7 +204,7 @@ Please analyze this dish.`
         'content-type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: claudeModel,
         max_tokens: 4000,
         system: systemPrompt,
         messages: [{
@@ -209,7 +225,23 @@ Please analyze this dish.`
     const aiResult = await claudeResponse.json()
     const responseText = aiResult.content[0].text
 
-    // Parse JSON from response
+    // For description generation, return plain text
+    if(isDescriptionGeneration){
+      return new Response(
+        JSON.stringify({
+          description: responseText.trim(),
+          text: responseText.trim()
+        }),
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        }
+      )
+    }
+
+    // Parse JSON from response for ingredient extraction
     let parsed
     try {
       // Try to extract JSON from markdown code blocks if present
@@ -236,10 +268,154 @@ Please analyze this dish.`
           status: 200,  // Return 200 so WordPress doesn't show generic error
           headers: {
             'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
+            ...corsHeaders
           }
         }
       )
+    }
+
+    // Post-process each ingredient to ensure correct diet/allergen identification
+    if (parsed && Array.isArray(parsed.ingredients)) {
+      parsed.ingredients.forEach((ingredient: any, idx: number) => {
+        // Ensure allergens and diets are arrays
+        if (!Array.isArray(ingredient.allergens)) {
+          ingredient.allergens = []
+        }
+        if (!Array.isArray(ingredient.diets)) {
+          ingredient.diets = []
+        }
+
+        // Get ingredient text for analysis (use name + ingredientsList if available)
+        const ingredientText = [
+          ingredient.name || '',
+          ...(Array.isArray(ingredient.ingredientsList) ? ingredient.ingredientsList : [])
+        ].filter(Boolean).join(' ').toLowerCase()
+
+        // Create token set for matching
+        const tokenSet = new Set(
+          ingredientText
+            .replace(/[^a-z0-9]+/g, ' ')
+            .split(' ')
+            .filter(Boolean)
+        )
+        const hasToken = (...tokens: string[]) => tokens.some(token => tokenSet.has(token))
+        const hasPhrase = (...phrases: string[]) => phrases.some(phrase => ingredientText.includes(phrase))
+        const allergenSet = new Set(ingredient.allergens.map((a: string) => a.toLowerCase()))
+
+        // Detect allergens and ingredients
+        const hasDairy = allergenSet.has('dairy') || hasToken('cream','milk','butter','cheese','yogurt','yoghurt','ghee','casein','whey','custard','kefir','labneh','mascarpone','ricotta','sour','mozzarella')
+        const hasHalfAndHalf = hasPhrase('half and half','half-and-half')
+        const hasEgg = allergenSet.has('egg') || hasToken('egg','eggs','yolk','yolks','albumen')
+        const hasFish = allergenSet.has('fish') || hasToken('fish','salmon','tuna','cod','anchovy','anchovies','sardine','trout','tilapia','halibut','mahi','snapper')
+        const hasShellfish = allergenSet.has('shellfish') || hasToken('shrimp','prawn','lobster','crab','clam','clams','mussel','mussels','scallop','scallops','oyster','oysters')
+        const hasMeat = hasToken('beef','steak','pork','bacon','ham','prosciutto','salami','chicken','turkey','duck','lamb','veal','sausage','sausages','pepperoni','meatball','chorizo','pastrami','corned','brisket','gelatin','gelatine','lard')
+        const hasHoney = hasToken('honey')
+        const hasGelatin = hasToken('gelatin','gelatine','collagen','lard')
+        const containsAnimalProduct = hasMeat || hasFish || hasShellfish || hasDairy || hasHalfAndHalf || hasEgg || hasHoney || hasGelatin
+
+        const glutenTokens = [
+          'wheat','flour','breadcrumbs','breadcrumb','bread','pasta','spaghetti','noodles','barley','rye','malt',
+          'semolina','spelt','farro','bulgur','couscous','cracker','crackers','pretzel','pretzels','cake','cookies',
+          'biscuit','biscuits','batter','pastry','dough','seitan'
+        ]
+        const hasGluten = allergenSet.has('wheat') || glutenTokens.some(token => tokenSet.has(token))
+
+        // Update allergen set based on detection
+        if (hasDairy && !allergenSet.has('dairy')) {
+          ingredient.allergens.push('dairy')
+        }
+        if (hasEgg && !allergenSet.has('egg')) {
+          ingredient.allergens.push('egg')
+        }
+        if (hasFish && !allergenSet.has('fish')) {
+          ingredient.allergens.push('fish')
+        }
+        if (hasShellfish && !allergenSet.has('shellfish')) {
+          ingredient.allergens.push('shellfish')
+        }
+        if (hasGluten && !allergenSet.has('wheat')) {
+          ingredient.allergens.push('wheat')
+        }
+
+        // Normalize diet names to expected format and process with safeguards
+        const dietNameMap: Record<string, string> = {
+          'vegan': 'Vegan',
+          'vegetarian': 'Vegetarian',
+          'pescatarian': 'Pescatarian',
+          'gluten-free': 'Gluten-free',
+          'gluten free': 'Gluten-free',
+          'glutenfree': 'Gluten-free'
+        }
+        const normalizeDietName = (diet: string): string => {
+          const normalized = diet.trim()
+          return dietNameMap[normalized.toLowerCase()] || normalized
+        }
+
+        const dietsSet = new Set(
+          Array.isArray(ingredient.diets) 
+            ? ingredient.diets.filter(Boolean).map(normalizeDietName)
+            : []
+        )
+
+        const addDiet = (diet: string) => dietsSet.add(diet)
+        const removeDiet = (diet: string) => dietsSet.delete(diet)
+
+        // If no diets detected, infer from ingredients
+        if (dietsSet.size === 0) {
+          if (!containsAnimalProduct) {
+            addDiet('Vegan')
+            addDiet('Vegetarian')
+            addDiet('Pescatarian')
+          } else if (!hasMeat && !hasFish && !hasShellfish) {
+            // Has dairy/eggs but no meat/fish - vegetarian compatible
+            addDiet('Vegetarian')
+            addDiet('Pescatarian')
+          } else if (!hasMeat && (hasFish || hasShellfish)) {
+            addDiet('Pescatarian')
+          }
+        }
+
+        // Remove incompatible diets
+        if (hasDairy || hasHalfAndHalf || hasEgg || hasHoney || hasGelatin) {
+          removeDiet('Vegan')
+        }
+        if (hasFish || hasShellfish || hasMeat) {
+          removeDiet('Vegetarian')
+        }
+        if (hasMeat) {
+          removeDiet('Pescatarian')
+        }
+
+        // Ensure diet hierarchy (Vegan → Vegetarian → Pescatarian)
+        if (dietsSet.has('Vegan')) {
+          addDiet('Vegetarian')
+          addDiet('Pescatarian')
+        }
+        if (dietsSet.has('Vegetarian')) {
+          addDiet('Pescatarian')
+        }
+
+        // Add Gluten-free if no gluten sources
+        if (hasGluten) {
+          removeDiet('Gluten-free')
+        } else {
+          addDiet('Gluten-free')
+        }
+
+        // Update ingredient diets
+        ingredient.diets = Array.from(dietsSet)
+
+        // Log the final result
+        const name = (ingredient?.name && ingredient.name.trim()) || `Ingredient ${idx + 1}`
+        const allergens = Array.isArray(ingredient?.allergens) ? ingredient.allergens.join(', ') || 'none' : 'none'
+        const diets = Array.isArray(ingredient?.diets) ? ingredient.diets.join(', ') || 'none' : 'none'
+        const reasoningText = typeof ingredient?.reasoning === 'string' && ingredient.reasoning.trim()
+          ? ingredient.reasoning.trim()
+          : 'No reasoning provided. (AI must explain how allergens/diets were determined.)'
+        console.log(`[AI Decision] ${name} | Allergens: ${allergens} | Diets: ${diets} | Reason: ${reasoningText}`)
+      })
+    } else {
+      console.log('Parsed AI response did not include an ingredients array to log reasoning.')
     }
 
     return new Response(
@@ -247,23 +423,25 @@ Please analyze this dish.`
       {
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          ...corsHeaders
         }
       }
     )
 
   } catch (error) {
     console.error('Error:', error)
+    // Always include CORS headers in error responses
     return new Response(
       JSON.stringify({
         error: error.message || 'Failed to process request',
-        ingredients: []
+        ingredients: [],
+        description: null
       }),
       {
         status: 500,
         headers: {
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
+          ...corsHeaders
         }
       }
     )

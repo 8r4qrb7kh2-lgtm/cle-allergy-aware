@@ -1,4 +1,19 @@
-import supabaseClient from './supabase-client.js';
+// Use the shared Supabase client from window
+// Wait for it to be available if it's not ready yet
+const getSupabaseClient = () => {
+  return new Promise((resolve) => {
+    if (window.supabaseClient) {
+      resolve(window.supabaseClient);
+    } else {
+      const check = setInterval(() => {
+        if (window.supabaseClient) {
+          clearInterval(check);
+          resolve(window.supabaseClient);
+        }
+      }, 50);
+    }
+  });
+};
 
 if (!window.__reportModalBootstrapped) {
   window.__reportModalBootstrapped = true;
@@ -9,8 +24,8 @@ if (!window.__reportModalBootstrapped) {
     style.id = STYLE_ID;
     style.textContent = `
       .reportFooter{
-        margin-top:60px;
-        padding:40px 20px 60px;
+        margin-top:20px;
+        padding:20px 20px 32px;
         display:flex;
         justify-content:center;
         width:100%;
@@ -31,7 +46,7 @@ if (!window.__reportModalBootstrapped) {
       }
       .reportFab:hover{box-shadow:0 12px 30px rgba(54,81,255,.4);}
       @media (max-width:640px){
-        .reportFooter{padding:32px 16px 48px;}
+        .reportFooter{margin-top:16px;padding:16px 16px 24px;}
         .reportFab{padding:10px 20px;font-size:14px;}
       }
       .reportOverlay{
@@ -213,7 +228,8 @@ if (!window.__reportModalBootstrapped) {
         message,
         page_url: window.location.href
       };
-      const { error } = await supabaseClient
+      const client = await getSupabaseClient();
+      const { error } = await client
         .from('issue_reports')
         .insert([payload]);
       if (error) throw error;

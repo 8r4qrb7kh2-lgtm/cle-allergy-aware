@@ -335,6 +335,16 @@
       color: #991b1b;
     }
 
+    .appeal-status.resolved {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .appeal-status.dismissed {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
     .appeal-photo {
       max-width: 200px;
       max-height: 200px;
@@ -342,6 +352,15 @@
       margin: 16px 0;
       cursor: pointer;
       border: 2px solid #e2e8f0;
+    }
+
+    .appeal-message {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 8px;
+      padding: 12px;
+      margin: 16px 0;
+      color: #856404;
     }
 
     .appeal-actions {
@@ -488,6 +507,7 @@
       <div class="tab-buttons">
         <button class="tab-btn active" data-tab="restaurants">Restaurants</button>
         <button class="tab-btn" data-tab="appeals">Appeals Review</button>
+        <button class="tab-btn" data-tab="allergen-issues">⚠️ Allergen/Diet Issues</button>
       </div>
 
       <!-- Restaurants Tab -->
@@ -556,6 +576,32 @@
           <div id="appeals-list" class="appeals-list"></div>
         </div>
       </div>
+
+      <!-- Allergen Issues Tab -->
+      <div id="tab-allergen-issues" class="tab-content">
+        <div class="admin-card admin-card-full">
+          <h2>⚠️ Allergen/Diet Detection Issues</h2>
+          <p style="color: #718096; margin-bottom: 24px;">Review and resolve manager reports about incorrect allergen or diet detection</p>
+
+          <div class="appeals-filters">
+            <button class="filter-btn-issues active" data-filter-issues="all">All Issues</button>
+            <button class="filter-btn-issues" data-filter-issues="pending">Pending</button>
+            <button class="filter-btn-issues" data-filter-issues="resolved">Resolved</button>
+            <button class="filter-btn-issues" data-filter-issues="dismissed">Dismissed</button>
+          </div>
+
+          <div id="loading-issues" class="loading">
+            <p>Loading issues...</p>
+          </div>
+
+          <div id="no-issues" class="no-appeals" style="display:none;">
+            <h3>No issues found</h3>
+            <p>There are no allergen/diet detection issues matching your current filter.</p>
+          </div>
+
+          <div id="issues-list" class="appeals-list"></div>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -577,6 +623,8 @@
     let currentUser = null;
     let currentFilter = 'all';
     let allAppeals = [];
+    let currentIssuesFilter = 'all';
+    let allIssues = [];
 
     // Check authentication
     async function checkAuth() {
@@ -596,6 +644,7 @@
       document.getElementById('admin-content').style.display = 'block';
       loadRestaurants();
       loadAppeals();
+      loadAllergenIssues();
       return true;
     }
 
@@ -612,9 +661,11 @@
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.getElementById(`tab-${tabName}`).classList.add('active');
         
-        // Load appeals if switching to appeals tab
+        // Load data if switching to specific tabs
         if (tabName === 'appeals') {
           loadAppeals();
+        } else if (tabName === 'allergen-issues') {
+          loadAllergenIssues();
         }
       });
     });
@@ -806,16 +857,21 @@
               <span class="appeal-status ${status}">${status}</span>
             </div>
 
+            ${appeal.manager_message ? `
+              <div class="appeal-message">
+                <strong>Manager Message:</strong> ${escapeHtml(appeal.manager_message)}
+              </div>
+            ` : ''}
             ${appeal.photo_url ? `
-              <div>
-                <strong>Photo submitted:</strong>
+              <div style="margin: 16px 0;">
+                <strong style="color: #1e3a5f; display: block; margin-bottom: 8px;">Photo submitted:</strong>
                 <img src="${appeal.photo_url}" alt="Appeal photo" class="appeal-photo" onclick="openPhotoModal('${appeal.photo_url}')">
               </div>
             ` : ''}
 
             ${status === 'pending' ? `
               <div class="review-notes">
-                <label><strong>Review Notes (optional):</strong></label>
+                <label style="color: #1e3a5f; display: block; margin-bottom: 8px; font-weight: 600;"><strong>Review Notes (optional):</strong></label>
                 <textarea id="notes-${appeal.id}" placeholder="Add any notes about your decision..."></textarea>
               </div>
               <div class="appeal-actions">
@@ -825,7 +881,7 @@
               </div>
             ` : `
               <div class="appeal-actions">
-                ${appeal.review_notes ? `<p><strong>Review Notes:</strong> ${escapeHtml(appeal.review_notes)}</p>` : ''}
+                ${appeal.review_notes ? `<p style="color: #1e3a5f;"><strong style="color: #1e3a5f;">Review Notes:</strong> ${escapeHtml(appeal.review_notes)}</p>` : ''}
                 ${restaurant.slug ? `<a href="restaurant.html?slug=${restaurant.slug}" class="btn-view-restaurant" target="_blank">View Restaurant</a>` : ''}
               </div>
             `}
@@ -888,7 +944,154 @@
         currentFilter = e.target.dataset.filter;
         renderAppeals();
       }
+      
+      if (e.target.classList.contains('filter-btn-issues')) {
+        document.querySelectorAll('.filter-btn-issues').forEach(btn => btn.classList.remove('active'));
+        e.target.classList.add('active');
+        currentIssuesFilter = e.target.dataset.filterIssues;
+        renderAllergenIssues();
+      }
     });
+
+    // Load allergen detection issues
+    async function loadAllergenIssues() {
+      try {
+        document.getElementById('loading-issues').style.display = 'block';
+        document.getElementById('issues-list').innerHTML = '';
+        document.getElementById('no-issues').style.display = 'none';
+
+        const { data: issues, error } = await supabase
+          .from('allergen_detection_issues')
+          .select('*')
+          .order('submitted_at', { ascending: false });
+
+        if (error) throw error;
+
+        allIssues = issues || [];
+        renderAllergenIssues();
+
+      } catch (error) {
+        console.error('Error loading allergen issues:', error);
+        document.getElementById('loading-issues').innerHTML = `<p style="color: #ef4444;">Error loading issues: ${error.message}</p>`;
+      } finally {
+        document.getElementById('loading-issues').style.display = 'none';
+      }
+    }
+
+    // Render allergen issues based on current filter
+    function renderAllergenIssues() {
+      const filtered = currentIssuesFilter === 'all' 
+        ? allIssues 
+        : allIssues.filter(i => i.status === currentIssuesFilter);
+
+      if (filtered.length === 0) {
+        document.getElementById('no-issues').style.display = 'block';
+        document.getElementById('issues-list').innerHTML = '';
+        return;
+      }
+
+      document.getElementById('no-issues').style.display = 'none';
+      
+      const issuesHTML = filtered.map(issue => {
+        const status = issue.status || 'pending';
+        const submittedDate = new Date(issue.submitted_at).toLocaleString();
+        const resolvedDate = issue.resolved_at ? new Date(issue.resolved_at).toLocaleString() : null;
+        
+        return `
+          <div class="appeal-card ${status}" style="border-left-color: #dc2626;">
+            <div class="appeal-header">
+              <div class="appeal-info">
+                <h3>${escapeHtml(issue.product_name)}</h3>
+                <div class="appeal-meta">
+                  <span><strong>Restaurant:</strong> ${escapeHtml(issue.restaurant_name || 'Unknown')}</span>
+                  <span><strong>Submitted:</strong> ${submittedDate}</span>
+                  ${resolvedDate ? `<span><strong>Resolved:</strong> ${resolvedDate}</span>` : ''}
+                </div>
+              </div>
+              <span class="appeal-status ${status}">${status}</span>
+            </div>
+
+            <div style="margin: 16px 0;">
+              <strong style="color: #1e3a5f; display: block; margin-bottom: 8px;">Manager Comment:</strong>
+              <p style="background: #fff3cd; padding: 12px; border-radius: 8px; margin-top: 8px; color: #856404; white-space: pre-wrap; line-height: 1.5;">${escapeHtml(issue.manager_comment)}</p>
+            </div>
+
+            ${issue.ingredient_list ? `
+              <div style="margin: 16px 0;">
+                <strong style="color: #1e3a5f; display: block; margin-bottom: 8px;">Ingredient List:</strong>
+                <div style="background: #f5f5f5; padding: 12px; border-radius: 8px; margin-top: 8px; font-family: monospace; font-size: 0.9rem; white-space: pre-wrap; color: #1e3a5f; line-height: 1.5;">${escapeHtml(issue.ingredient_list)}</div>
+              </div>
+            ` : ''}
+
+            <div style="margin: 16px 0;">
+              <strong style="color: #1e3a5f; display: block; margin-bottom: 4px;">Detected Allergens:</strong>
+              <span style="color: #1e3a5f;">${issue.detected_allergens && issue.detected_allergens.length > 0 ? issue.detected_allergens.join(', ') : 'None'}</span>
+            </div>
+
+            <div style="margin: 16px 0;">
+              <strong style="color: #1e3a5f; display: block; margin-bottom: 4px;">Detected Diets:</strong>
+              <span style="color: #1e3a5f;">${issue.detected_diets && issue.detected_diets.length > 0 ? issue.detected_diets.join(', ') : 'None'}</span>
+            </div>
+
+            ${status === 'pending' ? `
+              <div class="review-notes">
+                <label style="color: #1e3a5f; display: block; margin-bottom: 8px; font-weight: 600;"><strong>Resolution Notes (optional):</strong></label>
+                <textarea id="resolution-notes-${issue.id}" placeholder="Add notes about how you resolved this issue..."></textarea>
+              </div>
+              <div class="appeal-actions">
+                <button class="btn-approve" onclick="resolveIssue('${issue.id}', 'resolved')">✓ Mark Resolved</button>
+                <button class="btn-deny" onclick="resolveIssue('${issue.id}', 'dismissed')">✗ Dismiss</button>
+                ${issue.restaurant_slug ? `<a href="restaurant.html?slug=${issue.restaurant_slug}" class="btn-view-restaurant" target="_blank">View Restaurant</a>` : ''}
+              </div>
+            ` : `
+              <div class="appeal-actions">
+                ${issue.resolution_notes ? `<p style="color: #1e3a5f;"><strong style="color: #1e3a5f;">Resolution Notes:</strong> ${escapeHtml(issue.resolution_notes)}</p>` : ''}
+                ${issue.restaurant_slug ? `<a href="restaurant.html?slug=${issue.restaurant_slug}" class="btn-view-restaurant" target="_blank">View Restaurant</a>` : ''}
+              </div>
+            `}
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('issues-list').innerHTML = issuesHTML;
+    }
+
+    // Resolve an allergen issue
+    async function resolveIssue(issueId, status) {
+      const notesTextarea = document.getElementById(`resolution-notes-${issueId}`);
+      const resolutionNotes = notesTextarea ? notesTextarea.value.trim() : '';
+
+      if (!confirm(`Are you sure you want to mark this issue as ${status}?`)) {
+        return;
+      }
+
+      try {
+        const { error } = await supabase
+          .from('allergen_detection_issues')
+          .update({
+            status: status,
+            resolved_at: new Date().toISOString(),
+            resolution_notes: resolutionNotes || null
+          })
+          .eq('id', issueId);
+
+        if (error) throw error;
+
+        // Reload issues to show updated status
+        await loadAllergenIssues();
+
+        // Show success message
+        const message = document.createElement('div');
+        message.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4caf50; color: white; padding: 16px 24px; border-radius: 8px; z-index: 10001; box-shadow: 0 4px 12px rgba(0,0,0,0.2);';
+        message.textContent = `Issue marked as ${status} successfully!`;
+        document.body.appendChild(message);
+        setTimeout(() => message.remove(), 3000);
+
+      } catch (error) {
+        console.error('Error resolving issue:', error);
+        alert(`Error resolving issue: ${error.message}`);
+      }
+    }
 
     function escapeHtml(text) {
       const div = document.createElement('div');
@@ -899,6 +1102,7 @@
     window.reviewAppeal = reviewAppeal;
     window.openPhotoModal = openPhotoModal;
     window.closePhotoModal = closePhotoModal;
+    window.resolveIssue = resolveIssue;
 
     checkAuth();
   </script>
