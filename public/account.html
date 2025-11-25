@@ -273,7 +273,7 @@
     const resetCancelBtn = document.getElementById('reset-cancel-btn');
     const resetMessage = document.getElementById('reset-message');
 
-    function setNavState(user) {
+    async function setNavState(user) {
       const fromQr = !!returnSlug;
       const showBackToMenu = fromQr && !user;
 
@@ -287,6 +287,20 @@
 
       // Setup navigation with current page indicator
       if (!isRecoveryMode) {
+        // Check if user is a manager for any restaurant
+        if (user) {
+          try {
+            const { data: managerData } = await supabaseClient
+              .from('restaurant_managers')
+              .select('id')
+              .eq('user_id', user.id)
+              .limit(1);
+            window.__userIsManager = managerData && managerData.length > 0;
+          } catch (e) {
+            console.warn('Failed to check manager status:', e);
+            window.__userIsManager = false;
+          }
+        }
         setupNav('account', user);
         attachSignOutHandler(supabaseClient);
       }
@@ -295,7 +309,7 @@
     async function checkAuth() {
       const { data: { user } } = await supabaseClient.auth.getUser();
       currentUser = user;
-      setNavState(user);
+      await setNavState(user);
 
       if (user) {
         if (isRecoveryMode) {

@@ -5,7 +5,7 @@
  * Updated: 2025-01-22 - Added dish-search to navigation
  */
 
-export function setupNav(currentPage, user = null) {
+export function setupNav(currentPage, user = null, options = {}) {
   const navContainer = document.querySelector('.simple-nav');
   if (!navContainer) {
     console.warn('Navigation container not found');
@@ -21,13 +21,23 @@ export function setupNav(currentPage, user = null) {
     { id: 'restaurants', label: 'All restaurants', href: 'restaurants.html', requiresAuth: true },
     { id: 'favorites', label: 'Favorite restaurants', href: 'favorites.html', requiresAuth: true },
     // { id: 'how-it-works', label: 'How it works', href: 'how-it-works.html' }, // Hidden for now
+    { id: 'manager-dashboard', label: 'Manager dashboard', href: 'manager-dashboard.html', requiresManager: true },
     { id: 'account', label: 'Account settings', href: 'account.html' }
   ];
+
+  // Check if user is a manager (passed via options or auto-detected)
+  const isManager = options.isManager || window.__userIsManager || false;
 
   navItems.forEach(item => {
     // Skip items that require auth if user is not logged in
     if (item.requiresAuth && !user) {
       console.log('Skipping nav item (requires auth):', item.label);
+      return;
+    }
+
+    // Skip manager items if user is not a manager
+    if (item.requiresManager && !isManager) {
+      console.log('Skipping nav item (requires manager):', item.label);
       return;
     }
 

@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manager Dashboard - Clarivore</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .dashboard-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .dashboard-header {
+      margin-bottom: 30px;
+    }
+
+    .dashboard-header h1 {
+      font-size: 1.8rem;
+      margin-bottom: 8px;
+    }
+
+    .dashboard-header p {
+      color: var(--muted);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .stat-card .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--brand);
+    }
+
+    .stat-card .stat-label {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .section {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+
+    .tab-btn {
+      padding: 8px 16px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      border-color: var(--hover);
+      color: var(--ink);
+    }
+
+    .tab-btn.active {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: white;
+    }
+
+    .dish-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .dish-table th,
+    .dish-table td {
+      text-align: left;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .dish-table th {
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .dish-table tr:hover td {
+      background: rgba(124, 156, 255, 0.05);
+    }
+
+    .allergen-badge, .diet-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin: 2px;
+    }
+
+    .allergen-badge {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .diet-badge {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .diet-badge.vegan { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+    .diet-badge.vegetarian { background: rgba(132, 204, 22, 0.2); color: #84cc16; }
+    .diet-badge.pescatarian { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+
+    .request-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .request-card:hover {
+      border-color: var(--hover);
+    }
+
+    .request-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .request-dish {
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+
+    .request-date {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .request-details {
+      margin-bottom: 12px;
+    }
+
+    .request-needs {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .request-needs-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .request-needs-label {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .request-count {
+      background: rgba(124, 156, 255, 0.2);
+      color: var(--brand);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .request-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--ink);
+    }
+
+    .action-btn:hover {
+      border-color: var(--hover);
+    }
+
+    .action-btn.primary {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: white;
+    }
+
+    .action-btn.primary:hover {
+      background: var(--hover);
+    }
+
+    .action-btn.success {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: #22c55e;
+      color: #22c55e;
+    }
+
+    .action-btn.decline {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #ef4444;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .status-badge.pending {
+      background: rgba(250, 204, 21, 0.2);
+      color: #facc15;
+    }
+
+    .status-badge.implemented {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+    }
+
+    .status-badge.reviewed {
+      background: rgba(59, 130, 246, 0.2);
+      color: #3b82f6;
+    }
+
+    .status-badge.declined {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+
+    .suggestion-card {
+      background: linear-gradient(135deg, rgba(124, 156, 255, 0.1), rgba(124, 156, 255, 0.05));
+      border: 1px solid rgba(124, 156, 255, 0.3);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .suggestion-icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(124, 156, 255, 0.2);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+      color: var(--brand);
+    }
+
+    .suggestion-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .suggestion-description {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 12px;
+    }
+
+    .suggestion-impact {
+      display: flex;
+      gap: 16px;
+      font-size: 0.85rem;
+    }
+
+    .impact-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .impact-item .positive {
+      color: #22c55e;
+    }
+
+    .chart-container {
+      height: 200px;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      padding: 20px 0;
+    }
+
+    .chart-bar {
+      flex: 1;
+      background: var(--brand);
+      border-radius: 4px 4px 0 0;
+      min-height: 4px;
+      transition: height 0.3s;
+      position: relative;
+    }
+
+    .chart-bar:hover {
+      background: var(--hover);
+    }
+
+    .chart-bar-label {
+      position: absolute;
+      bottom: -24px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.7rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .chart-bar-value {
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+    }
+
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .loading-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--brand);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .restaurant-selector {
+      margin-bottom: 24px;
+    }
+
+    .restaurant-selector select {
+      width: 100%;
+      max-width: 400px;
+      padding: 12px 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--ink);
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .restaurant-selector select:focus {
+      outline: none;
+      border-color: var(--brand);
+    }
+
+    .response-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .response-modal.show {
+      display: flex;
+    }
+
+    .response-modal-content {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    .response-modal h3 {
+      margin-bottom: 16px;
+    }
+
+    .response-modal textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--ink);
+      font-size: 0.95rem;
+      resize: vertical;
+      margin-bottom: 16px;
+    }
+
+    .response-modal textarea:focus {
+      outline: none;
+      border-color: var(--brand);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .dish-table {
+        display: block;
+        overflow-x: auto;
+      }
+
+      .request-header {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .request-needs {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body class="page-shell">
+  <header class="simple-topbar">
+    <div class="simple-topbar-inner">
+      <a class="simple-brand" href="restaurants.html">
+        <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt="Clarivore logo">
+        <span>Clarivore</span>
+      </a>
+      <div class="simple-nav">
+        <!-- Navigation populated by shared-nav.js -->
+      </div>
+    </div>
+  </header>
+
+  <main class="page-main">
+    <div class="dashboard-container">
+      <div class="dashboard-header">
+        <h1>Restaurant Manager Dashboard</h1>
+        <p>View customer dietary analytics and accommodation requests</p>
+      </div>
+
+      <!-- Restaurant Selector -->
+      <div class="restaurant-selector" id="restaurant-selector-container">
+        <label style="display:block;margin-bottom:8px;color:var(--muted);">Select Restaurant</label>
+        <select id="restaurant-select">
+          <option value="">Loading restaurants...</option>
+        </select>
+      </div>
+
+      <!-- Auth Required Message -->
+      <div id="auth-required" class="section" style="display:none;">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <h3>Sign in Required</h3>
+          <p>Please sign in to access the manager dashboard.</p>
+          <a href="account.html" class="action-btn primary" style="display:inline-block;margin-top:16px;text-decoration:none;">Sign In</a>
+        </div>
+      </div>
+
+      <!-- Not a Manager Message -->
+      <div id="not-manager" class="section" style="display:none;">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <h3>Manager Access Required</h3>
+          <p>You don't have manager access to any restaurants yet.</p>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loading-state" class="section">
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Loading dashboard...</p>
+        </div>
+      </div>
+
+      <!-- Dashboard Content -->
+      <div id="dashboard-content" style="display:none;">
+        <!-- Overview Stats -->
+        <div class="stats-grid" id="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="total-interactions">0</div>
+            <div class="stat-label">Total Dish Views</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="unique-users">0</div>
+            <div class="stat-label">Unique Users</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="pending-requests">0</div>
+            <div class="stat-label">Pending Requests</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="popular-dish">-</div>
+            <div class="stat-label">Most Viewed Dish</div>
+          </div>
+        </div>
+
+        <!-- Dietary Profile Analytics -->
+        <div class="section">
+          <div class="section-header">
+            <h2 class="section-title">Customer Dietary Profiles</h2>
+          </div>
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="allergens">Allergens</button>
+            <button class="tab-btn" data-tab="diets">Diets</button>
+          </div>
+          <div id="allergens-chart" class="chart-container"></div>
+          <div id="diets-chart" class="chart-container" style="display:none;"></div>
+        </div>
+
+        <!-- Dish Analytics Table -->
+        <div class="section">
+          <div class="section-header">
+            <h2 class="section-title">Dish Analytics</h2>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="dish-table" id="dish-analytics-table">
+              <thead>
+                <tr>
+                  <th>Dish Name</th>
+                  <th>Views</th>
+                  <th>Safe</th>
+                  <th>Removable</th>
+                  <th>Unsafe</th>
+                  <th>Top Allergen Concerns</th>
+                </tr>
+              </thead>
+              <tbody id="dish-analytics-body">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Accommodation Requests -->
+        <div class="section">
+          <div class="section-header">
+            <h2 class="section-title">Accommodation Requests</h2>
+            <div class="tabs" style="margin-bottom:0;border-bottom:none;padding-bottom:0;">
+              <button class="tab-btn active" data-filter="pending">Pending</button>
+              <button class="tab-btn" data-filter="all">All</button>
+            </div>
+          </div>
+          <div id="requests-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Suggested Menu Actions -->
+        <div class="section">
+          <div class="section-header">
+            <h2 class="section-title">Suggested Menu Actions</h2>
+          </div>
+          <div id="suggestions-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Response Modal -->
+  <div class="response-modal" id="response-modal">
+    <div class="response-modal-content">
+      <h3 id="modal-title">Respond to Request</h3>
+      <p id="modal-dish" style="color:var(--muted);margin-bottom:16px;"></p>
+      <textarea id="response-text" placeholder="Add a response message (optional)..."></textarea>
+      <div class="modal-actions">
+        <button class="action-btn" id="modal-cancel">Cancel</button>
+        <button class="action-btn decline" id="modal-decline">Decline</button>
+        <button class="action-btn success" id="modal-implement">Mark Implemented</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/shared-nav.js"></script>
+  <script>
+    // State
+    let currentUser = null;
+    let managedRestaurants = [];
+    let selectedRestaurantId = null;
+    let dishAnalytics = [];
+    let accommodationRequests = [];
+    let currentRequestId = null;
+
+    // DOM Elements
+    const loadingState = document.getElementById('loading-state');
+    const authRequired = document.getElementById('auth-required');
+    const notManager = document.getElementById('not-manager');
+    const dashboardContent = document.getElementById('dashboard-content');
+    const restaurantSelect = document.getElementById('restaurant-select');
+    const restaurantSelectorContainer = document.getElementById('restaurant-selector-container');
+
+    // Initialize
+    async function init() {
+      try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+
+        if (!user) {
+          showAuthRequired();
+          return;
+        }
+
+        currentUser = user;
+        await loadManagedRestaurants();
+      } catch (err) {
+        console.error('Init error:', err);
+        showAuthRequired();
+      }
+    }
+
+    function showAuthRequired() {
+      loadingState.style.display = 'none';
+      authRequired.style.display = 'block';
+      restaurantSelectorContainer.style.display = 'none';
+    }
+
+    function showNotManager() {
+      loadingState.style.display = 'none';
+      notManager.style.display = 'block';
+      restaurantSelectorContainer.style.display = 'none';
+    }
+
+    async function loadManagedRestaurants() {
+      try {
+        const { data, error } = await supabaseClient
+          .from('restaurant_managers')
+          .select('restaurant_id, restaurants(id, name, slug)')
+          .eq('user_id', currentUser.id);
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          showNotManager();
+          return;
+        }
+
+        managedRestaurants = data.map(d => d.restaurants).filter(r => r);
+
+        // Populate restaurant selector
+        restaurantSelect.innerHTML = managedRestaurants.map(r =>
+          `<option value="${r.id}">${r.name}</option>`
+        ).join('');
+
+        // Select first restaurant
+        if (managedRestaurants.length > 0) {
+          selectedRestaurantId = managedRestaurants[0].id;
+          await loadDashboardData();
+        }
+      } catch (err) {
+        console.error('Failed to load managed restaurants:', err);
+        showNotManager();
+      }
+    }
+
+    async function loadDashboardData() {
+      if (!selectedRestaurantId) return;
+
+      loadingState.style.display = 'block';
+      dashboardContent.style.display = 'none';
+
+      try {
+        // Load dish analytics
+        const { data: analyticsData, error: analyticsError } = await supabaseClient
+          .from('dish_analytics')
+          .select('*')
+          .eq('restaurant_id', selectedRestaurantId);
+
+        if (analyticsError) throw analyticsError;
+        dishAnalytics = analyticsData || [];
+
+        // Load accommodation requests
+        const { data: requestsData, error: requestsError } = await supabaseClient
+          .from('accommodation_requests')
+          .select('*')
+          .eq('restaurant_id', selectedRestaurantId)
+          .order('created_at', { ascending: false });
+
+        if (requestsError) throw requestsError;
+        accommodationRequests = requestsData || [];
+
+        // Render dashboard
+        renderDashboard();
+      } catch (err) {
+        console.error('Failed to load dashboard data:', err);
+        // Show empty state
+        dishAnalytics = [];
+        accommodationRequests = [];
+        renderDashboard();
+      }
+
+      loadingState.style.display = 'none';
+      dashboardContent.style.display = 'block';
+    }
+
+    function renderDashboard() {
+      renderStats();
+      renderAllergenChart();
+      renderDietChart();
+      renderDishTable();
+      renderRequests('pending');
+      renderSuggestions();
+    }
+
+    function renderStats() {
+      const totalInteractions = dishAnalytics.reduce((sum, d) => sum + (d.total_interactions || 0), 0);
+      const uniqueUsers = dishAnalytics.reduce((sum, d) => sum + (d.unique_users || 0), 0);
+      const pendingRequests = accommodationRequests.filter(r => r.status === 'pending').length;
+
+      document.getElementById('total-interactions').textContent = totalInteractions.toLocaleString();
+      document.getElementById('unique-users').textContent = uniqueUsers.toLocaleString();
+      document.getElementById('pending-requests').textContent = pendingRequests.toString();
+
+      // Find most popular dish
+      const sortedDishes = [...dishAnalytics].sort((a, b) => b.total_interactions - a.total_interactions);
+      const popularDish = sortedDishes[0]?.dish_name || '-';
+      document.getElementById('popular-dish').textContent = popularDish.length > 15 ? popularDish.substring(0, 15) + '...' : popularDish;
+    }
+
+    function renderAllergenChart() {
+      const container = document.getElementById('allergens-chart');
+      const allergens = [
+        { key: 'users_with_dairy_allergy', label: 'Dairy' },
+        { key: 'users_with_egg_allergy', label: 'Egg' },
+        { key: 'users_with_peanut_allergy', label: 'Peanut' },
+        { key: 'users_with_tree_nut_allergy', label: 'Tree Nut' },
+        { key: 'users_with_shellfish_allergy', label: 'Shellfish' },
+        { key: 'users_with_fish_allergy', label: 'Fish' },
+        { key: 'users_with_soy_allergy', label: 'Soy' },
+        { key: 'users_with_sesame_allergy', label: 'Sesame' },
+        { key: 'users_with_wheat_allergy', label: 'Wheat' }
+      ];
+
+      const totals = allergens.map(a => ({
+        ...a,
+        count: dishAnalytics.reduce((sum, d) => sum + (d[a.key] || 0), 0)
+      }));
+
+      const maxCount = Math.max(...totals.map(t => t.count), 1);
+
+      container.innerHTML = totals.map(t => `
+        <div class="chart-bar" style="height: ${(t.count / maxCount) * 150 + 10}px;">
+          <span class="chart-bar-value">${t.count}</span>
+          <span class="chart-bar-label">${t.label}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderDietChart() {
+      const container = document.getElementById('diets-chart');
+      const diets = [
+        { key: 'users_vegan', label: 'Vegan', class: 'vegan' },
+        { key: 'users_vegetarian', label: 'Vegetarian', class: 'vegetarian' },
+        { key: 'users_pescatarian', label: 'Pescatarian', class: 'pescatarian' }
+      ];
+
+      const totals = diets.map(d => ({
+        ...d,
+        count: dishAnalytics.reduce((sum, dish) => sum + (dish[d.key] || 0), 0)
+      }));
+
+      const maxCount = Math.max(...totals.map(t => t.count), 1);
+
+      container.innerHTML = totals.map(t => `
+        <div class="chart-bar" style="height: ${(t.count / maxCount) * 150 + 10}px; flex: 0 0 80px;">
+          <span class="chart-bar-value">${t.count}</span>
+          <span class="chart-bar-label">${t.label}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderDishTable() {
+      const tbody = document.getElementById('dish-analytics-body');
+
+      if (dishAnalytics.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align:center;padding:40px;color:var(--muted);">
+              No dish interaction data yet. Data will appear as users view dishes.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      const sortedDishes = [...dishAnalytics].sort((a, b) => b.total_interactions - a.total_interactions);
+
+      tbody.innerHTML = sortedDishes.map(dish => {
+        const topAllergens = [];
+        const allergenKeys = [
+          { key: 'users_with_dairy_allergy', label: 'dairy' },
+          { key: 'users_with_egg_allergy', label: 'egg' },
+          { key: 'users_with_peanut_allergy', label: 'peanut' },
+          { key: 'users_with_tree_nut_allergy', label: 'tree nut' },
+          { key: 'users_with_wheat_allergy', label: 'wheat' }
+        ];
+
+        allergenKeys.forEach(a => {
+          if (dish[a.key] > 0) {
+            topAllergens.push({ label: a.label, count: dish[a.key] });
+          }
+        });
+
+        topAllergens.sort((a, b) => b.count - a.count);
+        const top3Allergens = topAllergens.slice(0, 3);
+
+        return `
+          <tr>
+            <td><strong>${escapeHtml(dish.dish_name)}</strong></td>
+            <td>${dish.total_interactions || 0}</td>
+            <td style="color:#22c55e;">${dish.safe_interactions || 0}</td>
+            <td style="color:#facc15;">${dish.removable_interactions || 0}</td>
+            <td style="color:#ef4444;">${dish.unsafe_interactions || 0}</td>
+            <td>
+              ${top3Allergens.map(a => `<span class="allergen-badge">${a.label} (${a.count})</span>`).join('') || '<span style="color:var(--muted);">None</span>'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderRequests(filter = 'pending') {
+      const container = document.getElementById('requests-list');
+
+      const filteredRequests = filter === 'pending'
+        ? accommodationRequests.filter(r => r.status === 'pending')
+        : accommodationRequests;
+
+      if (filteredRequests.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12l2 2 4-4"/>
+              <circle cx="12" cy="12" r="10"/>
+            </svg>
+            <p>${filter === 'pending' ? 'No pending accommodation requests' : 'No accommodation requests yet'}</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filteredRequests.map(req => {
+        const allergenBadges = (req.requested_allergens || []).map(a =>
+          `<span class="allergen-badge">${a}</span>`
+        ).join('');
+
+        const dietBadges = (req.requested_diets || []).map(d =>
+          `<span class="diet-badge ${d.toLowerCase()}">${d}</span>`
+        ).join('');
+
+        const date = new Date(req.created_at).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        });
+
+        return `
+          <div class="request-card" data-request-id="${req.id}">
+            <div class="request-header">
+              <div>
+                <div class="request-dish">${escapeHtml(req.dish_name)}</div>
+                <div class="request-date">${date}</div>
+              </div>
+              <span class="status-badge ${req.status}">${req.status}</span>
+            </div>
+            <div class="request-details">
+              <div class="request-needs">
+                ${allergenBadges ? `
+                  <div class="request-needs-group">
+                    <span class="request-needs-label">Allergen Accommodations Needed</span>
+                    <div>${allergenBadges}</div>
+                  </div>
+                ` : ''}
+                ${dietBadges ? `
+                  <div class="request-needs-group">
+                    <span class="request-needs-label">Dietary Accommodations Needed</span>
+                    <div>${dietBadges}</div>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+            ${req.manager_response ? `
+              <div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;margin-bottom:12px;">
+                <div style="color:var(--muted);font-size:0.8rem;margin-bottom:4px;">Manager Response</div>
+                <div>${escapeHtml(req.manager_response)}</div>
+              </div>
+            ` : ''}
+            ${req.status === 'pending' ? `
+              <div class="request-actions">
+                <button class="action-btn success" onclick="openResponseModal('${req.id}', '${escapeHtml(req.dish_name)}', 'implemented')">
+                  Mark Implemented
+                </button>
+                <button class="action-btn" onclick="openResponseModal('${req.id}', '${escapeHtml(req.dish_name)}', 'reviewed')">
+                  Mark Reviewed
+                </button>
+                <button class="action-btn decline" onclick="openResponseModal('${req.id}', '${escapeHtml(req.dish_name)}', 'declined')">
+                  Decline
+                </button>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderSuggestions() {
+      const container = document.getElementById('suggestions-list');
+      const suggestions = generateSuggestions();
+
+      if (suggestions.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 16v-4"/>
+              <path d="M12 8h.01"/>
+            </svg>
+            <p>More data needed to generate suggestions. Keep tracking user interactions!</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = suggestions.map(s => `
+        <div class="suggestion-card">
+          <div class="suggestion-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <div class="suggestion-title">${escapeHtml(s.title)}</div>
+          <div class="suggestion-description">${escapeHtml(s.description)}</div>
+          <div class="suggestion-impact">
+            <div class="impact-item">
+              <span class="positive">+${s.potentialUsers}</span>
+              <span style="color:var(--muted);">potential users</span>
+            </div>
+            <div class="impact-item">
+              <span style="color:var(--muted);">Priority:</span>
+              <span style="color:${s.priority === 'high' ? '#ef4444' : s.priority === 'medium' ? '#facc15' : 'var(--muted)'};">${s.priority}</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function generateSuggestions() {
+      const suggestions = [];
+
+      // Analyze accommodation requests to find patterns
+      const requestsByDish = {};
+      accommodationRequests.forEach(req => {
+        if (!requestsByDish[req.dish_name]) {
+          requestsByDish[req.dish_name] = {
+            count: 0,
+            allergens: {},
+            diets: {}
+          };
+        }
+        requestsByDish[req.dish_name].count++;
+        (req.requested_allergens || []).forEach(a => {
+          requestsByDish[req.dish_name].allergens[a] = (requestsByDish[req.dish_name].allergens[a] || 0) + 1;
+        });
+        (req.requested_diets || []).forEach(d => {
+          requestsByDish[req.dish_name].diets[d] = (requestsByDish[req.dish_name].diets[d] || 0) + 1;
+        });
+      });
+
+      // Generate suggestions based on request patterns
+      Object.entries(requestsByDish).forEach(([dishName, data]) => {
+        if (data.count >= 2) {
+          // Top allergen request for this dish
+          const topAllergen = Object.entries(data.allergens).sort((a, b) => b[1] - a[1])[0];
+          const topDiet = Object.entries(data.diets).sort((a, b) => b[1] - a[1])[0];
+
+          if (topAllergen && topAllergen[1] >= 2) {
+            suggestions.push({
+              title: `Add ${topAllergen[0]}-free option for "${dishName}"`,
+              description: `${topAllergen[1]} users have requested a ${topAllergen[0]}-free version of this dish. Consider adding a substitution option.`,
+              potentialUsers: topAllergen[1] * 5, // Estimated impact
+              priority: topAllergen[1] >= 5 ? 'high' : topAllergen[1] >= 3 ? 'medium' : 'low'
+            });
+          }
+
+          if (topDiet && topDiet[1] >= 2) {
+            suggestions.push({
+              title: `Make "${dishName}" available for ${topDiet[0]} diners`,
+              description: `${topDiet[1]} ${topDiet[0].toLowerCase()} users have requested this dish. Consider creating a ${topDiet[0].toLowerCase()} version.`,
+              potentialUsers: topDiet[1] * 5,
+              priority: topDiet[1] >= 5 ? 'high' : topDiet[1] >= 3 ? 'medium' : 'low'
+            });
+          }
+        }
+      });
+
+      // Analyze dish analytics for high unsafe rates
+      dishAnalytics.forEach(dish => {
+        const total = dish.total_interactions || 0;
+        const unsafe = dish.unsafe_interactions || 0;
+        if (total >= 10 && (unsafe / total) > 0.5) {
+          // More than 50% unsafe - high opportunity
+          const topAllergens = [];
+          if (dish.users_with_dairy_allergy > 0) topAllergens.push({ name: 'dairy', count: dish.users_with_dairy_allergy });
+          if (dish.users_with_egg_allergy > 0) topAllergens.push({ name: 'egg', count: dish.users_with_egg_allergy });
+          if (dish.users_with_peanut_allergy > 0) topAllergens.push({ name: 'peanut', count: dish.users_with_peanut_allergy });
+
+          topAllergens.sort((a, b) => b.count - a.count);
+          const topAllergen = topAllergens[0];
+
+          if (topAllergen) {
+            suggestions.push({
+              title: `High demand for allergen-friendly "${dish.dish_name}"`,
+              description: `${unsafe} users viewed this dish but it was unsafe for them. ${topAllergen.count} users with ${topAllergen.name} allergies are interested.`,
+              potentialUsers: unsafe,
+              priority: unsafe >= 20 ? 'high' : unsafe >= 10 ? 'medium' : 'low'
+            });
+          }
+        }
+      });
+
+      // Sort by priority and potential users
+      const priorityOrder = { high: 0, medium: 1, low: 2 };
+      suggestions.sort((a, b) => {
+        const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
+        if (priorityDiff !== 0) return priorityDiff;
+        return b.potentialUsers - a.potentialUsers;
+      });
+
+      return suggestions.slice(0, 5); // Return top 5 suggestions
+    }
+
+    // Modal functions
+    function openResponseModal(requestId, dishName, action) {
+      currentRequestId = requestId;
+      document.getElementById('modal-dish').textContent = `Dish: ${dishName}`;
+      document.getElementById('response-text').value = '';
+      document.getElementById('response-modal').classList.add('show');
+
+      // Update modal title based on action
+      const titles = {
+        implemented: 'Mark as Implemented',
+        reviewed: 'Mark as Reviewed',
+        declined: 'Decline Request'
+      };
+      document.getElementById('modal-title').textContent = titles[action] || 'Respond to Request';
+
+      // Store the action for submission
+      document.getElementById('response-modal').dataset.action = action;
+    }
+
+    async function submitResponse(status) {
+      if (!currentRequestId) return;
+
+      const response = document.getElementById('response-text').value.trim();
+
+      try {
+        const { error } = await supabaseClient
+          .from('accommodation_requests')
+          .update({
+            status: status,
+            manager_response: response || null,
+            manager_reviewed_at: new Date().toISOString(),
+            manager_reviewed_by: currentUser.id,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentRequestId);
+
+        if (error) throw error;
+
+        // Refresh data
+        await loadDashboardData();
+        closeModal();
+      } catch (err) {
+        console.error('Failed to update request:', err);
+        alert('Failed to update request. Please try again.');
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('response-modal').classList.remove('show');
+      currentRequestId = null;
+    }
+
+    // Event Listeners
+    restaurantSelect.addEventListener('change', async (e) => {
+      selectedRestaurantId = e.target.value;
+      await loadDashboardData();
+    });
+
+    // Tab switching for charts
+    document.querySelectorAll('.tabs .tab-btn[data-tab]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        document.querySelectorAll('.tabs .tab-btn[data-tab]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        document.getElementById('allergens-chart').style.display = tab === 'allergens' ? 'flex' : 'none';
+        document.getElementById('diets-chart').style.display = tab === 'diets' ? 'flex' : 'none';
+      });
+    });
+
+    // Tab switching for requests
+    document.querySelectorAll('.tabs .tab-btn[data-filter]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const filter = btn.dataset.filter;
+        document.querySelectorAll('.tabs .tab-btn[data-filter]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderRequests(filter);
+      });
+    });
+
+    // Modal buttons
+    document.getElementById('modal-cancel').addEventListener('click', closeModal);
+    document.getElementById('modal-implement').addEventListener('click', () => submitResponse('implemented'));
+    document.getElementById('modal-decline').addEventListener('click', () => submitResponse('declined'));
+
+    // Close modal on backdrop click
+    document.getElementById('response-modal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeModal();
+    });
+
+    // Utility function
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Initialize
+    init();
+  </script>
+</body>
+</html>

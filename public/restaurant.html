@@ -150,6 +150,15 @@
   @media (max-width:640px){
     .love-button-tooltip.loved{background:rgba(236,72,153,0.3);border-color:#ec4899}
   }
+  .request-accommodation-btn{border:1px solid #2a3466;background:#16205a;color:#fff;border-radius:8px;padding:4px 8px;cursor:pointer;line-height:1;margin-right:8px;touch-action:manipulation;-webkit-tap-highlight-color:transparent;pointer-events:auto;position:relative;z-index:10;display:flex;align-items:center;gap:4px;font-size:11px;white-space:nowrap}
+  .request-accommodation-btn:hover{border-color:var(--hover);background:#1e2a70}
+  .request-accommodation-btn.requested{background:rgba(76,200,90,0.2);border-color:#4cc85a;color:#4cc85a}
+  .request-accommodation-btn.requested:hover{background:rgba(76,200,90,0.3)}
+  .request-accommodation-btn svg{width:14px;height:14px;flex-shrink:0}
+  @media (max-width:640px){
+    .request-accommodation-btn{font-size:10px;padding:3px 6px}
+    .request-accommodation-btn svg{width:12px;height:12px}
+  }
   .tooltipList{margin:4px 0 0 18px;padding:0;list-style:disc}
   .tooltipList li{margin:3px 0}
   .tooltipDangerText{color:var(--bad);font-weight:500}
@@ -472,6 +481,23 @@ if (!slug) {
         window.lovedDishesSet = new Set();
       }
 
+      // Load accommodation requests for this restaurant
+      try {
+        const { data: requestData } = await supabaseClient
+          .from('accommodation_requests')
+          .select('dish_name')
+          .eq('user_id', user.id)
+          .eq('restaurant_id', restaurant.id);
+        if(requestData) {
+          window.accommodationRequestsSet = new Set(requestData.map(r => `${String(restaurant.id)}:${r.dish_name}`));
+        } else {
+          window.accommodationRequestsSet = new Set();
+        }
+      } catch(err) {
+        console.warn('Failed to load accommodation requests', err);
+        window.accommodationRequestsSet = new Set();
+      }
+
       const { data: managerRecord, error: managerError } = await supabaseClient
         .from('restaurant_managers')
         .select('id')
@@ -484,6 +510,8 @@ if (!slug) {
       console.log('Manager row:', managerRecord, 'error:', managerError);
       // TEMPORARY: Make everyone a manager for Falafel Café
       canEdit = !!managerRecord || restaurant.name === 'Falafel Café';
+      // Set global flag for navigation to show manager dashboard link
+      window.__userIsManager = !!managerRecord;
     }
 
     // Transform restaurant data to match expected format
@@ -7109,6 +7137,114 @@ async function toggleLoveDishInTooltip(user, restaurantId, dishName, button) {
   }
 }
 
+// Track dish interaction for analytics
+async function trackDishInteraction(item) {
+  if (!window.supabaseClient || !state.user?.loggedIn) return;
+
+  const restaurantId = state.restaurant?._id || state.restaurant?.id;
+  if (!restaurantId) return;
+
+  const dishName = item.id || item.name || 'Unnamed dish';
+  const userAllergens = state.allergies || [];
+  const userDiets = state.diets || [];
+  const dishStatus = computeStatus(item, userAllergens, userDiets);
+
+  // Calculate conflicting allergens
+  const conflictingAllergens = (item.allergens || []).filter(a => userAllergens.includes(a));
+
+  // Calculate unmet diets
+  const itemDiets = new Set(item.diets || []);
+  const unmetDiets = userDiets.filter(diet => !itemDiets.has(diet));
+
+  try {
+    await window.supabaseClient.from('dish_interactions').insert({
+      user_id: state.user.id,
+      restaurant_id: restaurantId,
+      dish_name: dishName,
+      user_allergens: userAllergens,
+      user_diets: userDiets,
+      dish_status: dishStatus,
+      conflicting_allergens: conflictingAllergens,
+      unmet_diets: unmetDiets
+    });
+  } catch (err) {
+    // Silent fail - don't interrupt user experience
+    console.error('Failed to track dish interaction:', err);
+  }
+}
+
+// Set to track accommodation requests in current session
+if (!window.accommodationRequestsSet) window.accommodationRequestsSet = new Set();
+
+// Load user's accommodation requests for this restaurant
+async function loadAccommodationRequests() {
+  if (!window.supabaseClient || !state.user?.loggedIn) return;
+
+  const restaurantId = state.restaurant?._id || state.restaurant?.id;
+  if (!restaurantId) return;
+
+  try {
+    const { data, error } = await window.supabaseClient
+      .from('accommodation_requests')
+      .select('dish_name')
+      .eq('user_id', state.user.id)
+      .eq('restaurant_id', restaurantId);
+
+    if (error) throw error;
+
+    window.accommodationRequestsSet = new Set((data || []).map(r => `${restaurantId}:${r.dish_name}`));
+  } catch (err) {
+    console.error('Failed to load accommodation requests:', err);
+  }
+}
+
+// Submit accommodation request
+async function submitAccommodationRequest(item, button) {
+  if (!window.supabaseClient || !state.user?.loggedIn) return;
+
+  const restaurantId = state.restaurant?._id || state.restaurant?.id;
+  if (!restaurantId) return;
+
+  const dishName = item.id || item.name || 'Unnamed dish';
+  const dishKey = `${restaurantId}:${dishName}`;
+  const userAllergens = state.allergies || [];
+  const userDiets = state.diets || [];
+
+  // Calculate which allergens/diets need accommodation
+  const conflictingAllergens = (item.allergens || []).filter(a => userAllergens.includes(a));
+  const itemDiets = new Set(item.diets || []);
+  const unmetDiets = userDiets.filter(diet => !itemDiets.has(diet));
+
+  button.disabled = true;
+
+  try {
+    const { error } = await window.supabaseClient
+      .from('accommodation_requests')
+      .upsert({
+        user_id: state.user.id,
+        restaurant_id: restaurantId,
+        dish_name: dishName,
+        user_allergens: userAllergens,
+        user_diets: userDiets,
+        requested_allergens: conflictingAllergens,
+        requested_diets: unmetDiets,
+        status: 'pending'
+      }, { onConflict: 'user_id,restaurant_id,dish_name', ignoreDuplicates: false });
+
+    if (error) throw error;
+
+    window.accommodationRequestsSet.add(dishKey);
+    button.classList.add('requested');
+    button.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg><span>Requested</span>`;
+    button.title = 'You\'ve requested an accommodation for this dish';
+  } catch (err) {
+    console.error('Failed to submit accommodation request:', err);
+    alert('Failed to submit request. Please try again.');
+  } finally {
+    button.disabled = false;
+  }
+}
+
 function renderTopbar(){
   const el=document.getElementById('topbar'); el.innerHTML='';
   const isQrExperience=!!(state.qr||urlQR);
@@ -7247,6 +7383,7 @@ function renderMobileInfo(item){
     <div class="mobileInfoHeaderRow">
       <div class="mobileInfoHeader">${esc(item.id||'Item')}</div>
       <div style="display:flex;align-items:center;gap:0;">
+        ${state.user?.loggedIn ? '<div id="mobileRequestButtonContainer" style="margin-right:8px;"></div>' : ''}
         ${state.user?.loggedIn ? '<div id="mobileLoveButtonContainer" style="margin-right:8px;"></div>' : ''}
         <button type="button" class="mobileInfoClose" aria-label="Close dish details">×</button>
       </div>
@@ -7288,6 +7425,39 @@ function renderMobileInfo(item){
         };
         loveBtn.addEventListener('click', handleLoveClick, true);
         loveBtn.addEventListener('touchend', handleLoveClick, true);
+      }
+
+      // Create accommodation request button for unsafe dishes
+      const requestBtnContainer = mobileInfoPanel.querySelector('#mobileRequestButtonContainer');
+      const dishStatus = computeStatus(item, state.allergies || [], state.diets || []);
+      const isUnsafe = dishStatus === 'unsafe';
+      const hasRequested = dishKey && window.accommodationRequestsSet && window.accommodationRequestsSet.has(dishKey);
+
+      if(requestBtnContainer && isUnsafe) {
+        const requestBtn = document.createElement('button');
+        requestBtn.type = 'button';
+        requestBtn.className = `request-accommodation-btn ${hasRequested ? 'requested' : ''}`;
+        requestBtn.style.cssText = 'height:36px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:4px;line-height:1;touch-action:manipulation;-webkit-tap-highlight-color:transparent;pointer-events:auto;position:relative;z-index:9999;padding:0 10px';
+        requestBtn.title = hasRequested ? 'You\'ve requested an accommodation' : 'Request this dish be made available for your dietary needs';
+
+        if(hasRequested) {
+          requestBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M20 6L9 17l-5-5"/></svg><span>Requested</span>';
+        } else {
+          requestBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M12 5v14M5 12h14"/></svg><span>Request</span>';
+        }
+
+        requestBtnContainer.appendChild(requestBtn);
+
+        // Attach handler if not already requested
+        if(!hasRequested) {
+          const handleRequestClick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            submitAccommodationRequest(item, requestBtn);
+          };
+          requestBtn.addEventListener('click', handleRequestClick, true);
+          requestBtn.addEventListener('touchend', handleRequestClick, true);
+        }
       }
     }
   }
@@ -7356,14 +7526,29 @@ function showTipIn(el, x, y, title, bodyHTML, anchorRect=null, isClick=false, it
   const dishKey = restaurantId ? `${String(restaurantId)}:${dishName}` : null;
   const isLoved = dishKey && window.lovedDishesSet && window.lovedDishesSet.has(dishKey);
   const loveButtonId = dishKey ? `love-btn-tooltip-${dishKey.replace(/[^a-zA-Z0-9]/g, '-')}` : null;
-  const loveButtonHTML = (loveButtonId && state.user?.loggedIn && restaurantId) 
+  const loveButtonHTML = (loveButtonId && state.user?.loggedIn && restaurantId)
     ? `<button type="button" class="love-button-tooltip ${isLoved ? 'loved' : ''}" id="${loveButtonId}" data-restaurant-id="${restaurantId}" data-dish-name="${esc(dishName)}" aria-label="${isLoved ? 'Remove from favorites' : 'Add to favorites'}"><img src="images/heart-icon.svg" alt="${isLoved ? 'Loved' : 'Not loved'}" style="width:14px;height:14px;display:block;" /></button>`
     : '';
-  
+
+  // Generate accommodation request button for unsafe dishes
+  const dishStatus = item ? computeStatus(item, state.allergies || [], state.diets || []) : 'neutral';
+  const isUnsafe = dishStatus === 'unsafe';
+  const hasRequested = dishKey && window.accommodationRequestsSet && window.accommodationRequestsSet.has(dishKey);
+  const requestButtonId = dishKey ? `request-btn-tooltip-${dishKey.replace(/[^a-zA-Z0-9]/g, '-')}` : null;
+  const requestButtonHTML = (requestButtonId && state.user?.loggedIn && restaurantId && isUnsafe)
+    ? `<button type="button" class="request-accommodation-btn ${hasRequested ? 'requested' : ''}" id="${requestButtonId}" data-restaurant-id="${restaurantId}" data-dish-name="${esc(dishName)}" title="${hasRequested ? 'You\'ve requested an accommodation' : 'Request this dish be made available for your dietary needs'}">
+        ${hasRequested
+          ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg><span>Requested</span>'
+          : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg><span>Request</span>'
+        }
+      </button>`
+    : '';
+
   el.innerHTML = `
     <div class="tipHead">
       <div class="tTitle">${esc(title||'Item')}</div>
       <div style="display:flex;align-items:center;gap:0;">
+        ${requestButtonHTML}
         ${loveButtonHTML}
         <button class="tClose" type="button">✕</button>
       </div>
@@ -7401,6 +7586,17 @@ function showTipIn(el, x, y, title, bodyHTML, anchorRect=null, isClick=false, it
       loveBtn.addEventListener('click', handleLoveClick);
       loveBtn.addEventListener('touchend', handleLoveClick, {passive:false});
     }
+  }
+
+  // Attach accommodation request button handler if present
+  const requestBtn = el.querySelector('.request-accommodation-btn');
+  if(requestBtn && window.supabaseClient && state.user?.loggedIn && item && !requestBtn.classList.contains('requested')) {
+    const handleRequestClick = (e) => {
+      if(e){e.preventDefault(); e.stopPropagation();}
+      submitAccommodationRequest(item, requestBtn);
+    };
+    requestBtn.addEventListener('click', handleRequestClick);
+    requestBtn.addEventListener('touchend', handleRequestClick, {passive:false});
   }
 
   const isMobile = window.innerWidth <= 640;
@@ -7684,6 +7880,10 @@ function drawMenu(container,imageURL){
   updateZoomIndicator();
   const showOverlayDetails=(evt,item,target)=>{
     ensureMobileInfoPanel();
+    // Track dish interaction for analytics (only on actual clicks/taps)
+    if (evt && (evt.type === 'click' || evt.type === 'touchend')) {
+      trackDishInteraction(item);
+    }
     let pointerType='mouse';
     if(evt){
       if(typeof evt.pointerType==='string'){
