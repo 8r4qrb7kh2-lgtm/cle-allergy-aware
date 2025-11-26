@@ -1,0 +1,1906 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Mission - Clarivore</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* Mission Page Styles */
+        .mission-hero {
+            text-align: center;
+            padding: 60px 20px 80px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mission-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(124, 156, 255, 0.15) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .mission-hero h1 {
+            font-size: clamp(2rem, 4vw, 3.2rem);
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #fff 0%, #a8b2d6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .mission-hero .tagline {
+            font-size: clamp(1.1rem, 2vw, 1.4rem);
+            color: var(--muted);
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+
+        /* Section styling */
+        .mission-section {
+            padding: 60px 0;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        .mission-section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-header h2 {
+            font-size: clamp(1.6rem, 3vw, 2.2rem);
+            margin-bottom: 16px;
+        }
+
+        .section-header p {
+            color: var(--muted);
+            max-width: 650px;
+            margin: 0 auto;
+            font-size: 1.05rem;
+        }
+
+        .section-label {
+            display: inline-block;
+            padding: 6px 16px;
+            background: rgba(124, 156, 255, 0.15);
+            border: 1px solid rgba(124, 156, 255, 0.3);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--brand);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Statistics Grid - force 3 columns until mobile */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: linear-gradient(145deg, #151d45, #111630);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px 28px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s, border-color 0.3s;
+            min-width: 0;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--hover);
+        }
+
+        .stat-card[data-source] {
+            cursor: pointer;
+        }
+
+        .stat-card[data-source]:hover {
+            border-color: var(--brand);
+        }
+
+        .stat-card[data-source]:active {
+            transform: translateY(-2px);
+        }
+
+        .source-indicator {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            font-size: 0.75rem;
+            color: var(--muted);
+            opacity: 0;
+            transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-card[data-source]:hover .source-indicator {
+            opacity: 1;
+        }
+
+        .source-indicator svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--brand), #a78bfa);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
+        }
+
+        .stat-number {
+            font-size: clamp(2.5rem, 5vw, 3.5rem);
+            font-weight: 800;
+            background: linear-gradient(135deg, #7c9cff, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.1;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 1.1rem;
+            color: var(--ink);
+            margin-bottom: 8px;
+        }
+
+        .stat-description {
+            font-size: 0.9rem;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        /* Stat visualizations */
+        .stat-visual {
+            margin-bottom: 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 50px;
+        }
+
+        /* Person icons visualization (for 33M / 1 in 10) */
+        .person-grid {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 120px; /* 5 per row */
+        }
+
+        .person-icon {
+            width: 18px;
+            height: 36px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .person-icon .head {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--muted);
+        }
+
+        .person-icon .body {
+            width: 14px;
+            height: 20px;
+            border-radius: 4px 4px 0 0;
+            background: var(--muted);
+            margin-top: 2px;
+        }
+
+        .person-icon.highlighted .head,
+        .person-icon.highlighted .body {
+            background: var(--brand);
+        }
+
+        .person-icon.danger .head,
+        .person-icon.danger .body {
+            background: #ef4444;
+        }
+
+        /* Family groups visualization */
+        .family-groups {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .family-group {
+            display: flex;
+            gap: 2px;
+            padding: 8px;
+            background: rgba(124, 156, 255, 0.1);
+            border-radius: 8px;
+        }
+
+        .family-person {
+            width: 12px;
+            height: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .family-person .head {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--brand);
+        }
+
+        .family-person .body {
+            width: 10px;
+            height: 12px;
+            border-radius: 3px 3px 0 0;
+            background: var(--brand);
+            margin-top: 1px;
+        }
+
+        .family-person.child {
+            transform: scale(0.7);
+        }
+
+        .family-person.faded .head,
+        .family-person.faded .body {
+            background: var(--muted);
+            opacity: 0.5;
+        }
+
+        /* Dollar stack visualization */
+        .dollar-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            align-items: center;
+        }
+
+        .dollar-bar {
+            height: 8px;
+            background: linear-gradient(90deg, #22c55e, #10b981);
+            border-radius: 4px;
+        }
+
+        .dollar-bar:nth-child(1) { width: 60px; }
+        .dollar-bar:nth-child(2) { width: 80px; }
+        .dollar-bar:nth-child(3) { width: 100px; }
+        .dollar-bar:nth-child(4) { width: 120px; }
+        .dollar-bar:nth-child(5) { width: 140px; }
+
+        /* Dining comparison visualization (for 97% dine out) */
+        .dining-comparison {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        .dining-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dining-group-label {
+            font-size: 0.65rem;
+            color: var(--muted);
+            text-align: center;
+            max-width: 70px;
+        }
+
+        .dining-people {
+            display: flex;
+            gap: 3px;
+        }
+
+        .dining-person {
+            width: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .dining-person .head {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--muted);
+        }
+
+        .dining-person .body {
+            width: 10px;
+            height: 14px;
+            border-radius: 3px 3px 0 0;
+            background: var(--muted);
+            margin-top: 1px;
+        }
+
+        .dining-person.allergy .head,
+        .dining-person.allergy .body {
+            background: var(--ok);
+        }
+
+        .dining-table {
+            width: 50px;
+            height: 6px;
+            background: var(--muted);
+            border-radius: 2px;
+            margin-top: 4px;
+        }
+
+        .dining-group.allergy .dining-table {
+            background: var(--ok);
+        }
+
+        .equals-sign {
+            font-size: 1.5rem;
+            color: var(--ok);
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        /* Limited options visualization (for 37% few options) */
+        .options-row {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+            flex-wrap: wrap;
+            max-width: 180px;
+        }
+
+        .menu-option {
+            width: 24px;
+            height: 32px;
+            border-radius: 4px;
+            border: 2px solid var(--muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            position: relative;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .menu-option::before {
+            content: '☰';
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .menu-option.unavailable {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .menu-option.unavailable::before {
+            content: '✕';
+            color: #ef4444;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .menu-option.available {
+            border-color: var(--ok);
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        .menu-option.available::before {
+            content: '✓';
+            color: var(--ok);
+            font-size: 14px;
+        }
+
+        /* Challenging dining visualization (3 out of 4) */
+        .challenge-grid {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .challenge-family {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .challenge-family .family-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .challenge-family.stressed .family-icon {
+            background: rgba(239, 68, 68, 0.2);
+            border: 2px solid #ef4444;
+        }
+
+        .challenge-family.ok .family-icon {
+            background: rgba(34, 197, 94, 0.2);
+            border: 2px solid var(--ok);
+        }
+
+        /* Restaurant avoidance visualization (9 out of 10 avoid) */
+        .restaurant-grid {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            flex-wrap: wrap;
+            max-width: 180px;
+        }
+
+        .restaurant-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: rgba(239, 68, 68, 0.2);
+            border: 2px solid #ef4444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            position: relative;
+        }
+
+        .restaurant-icon::after {
+            content: '✕';
+            color: #ef4444;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .restaurant-icon.safe {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: var(--ok);
+        }
+
+        .restaurant-icon.safe::after {
+            content: '✓';
+            color: var(--ok);
+        }
+
+        /* Donut chart for percentages */
+        .donut-chart {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .donut-chart::before {
+            content: '';
+            position: absolute;
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(145deg, #151d45, #111630);
+            border-radius: 50%;
+        }
+
+        .donut-chart.danger {
+            background: conic-gradient(#ef4444 0% 37%, rgba(255,255,255,0.1) 37% 100%);
+        }
+
+        .donut-percent {
+            position: relative;
+            z-index: 1;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #ef4444;
+        }
+
+        /* Quote highlights */
+        .quote-block .highlight {
+            color: var(--brand);
+            font-weight: 600;
+            font-style: normal;
+        }
+
+        .quote-block .highlight-success {
+            color: var(--ok);
+            font-weight: 600;
+            font-style: normal;
+        }
+
+        .quote-block .highlight-warning {
+            color: #facc15;
+            font-weight: 600;
+            font-style: normal;
+        }
+
+        /* Danger stat cards */
+        .stat-card.danger .stat-number {
+            background: linear-gradient(135deg, #ef4444, #f97316);
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+
+        .stat-card.danger::before {
+            background: linear-gradient(90deg, #ef4444, #f97316);
+        }
+
+        /* Success stat cards */
+        .stat-card.success .stat-number {
+            background: linear-gradient(135deg, #22c55e, #10b981);
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+
+        .stat-card.success::before {
+            background: linear-gradient(90deg, #22c55e, #10b981);
+        }
+
+        /* Warning/opportunity stat cards */
+        .stat-card.opportunity .stat-number {
+            background: linear-gradient(135deg, #facc15, #f59e0b);
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+
+        .stat-card.opportunity::before {
+            background: linear-gradient(90deg, #facc15, #f59e0b);
+        }
+
+        /* Problem cards */
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 28px;
+        }
+
+        .problem-card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px;
+            position: relative;
+        }
+
+        .problem-icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(239, 68, 68, 0.15);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            margin-bottom: 20px;
+        }
+
+        .problem-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 12px;
+        }
+
+        .problem-card p {
+            color: var(--muted);
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .problem-stat {
+            display: inline-block;
+            padding: 8px 14px;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: #f87171;
+        }
+
+        /* Solution section */
+        .solution-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 28px;
+        }
+
+        .solution-card {
+            background: linear-gradient(145deg, #151d45, #111630);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 36px 32px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .solution-card:hover {
+            transform: translateY(-6px);
+            border-color: var(--brand);
+            box-shadow: 0 20px 40px rgba(124, 156, 255, 0.15);
+        }
+
+        .solution-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, rgba(124, 156, 255, 0.2), rgba(167, 139, 250, 0.2));
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            margin-bottom: 24px;
+        }
+
+        .solution-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 12px;
+        }
+
+        .solution-card p {
+            color: var(--muted);
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .solution-card .principle-tagline {
+            color: var(--brand);
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        /* Principle Demo Animations */
+        .principle-demo {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            min-height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Multi-source verification demo */
+        .source-flow {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .source-icons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .source-icon {
+            width: 36px;
+            height: 36px;
+            background: rgba(124, 156, 255, 0.2);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            animation: sourceGlow 2s ease-in-out infinite;
+        }
+
+        .source-icon:nth-child(2) { animation-delay: 0.3s; }
+        .source-icon:nth-child(3) { animation-delay: 0.6s; }
+
+        @keyframes sourceGlow {
+            0%, 100% { opacity: 0.5; transform: scale(0.95); }
+            50% { opacity: 1; transform: scale(1); box-shadow: 0 0 12px rgba(124, 156, 255, 0.4); }
+        }
+
+        .flow-arrows {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            color: var(--brand);
+            font-size: 14px;
+        }
+
+        .flow-arrow {
+            animation: flowPulse 1.5s ease-in-out infinite;
+        }
+
+        .flow-arrow:nth-child(2) { animation-delay: 0.2s; }
+        .flow-arrow:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes flowPulse {
+            0%, 100% { opacity: 0.3; transform: translateX(0); }
+            50% { opacity: 1; transform: translateX(4px); }
+        }
+
+        .verified-result {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.1));
+            border: 2px solid var(--ok);
+            border-radius: 12px;
+            padding: 12px 16px;
+            text-align: center;
+            flex: 1;
+        }
+
+        .verified-result .ingredient-name {
+            font-weight: 600;
+            color: var(--ink);
+            font-size: 0.9rem;
+        }
+
+        .verified-result .source-count {
+            font-size: 0.75rem;
+            color: var(--ok);
+            margin-top: 4px;
+        }
+
+        .verified-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--ok);
+            color: #000;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-top: 6px;
+        }
+
+        /* Manager verification demo */
+        .verification-steps {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .verify-step {
+            flex: 1;
+            background: rgba(124, 156, 255, 0.1);
+            border-radius: 10px;
+            padding: 12px 8px;
+            text-align: center;
+            border: 1px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .verify-step.active {
+            border-color: var(--ok);
+            background: rgba(34, 197, 94, 0.15);
+        }
+
+        .verify-step-icon {
+            font-size: 24px;
+            margin-bottom: 6px;
+        }
+
+        .verify-step-label {
+            font-size: 0.7rem;
+            color: var(--muted);
+        }
+
+        .verify-step.active .verify-step-label {
+            color: var(--ok);
+        }
+
+        .verify-arrow {
+            color: var(--brand);
+            font-size: 16px;
+            opacity: 0.5;
+        }
+
+        .monthly-badge {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(250, 204, 21, 0.2);
+            border: 1px solid #facc15;
+            color: #facc15;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        /* Allergen clarity demo */
+        .allergen-display {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .allergen-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 12px;
+            border-radius: 8px;
+        }
+
+        .allergen-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .allergen-indicator.safe { background: var(--ok); box-shadow: 0 0 8px rgba(34, 197, 94, 0.5); }
+        .allergen-indicator.caution { background: #facc15; box-shadow: 0 0 8px rgba(250, 204, 21, 0.5); }
+        .allergen-indicator.danger { background: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.5); }
+
+        .allergen-dish {
+            flex: 1;
+            font-size: 0.85rem;
+            color: var(--ink);
+        }
+
+        .allergen-tags {
+            display: flex;
+            gap: 4px;
+        }
+
+        .allergen-tag {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-weight: 600;
+        }
+
+        .allergen-tag.safe { background: rgba(34, 197, 94, 0.2); color: var(--ok); }
+        .allergen-tag.contains { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+
+        /* Communication demo */
+        .comm-demo {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100%;
+        }
+
+        .comm-bubble {
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            max-width: 85%;
+            animation: bubbleIn 0.5s ease-out;
+        }
+
+        .comm-bubble.customer {
+            background: var(--brand);
+            color: #fff;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .comm-bubble.kitchen {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid var(--ok);
+            color: var(--ink);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+
+        .comm-label {
+            font-size: 0.65rem;
+            color: var(--muted);
+            margin-bottom: 2px;
+        }
+
+        @keyframes bubbleIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .solution-features {
+            list-style: none;
+        }
+
+        .solution-features li {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 8px 0;
+            font-size: 0.95rem;
+            color: var(--ink);
+        }
+
+        .solution-features li::before {
+            content: '✓';
+            color: var(--ok);
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        /* Quote/Testimonial style */
+        .quote-block {
+            background: linear-gradient(135deg, rgba(124, 156, 255, 0.1), rgba(167, 139, 250, 0.05));
+            border-left: 4px solid var(--brand);
+            border-radius: 0 16px 16px 0;
+            padding: 32px 36px;
+            margin: 40px 0;
+            font-size: 1.15rem;
+            font-style: italic;
+            color: var(--ink);
+            line-height: 1.7;
+        }
+
+        .quote-block cite {
+            display: block;
+            margin-top: 16px;
+            font-style: normal;
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        /* Comparison section */
+        .comparison-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+            margin: 40px 0;
+        }
+
+        @media (max-width: 768px) {
+            .comparison-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px;
+        }
+
+        .comparison-card.highlight {
+            border-color: var(--ok);
+            background: linear-gradient(145deg, rgba(34, 197, 94, 0.08), var(--panel));
+        }
+
+        .comparison-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .comparison-list {
+            list-style: none;
+        }
+
+        .comparison-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .comparison-list li:last-child {
+            border-bottom: none;
+        }
+
+        .comparison-value {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .comparison-card.highlight .comparison-value {
+            color: var(--ok);
+        }
+
+        /* Impact numbers row */
+        .impact-row {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            flex-wrap: wrap;
+            padding: 40px 0;
+            background: linear-gradient(180deg, transparent, rgba(124, 156, 255, 0.05), transparent);
+            margin: 40px 0;
+        }
+
+        .impact-item {
+            text-align: center;
+        }
+
+        .impact-number {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--brand);
+        }
+
+        .impact-number.success {
+            color: var(--ok);
+        }
+
+        .impact-number.warning {
+            color: #facc15;
+        }
+
+        .impact-label {
+            font-size: 0.95rem;
+            color: var(--muted);
+            margin-top: 4px;
+            max-width: 180px;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            text-align: center;
+            padding: 80px 20px;
+            background: linear-gradient(180deg, transparent, rgba(124, 156, 255, 0.08));
+            border-radius: 24px;
+            margin-top: 60px;
+        }
+
+        .cta-section h2 {
+            font-size: clamp(1.8rem, 3vw, 2.4rem);
+            margin-bottom: 16px;
+        }
+
+        .cta-section p {
+            color: var(--muted);
+            font-size: 1.1rem;
+            max-width: 500px;
+            margin: 0 auto 32px;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .cta-btn {
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .cta-btn.primary {
+            background: linear-gradient(135deg, #3651ff, #5a6fff);
+            color: #fff;
+            border: none;
+        }
+
+        .cta-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(54, 81, 255, 0.4);
+        }
+
+        .cta-btn.secondary {
+            background: transparent;
+            color: var(--ink);
+            border: 1px solid var(--border);
+        }
+
+        .cta-btn.secondary:hover {
+            border-color: var(--brand);
+        }
+
+        /* Counter animation */
+        .counter {
+            display: inline-block;
+        }
+
+        /* Divider */
+        .section-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--border), transparent);
+            margin: 60px 0;
+        }
+
+        /* Scroll indicator */
+        .scroll-indicator {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s infinite;
+            transition: opacity 0.3s;
+        }
+
+        .scroll-indicator span {
+            display: block;
+            width: 24px;
+            height: 24px;
+            border-right: 2px solid var(--muted);
+            border-bottom: 2px solid var(--muted);
+            transform: rotate(45deg);
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateX(-50%) translateY(0);
+            }
+            40% {
+                transform: translateX(-50%) translateY(-10px);
+            }
+            60% {
+                transform: translateX(-50%) translateY(-5px);
+            }
+        }
+
+        /* Progress bar */
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--brand), #a78bfa);
+            width: 0%;
+            z-index: 9999;
+            transition: width 0.1s linear;
+        }
+
+        /* Key insight callout */
+        .key-insight {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(16, 185, 129, 0.05));
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 16px;
+            padding: 28px 32px;
+            margin: 40px 0;
+            text-align: center;
+        }
+
+        .key-insight-label {
+            font-size: 0.85rem;
+            color: var(--ok);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        .key-insight-text {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--ink);
+            line-height: 1.5;
+        }
+
+        /* Prevalence Chart */
+        .prevalence-chart {
+            background: linear-gradient(145deg, #151d45, #111630);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px;
+            margin: 40px 0;
+        }
+
+        .prevalence-chart-title {
+            font-size: 1.1rem;
+            color: var(--ink);
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .prevalence-chart-subtitle {
+            font-size: 0.9rem;
+            color: var(--muted);
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .prevalence-bars {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 40px;
+            height: 200px;
+            padding: 0 20px;
+        }
+
+        .prevalence-bar-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .prevalence-bar-wrapper {
+            height: 160px;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .prevalence-bar {
+            width: 80px;
+            border-radius: 8px 8px 0 0;
+            position: relative;
+            transition: height 1.5s ease-out;
+        }
+
+        .prevalence-bar.bar-2007 {
+            background: linear-gradient(180deg, rgba(124, 156, 255, 0.6), rgba(124, 156, 255, 0.3));
+            height: 0;
+        }
+
+        .prevalence-bar.bar-2007.animated {
+            height: 100px;
+        }
+
+        .prevalence-bar.bar-2021 {
+            background: linear-gradient(180deg, #7c9cff, #5a6fff);
+            height: 0;
+        }
+
+        .prevalence-bar.bar-2021.animated {
+            height: 150px;
+        }
+
+        .prevalence-bar-value {
+            position: absolute;
+            top: -28px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--ink);
+        }
+
+        .prevalence-bar-label {
+            font-size: 0.95rem;
+            color: var(--muted);
+        }
+
+        .prevalence-growth {
+            text-align: center;
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .prevalence-growth-number {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ef4444, #f97316);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .prevalence-growth-label {
+            font-size: 0.9rem;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .prevalence-source {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .prevalence-source a {
+            color: var(--brand);
+            text-decoration: none;
+        }
+
+        .prevalence-source a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .impact-row {
+                gap: 30px;
+            }
+
+            .impact-number {
+                font-size: 2rem;
+            }
+
+            .prevalence-bars {
+                gap: 24px;
+            }
+
+            .prevalence-bar {
+                width: 60px;
+            }
+        }
+    </style>
+</head>
+
+<body class="page-shell">
+    <div class="progress-bar" id="progressBar"></div>
+
+    <header class="simple-topbar">
+        <div class="simple-topbar-inner">
+            <a class="simple-brand" href="restaurants.html">
+                <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png"
+                    alt="Clarivore logo">
+                <span>Clarivore</span>
+            </a>
+            <div class="simple-nav">
+                <!-- Navigation populated by shared-nav.js -->
+            </div>
+        </div>
+    </header>
+
+    <main class="page-main">
+        <div class="page-content">
+
+            <!-- Hero Section -->
+            <section class="mission-hero">
+                <h1>The Untapped Opportunity in Food Allergies</h1>
+                <div class="scroll-indicator">
+                    <span></span>
+                </div>
+            </section>
+
+            <!-- The Hidden Market -->
+            <section class="mission-section" data-animate>
+
+                <div class="stats-grid">
+                    <div class="stat-card" data-source="https://www.foodallergy.org/resources/facts-and-statistics#:~:text=Researchers%20estimate%20that%2033%20million%20Americans%20have%20food%20allergies" data-source-name="FARE">
+                        <div class="stat-visual">
+                            <div class="person-grid">
+                                <div class="person-icon highlighted"><div class="head"></div><div class="body"></div></div>
+                                <div class="person-icon"><div class="head"></div><div class="body"></div></div>
+                                <div class="person-icon"><div class="head"></div><div class="body"></div></div>
+                                <div class="person-icon"><div class="head"></div><div class="body"></div></div>
+                                <div class="person-icon"><div class="head"></div><div class="body"></div></div>
+                                <div class="person-icon"><div class="head"></div><div class="body"></div></div>
+                                <div class="person-icon"><div class="head"></div><div class="body"></div></div>
+                                <div class="person-icon"><div class="head"></div><div class="body"></div></div>
+                                <div class="person-icon"><div class="head"></div><div class="body"></div></div>
+                                <div class="person-icon"><div class="head"></div><div class="body"></div></div>
+                            </div>
+                        </div>
+                        <div class="stat-number"><span class="counter" data-target="33">0</span>M</div>
+                        <div class="stat-label">Americans with Food Allergies</div>
+                        <div class="stat-description">1 in 10 adults • 1 in 13 children</div>
+                        <div style="margin-top: 12px; font-size: 0.75rem; color: var(--muted);">Source: <a href="https://www.foodallergy.org/resources/facts-and-statistics" target="_blank" rel="noopener noreferrer" style="color: var(--brand); text-decoration: none;">FARE</a></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-visual">
+                            <div class="family-groups">
+                                <div class="family-group">
+                                    <div class="family-person"><div class="head"></div><div class="body"></div></div>
+                                    <div class="family-person"><div class="head"></div><div class="body"></div></div>
+                                    <div class="family-person child"><div class="head"></div><div class="body"></div></div>
+                                </div>
+                                <div class="family-group">
+                                    <div class="family-person faded"><div class="head"></div><div class="body"></div></div>
+                                    <div class="family-person faded"><div class="head"></div><div class="body"></div></div>
+                                    <div class="family-person"><div class="head"></div><div class="body"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-number"><span class="counter" data-target="85">0</span>M</div>
+                        <div class="stat-label">Americans Impacted</div>
+                        <div class="stat-description">Including family & friends who accommodate allergies</div>
+                        <div style="margin-top: 12px; font-size: 0.75rem; color: var(--muted);">Source: <a href="https://www.mckinsey.com/industries/consumer-packaged-goods/our-insights/consumers-with-food-allergies-a-growing-market-remains-underserved" target="_blank" rel="noopener noreferrer" style="color: var(--brand); text-decoration: none;">McKinsey</a></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-visual">
+                            <div class="dollar-stack">
+                                <div class="dollar-bar"></div>
+                                <div class="dollar-bar"></div>
+                                <div class="dollar-bar"></div>
+                                <div class="dollar-bar"></div>
+                                <div class="dollar-bar"></div>
+                            </div>
+                        </div>
+                        <div class="stat-number">$<span class="counter" data-target="19">0</span>B+</div>
+                        <div class="stat-label">Annual Spending</div>
+                        <div class="stat-description">Specialty foods and dining each year</div>
+                        <div style="margin-top: 12px; font-size: 0.75rem; color: var(--muted);">Source: <a href="https://www.mckinsey.com/industries/consumer-packaged-goods/our-insights/consumers-with-food-allergies-a-growing-market-remains-underserved" target="_blank" rel="noopener noreferrer" style="color: var(--brand); text-decoration: none;">McKinsey</a></div>
+                    </div>
+                </div>
+
+                <!-- Prevalence Line Chart -->
+                <div class="prevalence-chart" style="background: linear-gradient(145deg, #151d45, #111630); border: 1px solid var(--border); border-radius: 20px; padding: 32px; margin: 40px auto; max-width: 800px;">
+                    <div style="text-align: center; margin-bottom: 8px; font-size: 1.1rem; color: var(--ink);">A Growing Epidemic</div>
+                    <div style="text-align: center; margin-bottom: 24px; font-size: 0.9rem; color: var(--muted);">Food allergy prevalence in U.S. children (% of population under 18)</div>
+
+                    <!-- Chart -->
+                    <div style="position: relative; height: 200px; margin: 0 50px 0 40px;">
+                        <!-- Y-axis labels -->
+                        <div style="position: absolute; left: -35px; top: 0; font-size: 0.75rem; color: var(--muted);">8%</div>
+                        <div style="position: absolute; left: -35px; top: 50%; transform: translateY(-50%); font-size: 0.75rem; color: var(--muted);">4%</div>
+                        <div style="position: absolute; left: -35px; bottom: 0; font-size: 0.75rem; color: var(--muted);">0%</div>
+
+                        <!-- Grid lines -->
+                        <div style="position: absolute; top: 0; left: 0; right: 0; height: 1px; background: rgba(255,255,255,0.1);"></div>
+                        <div style="position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(255,255,255,0.1);"></div>
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: rgba(255,255,255,0.1);"></div>
+
+                        <!-- SVG Lines -->
+                        <svg viewBox="0 0 400 200" preserveAspectRatio="xMidYMid meet" style="width: 100%; height: 100%; overflow: visible;">
+                            <!-- Children line (CDC NHIS data): 3.4% (1997-99) → 3.9% (2007) → 5.1% (2009-11) → 5.8% (2021) -->
+                            <!-- Y scale: 0% = 200, 8% = 0. So each 1% = 25px -->
+                            <!-- 3.4% = 200 - (3.4 * 25) = 115 -->
+                            <!-- 3.9% = 200 - (3.9 * 25) = 102.5 -->
+                            <!-- 5.1% = 200 - (5.1 * 25) = 72.5 -->
+                            <!-- 5.8% = 200 - (5.8 * 25) = 55 -->
+                            <defs>
+                                <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#7c9cff" stop-opacity="0.6"/>
+                                    <stop offset="100%" stop-color="#ef4444"/>
+                                </linearGradient>
+                                <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stop-color="#7c9cff" stop-opacity="0.3"/>
+                                    <stop offset="100%" stop-color="#7c9cff" stop-opacity="0.05"/>
+                                </linearGradient>
+                            </defs>
+
+                            <!-- Area fill -->
+                            <polygon
+                                points="0,115 133,102 267,72 400,55 400,200 0,200"
+                                fill="url(#areaGradient)"
+                            />
+
+                            <!-- Main line -->
+                            <polyline
+                                points="0,115 133,102 267,72 400,55"
+                                fill="none"
+                                stroke="url(#lineGradient)"
+                                stroke-width="3"
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                            />
+
+                            <!-- Data points with labels -->
+                            <circle cx="0" cy="115" r="6" fill="#7c9cff"/>
+                            <text x="0" y="100" fill="#7c9cff" font-size="11" font-weight="600" text-anchor="middle">3.4%</text>
+
+                            <circle cx="133" cy="102" r="6" fill="#8ca5f5"/>
+                            <text x="133" y="87" fill="#8ca5f5" font-size="11" font-weight="600" text-anchor="middle">3.9%</text>
+
+                            <circle cx="267" cy="72" r="6" fill="#c4846a"/>
+                            <text x="267" y="57" fill="#c4846a" font-size="11" font-weight="600" text-anchor="middle">5.1%</text>
+
+                            <circle cx="400" cy="55" r="6" fill="#ef4444"/>
+                            <text x="400" y="40" fill="#ef4444" font-size="11" font-weight="600" text-anchor="middle">5.8%</text>
+                        </svg>
+                    </div>
+
+                    <!-- X-axis labels -->
+                    <div style="display: flex; justify-content: space-between; margin: 12px 50px 0 40px;">
+                        <span style="font-size: 0.8rem; color: var(--muted);">1997-99</span>
+                        <span style="font-size: 0.8rem; color: var(--muted);">2007</span>
+                        <span style="font-size: 0.8rem; color: var(--muted);">2009-11</span>
+                        <span style="font-size: 0.8rem; color: var(--muted);">2021</span>
+                    </div>
+
+                    <!-- Growth callout -->
+                    <div style="text-align: center; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
+                        <span style="font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, #ef4444, #f97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">+71% increase</span>
+                        <div style="font-size: 0.9rem; color: var(--muted); margin-top: 4px;">in childhood food allergies over ~25 years</div>
+                    </div>
+
+                    <!-- Source -->
+                    <div style="text-align: center; margin-top: 16px; font-size: 0.8rem; color: var(--muted);">
+                        Source: <a href="https://www.cdc.gov/nchs/products/databriefs/db459.htm" target="_blank" rel="noopener noreferrer" style="color: var(--brand); text-decoration: none;">CDC National Health Interview Survey</a>
+                    </div>
+                </div>
+
+            </section>
+
+            <div class="section-divider"></div>
+
+            <!-- What Restaurants Stand to Gain -->
+            <section class="mission-section" data-animate>
+                <div class="section-header">
+                    <h2>What Restaurants Stand to Gain</h2>
+                    <p>Building trust with food allergy customers isn't just the right thing to do—it's profitable</p>
+                </div>
+
+                <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr); max-width: 850px; margin: 0 auto 40px;">
+                    <div class="stat-card success" data-source="https://www.mckinsey.com/industries/consumer-packaged-goods/our-insights/consumers-with-food-allergies-a-growing-market-remains-underserved" data-source-name="McKinsey">
+                        <div class="stat-visual">
+                            <div class="dining-comparison">
+                                <div class="dining-group">
+                                    <div class="dining-people">
+                                        <div class="dining-person"><div class="head"></div><div class="body"></div></div>
+                                        <div class="dining-person"><div class="head"></div><div class="body"></div></div>
+                                        <div class="dining-person"><div class="head"></div><div class="body"></div></div>
+                                    </div>
+                                    <div class="dining-group-label">General population</div>
+                                </div>
+                                <div class="equals-sign">=</div>
+                                <div class="dining-group allergy">
+                                    <div class="dining-people">
+                                        <div class="dining-person allergy"><div class="head"></div><div class="body"></div></div>
+                                        <div class="dining-person allergy"><div class="head"></div><div class="body"></div></div>
+                                        <div class="dining-person allergy"><div class="head"></div><div class="body"></div></div>
+                                    </div>
+                                    <div class="dining-group-label">Food allergy customers</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="stat-number">97%</div>
+                        <div class="stat-label">Dine Out Regularly</div>
+                        <div class="stat-description">Food allergy consumers eat out at the same rate as everyone else</div>
+                        <div style="margin-top: 12px; font-size: 0.75rem; color: var(--muted);">Source: <a href="https://www.mckinsey.com/industries/consumer-packaged-goods/our-insights/consumers-with-food-allergies-a-growing-market-remains-underserved" target="_blank" rel="noopener noreferrer" style="color: var(--brand); text-decoration: none;">McKinsey</a></div>
+                    </div>
+                    <div class="stat-card danger">
+                        <div class="stat-visual">
+                            <div class="challenge-grid">
+                                <div class="challenge-family stressed"><div class="family-icon">😰</div></div>
+                                <div class="challenge-family stressed"><div class="family-icon">😰</div></div>
+                                <div class="challenge-family stressed"><div class="family-icon">😰</div></div>
+                                <div class="challenge-family ok"><div class="family-icon">😊</div></div>
+                            </div>
+                        </div>
+                        <div class="stat-number">3 in 4</div>
+                        <div class="stat-label">Families Say Eating Out Is Challenging</div>
+                        <div class="stat-description">75% of families managing food allergies find dining out stressful</div>
+                        <div style="margin-top: 12px; font-size: 0.75rem; color: var(--muted);">Source: <a href="https://www.aafa.org/media/2451/aafa-my-life-with-food-allergy-parent-survey-report.pdf" target="_blank" rel="noopener noreferrer" style="color: var(--brand); text-decoration: none;">AAFA</a></div>
+                    </div>
+                </div>
+
+                <div class="quote-block">
+                    "Food-allergic customers tend to be <span class="highlight-success">loyal</span> to restaurants providing allergen-free foods, often bringing <span class="highlight-success">larger groups</span> of diners without allergies and thereby <span class="highlight-success">boosting overall profits</span>."
+                    <cite>— <a href="https://www.mckinsey.com/industries/consumer-packaged-goods/our-insights/consumers-with-food-allergies-a-growing-market-remains-underserved" target="_blank" rel="noopener noreferrer" style="color: var(--brand); text-decoration: none;">McKinsey & Company, "Consumers with Food Allergies: A Growing Market Remains Underserved"</a></cite>
+                </div>
+
+                <div class="key-insight">
+                    <div class="key-insight-label">Key Insight</div>
+                    <div class="key-insight-text">
+                        Food allergy customers dine out just as often as the general population—<br>
+                        but they're forced to concentrate at the few restaurants they trust.
+                    </div>
+                </div>
+
+                <div class="quote-block">
+                    "<span class="highlight">Ingredient list is available for all menu items</span>" was the <span class="highlight-success">#1 practice</span> that would give food allergy customers the assurance needed to dine out comfortably.
+                    <cite>— <a href="https://www.mdpi.com/2072-6643/17/18/2916" target="_blank" rel="noopener noreferrer" style="color: var(--brand); text-decoration: none;">Food Allergy and Foodservice Comparative Study, Nutrients Journal 2024</a></cite>
+                </div>
+
+                <!-- Trust = Transparency Visual -->
+                <div class="trust-equation" style="display: flex; justify-content: center; align-items: center; gap: 24px; margin: 40px auto; flex-wrap: wrap;">
+                    <div style="text-align: center;">
+                        <div style="width: 100px; height: 100px; background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.1)); border: 2px solid var(--ok); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 12px;">
+                            <span style="font-size: 32px;">📋</span>
+                            <span style="font-size: 11px; color: var(--ok); margin-top: 4px;">✓ ✓ ✓</span>
+                        </div>
+                        <div style="font-size: 0.95rem; color: var(--ink); font-weight: 600;">Ingredient<br>Transparency</div>
+                    </div>
+                    <div style="font-size: 2.5rem; color: var(--brand); font-weight: 700; align-self: flex-start; margin-top: 30px;">=</div>
+                    <div style="text-align: center;">
+                        <div style="width: 100px; height: 100px; background: linear-gradient(135deg, rgba(124, 156, 255, 0.2), rgba(167, 139, 250, 0.1)); border: 2px solid var(--brand); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 12px;">
+                            <span style="font-size: 32px;">🤝</span>
+                        </div>
+                        <div style="font-size: 0.95rem; color: var(--ink); font-weight: 600;">Customer<br>Trust</div>
+                    </div>
+                    <div style="font-size: 2.5rem; color: var(--brand); font-weight: 700; align-self: flex-start; margin-top: 30px;">=</div>
+                    <div style="text-align: center;">
+                        <div style="width: 100px; height: 100px; background: linear-gradient(135deg, rgba(250, 204, 21, 0.2), rgba(245, 158, 11, 0.1)); border: 2px solid #facc15; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 12px;">
+                            <span style="font-size: 32px;">👥</span>
+                            <span style="font-size: 18px; margin-top: 2px;">↗</span>
+                        </div>
+                        <div style="font-size: 0.95rem; color: var(--ink); font-weight: 600;">Loyal<br>Customers</div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="section-divider"></div>
+
+            <!-- The Solution - Clarivore -->
+            <section class="mission-section" data-animate>
+                <div class="section-header">
+                    <span class="section-label">Our Principles</span>
+                    <h2>The Four Pillars of Trustworthy Allergen Data</h2>
+                    <p>Every feature we build is designed to uphold these core principles</p>
+                </div>
+
+                <div class="solution-grid" style="grid-template-columns: repeat(2, 1fr);">
+                    <div class="solution-card">
+                        <div class="solution-icon">🔬</div>
+                        <h3>Multi-Source Verification</h3>
+                        <p class="principle-tagline"><em>Trust data that's been cross-referenced, not guessed.</em></p>
+                        <p>Every branded ingredient in every dish is researched across multiple online sources. We don't rely on a single database—our AI cross-references ingredient lists from retailers, manufacturers, and food databases to ensure accuracy.</p>
+
+                        <div class="principle-demo">
+                            <div class="source-flow">
+                                <div class="source-icons">
+                                    <div class="source-icon">🛒</div>
+                                    <div class="source-icon">🏭</div>
+                                    <div class="source-icon">📦</div>
+                                </div>
+                                <div class="flow-arrows">
+                                    <span class="flow-arrow">→</span>
+                                    <span class="flow-arrow">→</span>
+                                    <span class="flow-arrow">→</span>
+                                </div>
+                                <div class="verified-result">
+                                    <div class="ingredient-name">Kikkoman Soy Sauce</div>
+                                    <div class="source-count">Verified from 3 sources</div>
+                                    <div class="verified-badge">✓ CONTAINS: wheat, soy</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="solution-card">
+                        <div class="solution-icon">✅</div>
+                        <h3>Continuous Manager Verification</h3>
+                        <p class="principle-tagline"><em>Accuracy maintained by those who know best.</em></p>
+                        <p>Managers must photograph their actual menus to confirm they match what's online. Every branded product requires a barcode scan to verify ingredients. If a restaurant doesn't re-confirm at least once a month, they're removed from the platform.</p>
+
+                        <div class="principle-demo">
+                            <div class="verification-steps">
+                                <div class="verify-step active">
+                                    <div class="verify-step-icon">📷</div>
+                                    <div class="verify-step-label">Menu Photo</div>
+                                </div>
+                                <div class="verify-arrow">→</div>
+                                <div class="verify-step active">
+                                    <div class="verify-step-icon">📱</div>
+                                    <div class="verify-step-label">Barcode Scan</div>
+                                </div>
+                                <div class="verify-arrow">→</div>
+                                <div class="verify-step active">
+                                    <div class="verify-step-icon">✓</div>
+                                    <div class="verify-step-label">Confirmed</div>
+                                </div>
+                            </div>
+                            <div class="monthly-badge">⏱ Monthly requirement</div>
+                        </div>
+                    </div>
+
+                    <div class="solution-card">
+                        <div class="solution-icon">🎯</div>
+                        <h3>Clarity & Consistency</h3>
+                        <p class="principle-tagline"><em>Same clear format, every restaurant, every dish.</em></p>
+                        <p>No more deciphering cryptic menus or hoping the server understands your allergy. Every dish displays allergen and dietary information the same way—color-coded indicators personalized to your specific needs, so you know instantly what's safe.</p>
+
+                        <div class="principle-demo">
+                            <div class="allergen-display">
+                                <div class="allergen-row">
+                                    <div class="allergen-indicator safe"></div>
+                                    <div class="allergen-dish">Grilled Salmon</div>
+                                    <div class="allergen-tags">
+                                        <span class="allergen-tag safe">Dairy-Free</span>
+                                        <span class="allergen-tag safe">Gluten-Free</span>
+                                    </div>
+                                </div>
+                                <div class="allergen-row">
+                                    <div class="allergen-indicator caution"></div>
+                                    <div class="allergen-dish">Pad Thai</div>
+                                    <div class="allergen-tags">
+                                        <span class="allergen-tag contains">Peanuts</span>
+                                        <span class="allergen-tag safe">Dairy-Free</span>
+                                    </div>
+                                </div>
+                                <div class="allergen-row">
+                                    <div class="allergen-indicator danger"></div>
+                                    <div class="allergen-dish">Cheese Pizza</div>
+                                    <div class="allergen-tags">
+                                        <span class="allergen-tag contains">Dairy</span>
+                                        <span class="allergen-tag contains">Gluten</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="solution-card">
+                        <div class="solution-icon">💬</div>
+                        <h3>Direct Kitchen Communication</h3>
+                        <p class="principle-tagline"><em>Talk directly to the people preparing your food.</em></p>
+                        <p>Questions about cross-contamination? Need to confirm an ingredient? Clarivore enables direct communication between customers and kitchen staff—no more playing telephone through servers who may not fully understand your needs.</p>
+
+                        <div class="principle-demo">
+                            <div class="comm-demo">
+                                <div class="comm-bubble customer">
+                                    <div class="comm-label">You</div>
+                                    Is the grilled chicken cooked on the same surface as items with sesame?
+                                </div>
+                                <div class="comm-bubble kitchen">
+                                    <div class="comm-label">Kitchen</div>
+                                    No, we have a dedicated grill for allergen-free orders. I'll note your sesame allergy on the ticket.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CTA Section -->
+            <section class="cta-section">
+                <h2>Ready to Dine with Confidence?</h2>
+                <p>Join diners who are already using Clarivore to find safe meals at restaurants across the city.</p>
+                <div class="cta-buttons">
+                    <a href="restaurants.html" class="cta-btn primary">Browse Restaurants</a>
+                    <a href="dish-search.html" class="cta-btn secondary">Search Dishes</a>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://fgoiyycctnwnghrvsilt.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnb2l5eWNjdG53bmdocnZzaWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0MzY1MjYsImV4cCI6MjA3NjAxMjUyNn0.xlSSXr0Gl7j-vsckrj-2anpPmp4BG2SUIdN-_dquSA8';
+        const { createClient } = supabase;
+        window.supabaseClient = window.supabaseClient || createClient(SUPABASE_URL, SUPABASE_KEY);
+    </script>
+    <script type="module">
+        import { setupNav } from './js/shared-nav.js';
+        import { fetchManagerRestaurants } from './js/manager-context.js';
+
+        // Initialize navigation with user context
+        async function initNav() {
+            const { data: { user } } = await window.supabaseClient.auth.getUser();
+            const OWNER_EMAIL = 'matt.29.ds@gmail.com';
+            const isOwner = user?.email === OWNER_EMAIL;
+            const isManager = user?.user_metadata?.role === 'manager';
+            let managerRestaurants = [];
+            if (user && (isManager || isOwner)) {
+                managerRestaurants = await fetchManagerRestaurants(window.supabaseClient, user.id);
+            }
+            setupNav('our-mission', user, { managerRestaurants });
+        }
+        initNav();
+
+        // Scroll-triggered animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+
+                    // Trigger counter animations for this section
+                    const counters = entry.target.querySelectorAll('.counter');
+                    counters.forEach(counter => {
+                        if (!counter.dataset.animated) {
+                            animateCounter(counter);
+                            counter.dataset.animated = 'true';
+                        }
+                    });
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.mission-section').forEach(section => {
+            observer.observe(section);
+        });
+
+        // Counter animation
+        function animateCounter(el) {
+            const target = parseFloat(el.dataset.target);
+            const duration = 2000;
+            const start = performance.now();
+            const isDecimal = target % 1 !== 0;
+
+            function update(currentTime) {
+                const elapsed = currentTime - start;
+                const progress = Math.min(elapsed / duration, 1);
+
+                // Easing function
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                const current = target * easeOut;
+
+                if (isDecimal) {
+                    el.textContent = current.toFixed(1);
+                } else {
+                    el.textContent = Math.floor(current);
+                }
+
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                } else {
+                    el.textContent = isDecimal ? target.toFixed(1) : target;
+                }
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        // Progress bar
+        const progressBar = document.getElementById('progressBar');
+        window.addEventListener('scroll', () => {
+            const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const scrolled = (window.scrollY / scrollHeight) * 100;
+            progressBar.style.width = scrolled + '%';
+        });
+
+        // Hide scroll indicator after scrolling
+        const scrollIndicator = document.querySelector('.scroll-indicator');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 100) {
+                scrollIndicator.style.opacity = '0';
+            } else {
+                scrollIndicator.style.opacity = '1';
+            }
+        }, { passive: true });
+
+        // Click-to-source functionality for stat cards
+        document.querySelectorAll('[data-source]').forEach(card => {
+            card.addEventListener('click', (e) => {
+                const sourceUrl = card.getAttribute('data-source');
+                if (sourceUrl) {
+                    window.open(sourceUrl, '_blank', 'noopener,noreferrer');
+                }
+            });
+        });
+
+        // Prevalence chart animation
+        const chartObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const bars = entry.target.querySelectorAll('.prevalence-bar');
+                    bars.forEach((bar, index) => {
+                        setTimeout(() => {
+                            bar.classList.add('animated');
+                        }, index * 300);
+                    });
+                    chartObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.3 });
+
+        const prevalenceChart = document.querySelector('[data-animate-chart]');
+        if (prevalenceChart) {
+            chartObserver.observe(prevalenceChart);
+        }
+    </script>
+</body>
+
+</html>
