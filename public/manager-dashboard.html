@@ -1149,26 +1149,32 @@
             <!-- Allergen/Diet filters -->
             <div class="heatmap-filters" style="margin-bottom:12px;">
               <span style="font-size:0.85rem;font-weight:600;color:var(--ink);display:block;margin-bottom:6px;">Show interest from customers with:</span>
-              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
-                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="dairy" checked> 🥛 Dairy</label>
-                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="egg" checked> 🥚 Egg</label>
-                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="peanut" checked> 🥜 Peanut</label>
-                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="tree nut" checked> 🌰 Tree Nut</label>
-                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="shellfish" checked> 🦐 Shellfish</label>
-                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="fish" checked> 🐟 Fish</label>
-                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="soy" checked> 🫘 Soy</label>
-                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="sesame" checked> 🌱 Sesame</label>
-                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="wheat" checked> 🌾 Wheat</label>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                <span style="font-size:0.8rem;font-weight:500;color:var(--muted);white-space:nowrap;">Allergies:</span>
+                <div style="display:flex;flex-wrap:nowrap;gap:6px;">
+                  <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="dairy" checked> 🥛 Dairy</label>
+                  <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="egg" checked> 🥚 Egg</label>
+                  <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="peanut" checked> 🥜 Peanut</label>
+                  <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="tree nut" checked> 🌰 Tree Nut</label>
+                  <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="shellfish" checked> 🦐 Shellfish</label>
+                  <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="fish" checked> 🐟 Fish</label>
+                  <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="soy" checked> 🫘 Soy</label>
+                  <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="sesame" checked> 🌱 Sesame</label>
+                  <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="wheat" checked> 🌾 Wheat</label>
+                </div>
               </div>
-              <div style="display:flex;flex-wrap:wrap;gap:6px;">
-                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-diet-filter" value="Vegan" checked> 🌱 Vegan</label>
-                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-diet-filter" value="Vegetarian" checked> 🥬 Vegetarian</label>
-                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-diet-filter" value="Pescatarian" checked> 🐟 Pescatarian</label>
-                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-diet-filter" value="Gluten-free" checked> 🌾 Gluten-free</label>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:0.8rem;font-weight:500;color:var(--muted);white-space:nowrap;">Diets:</span>
+                <div style="display:flex;flex-wrap:nowrap;gap:6px;margin-left:19px;">
+                  <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-diet-filter" value="Vegan" checked> 🌱 Vegan</label>
+                  <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-diet-filter" value="Vegetarian" checked> 🥬 Vegetarian</label>
+                  <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-diet-filter" value="Pescatarian" checked> 🐟 Pescatarian</label>
+                  <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-diet-filter" value="Gluten-free" checked> 🌾 Gluten-free</label>
+                </div>
               </div>
             </div>
             <div class="heatmap-metric-toggle">
-              <span class="heatmap-metric-label">Color by:</span>
+              <span class="heatmap-metric-label">Categorize interest by:</span>
               <div class="heatmap-metric-buttons">
                 <button class="heatmap-metric-btn active" data-metric="views">Views</button>
                 <button class="heatmap-metric-btn" data-metric="loves">Loves</button>
