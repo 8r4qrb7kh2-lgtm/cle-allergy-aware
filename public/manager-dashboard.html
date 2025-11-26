@@ -1353,7 +1353,7 @@
 
       <!-- Stacked bar chart for status breakdown -->
       <div class="analytics-section" style="margin-top:16px;">
-        <div class="analytics-section-title">Interest by User Dietary Status</div>
+        <div class="analytics-section-title">Engagement by Dietary Compatibility</div>
         <div class="stacked-bar-chart" id="analytics-stacked-chart">
           <!-- Populated by JS -->
         </div>
@@ -2001,7 +2001,7 @@
 
       stackedChart.innerHTML =
         renderStackedBar('Views', viewsSafe, viewsRemovable, viewsUnsafe, viewsTotal) +
-        renderStackedBar('Unique<br>Users', uniqueSafe, uniqueRemovable, uniqueUnsafe, uniqueTotal) +
+        renderStackedBar('Users', uniqueSafe, uniqueRemovable, uniqueUnsafe, uniqueTotal) +
         renderStackedBar('Loves', lovesSafe, lovesRemovable, lovesUnsafe, lovesTotal) +
         renderStackedBar('Orders', 0, 0, 0, ordersTotal); // Orders don't have status breakdown
 
