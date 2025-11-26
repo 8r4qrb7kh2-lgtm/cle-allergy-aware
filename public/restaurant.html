@@ -16450,6 +16450,70 @@
 
       ensureMobileViewerChrome();
       updateZoomIndicator();
+
+      // Track dish interaction for analytics
+      const trackedDishes = new Set(); // Prevent duplicate tracking in same session
+      async function trackDishInteraction(item) {
+        if (!item || !state.user?.loggedIn) return;
+
+        const dishName = item.id || item.name || item.label;
+        if (!dishName) return;
+
+        // Only track once per dish per session
+        const trackKey = `${state.restaurant?.id}-${dishName}`;
+        if (trackedDishes.has(trackKey)) return;
+        trackedDishes.add(trackKey);
+
+        try {
+          const restaurantId = state.restaurant?.id || state.restaurant?._id;
+          if (!restaurantId) return;
+
+          // Get user's allergens and diets
+          const userAllergens = state.allergies || [];
+          const userDiets = state.diets || [];
+
+          // Calculate dish status based on user's restrictions
+          let dishStatus = 'neutral';
+          const dishAllergens = (item.allergens || []).map(a => a.toLowerCase());
+          const dishDiets = item.diets || []; // Diets the dish IS compatible with
+          const removable = (item.removable || []).map(r => (r.allergen || '').toLowerCase());
+
+          const hasAllergenConflict = userAllergens.some(a => dishAllergens.includes(a.toLowerCase()));
+          const hasDietConflict = userDiets.some(d => !dishDiets.includes(d));
+
+          if (hasAllergenConflict || hasDietConflict) {
+            // Check if all conflicts are removable
+            const nonRemovableAllergens = userAllergens.filter(a =>
+              dishAllergens.includes(a.toLowerCase()) && !removable.includes(a.toLowerCase())
+            );
+            if (nonRemovableAllergens.length > 0 || hasDietConflict) {
+              dishStatus = 'unsafe';
+            } else {
+              dishStatus = 'removable';
+            }
+          } else if (userAllergens.length > 0 || userDiets.length > 0) {
+            dishStatus = 'safe';
+          }
+
+          const { error } = await client
+            .from('dish_interactions')
+            .insert([{
+              restaurant_id: restaurantId,
+              dish_name: dishName,
+              user_id: state.user.id,
+              user_allergens: userAllergens,
+              user_diets: userDiets,
+              dish_status: dishStatus
+            }]);
+
+          if (error) {
+            console.warn('Failed to track dish interaction:', error);
+          }
+        } catch (err) {
+          console.warn('Error tracking dish interaction:', err);
+        }
+      }
+
       const showOverlayDetails = (evt, item, target) => {
         ensureMobileInfoPanel();
         let pointerType = 'mouse';
@@ -16496,6 +16560,9 @@
             }
 
             renderMobileInfo(item);
+
+            // Track dish interaction for analytics (mobile)
+            trackDishInteraction(item);
           }
           return;
         }
@@ -16526,6 +16593,11 @@
         }
 
         showTipIn(pageTip, clientX, clientY, item.id || 'Item', tooltipBodyHTML(item, state.allergies || [], state.diets || []), rect, isClick, item);
+
+        // Track dish interaction for analytics (only on click, not hover)
+        if (isClick) {
+          trackDishInteraction(item);
+        }
 
         // Find the overlay box element (target might be badge or warning)
         const overlayBox = target?.classList?.contains('overlay') ? target : (target?.closest ? target.closest('.overlay') : null);
