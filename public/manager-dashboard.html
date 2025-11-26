@@ -1865,8 +1865,10 @@
       const cannotAccommodateAllergens = dishAllergens.filter(a => !removableAllergens.includes(a.toLowerCase()));
       const canAccommodateAllergens = dishAllergens.filter(a => removableAllergens.includes(a.toLowerCase()));
 
-      // Diets are always "cannot accommodate" (no removal concept for diets)
-      const cannotAccommodateDiets = dishDiets || [];
+      // dishDiets contains diets the dish IS compatible with
+      // We want to show diets the dish is NOT compatible with (cannot accommodate)
+      const allDiets = ['Vegan', 'Vegetarian', 'Pescatarian', 'Gluten-free'];
+      const cannotAccommodateDiets = allDiets.filter(d => !dishDiets.includes(d));
 
       // Populate "Cannot be accommodated" row (allergens + diets)
       const cannotRow = document.getElementById('cannot-accommodate-row');
