@@ -1,0 +1,2564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manager Dashboard - Clarivore</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .dashboard-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .dashboard-header {
+      margin-bottom: 30px;
+    }
+
+    .dashboard-header h1 {
+      font-size: 1.8rem;
+      margin-bottom: 8px;
+    }
+
+    .dashboard-header p {
+      color: var(--muted);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .stat-card .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--brand);
+    }
+
+    .stat-card .stat-label {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .section {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+
+    .tab-btn {
+      padding: 8px 16px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      border-color: var(--hover);
+      color: var(--ink);
+    }
+
+    .tab-btn.active {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: white;
+    }
+
+    .dish-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .dish-table th,
+    .dish-table td {
+      text-align: left;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .dish-table th {
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .dish-table tr:hover td {
+      background: rgba(124, 156, 255, 0.05);
+    }
+
+    .allergen-badge, .diet-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin: 2px;
+    }
+
+    .allergen-badge {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .diet-badge {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .diet-badge.vegan { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+    .diet-badge.vegetarian { background: rgba(132, 204, 22, 0.2); color: #84cc16; }
+    .diet-badge.pescatarian { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+
+    .request-card {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .request-card:hover {
+      border-color: var(--hover);
+    }
+
+    .request-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .request-dish {
+      font-weight: 600;
+      font-size: 1.1rem;
+    }
+
+    .request-date {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .request-details {
+      margin-bottom: 12px;
+    }
+
+    .request-needs {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .request-needs-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .request-needs-label {
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .request-count {
+      background: rgba(124, 156, 255, 0.2);
+      color: var(--brand);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .request-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--ink);
+    }
+
+    .action-btn:hover {
+      border-color: var(--hover);
+    }
+
+    .action-btn.primary {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: white;
+    }
+
+    .action-btn.primary:hover {
+      background: var(--hover);
+    }
+
+    .action-btn.success {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: #22c55e;
+      color: #22c55e;
+    }
+
+    .action-btn.decline {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #ef4444;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .status-badge.pending {
+      background: rgba(250, 204, 21, 0.2);
+      color: #facc15;
+    }
+
+    .status-badge.implemented {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+    }
+
+    .status-badge.reviewed {
+      background: rgba(59, 130, 246, 0.2);
+      color: #3b82f6;
+    }
+
+    .status-badge.declined {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+    }
+
+    .suggestion-card {
+      background: linear-gradient(135deg, rgba(124, 156, 255, 0.1), rgba(124, 156, 255, 0.05));
+      border: 1px solid rgba(124, 156, 255, 0.3);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .suggestion-icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(124, 156, 255, 0.2);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+      color: var(--brand);
+    }
+
+    .suggestion-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .suggestion-description {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 12px;
+    }
+
+    .suggestion-impact {
+      display: flex;
+      gap: 16px;
+      font-size: 0.85rem;
+    }
+
+    .impact-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .impact-item .positive {
+      color: #22c55e;
+    }
+
+    .chart-container {
+      height: 200px;
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      padding: 20px 0;
+    }
+
+    .chart-bar {
+      flex: 1;
+      background: var(--brand);
+      border-radius: 4px 4px 0 0;
+      min-height: 4px;
+      transition: height 0.3s;
+      position: relative;
+    }
+
+    .chart-bar:hover {
+      background: var(--hover);
+    }
+
+    .chart-bar-label {
+      position: absolute;
+      bottom: -24px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.7rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .chart-bar-value {
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+    }
+
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .loading-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--brand);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .restaurant-selector {
+      margin-bottom: 24px;
+    }
+
+    .restaurant-selector select {
+      width: 100%;
+      max-width: 400px;
+      padding: 12px 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--ink);
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .restaurant-selector select:focus {
+      outline: none;
+      border-color: var(--brand);
+    }
+
+    .response-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .response-modal.show {
+      display: flex;
+    }
+
+    .response-modal-content {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    .response-modal h3 {
+      margin-bottom: 16px;
+    }
+
+    .response-modal textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--ink);
+      font-size: 0.95rem;
+      resize: vertical;
+      margin-bottom: 16px;
+    }
+
+    .response-modal textarea:focus {
+      outline: none;
+      border-color: var(--brand);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .dish-table {
+        display: block;
+        overflow-x: auto;
+      }
+
+      .request-header {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .request-needs {
+        flex-direction: column;
+      }
+    }
+
+    /* Menu Heatmap Styles */
+    .menu-heatmap-container {
+      position: relative;
+      background: #0d132a;
+      border-radius: 12px;
+      overflow: hidden;
+      min-height: 300px;
+    }
+
+    #menu-heatmap-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .menu-heatmap-inner {
+      position: relative;
+      display: inline-block;
+      line-height: 0;
+      user-select: none;
+      max-width: 100%;
+    }
+
+    .menu-heatmap-img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }
+
+    .menu-heatmap-overlays {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      line-height: normal;
+    }
+
+    /* Match restaurant page overlay styling */
+    .heatmap-overlay {
+      position: absolute;
+      border: 1.5px solid;
+      border-radius: 4px;
+      cursor: pointer;
+      pointer-events: auto;
+      box-sizing: border-box;
+      touch-action: manipulation;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: box-shadow 0.2s ease;
+    }
+
+    .heatmap-overlay:hover {
+      z-index: 10;
+      box-shadow: 0 0 8px rgba(255,255,255,0.3);
+    }
+
+    .heatmap-overlay .view-count {
+      background: rgba(0,0,0,0.8);
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+    }
+
+    .heatmap-overlay:hover .view-count {
+      opacity: 1;
+    }
+
+    /* Page navigation */
+    .heatmap-page-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 12px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+
+    .heatmap-page-btn {
+      background: rgba(76, 90, 212, 0.2);
+      border: 1px solid rgba(76, 90, 212, 0.4);
+      color: var(--ink);
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .heatmap-page-btn:hover:not(:disabled) {
+      background: rgba(76, 90, 212, 0.4);
+      border-color: var(--hover);
+    }
+
+    .heatmap-page-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .heatmap-page-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .heatmap-page-indicator {
+      color: var(--ink);
+      font-weight: 600;
+      min-width: 80px;
+      text-align: center;
+    }
+
+    /* Heatmap controls (metric toggle + legend) */
+    .heatmap-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 12px;
+      padding: 12px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 8px;
+      flex-wrap: wrap;
+    }
+
+    .heatmap-filter-checkbox {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .heatmap-filter-checkbox:hover {
+      border-color: var(--accent);
+    }
+
+    .heatmap-filter-checkbox input {
+      width: 14px;
+      height: 14px;
+      margin: 0;
+    }
+
+    .heatmap-metric-toggle {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .heatmap-metric-label {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    .heatmap-metric-buttons {
+      display: flex;
+      gap: 4px;
+    }
+
+    .heatmap-metric-btn {
+      background: rgba(76, 90, 212, 0.1);
+      border: 1px solid rgba(76, 90, 212, 0.3);
+      color: var(--muted);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .heatmap-metric-btn:hover {
+      background: rgba(76, 90, 212, 0.2);
+      border-color: rgba(76, 90, 212, 0.5);
+    }
+
+    .heatmap-metric-btn.active {
+      background: rgba(76, 90, 212, 0.3);
+      border-color: var(--brand);
+      color: var(--ink);
+    }
+
+    .heatmap-legend {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .heatmap-legend-gradient {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .heatmap-gradient-bar {
+      width: 120px;
+      height: 10px;
+      border-radius: 5px;
+      background: linear-gradient(to right, #ef4444, #facc15, #22c55e);
+    }
+
+    @media (max-width: 600px) {
+      .heatmap-controls {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    /* Dish Analytics Modal */
+    .dish-analytics-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 11, 28, 0.9);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 5000;
+      padding: 20px;
+    }
+
+    .dish-analytics-modal.show {
+      display: flex;
+    }
+
+    .dish-analytics-content {
+      background: linear-gradient(180deg, #111a3c, #0d132a);
+      border: 1px solid #2a3466;
+      border-radius: 16px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    .dish-analytics-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .dish-analytics-header h3 {
+      margin: 0;
+      font-size: 1.3rem;
+    }
+
+    .dish-analytics-close {
+      background: rgba(22, 32, 90, 0.9);
+      border: 1px solid rgba(76, 90, 212, 0.4);
+      color: var(--ink);
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .dish-analytics-close:hover {
+      border-color: var(--hover);
+    }
+
+    .analytics-stat-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .analytics-stat {
+      background: rgba(76, 90, 212, 0.1);
+      border: 1px solid rgba(76, 90, 212, 0.2);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .analytics-stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--brand);
+    }
+
+    .analytics-stat-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .analytics-section {
+      margin-bottom: 20px;
+    }
+
+    .analytics-section-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .analytics-bar-chart {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .analytics-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .analytics-bar-label {
+      width: 100px;
+      font-size: 0.85rem;
+      color: var(--ink);
+    }
+
+    .analytics-bar-track {
+      flex: 1;
+      height: 20px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .analytics-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    .analytics-bar-fill.allergen {
+      background: linear-gradient(90deg, #ef4444, #f97316);
+    }
+
+    .analytics-bar-fill.diet {
+      background: linear-gradient(90deg, #22c55e, #84cc16);
+    }
+
+    .analytics-bar-fill.status-safe {
+      background: #22c55e;
+    }
+
+    .analytics-bar-fill.status-unsafe {
+      background: #ef4444;
+    }
+
+    .analytics-bar-fill.status-removable {
+      background: #facc15;
+    }
+
+    .analytics-bar-count {
+      width: 40px;
+      text-align: right;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .no-menu-image {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px;
+      color: var(--muted);
+    }
+
+    .no-menu-image svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    /* Stacked bar chart styles */
+    .stacked-bar-chart {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 24px;
+      padding: 16px 0;
+      min-height: 160px;
+    }
+
+    .stacked-bar-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .stacked-bar-wrapper {
+      width: 50px;
+      display: flex;
+      flex-direction: column;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .stacked-bar-segment {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .stacked-bar-segment.safe {
+      background: #22c55e;
+    }
+
+    .stacked-bar-segment.removable {
+      background: #facc15;
+    }
+
+    .stacked-bar-segment.unsafe {
+      background: #ef4444;
+    }
+
+    .stacked-bar-segment.neutral {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .segment-percent {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: #000;
+      text-shadow: 0 0 2px rgba(255,255,255,0.5);
+    }
+
+    .stacked-bar-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .stacked-bar-total {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+
+    .stacked-bar-legend {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+    }
+
+    .dish-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+    }
+
+    .dish-tag.allergen {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+    }
+
+    .dish-tag.diet {
+      background: rgba(34, 197, 94, 0.15);
+      color: #4ade80;
+    }
+
+    .dish-tag.removable {
+      background: rgba(250, 204, 21, 0.15);
+      color: #fde047;
+    }
+
+    /* Accommodation rows */
+    .accommodation-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      border: 1.5px solid;
+    }
+
+    .accommodation-row.cannot {
+      border-color: #ef4444;
+      background: rgba(239, 68, 68, 0.08);
+    }
+
+    .accommodation-row.can {
+      border-color: #facc15;
+      background: rgba(250, 204, 21, 0.08);
+    }
+
+    .accommodation-row.compatible {
+      border-color: #22c55e;
+      background: rgba(34, 197, 94, 0.08);
+    }
+
+    .accommodation-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--ink);
+      white-space: nowrap;
+    }
+
+    .accommodation-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .accommodation-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      background: rgba(255,255,255,0.1);
+    }
+  </style>
+</head>
+<body class="page-shell">
+  <header class="simple-topbar">
+    <div class="simple-topbar-inner">
+      <a class="simple-brand" href="restaurants.html">
+        <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt="Clarivore logo">
+        <span>Clarivore</span>
+      </a>
+      <div class="simple-nav">
+        <!-- Navigation populated by shared-nav.js -->
+      </div>
+    </div>
+  </header>
+
+  <main class="page-main">
+    <div class="dashboard-container">
+      <div class="dashboard-header">
+        <h1>Restaurant Manager Dashboard</h1>
+        <p>View customer dietary analytics and accommodation requests</p>
+      </div>
+
+      <!-- Restaurant Selector -->
+      <div class="restaurant-selector" id="restaurant-selector-container">
+        <label style="display:block;margin-bottom:8px;color:var(--muted);">Select Restaurant</label>
+        <select id="restaurant-select">
+          <option value="">Loading restaurants...</option>
+        </select>
+      </div>
+
+      <!-- Auth Required Message -->
+      <div id="auth-required" class="section" style="display:none;">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <h3>Sign in Required</h3>
+          <p>Please sign in to access the manager dashboard.</p>
+          <a href="account.html" class="action-btn primary" style="display:inline-block;margin-top:16px;text-decoration:none;">Sign In</a>
+        </div>
+      </div>
+
+      <!-- Not a Manager Message -->
+      <div id="not-manager" class="section" style="display:none;">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <h3>Manager Access Required</h3>
+          <p>You don't have manager access to any restaurants yet.</p>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loading-state" class="section">
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Loading dashboard...</p>
+        </div>
+      </div>
+
+      <!-- Dashboard Content -->
+      <div id="dashboard-content" style="display:none;">
+        <!-- Overview Stats -->
+        <div class="stats-grid" id="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="total-interactions">0</div>
+            <div class="stat-label">Total Dish Views</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="unique-users">0</div>
+            <div class="stat-label">Unique Users</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="pending-requests">0</div>
+            <div class="stat-label">Pending Requests</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="popular-dish">-</div>
+            <div class="stat-label">Most Viewed Dish</div>
+          </div>
+        </div>
+
+        <!-- Menu Heatmap Section -->
+        <div class="section">
+          <div class="section-header">
+            <h2 class="section-title">Menu Interest Heatmap</h2>
+            <p style="color:var(--muted);font-size:0.85rem;margin:0;">Click on a dish to see detailed analytics</p>
+          </div>
+          <!-- Allergen/Diet filters and metric toggle at top -->
+          <div class="heatmap-controls">
+            <!-- Allergen/Diet filters -->
+            <div class="heatmap-filters" style="margin-bottom:12px;">
+              <span style="font-size:0.85rem;font-weight:600;color:var(--ink);display:block;margin-bottom:6px;">Show interest from customers with:</span>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
+                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="dairy" checked> 🥛 Dairy</label>
+                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="egg" checked> 🥚 Egg</label>
+                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="peanut" checked> 🥜 Peanut</label>
+                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="tree nut" checked> 🌰 Tree Nut</label>
+                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="shellfish" checked> 🦐 Shellfish</label>
+                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="fish" checked> 🐟 Fish</label>
+                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="soy" checked> 🫘 Soy</label>
+                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="sesame" checked> 🌱 Sesame</label>
+                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-allergen-filter" value="wheat" checked> 🌾 Wheat</label>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;">
+                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-diet-filter" value="Vegan" checked> 🌱 Vegan</label>
+                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-diet-filter" value="Vegetarian" checked> 🥬 Vegetarian</label>
+                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-diet-filter" value="Pescatarian" checked> 🐟 Pescatarian</label>
+                <label class="heatmap-filter-checkbox"><input type="checkbox" class="heatmap-diet-filter" value="Gluten-free" checked> 🌾 Gluten-free</label>
+              </div>
+            </div>
+            <div class="heatmap-metric-toggle">
+              <span class="heatmap-metric-label">Color by:</span>
+              <div class="heatmap-metric-buttons">
+                <button class="heatmap-metric-btn active" data-metric="views">Views</button>
+                <button class="heatmap-metric-btn" data-metric="loves">Loves</button>
+                <button class="heatmap-metric-btn" data-metric="orders">Orders</button>
+              </div>
+            </div>
+            <div class="heatmap-legend">
+              <div class="heatmap-legend-gradient">
+                <span style="font-size:0.75rem;color:var(--muted);">Low</span>
+                <div class="heatmap-gradient-bar"></div>
+                <span style="font-size:0.75rem;color:var(--muted);">High</span>
+              </div>
+            </div>
+          </div>
+          <div class="menu-heatmap-container" id="menu-heatmap-container">
+            <div id="menu-heatmap-loading" class="loading-state" style="padding:40px;">
+              <div class="spinner"></div>
+              <p>Loading menu...</p>
+            </div>
+            <div id="menu-heatmap-content" style="display:none;">
+              <div class="menu-heatmap-inner" id="menu-heatmap-inner">
+                <img id="menu-heatmap-img" class="menu-heatmap-img" src="" alt="Menu">
+                <div class="menu-heatmap-overlays" id="menu-heatmap-overlays"></div>
+              </div>
+              <!-- Page navigation at bottom -->
+              <div class="heatmap-page-nav" id="heatmap-page-nav" style="display:none;">
+                <button class="heatmap-page-btn" id="heatmap-prev-btn" disabled>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M15 18l-6-6 6-6"/>
+                  </svg>
+                </button>
+                <span class="heatmap-page-indicator" id="heatmap-page-indicator">Page 1 of 1</span>
+                <button class="heatmap-page-btn" id="heatmap-next-btn" disabled>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18l6-6-6-6"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div id="menu-heatmap-empty" class="no-menu-image" style="display:none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+              <p>No menu image available for this restaurant</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dietary Profile Analytics -->
+        <div class="section">
+          <div class="section-header">
+            <h2 class="section-title">Customer Dietary Profiles</h2>
+          </div>
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="allergens">Allergens</button>
+            <button class="tab-btn" data-tab="diets">Diets</button>
+          </div>
+          <!-- Filter and weighting controls -->
+          <div class="profile-controls" style="display:flex;flex-wrap:wrap;gap:16px;margin:12px 0;padding:12px;background:var(--soft);border-radius:8px;">
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <span style="font-size:0.85rem;font-weight:600;color:var(--ink);">Include customers who:</span>
+              <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.9rem;">
+                  <input type="checkbox" id="filter-views" checked style="width:16px;height:16px;"> Viewed dishes
+                </label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.9rem;">
+                  <input type="checkbox" id="filter-loves" style="width:16px;height:16px;"> Loved dishes
+                </label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.9rem;">
+                  <input type="checkbox" id="filter-orders" style="width:16px;height:16px;"> Placed orders
+                </label>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;margin-left:auto;">
+              <span style="font-size:0.85rem;font-weight:600;color:var(--ink);">Counting mode:</span>
+              <div style="display:flex;gap:8px;">
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.9rem;">
+                  <input type="radio" name="weight-mode" value="unique" checked style="width:16px;height:16px;"> Each customer once
+                </label>
+                <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.9rem;">
+                  <input type="radio" name="weight-mode" value="weighted" style="width:16px;height:16px;"> Weight by order visits
+                </label>
+              </div>
+            </div>
+          </div>
+          <div id="allergens-chart" class="chart-container"></div>
+          <div id="diets-chart" class="chart-container" style="display:none;"></div>
+        </div>
+
+        <!-- Dish Analytics Table -->
+        <div class="section">
+          <div class="section-header">
+            <h2 class="section-title">Dish Analytics</h2>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="dish-table" id="dish-analytics-table">
+              <thead>
+                <tr>
+                  <th>Dish Name</th>
+                  <th>Views</th>
+                  <th>Safe</th>
+                  <th>Removable</th>
+                  <th>Unsafe</th>
+                  <th>Top Allergen Concerns</th>
+                </tr>
+              </thead>
+              <tbody id="dish-analytics-body">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Accommodation Requests -->
+        <div class="section">
+          <div class="section-header">
+            <h2 class="section-title">Accommodation Requests</h2>
+            <div class="tabs" style="margin-bottom:0;border-bottom:none;padding-bottom:0;">
+              <button class="tab-btn active" data-filter="pending">Pending</button>
+              <button class="tab-btn" data-filter="all">All</button>
+            </div>
+          </div>
+          <div id="requests-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Suggested Menu Actions -->
+        <div class="section">
+          <div class="section-header">
+            <h2 class="section-title">Suggested Menu Actions</h2>
+          </div>
+          <div id="suggestions-list">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Response Modal -->
+  <div class="response-modal" id="response-modal">
+    <div class="response-modal-content">
+      <h3 id="modal-title">Respond to Request</h3>
+      <p id="modal-dish" style="color:var(--muted);margin-bottom:16px;"></p>
+      <textarea id="response-text" placeholder="Add a response message (optional)..."></textarea>
+      <div class="modal-actions">
+        <button class="action-btn" id="modal-cancel">Cancel</button>
+        <button class="action-btn decline" id="modal-decline">Decline</button>
+        <button class="action-btn success" id="modal-implement">Mark Implemented</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dish Analytics Modal -->
+  <div class="dish-analytics-modal" id="dish-analytics-modal">
+    <div class="dish-analytics-content">
+      <div class="dish-analytics-header">
+        <h3 id="dish-analytics-title">Dish Analytics</h3>
+        <button class="dish-analytics-close" id="dish-analytics-close">&times;</button>
+      </div>
+
+      <!-- Cannot be accommodated row -->
+      <div id="cannot-accommodate-row" class="accommodation-row cannot" style="display:none;">
+        <span class="accommodation-label">Cannot be accommodated:</span>
+        <div id="cannot-accommodate-tags" class="accommodation-tags"></div>
+      </div>
+
+      <!-- Can be accommodated row -->
+      <div id="can-accommodate-row" class="accommodation-row can" style="display:none;">
+        <span class="accommodation-label">Can be accommodated:</span>
+        <div id="can-accommodate-tags" class="accommodation-tags"></div>
+      </div>
+
+      <!-- Stacked bar chart for status breakdown -->
+      <div class="analytics-section" style="margin-top:16px;">
+        <div class="analytics-section-title">Interest by User Dietary Status</div>
+        <div class="stacked-bar-chart" id="analytics-stacked-chart">
+          <!-- Populated by JS -->
+        </div>
+        <div class="stacked-bar-legend">
+          <span class="legend-item"><span class="legend-color" style="background:#22c55e;"></span> Safe</span>
+          <span class="legend-item"><span class="legend-color" style="background:#facc15;"></span> Can be accommodated</span>
+          <span class="legend-item"><span class="legend-color" style="background:#ef4444;"></span> Cannot be accommodated</span>
+        </div>
+      </div>
+
+      <!-- Accommodation requests count -->
+      <div class="analytics-section" style="margin-top:16px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:0.9rem;color:var(--muted);">Accommodation Requests:</span>
+          <span id="analytics-requests" style="font-weight:600;color:var(--ink);">0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module">
+    import supabaseClient from './js/supabase-client.js';
+    import { setupNav } from './js/shared-nav.js';
+
+    // State
+    let currentUser = null;
+    let managedRestaurants = [];
+    let selectedRestaurantId = null;
+    let dishAnalytics = [];
+    let accommodationRequests = [];
+    let currentRequestId = null;
+    let currentRestaurantData = null; // For menu image and overlays
+    let currentHeatmapPage = 0; // Current page index for menu heatmap
+    let currentHeatmapMetric = 'views'; // views, loves, or orders
+    let dishLoves = {}; // Dish name -> love count
+    let dishOrders = {}; // Dish name -> order count
+    let rawInteractions = []; // Raw dish_interactions for full profile data
+    let rawLoves = []; // Raw user_loved_dishes for filtering
+    let userLovedSet = new Set(); // Set of user_ids who loved dishes
+    let userOrderCounts = {}; // Map user_id -> number of order visits
+
+    // DOM Elements
+    const loadingState = document.getElementById('loading-state');
+    const authRequired = document.getElementById('auth-required');
+    const notManager = document.getElementById('not-manager');
+    const dashboardContent = document.getElementById('dashboard-content');
+    const restaurantSelect = document.getElementById('restaurant-select');
+    const restaurantSelectorContainer = document.getElementById('restaurant-selector-container');
+
+    // Initialize
+    async function init() {
+      try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+
+        if (!user) {
+          showAuthRequired();
+          return;
+        }
+
+        currentUser = user;
+
+        // Setup navigation
+        setupNav('manager-dashboard', user, { isManager: true });
+
+        await loadManagedRestaurants();
+      } catch (err) {
+        console.error('Init error:', err);
+        showAuthRequired();
+      }
+    }
+
+    function showAuthRequired() {
+      loadingState.style.display = 'none';
+      authRequired.style.display = 'block';
+      restaurantSelectorContainer.style.display = 'none';
+    }
+
+    function showNotManager() {
+      loadingState.style.display = 'none';
+      notManager.style.display = 'block';
+      restaurantSelectorContainer.style.display = 'none';
+    }
+
+    const OWNER_EMAIL = 'matt.29.ds@gmail.com';
+
+    async function loadManagedRestaurants() {
+      try {
+        const isOwner = currentUser.email === OWNER_EMAIL;
+
+        let restaurants = [];
+
+        if (isOwner) {
+          // Owner can see all restaurants
+          const { data, error } = await supabaseClient
+            .from('restaurants')
+            .select('id, name, slug')
+            .order('name');
+
+          if (error) throw error;
+          restaurants = data || [];
+        } else {
+          // Regular managers - check restaurant_managers table
+          const { data, error } = await supabaseClient
+            .from('restaurant_managers')
+            .select('restaurant_id, restaurants(id, name, slug)')
+            .eq('user_id', currentUser.id);
+
+          if (error) throw error;
+          restaurants = (data || []).map(d => d.restaurants).filter(r => r);
+        }
+
+        if (restaurants.length === 0) {
+          showNotManager();
+          return;
+        }
+
+        managedRestaurants = restaurants;
+
+        // Populate restaurant selector
+        restaurantSelect.innerHTML = managedRestaurants.map(r =>
+          `<option value="${r.id}">${r.name}</option>`
+        ).join('');
+
+        // Select first restaurant
+        if (managedRestaurants.length > 0) {
+          selectedRestaurantId = managedRestaurants[0].id;
+          await loadDashboardData();
+        }
+      } catch (err) {
+        console.error('Failed to load managed restaurants:', err);
+        showNotManager();
+      }
+    }
+
+    async function loadDashboardData() {
+      if (!selectedRestaurantId) return;
+
+      loadingState.style.display = 'block';
+      dashboardContent.style.display = 'none';
+
+      try {
+        // Load restaurant data (for menu image and overlays)
+        const { data: restaurantData, error: restaurantError } = await supabaseClient
+          .from('restaurants')
+          .select('id, name, menu_images, menu_image, overlays')
+          .eq('id', selectedRestaurantId)
+          .single();
+
+        if (restaurantError) throw restaurantError;
+        currentRestaurantData = restaurantData;
+
+        // Load dish analytics
+        const { data: analyticsData, error: analyticsError } = await supabaseClient
+          .from('dish_analytics')
+          .select('*')
+          .eq('restaurant_id', selectedRestaurantId);
+
+        if (analyticsError) throw analyticsError;
+        dishAnalytics = analyticsData || [];
+
+        // Load accommodation requests
+        const { data: requestsData, error: requestsError } = await supabaseClient
+          .from('accommodation_requests')
+          .select('*')
+          .eq('restaurant_id', selectedRestaurantId)
+          .order('created_at', { ascending: false });
+
+        if (requestsError) throw requestsError;
+        accommodationRequests = requestsData || [];
+
+        // Load raw dish_interactions for full user profile data (include dish_name for heatmap filtering)
+        const { data: interactionsData, error: interactionsError } = await supabaseClient
+          .from('dish_interactions')
+          .select('user_id, user_allergens, user_diets, dish_name')
+          .eq('restaurant_id', selectedRestaurantId);
+
+        rawInteractions = interactionsError ? [] : (interactionsData || []);
+
+        // Load loved dishes with user_id for filtering
+        const { data: lovesData, error: lovesError } = await supabaseClient
+          .from('user_loved_dishes')
+          .select('user_id, dish_name')
+          .eq('restaurant_id', selectedRestaurantId);
+
+        dishLoves = {};
+        userLovedSet = new Set();
+        rawLoves = lovesError ? [] : (lovesData || []); // Store raw loves for filtering
+        if (!lovesError && lovesData) {
+          lovesData.forEach(love => {
+            dishLoves[love.dish_name] = (dishLoves[love.dish_name] || 0) + 1;
+            if (love.user_id) userLovedSet.add(love.user_id);
+          });
+        }
+
+        // Load tablet orders with user info for filtering
+        const { data: ordersData, error: ordersError } = await supabaseClient
+          .from('tablet_orders')
+          .select('payload')
+          .eq('restaurant_id', selectedRestaurantId);
+
+        dishOrders = {};
+        userOrderCounts = {}; // Map user_id -> number of orders (visits with orders)
+        if (!ordersError && ordersData) {
+          ordersData.forEach(order => {
+            // Extract dish names from payload
+            const payload = order.payload || {};
+            const dishes = payload.dishes || payload.items || [];
+            if (Array.isArray(dishes)) {
+              dishes.forEach(dish => {
+                const dishName = typeof dish === 'string' ? dish : (dish.name || dish.dish_name || dish.id);
+                if (dishName) {
+                  dishOrders[dishName] = (dishOrders[dishName] || 0) + 1;
+                }
+              });
+            }
+            // Also check for single dish property
+            if (payload.dish_name) {
+              dishOrders[payload.dish_name] = (dishOrders[payload.dish_name] || 0) + 1;
+            }
+            // Track user order counts for weighting
+            const userId = payload.user_id;
+            if (userId) {
+              userOrderCounts[userId] = (userOrderCounts[userId] || 0) + 1;
+            }
+          });
+        }
+
+        // Render dashboard
+        renderDashboard();
+      } catch (err) {
+        console.error('Failed to load dashboard data:', err);
+        // Show empty state
+        dishAnalytics = [];
+        accommodationRequests = [];
+        currentRestaurantData = null;
+        dishLoves = {};
+        dishOrders = {};
+        rawInteractions = [];
+        rawLoves = [];
+        userLovedSet = new Set();
+        userOrderCounts = {};
+        renderDashboard();
+      }
+
+      loadingState.style.display = 'none';
+      dashboardContent.style.display = 'block';
+    }
+
+    function renderDashboard() {
+      renderStats();
+      renderHeatmap();
+      renderAllergenChart();
+      renderDietChart();
+      renderDishTable();
+      renderRequests('pending');
+      renderSuggestions();
+    }
+
+    function renderStats() {
+      const totalInteractions = dishAnalytics.reduce((sum, d) => sum + (d.total_interactions || 0), 0);
+      const uniqueUsers = dishAnalytics.reduce((sum, d) => sum + (d.unique_users || 0), 0);
+      const pendingRequests = accommodationRequests.filter(r => r.status === 'pending').length;
+
+      document.getElementById('total-interactions').textContent = totalInteractions.toLocaleString();
+      document.getElementById('unique-users').textContent = uniqueUsers.toLocaleString();
+      document.getElementById('pending-requests').textContent = pendingRequests.toString();
+
+      // Find most popular dish
+      const sortedDishes = [...dishAnalytics].sort((a, b) => b.total_interactions - a.total_interactions);
+      const popularDish = sortedDishes[0]?.dish_name || '-';
+      document.getElementById('popular-dish').textContent = popularDish.length > 15 ? popularDish.substring(0, 15) + '...' : popularDish;
+    }
+
+    function renderHeatmap() {
+      const loadingEl = document.getElementById('menu-heatmap-loading');
+      const contentEl = document.getElementById('menu-heatmap-content');
+      const emptyEl = document.getElementById('menu-heatmap-empty');
+      const imgEl = document.getElementById('menu-heatmap-img');
+      const overlaysEl = document.getElementById('menu-heatmap-overlays');
+      const pageNavEl = document.getElementById('heatmap-page-nav');
+      const pageIndicatorEl = document.getElementById('heatmap-page-indicator');
+      const prevBtnEl = document.getElementById('heatmap-prev-btn');
+      const nextBtnEl = document.getElementById('heatmap-next-btn');
+
+      // Check if restaurant has menu image
+      const menuImages = currentRestaurantData?.menu_images || [];
+      const overlays = currentRestaurantData?.overlays || [];
+
+      // Also check for single menu_image field (legacy)
+      if (menuImages.length === 0 && currentRestaurantData?.menu_image) {
+        menuImages.push(currentRestaurantData.menu_image);
+      }
+
+      if (menuImages.length === 0 || overlays.length === 0) {
+        loadingEl.style.display = 'none';
+        contentEl.style.display = 'none';
+        emptyEl.style.display = 'flex';
+        return;
+      }
+
+      // Ensure current page is valid
+      if (currentHeatmapPage >= menuImages.length) {
+        currentHeatmapPage = 0;
+      }
+
+      // Show/hide page navigation
+      if (menuImages.length > 1) {
+        pageNavEl.style.display = 'flex';
+        pageIndicatorEl.textContent = `Page ${currentHeatmapPage + 1} of ${menuImages.length}`;
+        prevBtnEl.disabled = currentHeatmapPage === 0;
+        nextBtnEl.disabled = currentHeatmapPage === menuImages.length - 1;
+      } else {
+        pageNavEl.style.display = 'none';
+      }
+
+      // Use current page's menu image
+      const menuImage = menuImages[currentHeatmapPage];
+      imgEl.src = menuImage;
+      imgEl.onload = () => {
+        loadingEl.style.display = 'none';
+        contentEl.style.display = 'block';
+        emptyEl.style.display = 'none';
+        // Render overlays after image loads to ensure proper sizing
+        renderHeatmapOverlays();
+      };
+      imgEl.onerror = () => {
+        loadingEl.style.display = 'none';
+        contentEl.style.display = 'none';
+        emptyEl.style.display = 'flex';
+      };
+    }
+
+    // Get selected allergens/diets for heatmap filtering
+    function getHeatmapFilters() {
+      const selectedAllergens = [];
+      const selectedDiets = [];
+      document.querySelectorAll('.heatmap-allergen-filter:checked').forEach(cb => {
+        selectedAllergens.push(cb.value);
+      });
+      document.querySelectorAll('.heatmap-diet-filter:checked').forEach(cb => {
+        selectedDiets.push(cb.value);
+      });
+      return { selectedAllergens, selectedDiets };
+    }
+
+    // Check if a user matches any of the selected allergens/diets
+    function userMatchesFilters(userAllergens, userDiets, selectedAllergens, selectedDiets) {
+      // If no filters selected, match everyone
+      if (selectedAllergens.length === 0 && selectedDiets.length === 0) return true;
+
+      // Check if user has any of the selected allergens
+      const hasSelectedAllergen = selectedAllergens.some(a => (userAllergens || []).includes(a));
+      // Check if user has any of the selected diets
+      const hasSelectedDiet = selectedDiets.some(d => (userDiets || []).includes(d));
+
+      return hasSelectedAllergen || hasSelectedDiet;
+    }
+
+    function renderHeatmapOverlays() {
+      const overlaysEl = document.getElementById('menu-heatmap-overlays');
+      const overlays = currentRestaurantData?.overlays || [];
+
+      // Filter overlays for current page (if they have pageIndex, otherwise show all on page 0)
+      const pageOverlays = overlays.filter(overlay => {
+        const overlayPage = overlay.pageIndex ?? overlay.page ?? 0;
+        return overlayPage === currentHeatmapPage;
+      });
+
+      // Get selected allergen/diet filters
+      const { selectedAllergens, selectedDiets } = getHeatmapFilters();
+
+      // Get metric values based on selected metric, filtered by allergen/diet selections
+      const metricByDish = {};
+      let metricLabel = 'views';
+
+      if (currentHeatmapMetric === 'views') {
+        metricLabel = 'views';
+        // Count views from users matching the filter criteria
+        rawInteractions.forEach(interaction => {
+          if (userMatchesFilters(interaction.user_allergens, interaction.user_diets, selectedAllergens, selectedDiets)) {
+            const dishName = interaction.dish_name;
+            metricByDish[dishName] = (metricByDish[dishName] || 0) + 1;
+          }
+        });
+      } else if (currentHeatmapMetric === 'loves') {
+        metricLabel = 'loves';
+        // Build a map of user_id -> profile from rawInteractions
+        const userProfileMap = {};
+        rawInteractions.forEach(interaction => {
+          if (interaction.user_id && !userProfileMap[interaction.user_id]) {
+            userProfileMap[interaction.user_id] = {
+              allergens: interaction.user_allergens || [],
+              diets: interaction.user_diets || []
+            };
+          }
+        });
+        // Count loves from users matching the filter
+        rawLoves.forEach(love => {
+          const profile = userProfileMap[love.user_id];
+          if (profile && userMatchesFilters(profile.allergens, profile.diets, selectedAllergens, selectedDiets)) {
+            metricByDish[love.dish_name] = (metricByDish[love.dish_name] || 0) + 1;
+          } else if (!profile && selectedAllergens.length === 0 && selectedDiets.length === 0) {
+            // If no profile and no filters, include the love
+            metricByDish[love.dish_name] = (metricByDish[love.dish_name] || 0) + 1;
+          }
+        });
+      } else if (currentHeatmapMetric === 'orders') {
+        metricLabel = 'orders';
+        // Orders don't have user profiles attached directly, use unfiltered counts
+        Object.assign(metricByDish, dishOrders);
+      }
+
+      // Find min/max for color scaling
+      const metricValues = Object.values(metricByDish);
+      const maxMetric = Math.max(...metricValues, 1);
+      const minMetric = Math.min(...metricValues, 0);
+
+      // Render overlays with frequency-based coloring
+      // Use w/h properties (matching restaurant page) or fall back to width/height
+      overlaysEl.innerHTML = pageOverlays.map((overlay, index) => {
+        const dishName = overlay.id || overlay.dish_name || overlay.label || `Dish ${index + 1}`;
+        const metricValue = metricByDish[dishName] || 0;
+
+        // Calculate color - green (high) to red (low)
+        const normalizedValue = maxMetric > minMetric
+          ? (metricValue - minMetric) / (maxMetric - minMetric)
+          : 0.5;
+
+        const color = getHeatmapColor(normalizedValue);
+
+        // Use w/h (restaurant page format) or width/height as fallback
+        const width = overlay.w ?? overlay.width ?? 10;
+        const height = overlay.h ?? overlay.height ?? 10;
+
+        return `
+          <div class="heatmap-overlay"
+               style="left: ${overlay.x || 0}%; top: ${overlay.y || 0}%; width: ${width}%; height: ${height}%;
+                      background: ${color}; border-color: ${color};"
+               data-dish-name="${escapeHtml(dishName)}"
+               data-metric="${metricValue}"
+               onclick="showDishAnalytics('${escapeHtml(dishName).replace(/'/g, "\\'")}')">
+            <span class="view-count">${metricValue} ${metricLabel}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function goToHeatmapPage(direction) {
+      const menuImages = currentRestaurantData?.menu_images || [];
+      if (direction === 'prev' && currentHeatmapPage > 0) {
+        currentHeatmapPage--;
+        renderHeatmap();
+      } else if (direction === 'next' && currentHeatmapPage < menuImages.length - 1) {
+        currentHeatmapPage++;
+        renderHeatmap();
+      }
+    }
+
+    // Color interpolation for heatmap (red -> yellow -> green)
+    function getHeatmapColor(value) {
+      // value: 0 = red (low), 0.5 = yellow (medium), 1 = green (high)
+      let r, g, b;
+
+      if (value < 0.5) {
+        // Red to Yellow
+        const t = value * 2;
+        r = 239; // #ef
+        g = Math.round(68 + (204 - 68) * t); // 44 -> cc
+        b = Math.round(68 + (21 - 68) * t); // 44 -> 15
+      } else {
+        // Yellow to Green
+        const t = (value - 0.5) * 2;
+        r = Math.round(250 + (34 - 250) * t); // fa -> 22
+        g = Math.round(204 + (197 - 204) * t); // cc -> c5
+        b = Math.round(21 + (94 - 21) * t); // 15 -> 5e
+      }
+
+      return `rgba(${r}, ${g}, ${b}, 0.5)`;
+    }
+
+    function showDishAnalytics(dishName) {
+      const dish = dishAnalytics.find(d => d.dish_name === dishName);
+      const dishRequests = accommodationRequests.filter(r => r.dish_name === dishName);
+
+      // Find dish overlay data for allergens/diets
+      const overlays = currentRestaurantData?.overlays || [];
+      const dishOverlay = overlays.find(o => (o.id || o.dish_name || o.label) === dishName);
+
+      // Update modal title
+      document.getElementById('dish-analytics-title').textContent = dishName;
+
+      // Allergen emojis
+      const allergenEmojis = {
+        'dairy': '🥛', 'egg': '🥚', 'peanut': '🥜', 'tree nut': '🌰',
+        'shellfish': '🦐', 'fish': '🐟', 'soy': '🫘', 'sesame': '🌱', 'wheat': '🌾'
+      };
+      const dietEmojis = {
+        'Vegan': '🌱', 'Vegetarian': '🥬', 'Pescatarian': '🐟', 'Gluten-free': '🌾'
+      };
+
+      // Get dish data
+      const dishAllergens = dishOverlay?.allergens || [];
+      const dishDiets = dishOverlay?.diets || [];
+      const removableList = dishOverlay?.removable || [];
+      const removableAllergens = removableList.map(r => (r.allergen || '').toLowerCase());
+
+      // Separate allergens into can/cannot accommodate
+      const cannotAccommodate = dishAllergens.filter(a => !removableAllergens.includes(a.toLowerCase()));
+      const canAccommodate = dishAllergens.filter(a => removableAllergens.includes(a.toLowerCase()));
+
+      // Populate "Cannot be accommodated" row
+      const cannotRow = document.getElementById('cannot-accommodate-row');
+      const cannotTags = document.getElementById('cannot-accommodate-tags');
+      if (cannotAccommodate.length > 0) {
+        cannotTags.innerHTML = cannotAccommodate.map(a => {
+          const emoji = allergenEmojis[a.toLowerCase()] || '⚠️';
+          return `<span class="accommodation-tag">${emoji} ${a}</span>`;
+        }).join('');
+        cannotRow.style.display = 'flex';
+      } else {
+        cannotRow.style.display = 'none';
+      }
+
+      // Populate "Can be accommodated" row
+      const canRow = document.getElementById('can-accommodate-row');
+      const canTags = document.getElementById('can-accommodate-tags');
+      if (canAccommodate.length > 0) {
+        canTags.innerHTML = canAccommodate.map(a => {
+          const emoji = allergenEmojis[a.toLowerCase()] || '⚠️';
+          return `<span class="accommodation-tag">${emoji} ${a}</span>`;
+        }).join('');
+        canRow.style.display = 'flex';
+      } else {
+        canRow.style.display = 'none';
+      }
+
+      // Update accommodation requests count
+      document.getElementById('analytics-requests').textContent = dishRequests.length;
+
+      // Calculate status breakdowns for each metric
+      // Build user profile map from rawInteractions
+      const userProfileMap = {};
+      rawInteractions.forEach(interaction => {
+        if (interaction.user_id && !userProfileMap[interaction.user_id]) {
+          userProfileMap[interaction.user_id] = {
+            allergens: interaction.user_allergens || [],
+            diets: interaction.user_diets || []
+          };
+        }
+      });
+
+      // Views - from dish_analytics
+      const viewsSafe = dish?.safe_interactions || 0;
+      const viewsRemovable = dish?.removable_interactions || 0;
+      const viewsUnsafe = dish?.unsafe_interactions || 0;
+      const viewsTotal = viewsSafe + viewsRemovable + viewsUnsafe;
+
+      // Unique users - calculate from rawInteractions for this dish
+      let uniqueSafe = 0, uniqueRemovable = 0, uniqueUnsafe = 0;
+      const seenUsers = new Set();
+      rawInteractions.filter(i => i.dish_name === dishName).forEach(interaction => {
+        if (interaction.user_id && !seenUsers.has(interaction.user_id)) {
+          seenUsers.add(interaction.user_id);
+          const profile = userProfileMap[interaction.user_id];
+          if (profile) {
+            const status = computeDishStatus(dishOverlay, profile.allergens, profile.diets);
+            if (status === 'safe') uniqueSafe++;
+            else if (status === 'removable') uniqueRemovable++;
+            else uniqueUnsafe++;
+          }
+        }
+      });
+      const uniqueTotal = uniqueSafe + uniqueRemovable + uniqueUnsafe;
+
+      // Loves - calculate from rawLoves and user profiles
+      let lovesSafe = 0, lovesRemovable = 0, lovesUnsafe = 0;
+      rawLoves.filter(l => l.dish_name === dishName).forEach(love => {
+        const profile = userProfileMap[love.user_id];
+        if (profile) {
+          const status = computeDishStatus(dishOverlay, profile.allergens, profile.diets);
+          if (status === 'safe') lovesSafe++;
+          else if (status === 'removable') lovesRemovable++;
+          else lovesUnsafe++;
+        }
+      });
+      const lovesTotal = lovesSafe + lovesRemovable + lovesUnsafe;
+
+      // Orders - we don't have user profile data for orders, so show total only
+      const ordersTotal = dishOrders[dishName] || 0;
+
+      // Find max total for scaling
+      const maxTotal = Math.max(viewsTotal, uniqueTotal, lovesTotal, ordersTotal, 1);
+
+      // Generate stacked bar chart
+      const stackedChart = document.getElementById('analytics-stacked-chart');
+
+      function renderStackedBar(label, safe, removable, unsafe, total) {
+        const maxHeight = 120; // Max bar height in pixels
+        const barHeightPx = total > 0 ? Math.max((total / maxTotal) * maxHeight, 20) : 20;
+        const safePx = total > 0 ? (safe / total) * barHeightPx : 0;
+        const removablePx = total > 0 ? (removable / total) * barHeightPx : 0;
+        const unsafePx = total > 0 ? (unsafe / total) * barHeightPx : 0;
+
+        // Calculate percentages
+        const safePercent = total > 0 ? Math.round((safe / total) * 100) : 0;
+        const removablePercent = total > 0 ? Math.round((removable / total) * 100) : 0;
+        const unsafePercent = total > 0 ? Math.round((unsafe / total) * 100) : 0;
+
+        // Only show percentage if segment is tall enough (>= 16px)
+        const showSafePercent = safePx >= 16 && safePercent > 0;
+        const showRemovablePercent = removablePx >= 16 && removablePercent > 0;
+        const showUnsafePercent = unsafePx >= 16 && unsafePercent > 0;
+
+        // If no breakdown data, show neutral gray bar
+        const hasBreakdown = safe > 0 || removable > 0 || unsafe > 0;
+
+        return `
+          <div class="stacked-bar-column">
+            <div class="stacked-bar-total">${total}</div>
+            <div class="stacked-bar-wrapper">
+              ${hasBreakdown ? `
+                ${unsafePx > 0 ? `<div class="stacked-bar-segment unsafe" style="height:${unsafePx}px;" title="Cannot be accommodated: ${unsafe}">${showUnsafePercent ? `<span class="segment-percent">${unsafePercent}%</span>` : ''}</div>` : ''}
+                ${removablePx > 0 ? `<div class="stacked-bar-segment removable" style="height:${removablePx}px;" title="Can be accommodated: ${removable}">${showRemovablePercent ? `<span class="segment-percent">${removablePercent}%</span>` : ''}</div>` : ''}
+                ${safePx > 0 ? `<div class="stacked-bar-segment safe" style="height:${safePx}px;" title="Safe: ${safe}">${showSafePercent ? `<span class="segment-percent">${safePercent}%</span>` : ''}</div>` : ''}
+              ` : `
+                <div class="stacked-bar-segment neutral" style="height:${barHeightPx}px;" title="Total: ${total}"></div>
+              `}
+            </div>
+            <div class="stacked-bar-label">${label}</div>
+          </div>
+        `;
+      }
+
+      stackedChart.innerHTML =
+        renderStackedBar('Views', viewsSafe, viewsRemovable, viewsUnsafe, viewsTotal) +
+        renderStackedBar('Unique<br>Users', uniqueSafe, uniqueRemovable, uniqueUnsafe, uniqueTotal) +
+        renderStackedBar('Loves', lovesSafe, lovesRemovable, lovesUnsafe, lovesTotal) +
+        renderStackedBar('Orders', 0, 0, 0, ordersTotal); // Orders don't have status breakdown
+
+      // Show modal
+      document.getElementById('dish-analytics-modal').classList.add('show');
+    }
+
+    // Compute dish status for a user based on their allergens/diets
+    function computeDishStatus(dishOverlay, userAllergens, userDiets) {
+      if (!dishOverlay) return 'neutral';
+
+      const dishAllergens = (dishOverlay.allergens || []).map(a => a.toLowerCase());
+      const removableAllergens = (dishOverlay.removable || []).map(r => (r.allergen || '').toLowerCase());
+      const dishDiets = new Set(dishOverlay.diets || []);
+
+      // Check allergen conflicts
+      const conflictingAllergens = userAllergens.filter(a => dishAllergens.includes(a.toLowerCase()));
+      const unsafeAllergens = conflictingAllergens.filter(a => !removableAllergens.includes(a.toLowerCase()));
+      const removableConflicts = conflictingAllergens.filter(a => removableAllergens.includes(a.toLowerCase()));
+
+      // Check diet conflicts
+      const unmetDiets = userDiets.filter(d => !dishDiets.has(d));
+
+      if (unsafeAllergens.length > 0 || unmetDiets.length > 0) {
+        return 'unsafe';
+      } else if (removableConflicts.length > 0) {
+        return 'removable';
+      } else {
+        return 'safe';
+      }
+    }
+
+    function closeDishAnalyticsModal() {
+      document.getElementById('dish-analytics-modal').classList.remove('show');
+    }
+
+    // Make showDishAnalytics available globally for onclick handlers
+    window.showDishAnalytics = showDishAnalytics;
+
+    // Get filtered user profiles based on current filter settings
+    function getFilteredUserProfiles() {
+      const filterViews = document.getElementById('filter-views')?.checked ?? true;
+      const filterLoves = document.getElementById('filter-loves')?.checked ?? false;
+      const filterOrders = document.getElementById('filter-orders')?.checked ?? false;
+      const weightMode = document.querySelector('input[name="weight-mode"]:checked')?.value || 'unique';
+
+      // Build set of user_ids from views (dish_interactions)
+      const viewedUsers = new Set(rawInteractions.map(i => i.user_id).filter(Boolean));
+      // Set of user_ids who loved dishes
+      const lovedUsers = userLovedSet;
+      // Set of user_ids who placed orders
+      const orderedUsers = new Set(Object.keys(userOrderCounts));
+
+      // Filter users based on selected criteria (OR logic - include if ANY criteria matches)
+      const matchingUsers = new Set();
+      if (filterViews) viewedUsers.forEach(u => matchingUsers.add(u));
+      if (filterLoves) lovedUsers.forEach(u => matchingUsers.add(u));
+      if (filterOrders) orderedUsers.forEach(u => matchingUsers.add(u));
+
+      // If no filters selected, include all viewed users as default
+      if (!filterViews && !filterLoves && !filterOrders) {
+        viewedUsers.forEach(u => matchingUsers.add(u));
+      }
+
+      // Build user profile map from rawInteractions (use first interaction's profile per user)
+      const userProfiles = {};
+      rawInteractions.forEach(interaction => {
+        const userId = interaction.user_id;
+        if (!userId || !matchingUsers.has(userId)) return;
+        // Only store first occurrence (profiles should be consistent)
+        if (!userProfiles[userId]) {
+          userProfiles[userId] = {
+            allergens: interaction.user_allergens || [],
+            diets: interaction.user_diets || []
+          };
+        }
+      });
+
+      // For users who loved/ordered but may not have viewed, we won't have profile data
+      // (they need to have at least one dish_interaction to have profile data)
+
+      // Apply weighting
+      const result = [];
+      Object.entries(userProfiles).forEach(([userId, profile]) => {
+        let weight = 1;
+        if (weightMode === 'weighted' && userOrderCounts[userId]) {
+          weight = userOrderCounts[userId]; // Number of order visits
+        }
+        result.push({ ...profile, weight, userId });
+      });
+
+      return result;
+    }
+
+    function renderAllergenChart() {
+      const container = document.getElementById('allergens-chart');
+      const allergensList = ['dairy', 'egg', 'peanut', 'tree nut', 'shellfish', 'fish', 'soy', 'sesame', 'wheat'];
+      const allergenLabels = {
+        'dairy': 'Dairy', 'egg': 'Egg', 'peanut': 'Peanut', 'tree nut': 'Tree Nut',
+        'shellfish': 'Shellfish', 'fish': 'Fish', 'soy': 'Soy', 'sesame': 'Sesame', 'wheat': 'Wheat'
+      };
+
+      const userProfiles = getFilteredUserProfiles();
+
+      // Count allergens from full user profiles
+      const totals = allergensList.map(allergen => {
+        let count = 0;
+        userProfiles.forEach(profile => {
+          if (profile.allergens.includes(allergen)) {
+            count += profile.weight;
+          }
+        });
+        return { label: allergenLabels[allergen], count };
+      });
+
+      const maxCount = Math.max(...totals.map(t => t.count), 1);
+
+      if (userProfiles.length === 0) {
+        container.innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center;">No customer profile data available for the selected filters.</div>';
+        return;
+      }
+
+      container.innerHTML = totals.map(t => `
+        <div class="chart-bar" style="height: ${(t.count / maxCount) * 150 + 10}px;">
+          <span class="chart-bar-value">${t.count}</span>
+          <span class="chart-bar-label">${t.label}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderDietChart() {
+      const container = document.getElementById('diets-chart');
+      const dietsList = ['Vegan', 'Vegetarian', 'Pescatarian', 'Gluten-free'];
+
+      const userProfiles = getFilteredUserProfiles();
+
+      // Count diets from full user profiles
+      const totals = dietsList.map(diet => {
+        let count = 0;
+        userProfiles.forEach(profile => {
+          if (profile.diets.includes(diet)) {
+            count += profile.weight;
+          }
+        });
+        return { label: diet, count };
+      });
+
+      const maxCount = Math.max(...totals.map(t => t.count), 1);
+
+      if (userProfiles.length === 0) {
+        container.innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center;">No customer profile data available for the selected filters.</div>';
+        return;
+      }
+
+      container.innerHTML = totals.map(t => `
+        <div class="chart-bar" style="height: ${(t.count / maxCount) * 150 + 10}px; flex: 0 0 80px;">
+          <span class="chart-bar-value">${t.count}</span>
+          <span class="chart-bar-label">${t.label}</span>
+        </div>
+      `).join('');
+    }
+
+    function renderDishTable() {
+      const tbody = document.getElementById('dish-analytics-body');
+
+      if (dishAnalytics.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align:center;padding:40px;color:var(--muted);">
+              No dish interaction data yet. Data will appear as users view dishes.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      const sortedDishes = [...dishAnalytics].sort((a, b) => b.total_interactions - a.total_interactions);
+
+      tbody.innerHTML = sortedDishes.map(dish => {
+        const topAllergens = [];
+        const allergenKeys = [
+          { key: 'users_with_dairy_allergy', label: 'dairy' },
+          { key: 'users_with_egg_allergy', label: 'egg' },
+          { key: 'users_with_peanut_allergy', label: 'peanut' },
+          { key: 'users_with_tree_nut_allergy', label: 'tree nut' },
+          { key: 'users_with_wheat_allergy', label: 'wheat' }
+        ];
+
+        allergenKeys.forEach(a => {
+          if (dish[a.key] > 0) {
+            topAllergens.push({ label: a.label, count: dish[a.key] });
+          }
+        });
+
+        topAllergens.sort((a, b) => b.count - a.count);
+        const top3Allergens = topAllergens.slice(0, 3);
+
+        return `
+          <tr>
+            <td><strong>${escapeHtml(dish.dish_name)}</strong></td>
+            <td>${dish.total_interactions || 0}</td>
+            <td style="color:#22c55e;">${dish.safe_interactions || 0}</td>
+            <td style="color:#facc15;">${dish.removable_interactions || 0}</td>
+            <td style="color:#ef4444;">${dish.unsafe_interactions || 0}</td>
+            <td>
+              ${top3Allergens.map(a => `<span class="allergen-badge">${a.label} (${a.count})</span>`).join('') || '<span style="color:var(--muted);">None</span>'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderRequests(filter = 'pending') {
+      const container = document.getElementById('requests-list');
+
+      const filteredRequests = filter === 'pending'
+        ? accommodationRequests.filter(r => r.status === 'pending')
+        : accommodationRequests;
+
+      if (filteredRequests.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 12l2 2 4-4"/>
+              <circle cx="12" cy="12" r="10"/>
+            </svg>
+            <p>${filter === 'pending' ? 'No pending accommodation requests' : 'No accommodation requests yet'}</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filteredRequests.map(req => {
+        const allergenBadges = (req.requested_allergens || []).map(a =>
+          `<span class="allergen-badge">${a}</span>`
+        ).join('');
+
+        const dietBadges = (req.requested_diets || []).map(d =>
+          `<span class="diet-badge ${d.toLowerCase()}">${d}</span>`
+        ).join('');
+
+        const date = new Date(req.created_at).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        });
+
+        return `
+          <div class="request-card" data-request-id="${req.id}">
+            <div class="request-header">
+              <div>
+                <div class="request-dish">${escapeHtml(req.dish_name)}</div>
+                <div class="request-date">${date}</div>
+              </div>
+              <span class="status-badge ${req.status}">${req.status}</span>
+            </div>
+            <div class="request-details">
+              <div class="request-needs">
+                ${allergenBadges ? `
+                  <div class="request-needs-group">
+                    <span class="request-needs-label">Allergen Accommodations Needed</span>
+                    <div>${allergenBadges}</div>
+                  </div>
+                ` : ''}
+                ${dietBadges ? `
+                  <div class="request-needs-group">
+                    <span class="request-needs-label">Dietary Accommodations Needed</span>
+                    <div>${dietBadges}</div>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+            ${req.manager_response ? `
+              <div style="background:rgba(255,255,255,0.05);padding:12px;border-radius:8px;margin-bottom:12px;">
+                <div style="color:var(--muted);font-size:0.8rem;margin-bottom:4px;">Manager Response</div>
+                <div>${escapeHtml(req.manager_response)}</div>
+              </div>
+            ` : ''}
+            ${req.status === 'pending' ? `
+              <div class="request-actions">
+                <button class="action-btn success" onclick="openResponseModal('${req.id}', '${escapeHtml(req.dish_name)}', 'implemented')">
+                  Mark Implemented
+                </button>
+                <button class="action-btn" onclick="openResponseModal('${req.id}', '${escapeHtml(req.dish_name)}', 'reviewed')">
+                  Mark Reviewed
+                </button>
+                <button class="action-btn decline" onclick="openResponseModal('${req.id}', '${escapeHtml(req.dish_name)}', 'declined')">
+                  Decline
+                </button>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderSuggestions() {
+      const container = document.getElementById('suggestions-list');
+      const suggestions = generateSuggestions();
+
+      if (suggestions.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 16v-4"/>
+              <path d="M12 8h.01"/>
+            </svg>
+            <p>More data needed to generate suggestions. Keep tracking user interactions!</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = suggestions.map(s => `
+        <div class="suggestion-card">
+          <div class="suggestion-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <div class="suggestion-title">${escapeHtml(s.title)}</div>
+          <div class="suggestion-description">${escapeHtml(s.description)}</div>
+          <div class="suggestion-impact">
+            <div class="impact-item">
+              <span class="positive">+${s.potentialUsers}</span>
+              <span style="color:var(--muted);">potential users</span>
+            </div>
+            <div class="impact-item">
+              <span style="color:var(--muted);">Priority:</span>
+              <span style="color:${s.priority === 'high' ? '#ef4444' : s.priority === 'medium' ? '#facc15' : 'var(--muted)'};">${s.priority}</span>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function generateSuggestions() {
+      const suggestions = [];
+
+      // Analyze accommodation requests to find patterns
+      const requestsByDish = {};
+      accommodationRequests.forEach(req => {
+        if (!requestsByDish[req.dish_name]) {
+          requestsByDish[req.dish_name] = {
+            count: 0,
+            allergens: {},
+            diets: {}
+          };
+        }
+        requestsByDish[req.dish_name].count++;
+        (req.requested_allergens || []).forEach(a => {
+          requestsByDish[req.dish_name].allergens[a] = (requestsByDish[req.dish_name].allergens[a] || 0) + 1;
+        });
+        (req.requested_diets || []).forEach(d => {
+          requestsByDish[req.dish_name].diets[d] = (requestsByDish[req.dish_name].diets[d] || 0) + 1;
+        });
+      });
+
+      // Generate suggestions based on request patterns
+      Object.entries(requestsByDish).forEach(([dishName, data]) => {
+        if (data.count >= 2) {
+          // Top allergen request for this dish
+          const topAllergen = Object.entries(data.allergens).sort((a, b) => b[1] - a[1])[0];
+          const topDiet = Object.entries(data.diets).sort((a, b) => b[1] - a[1])[0];
+
+          if (topAllergen && topAllergen[1] >= 2) {
+            suggestions.push({
+              title: `Add ${topAllergen[0]}-free option for "${dishName}"`,
+              description: `${topAllergen[1]} users have requested a ${topAllergen[0]}-free version of this dish. Consider adding a substitution option.`,
+              potentialUsers: topAllergen[1] * 5, // Estimated impact
+              priority: topAllergen[1] >= 5 ? 'high' : topAllergen[1] >= 3 ? 'medium' : 'low'
+            });
+          }
+
+          if (topDiet && topDiet[1] >= 2) {
+            suggestions.push({
+              title: `Make "${dishName}" available for ${topDiet[0]} diners`,
+              description: `${topDiet[1]} ${topDiet[0].toLowerCase()} users have requested this dish. Consider creating a ${topDiet[0].toLowerCase()} version.`,
+              potentialUsers: topDiet[1] * 5,
+              priority: topDiet[1] >= 5 ? 'high' : topDiet[1] >= 3 ? 'medium' : 'low'
+            });
+          }
+        }
+      });
+
+      // Analyze dish analytics for high unsafe rates
+      dishAnalytics.forEach(dish => {
+        const total = dish.total_interactions || 0;
+        const unsafe = dish.unsafe_interactions || 0;
+        if (total >= 10 && (unsafe / total) > 0.5) {
+          // More than 50% unsafe - high opportunity
+          const topAllergens = [];
+          if (dish.users_with_dairy_allergy > 0) topAllergens.push({ name: 'dairy', count: dish.users_with_dairy_allergy });
+          if (dish.users_with_egg_allergy > 0) topAllergens.push({ name: 'egg', count: dish.users_with_egg_allergy });
+          if (dish.users_with_peanut_allergy > 0) topAllergens.push({ name: 'peanut', count: dish.users_with_peanut_allergy });
+
+          topAllergens.sort((a, b) => b.count - a.count);
+          const topAllergen = topAllergens[0];
+
+          if (topAllergen) {
+            suggestions.push({
+              title: `High demand for allergen-friendly "${dish.dish_name}"`,
+              description: `${unsafe} users viewed this dish but it was unsafe for them. ${topAllergen.count} users with ${topAllergen.name} allergies are interested.`,
+              potentialUsers: unsafe,
+              priority: unsafe >= 20 ? 'high' : unsafe >= 10 ? 'medium' : 'low'
+            });
+          }
+        }
+      });
+
+      // Sort by priority and potential users
+      const priorityOrder = { high: 0, medium: 1, low: 2 };
+      suggestions.sort((a, b) => {
+        const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
+        if (priorityDiff !== 0) return priorityDiff;
+        return b.potentialUsers - a.potentialUsers;
+      });
+
+      return suggestions.slice(0, 5); // Return top 5 suggestions
+    }
+
+    // Modal functions
+    function openResponseModal(requestId, dishName, action) {
+      currentRequestId = requestId;
+      document.getElementById('modal-dish').textContent = `Dish: ${dishName}`;
+      document.getElementById('response-text').value = '';
+      document.getElementById('response-modal').classList.add('show');
+
+      // Update modal title based on action
+      const titles = {
+        implemented: 'Mark as Implemented',
+        reviewed: 'Mark as Reviewed',
+        declined: 'Decline Request'
+      };
+      document.getElementById('modal-title').textContent = titles[action] || 'Respond to Request';
+
+      // Store the action for submission
+      document.getElementById('response-modal').dataset.action = action;
+    }
+
+    async function submitResponse(status) {
+      if (!currentRequestId) return;
+
+      const response = document.getElementById('response-text').value.trim();
+
+      try {
+        const { error } = await supabaseClient
+          .from('accommodation_requests')
+          .update({
+            status: status,
+            manager_response: response || null,
+            manager_reviewed_at: new Date().toISOString(),
+            manager_reviewed_by: currentUser.id,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentRequestId);
+
+        if (error) throw error;
+
+        // Refresh data
+        await loadDashboardData();
+        closeModal();
+      } catch (err) {
+        console.error('Failed to update request:', err);
+        alert('Failed to update request. Please try again.');
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('response-modal').classList.remove('show');
+      currentRequestId = null;
+    }
+
+    // Event Listeners
+    restaurantSelect.addEventListener('change', async (e) => {
+      selectedRestaurantId = e.target.value;
+      currentHeatmapPage = 0; // Reset to first page when changing restaurant
+      await loadDashboardData();
+    });
+
+    // Tab switching for charts
+    document.querySelectorAll('.tabs .tab-btn[data-tab]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        document.querySelectorAll('.tabs .tab-btn[data-tab]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        document.getElementById('allergens-chart').style.display = tab === 'allergens' ? 'flex' : 'none';
+        document.getElementById('diets-chart').style.display = tab === 'diets' ? 'flex' : 'none';
+      });
+    });
+
+    // Profile filter controls - re-render charts when filters change
+    ['filter-views', 'filter-loves', 'filter-orders'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('change', () => {
+          renderAllergenChart();
+          renderDietChart();
+        });
+      }
+    });
+
+    // Weight mode toggle - re-render charts when mode changes
+    document.querySelectorAll('input[name="weight-mode"]').forEach(radio => {
+      radio.addEventListener('change', () => {
+        renderAllergenChart();
+        renderDietChart();
+      });
+    });
+
+    // Tab switching for requests
+    document.querySelectorAll('.tabs .tab-btn[data-filter]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const filter = btn.dataset.filter;
+        document.querySelectorAll('.tabs .tab-btn[data-filter]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderRequests(filter);
+      });
+    });
+
+    // Modal buttons
+    document.getElementById('modal-cancel').addEventListener('click', closeModal);
+    document.getElementById('modal-implement').addEventListener('click', () => submitResponse('implemented'));
+    document.getElementById('modal-decline').addEventListener('click', () => submitResponse('declined'));
+
+    // Close modal on backdrop click
+    document.getElementById('response-modal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeModal();
+    });
+
+    // Dish analytics modal buttons
+    document.getElementById('dish-analytics-close').addEventListener('click', closeDishAnalyticsModal);
+    document.getElementById('dish-analytics-modal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) closeDishAnalyticsModal();
+    });
+
+    // Heatmap page navigation
+    document.getElementById('heatmap-prev-btn').addEventListener('click', () => goToHeatmapPage('prev'));
+    document.getElementById('heatmap-next-btn').addEventListener('click', () => goToHeatmapPage('next'));
+
+    // Heatmap metric toggle
+    document.querySelectorAll('.heatmap-metric-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const metric = btn.dataset.metric;
+        if (metric !== currentHeatmapMetric) {
+          currentHeatmapMetric = metric;
+          document.querySelectorAll('.heatmap-metric-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          renderHeatmapOverlays();
+        }
+      });
+    });
+
+    // Heatmap allergen/diet filter checkboxes
+    document.querySelectorAll('.heatmap-allergen-filter, .heatmap-diet-filter').forEach(cb => {
+      cb.addEventListener('change', () => {
+        renderHeatmapOverlays();
+      });
+    });
+
+    // Utility function
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Initialize
+    init();
+  </script>
+  <script type="module" src="js/report-modal.js"></script>
+</body>
+</html>

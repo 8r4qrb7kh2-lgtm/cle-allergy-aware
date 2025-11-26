@@ -45,6 +45,7 @@ export function setupNav(currentPage, user = null, options = {}) {
         label: 'Management',
         items: [
           ...restaurantItems,
+          { id: 'manager-dashboard', label: 'Manager dashboard', href: 'manager-dashboard.html', requiresAuth: true },
           { id: 'server-tablet', label: 'Server monitor', href: 'server-tablet.html', requiresAuth: true },
           { id: 'kitchen-tablet', label: 'Kitchen monitor', href: 'kitchen-tablet.html', requiresAuth: true }
         ]
@@ -78,6 +79,7 @@ export function setupNav(currentPage, user = null, options = {}) {
         ownerOnly: true,
         items: [
           { id: 'admin', label: 'Admin', href: 'admin-dashboard.html', requiresAuth: true },
+          { id: 'manager-dashboard', label: 'Manager dashboard', href: 'manager-dashboard.html', requiresAuth: true },
           { id: 'server-tablet', label: 'Server monitor', href: 'server-tablet.html', requiresAuth: true },
           { id: 'kitchen-tablet', label: 'Kitchen monitor', href: 'kitchen-tablet.html', requiresAuth: true }
         ]
