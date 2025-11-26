@@ -1856,27 +1856,36 @@
       const removableAllergens = removableList.map(r => (r.allergen || '').toLowerCase());
 
       // Separate allergens into can/cannot accommodate
-      const cannotAccommodate = dishAllergens.filter(a => !removableAllergens.includes(a.toLowerCase()));
-      const canAccommodate = dishAllergens.filter(a => removableAllergens.includes(a.toLowerCase()));
+      const cannotAccommodateAllergens = dishAllergens.filter(a => !removableAllergens.includes(a.toLowerCase()));
+      const canAccommodateAllergens = dishAllergens.filter(a => removableAllergens.includes(a.toLowerCase()));
 
-      // Populate "Cannot be accommodated" row
+      // Diets are always "cannot accommodate" (no removal concept for diets)
+      const cannotAccommodateDiets = dishDiets || [];
+
+      // Populate "Cannot be accommodated" row (allergens + diets)
       const cannotRow = document.getElementById('cannot-accommodate-row');
       const cannotTags = document.getElementById('cannot-accommodate-tags');
-      if (cannotAccommodate.length > 0) {
-        cannotTags.innerHTML = cannotAccommodate.map(a => {
+      const hasCannotAccommodate = cannotAccommodateAllergens.length > 0 || cannotAccommodateDiets.length > 0;
+      if (hasCannotAccommodate) {
+        const allergenTagsHtml = cannotAccommodateAllergens.map(a => {
           const emoji = allergenEmojis[a.toLowerCase()] || '⚠️';
           return `<span class="accommodation-tag">${emoji} ${a}</span>`;
         }).join('');
+        const dietTagsHtml = cannotAccommodateDiets.map(d => {
+          const emoji = dietEmojis[d] || '🍽️';
+          return `<span class="accommodation-tag">${emoji} ${d}</span>`;
+        }).join('');
+        cannotTags.innerHTML = allergenTagsHtml + dietTagsHtml;
         cannotRow.style.display = 'flex';
       } else {
         cannotRow.style.display = 'none';
       }
 
-      // Populate "Can be accommodated" row
+      // Populate "Can be accommodated" row (only allergens - diets cannot be accommodated by removal)
       const canRow = document.getElementById('can-accommodate-row');
       const canTags = document.getElementById('can-accommodate-tags');
-      if (canAccommodate.length > 0) {
-        canTags.innerHTML = canAccommodate.map(a => {
+      if (canAccommodateAllergens.length > 0) {
+        canTags.innerHTML = canAccommodateAllergens.map(a => {
           const emoji = allergenEmojis[a.toLowerCase()] || '⚠️';
           return `<span class="accommodation-tag">${emoji} ${a}</span>`;
         }).join('');
