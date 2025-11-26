@@ -16495,7 +16495,7 @@
             dishStatus = 'safe';
           }
 
-          const { error } = await client
+          const { error } = await window.supabaseClient
             .from('dish_interactions')
             .insert([{
               restaurant_id: restaurantId,
