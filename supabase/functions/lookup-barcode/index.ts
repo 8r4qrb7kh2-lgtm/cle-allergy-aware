@@ -15,6 +15,43 @@ const FATSECRET_CLIENT_SECRET = Deno.env.get('FATSECRET_CLIENT_SECRET');
 let fatSecretAccessToken: string | null = null;
 let fatSecretTokenExpiry: number = 0;
 
+// Fetch product image from UPCitemdb.com (free tier: 100 requests/day)
+// This is used as a fallback when other sources don't have images
+async function fetchProductImageFromUPCitemdb(barcode: string): Promise<string | null> {
+  try {
+    console.log('[UPCitemdb] Fetching product image for barcode:', barcode);
+
+    const response = await fetch(`https://api.upcitemdb.com/prod/trial/lookup?upc=${barcode}`, {
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'Clarivore-Allergen-App/1.0'
+      }
+    });
+
+    if (!response.ok) {
+      console.log(`[UPCitemdb] Failed with status ${response.status}`);
+      return null;
+    }
+
+    const data = await response.json();
+
+    if (data.code === 'OK' && data.items && data.items.length > 0) {
+      const item = data.items[0];
+      // UPCitemdb returns images array - get the first one
+      if (item.images && item.images.length > 0) {
+        console.log('[UPCitemdb] Found product image:', item.images[0]);
+        return item.images[0];
+      }
+    }
+
+    console.log('[UPCitemdb] No image found for barcode');
+    return null;
+  } catch (err) {
+    console.log('[UPCitemdb] Error:', (err as any).message);
+    return null;
+  }
+}
+
 interface IngredientSource {
   sourceName: string;
   url: string;
@@ -2070,14 +2107,32 @@ async function lookupBarcode(barcode: string, addLog?: (msg: string) => void): P
       ? calculateDiscrepancies(analysis.unifiedIngredientList, analysis.sources)
       : (analysis?.differences || []);
 
-    // Ensure we have a product image
+    // Ensure we have a product image - try multiple sources
     let finalProductImage = antigravityResult.source.productImage || '';
+
+    // Fallback 1: Try UPCitemdb.com (has good product image coverage)
+    if (!finalProductImage) {
+      log(`[Image] No image from Antigravity. Trying UPCitemdb.com...`);
+      const upcImage = await fetchProductImageFromUPCitemdb(barcode);
+      if (upcImage) {
+        finalProductImage = upcImage;
+        log(`[Image] Found image from UPCitemdb: ${upcImage}`);
+      }
+    }
+
+    // Fallback 2: Try Open Food Facts image if we got brand/product from there
+    if (!finalProductImage && offResult.source?.productImage) {
+      finalProductImage = offResult.source.productImage;
+      log(`[Image] Using Open Food Facts image: ${finalProductImage}`);
+    }
+
+    // Fallback 3: Google image search as last resort
     if (!finalProductImage && finalProductName) {
-      log(`[Antigravity] No image found in sources. Searching for image...`);
+      log(`[Image] Still no image. Trying Google search...`);
       const foundImage = await searchProductImage(finalProductName, antigravityResult.source.brand || '', log);
       if (foundImage) {
         finalProductImage = foundImage;
-        log(`[Antigravity] Found image via search: ${foundImage}`);
+        log(`[Image] Found image via Google search: ${foundImage}`);
       }
     }
 
