@@ -1491,6 +1491,61 @@ async function antigravityAnalyzeWithAI(
 
     console.log('[Antigravity] Post-processed dietaryComplianceObj:', JSON.stringify(dietaryComplianceObj));
 
+    // POST-PROCESSING: Fix allergen triggers to include ALL matching ingredients
+    // The AI often only returns one trigger when multiple ingredients contain the allergen
+    const allergenPatterns: { [key: string]: RegExp } = {
+      'Dairy': /\b(milk|cream|butter|cheese|yogurt|whey|casein|lactose|kefir|ghee)\b/i,
+      'Milk': /\b(milk|cream|butter|cheese|yogurt|whey|casein|lactose|kefir|ghee)\b/i,
+      'Egg': /\b(egg|yolk|albumen|mayonnaise)\b/i,
+      'Eggs': /\b(egg|yolk|albumen|mayonnaise)\b/i,
+      'Peanut': /\b(peanut)\b/i,
+      'Peanuts': /\b(peanut)\b/i,
+      'Tree Nut': /\b(almond|walnut|cashew|pecan|pistachio|hazelnut|macadamia|brazil\s*nut)\b/i,
+      'Tree Nuts': /\b(almond|walnut|cashew|pecan|pistachio|hazelnut|macadamia|brazil\s*nut)\b/i,
+      'Fish': /\b(fish|salmon|tuna|cod|anchovy|anchovies|sardine|trout|tilapia|halibut)\b/i,
+      'Shellfish': /\b(shrimp|prawn|lobster|crab|clam|mussel|scallop|oyster)\b/i,
+      'Crustacean Shellfish': /\b(shrimp|prawn|lobster|crab|clam|mussel|scallop|oyster)\b/i,
+      'Soy': /\b(soy|soya|soybean|edamame|tofu)\b/i,
+      'Soybeans': /\b(soy|soya|soybean|edamame|tofu)\b/i,
+      'Wheat': /\b(wheat|flour|gluten|barley|semolina|durum)\b/i,
+      'Sesame': /\b(sesame|tahini)\b/i
+    };
+
+    // Rebuild allergens with all matching triggers
+    const rebuiltAllergens: string[] = [];
+    const processedAllergenTypes = new Set<string>();
+
+    for (const allergenStr of finalAllergens) {
+      // Extract allergen name from formats like "Dairy (trigger)" or just "Dairy"
+      const match = allergenStr.match(/^([^(]+)/);
+      const allergenName = match ? match[1].trim() : allergenStr.trim();
+
+      // Normalize allergen name for pattern lookup
+      const normalizedName = Object.keys(allergenPatterns).find(
+        key => key.toLowerCase() === allergenName.toLowerCase()
+      ) || allergenName;
+
+      // Skip if already processed this allergen type
+      if (processedAllergenTypes.has(normalizedName.toLowerCase())) continue;
+      processedAllergenTypes.add(normalizedName.toLowerCase());
+
+      const pattern = allergenPatterns[normalizedName];
+      if (pattern) {
+        // Find ALL ingredients that match this allergen
+        const allTriggers = ingredients.filter(i => pattern.test(i.toLowerCase()));
+        if (allTriggers.length > 0) {
+          rebuiltAllergens.push(`${allergenName} (${allTriggers.join(', ')})`);
+        } else {
+          rebuiltAllergens.push(allergenStr); // Keep original if no matches found
+        }
+      } else {
+        rebuiltAllergens.push(allergenStr); // Keep original if no pattern defined
+      }
+    }
+
+    finalAllergens = rebuiltAllergens;
+    console.log('[Antigravity] Post-processed allergens:', JSON.stringify(finalAllergens));
+
     // Derive diets list from dietaryCompliance
     const diets: string[] = [];
     if (dietaryComplianceObj) {
