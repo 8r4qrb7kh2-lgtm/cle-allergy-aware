@@ -93,7 +93,86 @@
       background: linear-gradient(180deg, #0f1530, #0b1020);
       border-bottom: 1px solid #1c2347;
       box-shadow: var(--shadow);
-      width: 100%
+      width: 100%;
+      position: relative
+    }
+
+    .mode-toggle-container {
+      position: absolute;
+      top: 12px;
+      right: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 60
+    }
+
+    .mode-toggle-label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      white-space: nowrap
+    }
+
+    .mode-toggle {
+      position: relative;
+      width: 56px;
+      height: 30px;
+      background: #1a2351;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      cursor: pointer;
+      transition: all 0.2s ease
+    }
+
+    .mode-toggle.active {
+      background: #3651ff;
+      border-color: #4e65ff
+    }
+
+    .mode-toggle::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 22px;
+      height: 22px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s ease
+    }
+
+    .mode-toggle.active::after {
+      transform: translateX(26px)
+    }
+
+    .mode-toggle:hover {
+      border-color: var(--hover);
+      box-shadow: 0 0 0 3px #7c9cff33
+    }
+
+    @media (max-width: 600px) {
+      .mode-toggle-container {
+        top: 8px;
+        right: 10px
+      }
+
+      .mode-toggle-label {
+        font-size: 0.75rem
+      }
+
+      .mode-toggle {
+        width: 48px;
+        height: 26px
+      }
+
+      .mode-toggle::after {
+        width: 18px;
+        height: 18px
+      }
+
+      .mode-toggle.active::after {
+        transform: translateX(22px)
+      }
     }
 
     .topin {
@@ -440,6 +519,7 @@
       .tabs {
         gap: 6px 8px;
       }
+
       .tab,
       .nav-dropdown-trigger {
         font-size: 0.8rem;
@@ -3229,13 +3309,15 @@
 
     .logAuthor {
       font-weight: 600;
-      margin-bottom: 6px
+      font-size: 1.1rem;
+      margin-bottom: 8px
     }
 
     .logItem {
       margin-top: 10px;
-      font-weight: 600;
-      color: var(--ink)
+      font-weight: 500;
+      font-size: 0.95rem;
+      color: var(--muted)
     }
 
     .logList {
@@ -3517,6 +3599,110 @@
       display: flex;
     }
 
+    /* Manager Invite Banner */
+    .managerInviteBanner {
+      position: fixed;
+      left: 0;
+      right: 0;
+      top: 0;
+      z-index: 2300;
+      background: linear-gradient(135deg, #4c5ad4, #6366f1);
+      padding: 14px 20px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      box-shadow: 0 4px 20px rgba(76, 90, 212, 0.4);
+    }
+
+    .managerInviteBanner-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .managerInviteBanner-icon {
+      font-size: 1.5rem;
+    }
+
+    .managerInviteBanner-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .managerInviteBanner-text strong {
+      color: #fff;
+      font-size: 1rem;
+    }
+
+    .managerInviteBanner-text span {
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 0.85rem;
+    }
+
+    .managerInviteBanner .btn {
+      background: #fff;
+      color: #4c5ad4;
+      font-weight: 600;
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .managerInviteBanner .btn:hover {
+      background: #f0f0f0;
+    }
+
+    body.managerInviteBannerVisible .wrap {
+      padding-top: 76px;
+    }
+
+    body.managerInviteBannerVisible .topbar {
+      top: 76px;
+    }
+
+    body.managerInviteBannerVisible .qrBanner {
+      top: 76px;
+    }
+
+    @media (max-width: 640px) {
+      .managerInviteBanner {
+        padding: 12px 14px;
+        gap: 12px;
+        flex-direction: column;
+        text-align: center;
+      }
+
+      .managerInviteBanner-content {
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .managerInviteBanner-icon {
+        font-size: 1.2rem;
+      }
+
+      .managerInviteBanner-text strong {
+        font-size: 0.95rem;
+      }
+
+      .managerInviteBanner-text span {
+        font-size: 0.8rem;
+      }
+
+      body.managerInviteBannerVisible .wrap {
+        padding-top: 120px;
+      }
+
+      body.managerInviteBannerVisible .topbar {
+        top: 120px;
+      }
+    }
+
     body.qrBannerVisible .wrap {
       padding-top: 80px;
     }
@@ -3642,8 +3828,9 @@
 
 <body>
   <div class="wrap">
-    <div class="topbar">
+    <div class="topbar" id="topbarOuter">
       <div class="topin" id="topbar"></div>
+      <div class="mode-toggle-container" id="modeToggleContainer" style="display:none"></div>
     </div>
     <div class="content" id="root"></div>
   </div>
@@ -3797,16 +3984,29 @@
   <div class="qrPromoBackdrop" id="qrPromoBackdrop" aria-hidden="true">
     <div class="qrPromo" role="dialog" aria-labelledby="qrPromoTitle" aria-modal="true">
       <button class="qrPromoClose" id="qrPromoClose" type="button" aria-label="Close promotion">×</button>
-      <h2 id="qrPromoTitle">See allergy-safe spots all over CLE</h2>
-      <p>Save your allergens once and unlock curated menus at restaurants across the city.</p>
+      <h2 id="qrPromoTitle">Check out all restaurants part of Clarivore</h2>
+      <p>Save your allergens and diets once and unlock curated menus at restaurants across the city.</p>
       <p>Creating an account takes less than a minute and is completely free.</p>
       <button class="btn btnPrimary" id="qrPromoSignup" type="button">Create free account</button>
     </div>
   </div>
   <div class="qrBanner" id="qrBanner" aria-hidden="true">
-    <div><strong>Keep exploring safely.</strong> Create a free account to save your allergens and see compatible dishes
+    <div><strong>Keep exploring safely.</strong> Create a free account to save your allergens and diets, and see
+      compatible dishes
       everywhere.</div>
     <button class="btn btnPrimary" id="qrBannerSignup" type="button">Create free account</button>
+  </div>
+
+  <!-- Manager Invite Banner -->
+  <div class="managerInviteBanner" id="managerInviteBanner" style="display:none;">
+    <div class="managerInviteBanner-content">
+      <div class="managerInviteBanner-icon">🔑</div>
+      <div class="managerInviteBanner-text">
+        <strong>You've been invited as a Manager</strong>
+        <span>Sign up to activate your manager access to this restaurant</span>
+      </div>
+    </div>
+    <button class="btn btnPrimary" id="managerInviteSignupBtn" type="button">Sign up to activate access</button>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -3826,6 +4026,41 @@
     const qrParam = urlParams.get('qr');
     const isQrVisit = qrParam ? /^(1|true|yes)$/i.test(qrParam) : false;
     window.__qrVisit = isQrVisit;
+
+    // Check for manager invite token
+    const inviteToken = urlParams.get('invite');
+    if (inviteToken) {
+      // Show manager invite banner
+      const managerInviteBanner = document.getElementById('managerInviteBanner');
+      const managerInviteSignupBtn = document.getElementById('managerInviteSignupBtn');
+
+      if (managerInviteBanner) {
+        managerInviteBanner.style.display = 'flex';
+        document.body.classList.add('managerInviteBannerVisible');
+
+        // Handle signup button click - go to account page with invite token preserved
+        if (managerInviteSignupBtn) {
+          managerInviteSignupBtn.onclick = () => {
+            window.location.href = `account.html?invite=${encodeURIComponent(inviteToken)}`;
+          };
+        }
+      }
+    }
+
+    // Track recently viewed restaurants
+    if (slug) {
+      try {
+        const recentlyViewed = JSON.parse(localStorage.getItem('recentlyViewedRestaurants') || '[]');
+        // Remove if already exists (to move to front)
+        const filtered = recentlyViewed.filter(s => s !== slug);
+        // Add to front
+        filtered.unshift(slug);
+        // Keep only most recent 10
+        localStorage.setItem('recentlyViewedRestaurants', JSON.stringify(filtered.slice(0, 10)));
+      } catch (e) {
+        console.warn('Could not track recently viewed restaurant:', e);
+      }
+    }
 
     const HOW_IT_WORKS_SLUG = 'how-it-works';
     const HOW_IT_WORKS_MENU_IMAGE = 'images/how-it-works-menu.png';
@@ -3942,6 +4177,11 @@
     window.__startInEditor = shouldStartInEditor;
     if (shouldStartInEditor) console.log('Editor mode requested via URL parameter');
 
+    // Check for openLog parameter to auto-open change log modal
+    const openLogParam = urlParams.get('openLog');
+    window.__openLogOnLoad = openLogParam === 'true' || openLogParam === '1';
+    if (window.__openLogOnLoad) console.log('Change log modal requested via URL parameter');
+
     if (!slug) {
       document.body.innerHTML = '<div style="color: #ef4444; text-align: center; padding: 40px;">Error: No restaurant specified</div>';
     } else {
@@ -4028,12 +4268,33 @@
           // TEMPORARY: Make everyone a manager for Falafel Café
           canEdit = isOwner || !!managerRecord || restaurant.name === 'Falafel Café';
 
-          if (managerRecord) {
-            managerRestaurantsList.push({
-              id: restaurant.id,
-              slug: restaurant.slug,
-              name: restaurant.name || 'Restaurant'
-            });
+          // Fetch ALL restaurants the manager has access to (for navigation)
+          if (isOwner) {
+            // Owner sees all restaurants in nav - fetch all
+            const { data: allRestaurants } = await supabaseClient
+              .from('restaurants')
+              .select('id, slug, name')
+              .order('name');
+            if (allRestaurants) {
+              allRestaurants.forEach(r => managerRestaurantsList.push({ id: r.id, slug: r.slug, name: r.name || 'Restaurant' }));
+            }
+          } else if (userRole === 'manager') {
+            // Fetch all restaurants this manager has access to
+            const { data: allAssignments } = await supabaseClient
+              .from('restaurant_managers')
+              .select('restaurant_id')
+              .eq('user_id', user.id);
+            if (allAssignments && allAssignments.length > 0) {
+              const restaurantIds = allAssignments.map(a => a.restaurant_id).filter(Boolean);
+              const { data: managerRestaurants } = await supabaseClient
+                .from('restaurants')
+                .select('id, slug, name')
+                .in('id', restaurantIds)
+                .order('name');
+              if (managerRestaurants) {
+                managerRestaurants.forEach(r => managerRestaurantsList.push({ id: r.id, slug: r.slug, name: r.name || 'Restaurant' }));
+              }
+            }
           }
         }
 
@@ -6606,7 +6867,7 @@
           if (p.to === '/restaurants') window.location.href = 'restaurants.html';
           else if (p.to === '/favorites') window.location.href = 'favorites.html';
           else if (p.to === '/dish-search') window.location.href = 'dish-search.html';
-          else if (p.to === '/loved-dishes') window.location.href = 'loved-dishes.html';
+          else if (p.to === '/my-dishes') window.location.href = 'my-dishes.html';
           else if (p.to === '/report-issue') window.location.href = 'report-issue.html';
           else if (p.to === '/accounts') {
             const params = new URLSearchParams();
@@ -6647,6 +6908,10 @@
                 // Explicitly preserve aiIngredientSummary if it exists
                 if (overlay.aiIngredientSummary !== undefined) {
                   savedOverlay.aiIngredientSummary = overlay.aiIngredientSummary;
+                }
+                // Explicitly preserve recipeDescription if it exists
+                if (overlay.recipeDescription !== undefined) {
+                  savedOverlay.recipeDescription = overlay.recipeDescription;
                 }
                 return savedOverlay;
               });
@@ -6889,14 +7154,346 @@
       qrPromoCloseBtn.onclick = () => closeQrPromo('dismiss');
     }
     if (qrPromoSignupBtn) {
-      qrPromoSignupBtn.onclick = () => { closeQrPromo('signup'); requestSignIn('qr'); };
+      qrPromoSignupBtn.onclick = () => {
+        closeQrPromo('signup');
+        // Check for invite token and redirect directly to preserve it
+        const inviteParam = new URLSearchParams(window.location.search).get('invite');
+        if (inviteParam) {
+          window.location.href = `account.html?invite=${encodeURIComponent(inviteParam)}`;
+        } else {
+          requestSignIn('qr');
+        }
+      };
     }
     if (qrBannerSignupBtn) {
-      qrBannerSignupBtn.onclick = () => { hideQrBanner(); requestSignIn('qr'); };
+      qrBannerSignupBtn.onclick = () => {
+        hideQrBanner();
+        // Check for invite token and redirect directly to preserve it
+        const inviteParam = new URLSearchParams(window.location.search).get('invite');
+        if (inviteParam) {
+          window.location.href = `account.html?invite=${encodeURIComponent(inviteParam)}`;
+        } else {
+          requestSignIn('qr');
+        }
+      };
     }
     const norm = s => (s || '').toString().trim().toLowerCase();
     const esc = s => (s ?? '').toString().replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
     const cap = s => (s || '').split(' ').map(w => w ? w[0].toUpperCase() + w.slice(1) : '').join(' ');
+
+    // Helper function to normalize ingredients for comparison
+    function normalizeIngredientsForComparison(text) {
+      return (text || '').toLowerCase().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    // Helper function to check if two ingredient lists are similar (65%+ word overlap)
+    function areIngredientsSimilar(text1, text2) {
+      const n1 = normalizeIngredientsForComparison(text1);
+      const n2 = normalizeIngredientsForComparison(text2);
+      if (n1 === n2) return true;
+      const w1 = new Set(n1.split(' ').filter(w => w.length > 2));
+      const w2 = new Set(n2.split(' ').filter(w => w.length > 2));
+      const intersection = [...w1].filter(w => w2.has(w)).length;
+      const union = new Set([...w1, ...w2]).size;
+      return union > 0 && (intersection / union) >= 0.65;
+    }
+
+    // Helper function to group sources by ingredient similarity
+    function groupSourcesByIngredientSimilarity(sources) {
+      const groups = [];
+      for (const source of sources) {
+        let addedToGroup = false;
+        for (const group of groups) {
+          if (areIngredientsSimilar(source.ingredientsText, group[0].ingredientsText)) {
+            group.push(source);
+            addedToGroup = true;
+            break;
+          }
+        }
+        if (!addedToGroup) {
+          groups.push([source]);
+        }
+      }
+      // Sort groups by size (largest first)
+      groups.sort((a, b) => b.length - a.length);
+      return groups;
+    }
+
+    // Helper function to parse ingredients into bullet points
+    // Only splits on commas/semicolons that are NOT inside parentheses
+    function parseIngredientsToBullets(ingredientsText) {
+      if (!ingredientsText) return [];
+
+      const text = ingredientsText.replace(/ingredients:/i, '').trim();
+      const ingredients = [];
+      let current = '';
+      let parenDepth = 0;
+
+      for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+
+        if (char === '(' || char === '[') {
+          parenDepth++;
+          current += char;
+        } else if (char === ')' || char === ']') {
+          parenDepth = Math.max(0, parenDepth - 1);
+          current += char;
+        } else if ((char === ',' || char === ';') && parenDepth === 0) {
+          // Split here - we're not inside parentheses
+          const trimmed = current.trim();
+          if (trimmed.length > 0 && trimmed.length < 200) {
+            ingredients.push(trimmed);
+          }
+          current = '';
+        } else if (char === '.' && parenDepth === 0 && i + 1 < text.length && /\s+[A-Z]/.test(text.slice(i + 1, i + 4))) {
+          // Period followed by space and capital letter - MIGHT be sentence break
+          // BUT don't split if this looks like a bacterial species abbreviation (L., S., B., etc.)
+          // Check if the text before the period is a single letter (bacterial genus abbreviation)
+          const beforePeriod = current.trim();
+          const isBacterialAbbrev = /^[A-Za-z]$/.test(beforePeriod) || /\s[A-Za-z]$/.test(beforePeriod);
+
+          if (isBacterialAbbrev) {
+            // Keep the period - this is likely "L. Acidophilus", "S. Thermophilus", etc.
+            current += char;
+          } else {
+            // Real sentence break
+            const trimmed = beforePeriod;
+            if (trimmed.length > 0 && trimmed.length < 200) {
+              ingredients.push(trimmed);
+            }
+            current = '';
+          }
+        } else {
+          current += char;
+        }
+      }
+
+      // Don't forget the last ingredient
+      const trimmed = current.trim();
+      if (trimmed.length > 0 && trimmed.length < 200) {
+        ingredients.push(trimmed);
+      }
+
+      return ingredients;
+    }
+
+    // Helper function to find ingredients that differ between two lists
+    function findDifferingIngredients(primaryIngredients, altIngredients) {
+      const normalizedPrimary = new Set(primaryIngredients.map(i => normalizeIngredientsForComparison(i)));
+      const differing = [];
+      for (const ing of altIngredients) {
+        const normalized = normalizeIngredientsForComparison(ing);
+        // Check if this ingredient (or something very similar) exists in primary
+        let found = false;
+        for (const pNorm of normalizedPrimary) {
+          // Check for exact match or if one contains the other
+          if (pNorm === normalized || pNorm.includes(normalized) || normalized.includes(pNorm)) {
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          differing.push(ing);
+        }
+      }
+      return new Set(differing);
+    }
+
+    // Helper function to render grouped sources HTML
+    function renderGroupedSourcesHtml(sources, options = {}) {
+      if (!sources || sources.length === 0) return '';
+
+      const groups = groupSourcesByIngredientSimilarity(sources);
+      const showConfirmButtons = options.showConfirmButtons !== false;
+
+      // Use AI-extracted ingredient names if provided, otherwise fall back to parsing
+      const aiIngredientNames = options.ingredientNames || null;
+
+      // Get primary ingredients for comparison
+      const primaryIngredients = aiIngredientNames || (groups.length > 0 ? parseIngredientsToBullets(groups[0][0].ingredientsText) : []);
+
+      return groups.map((group, groupIdx) => {
+        // For the primary group, use AI ingredient names if available
+        // For alternate groups, parse their own ingredients to show differences
+        const representativeIngredients = (groupIdx === 0 && aiIngredientNames)
+          ? aiIngredientNames
+          : parseIngredientsToBullets(group[0].ingredientsText);
+        const groupColor = groupIdx === 0 ? 'rgba(76,212,90,0.4)' : 'rgba(255,152,0,0.4)';
+        const groupBgColor = groupIdx === 0 ? 'rgba(76,212,90,0.1)' : 'rgba(255,152,0,0.1)';
+        const groupHeaderColor = groupIdx === 0 ? '#4caf50' : '#ff9800';
+
+        // Find differing ingredients for alternate lists
+        const differingIngredients = groupIdx > 0 ? findDifferingIngredients(primaryIngredients, representativeIngredients) : new Set();
+
+        return `
+          <div style="
+            background: ${groupBgColor};
+            border: 2px solid ${groupColor};
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+          " data-group-idx="${groupIdx}" data-ingredients-text="${esc(group[0].ingredientsText)}">
+            <div style="margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                <div>
+                  <span style="font-weight: 700; color: ${groupHeaderColor}; font-size: 1.1rem;">
+                    ${groupIdx === 0 ? '✓ Primary Ingredient List' : `⚠️ Alternate List`}
+                  </span>
+                  <span style="font-weight: 400; font-size: 0.9rem; color: #a0a0a0; margin-left: 8px;">
+                    (${group.length} source${group.length !== 1 ? 's' : ''} agree)
+                  </span>
+                </div>
+                ${showConfirmButtons ? `
+                  <button type="button" class="confirmGroupIngredientListBtn" data-group-idx="${groupIdx}" style="
+                    padding: 8px 16px;
+                    background: ${groupIdx === 0 ? '#4c5ad4' : '#ff9800'};
+                    border: none;
+                    border-radius: 6px;
+                    color: #fff;
+                    font-weight: 600;
+                    cursor: pointer;
+                    font-size: 0.85rem;
+                    white-space: nowrap;
+                    flex-shrink: 0;
+                  ">
+                    Confirm & Apply
+                  </button>
+                ` : ''}
+              </div>
+
+              ${representativeIngredients.length > 0 ? `
+                <div style="
+                  background: rgba(0,0,0,0.2);
+                  border-radius: 8px;
+                  padding: 16px;
+                  margin-bottom: 16px;
+                ">
+                  <div style="font-weight: 600; color: #a0a0a0; font-size: 0.85rem; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    Ingredients:
+                  </div>
+                  <ul style="
+                    margin: 0;
+                    padding-left: 20px;
+                    color: #e0e0e0;
+                    font-size: 0.9rem;
+                    line-height: 1.7;
+                  ">
+                    ${representativeIngredients.slice(0, 30).map(ing => {
+          const isDifferent = differingIngredients.has(ing);
+          return `<li style="margin-bottom: 4px; ${isDifferent ? 'color: #ff9800; font-weight: 600;' : ''}">${esc(ing)}${isDifferent ? ' <span style="font-size: 0.75rem; background: rgba(255,152,0,0.3); padding: 2px 6px; border-radius: 4px; margin-left: 6px;">DIFFERS</span>' : ''}</li>`;
+        }).join('')}
+                    ${representativeIngredients.length > 30 ? `<li style="color: #a0a0a0; font-style: italic;">...and ${representativeIngredients.length - 30} more ingredients</li>` : ''}
+                  </ul>
+                </div>
+              ` : ''}
+            </div>
+
+            <div style="font-weight: 600; color: #a0a0a0; font-size: 0.85rem; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+              Sources (${group.length}):
+            </div>
+
+            ${group.map((source, sourceIdx) => {
+          const urlObj = source.url ? (() => {
+            try { return new URL(source.url); } catch { return null; }
+          })() : null;
+          const domain = urlObj ? urlObj.hostname.replace('www.', '') : '';
+          const faviconUrl = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=32` : '';
+
+          return `
+                <div style="
+                  background: rgba(0,0,0,0.2);
+                  border-radius: 8px;
+                  padding: 16px;
+                  margin-bottom: ${sourceIdx < group.length - 1 ? '12px' : '0'};
+                ">
+                  <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                    ${faviconUrl ? `
+                      <img src="${esc(faviconUrl)}" alt="${esc(source.sourceName || '')}"
+                           style="width: 32px; height: 32px; border-radius: 4px; flex-shrink: 0;"
+                           onerror="this.style.display='none';">
+                    ` : ''}
+                    <div style="flex: 1;">
+                      <div style="font-weight: 600; color: #fff; font-size: 1rem; margin-bottom: 2px;">
+                        ${esc(source.sourceName || `Source ${sourceIdx + 1}`)}
+                      </div>
+                      ${source.productName ? `
+                        <div style="font-size: 0.85rem; color: #9ca3af; margin-bottom: 4px;">
+                          📦 ${esc(source.productName)}
+                        </div>
+                      ` : ''}
+                      ${source.url ? `
+                        <div style="font-size: 0.8rem; word-break: break-all;">
+                          <a href="${esc(source.url)}" target="_blank"
+                             style="color: ${source.urlValid === false ? '#999' : '#6b7ce6'}; text-decoration: ${source.urlValid === false ? 'line-through' : 'none'};"
+                             rel="noopener noreferrer"
+                             title="${source.urlValid === false ? 'Link may be inaccessible' : ''}">
+                            ${esc(source.url)}
+                          </a>
+                          ${source.urlValid === false ? '<span style="color: #ff9800; font-size: 0.75rem; margin-left: 8px;">(Link may be dead)</span>' : ''}
+                        </div>
+                      ` : ''}
+                    </div>
+                  </div>
+
+                  <div style="display: grid; grid-template-columns: 1fr; gap: 12px;">
+                    <!-- Exact Ingredients Text -->
+                    <div style="
+                      background: rgba(0,0,0,0.3);
+                      border-radius: 6px;
+                      padding: 12px;
+                    ">
+                      <div style="font-weight: 600; color: #a0a0a0; font-size: 0.8rem; margin-bottom: 6px;">
+                        Exact Ingredient Text:
+                      </div>
+                      <div style="
+                        font-size: 0.85rem;
+                        color: #e0e0e0;
+                        line-height: 1.5;
+                        font-family: 'Monaco', 'Courier New', monospace;
+                        white-space: pre-wrap;
+                        word-wrap: break-word;
+                      ">
+                        ${esc(source.ingredientsText || 'Not available')}
+                      </div>
+                    </div>
+
+                    <!-- Allergen Statement -->
+                    <div style="
+                      background: rgba(255,152,0,0.1);
+                      border: 1px solid rgba(255,152,0,0.3);
+                      border-radius: 6px;
+                      padding: 12px;
+                    ">
+                      <div style="font-weight: 600; color: #ff9800; font-size: 0.8rem; margin-bottom: 6px;">
+                        ⚠️ Allergen Statement:
+                      </div>
+                      <div style="font-size: 0.85rem; color: #e0e0e0; line-height: 1.5;">
+                        ${source.allergenStatement ? esc(source.allergenStatement) : '<span style="color: #888;">None</span>'}
+                      </div>
+                    </div>
+
+                    <!-- Cross-Contamination Statement -->
+                    <div style="
+                      background: rgba(156,39,176,0.1);
+                      border: 1px solid rgba(156,39,176,0.3);
+                      border-radius: 6px;
+                      padding: 12px;
+                    ">
+                      <div style="font-weight: 600; color: #ce93d8; font-size: 0.8rem; margin-bottom: 6px;">
+                        🏭 Cross-Contamination / Facility:
+                      </div>
+                      <div style="font-size: 0.85rem; color: #e0e0e0; line-height: 1.5;">
+                        ${source.crossContaminationStatement ? esc(source.crossContaminationStatement) : '<span style="color: #888;">None</span>'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `;
+        }).join('')}
+          </div>
+        `;
+      }).join('');
+    }
     function normalizeDietLabel(diet) {
       if (!diet) return '';
       const lower = diet.toString().trim().toLowerCase();
@@ -6906,12 +7503,17 @@
     const fmtDate = d => { try { const x = new Date(d); return isNaN(x) ? '' : x.toLocaleDateString(); } catch (_) { return ''; } };
     const fmtDateTime = d => { try { const x = new Date(d); return isNaN(x) ? '' : x.toLocaleDateString() + ' at ' + x.toLocaleTimeString(); } catch (_) { return ''; } };
 
-    const PROCESSED_INGREDIENT_PATTERN = /\b(flour|flours|starch|starchs|powder|powders|mix|mixes|blend|blends|paste|pastes|pasteurized|processed|cultured|fermented|packaged|bread|breads|bun|buns|roll|rolls|bagel|bagels|baguette|wrap|tortilla|pita|flatbread|biscuit|biscuits)\b/;
+    // Single-ingredient items that NEVER need a barcode scan (spices, herbs, basic seasonings)
+    const SINGLE_INGREDIENT_EXEMPTIONS = /^(salt|sea salt|kosher salt|pepper|black pepper|white pepper|paprika|smoked paprika|cumin|coriander|turmeric|garlic powder|onion powder|oregano|basil|thyme|rosemary|cinnamon|nutmeg|ginger|ground ginger|cloves|cayenne|cayenne pepper|chili powder|red pepper flakes|crushed red pepper|bay leaves?|parsley|dill|mint|sage|tarragon|chives|marjoram|allspice|cardamom|curry powder|mustard powder|mustard seed|fennel seed|caraway seed|celery seed|poppy seed|sesame seeds?|vanilla|vanilla extract|cocoa powder|baking soda|baking powder|cornstarch|arrowroot|cream of tartar|yeast|active dry yeast|instant yeast|garlic|fresh garlic|minced garlic|onion|fresh onion|lemon juice|lime juice|olive oil|vegetable oil|canola oil|coconut oil|sesame oil|vinegar|apple cider vinegar|white vinegar|balsamic vinegar|rice vinegar|honey|maple syrup|sugar|brown sugar|powdered sugar|molasses)$/i;
+
+    const PROCESSED_INGREDIENT_PATTERN = /\b(flour|flours|starch|starchs|mix|mixes|blend|blends|paste|pastes|pasteurized|processed|cultured|fermented|packaged|bread|breads|bun|buns|roll|rolls|bagel|bagels|baguette|wrap|tortilla|pita|flatbread|biscuit|biscuits)\b/;
     const PROCESSED_MEATS_PATTERN = /\b(prosciutto|salami|soppressata|pepperoni|chorizo|bacon|ham|cured|smoked|sausage|sausages|bratwurst|kielbasa|mortadella|pancetta|guanciale|coppa|capicola|nduja|bresaola|speck|jamon|serrano|pastrami|corned beef|biltong|jerky)\b/;
     const CONDIMENT_PATTERN = /\b(butter|butters|spread|spreads|margarine|nutella|tahini|hummus|mayonnaise|mayo|ketchup|mustard|barbecue|bbq|sauce|sauces|salsa|dressing|dressings|vinaigrette|aioli|syrup|syrups|jam|jams|jelly|jellies|preserve|preserves|glaze|condiment|condiments|peanut butter|almond butter|cashew butter|hazelnut spread)\b/;
     function requiresBarcodeScan(name) {
-      const lower = (name || '').toLowerCase();
+      const lower = (name || '').toLowerCase().trim();
       if (!lower) return false;
+      // Single-ingredient items never need barcode scans
+      if (SINGLE_INGREDIENT_EXEMPTIONS.test(lower)) return false;
       return PROCESSED_INGREDIENT_PATTERN.test(lower) || PROCESSED_MEATS_PATTERN.test(lower) || CONDIMENT_PATTERN.test(lower);
     }
 
@@ -6986,6 +7588,10 @@
     const AI_BRAND_LIMIT = 6;
     const AI_BRAND_MEMORY_KEY = 'cle:aiBrandMemory:v1';
 
+    // Global tracking of active barcode lookups to preserve state across table re-renders
+    // Key: rowIdx, Value: { barcode, ingredientName, startTime, promise }
+    const activeBarcodeLookups = new Map();
+
     let aiBrandMemoryCache = null;
 
     function loadAiBrandMemory() {
@@ -7044,10 +7650,51 @@
       const key = normalizeIngredientKey(name);
       if (!key) return null;
       const store = loadAiBrandMemory();
-      const result = store[key] || null;
-      console.log(`Looking up brand for "${name}" (key: "${key}"):`, result ? `Found: ${result.brand}` : 'Not found');
-      console.log('Available keys in brand memory:', Object.keys(store));
-      return result;
+
+      // Try exact match first
+      if (store[key]) {
+        console.log(`Looking up brand for "${name}" (key: "${key}"): Found exact match: ${store[key].brand}`);
+        return store[key];
+      }
+
+      // No exact match - try fuzzy matching
+      // Look for stored keys where most of the stored key's words appear in the search
+      const searchWords = key.split(/\s+/).filter(w => w.length > 2);
+      const storeKeys = Object.keys(store);
+
+      let bestMatch = null;
+      let bestScore = 0;
+
+      for (const storeKey of storeKeys) {
+        const storeWords = storeKey.split(/\s+/).filter(w => w.length > 2);
+        if (storeWords.length === 0) continue;
+
+        // Count how many of the STORED key's words are covered by the search
+        // This ensures "vegetable broth" matches "100% all natural whole vegetable broth"
+        // but "vegetable oil" does NOT match "vegetable broth" (only 1 of 2 words match)
+        const matchedStoreWords = storeWords.filter(stw =>
+          searchWords.some(sw => stw === sw || stw.includes(sw) || sw.includes(stw))
+        );
+
+        // Calculate score as percentage of stored key words that are matched
+        const score = matchedStoreWords.length / storeWords.length;
+
+        // Require ALL of the stored key's words to be present in the search
+        // This prevents false positives like "vegetable oil" matching "vegetable broth"
+        if (score >= 1.0 && score > bestScore) {
+          bestScore = score;
+          bestMatch = { key: storeKey, data: store[storeKey] };
+        }
+      }
+
+      if (bestMatch) {
+        console.log(`Looking up brand for "${name}" (key: "${key}"): Found fuzzy match "${bestMatch.key}" (score: ${bestScore.toFixed(2)}): ${bestMatch.data.brand}`);
+        return bestMatch.data;
+      }
+
+      console.log(`Looking up brand for "${name}" (key: "${key}"): Not found`);
+      console.log('Available keys in brand memory:', storeKeys);
+      return null;
     }
 
     function rebuildBrandMemoryFromRestaurant() {
@@ -7199,7 +7846,10 @@
           <div style="font-size:0.95rem;color:rgba(255,255,255,0.9)" id="aiAssistReplacementProgressText">Dish 1 of 3</div>
         </div>
         <div class="aiAssistHead">
-          <h2 id="aiAssistTitle">Dish editor</h2>
+          <div style="display:flex;align-items:center;gap:12px">
+            <h2 id="aiAssistTitle" style="margin:0">Dish editor</h2>
+            <span style="font-size:0.7rem;opacity:0.5;border:1px solid #444;padding:2px 6px;border-radius:4px;color:white">v1.0.1-logs</span>
+          </div>
           <div style="display:flex;gap:8px">
             <button type="button" class="btn btnDanger" id="aiAssistDeleteBtn" aria-label="Delete overlay" style="display:none;padding:8px 12px;font-size:0.9rem">🗑 Delete</button>
             <button type="button" class="aiAssistClose" id="aiAssistClose" aria-label="Close AI assistant">×</button>
@@ -7216,7 +7866,7 @@
             </div>
           </div>
           <div style="display:flex;gap:12px">
-            <button type="button" class="btn btnPrimary" id="aiAssistSaveAndExitBtn" style="flex:1;padding:12px;font-size:1rem">💾 Save and Exit</button>
+            <button type="button" class="btn btnPrimary" id="aiAssistSaveAndExitBtn" style="flex:1;padding:12px;font-size:1rem">💾 Save Changes</button>
             <button type="button" class="btn" id="aiAssistExitWithoutSavingBtn" style="flex:1;padding:12px;font-size:1rem;background:#4a1a1a;border-color:#721c24">Exit Without Saving</button>
           </div>
           <button type="button" class="btn" id="aiAssistCancelExitBtn" style="width:100%;margin-top:12px;padding:8px;font-size:0.9rem;background:rgba(76,90,212,0.2);border-color:rgba(76,90,212,0.4)">Cancel</button>
@@ -7807,18 +8457,21 @@
                 // Check if this brand is already added
                 const brandExists = data[idx].brands.some(b => b.name === memory.brand);
                 if (!brandExists) {
+                  // IMPORTANT: Only copy brand name and image - NOT ingredient data!
+                  // The same brand makes different products with different ingredients.
+                  // E.g., Pacific vegetable broth vs Pacific pita bread are completely different.
+                  // User needs to scan the actual product to get correct ingredients.
                   data[idx].brands.push({
                     name: memory.brand,
                     brandImage: memory.brandImage || '',
-                    ingredientsImage: memory.ingredientsImage || '',
-                    ingredientsList: memory.ingredientsList || [],
-                    allergens: memory.allergens || [],
-                    diets: memory.diets || []
+                    ingredientsImage: '', // Don't copy - needs fresh scan
+                    ingredientsList: [],  // Don't copy - needs fresh scan
+                    allergens: [],        // Don't copy - needs fresh scan
+                    diets: []             // Don't copy - needs fresh scan
                   });
-                  // Reset confirmed state since we added allergen/diet info
-                  data[idx].confirmed = false;
+                  // Don't reset confirmed state since we haven't added allergen/diet info yet
                   renderAiTable(data);
-                  aiAssistSetStatus(`Added brand "${memory.brand}" from memory.`, 'success');
+                  aiAssistSetStatus(`Added brand "${memory.brand}". Scan barcode to get ingredients for this product.`, 'info');
                   // Mark as unsaved when user adds a brand
                   aiAssistState.savedToDish = false;
                 } else {
@@ -8719,11 +9372,9 @@
           <button type="button" class="btn aiAddRememberedBrand" data-row-idx="${idx}" style="position:absolute;top:-6px;right:-6px;width:24px;height:24px;border-radius:50%;background:#4caf50;border:2px solid white;color:white;font-size:1.2rem;font-weight:bold;padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,0.2)" title="Add this brand">+</button>
         </div>
         <div style="flex:1;min-width:0">
-          <div style="font-weight:600;font-size:0.85rem;color:#2c5530">Previously used:</div>
+          <div style="font-weight:600;font-size:0.85rem;color:#2c5530">Previously used brand:</div>
           <div style="font-size:0.9rem;color:#333;margin-top:2px">${esc(rememberedBrand.brand)}</div>
-          ${rememberedBrand.allergens && rememberedBrand.allergens.length > 0 ?
-            `<div style="font-size:0.75rem;color:#666;margin-top:4px">Allergens: ${rememberedBrand.allergens.map(a => esc(cap(a))).join(', ')}</div>` :
-            ''}
+          <div style="font-size:0.75rem;color:#888;margin-top:4px;font-style:italic">Tap + to add, then scan for ingredients</div>
         </div>
       </div>
     ` : '';
@@ -8979,6 +9630,26 @@
         aiAssistBrandResults.innerHTML = '';
       }
 
+      // Restore loading states for any active barcode lookups (from global tracking)
+      // This ensures parallel lookups continue to show their loading UI after table re-render
+      if (activeBarcodeLookups.size > 0) {
+        console.log(`Restoring ${activeBarcodeLookups.size} active barcode lookup loading states`);
+        for (const [rowIdx, lookupInfo] of activeBarcodeLookups.entries()) {
+          // Re-create the loading UI for this row
+          // First remove any existing loading area that was restored from HTML (it won't have animations)
+          const tr = aiAssistTableBody.querySelector(`tr[data-index="${rowIdx}"]`);
+          if (tr) {
+            const existingLoadingArea = tr.querySelector('.barcodeLoadingArea');
+            if (existingLoadingArea) {
+              existingLoadingArea.remove();
+            }
+          }
+          // Now create a fresh loading UI with proper animations
+          // Pass the same startTime so the progress bar continues from where it was
+          showBarcodeLoadingInRowWithTime(rowIdx, lookupInfo.ingredientName, lookupInfo.startTime);
+        }
+      }
+
       // Update the preview whenever the table is rendered
       updateAiPreview();
     }
@@ -9232,12 +9903,23 @@
         const restaurantId = state.restaurant?._id || state.restaurant?.id || null;
         if (restaurantId && window.supabaseClient) {
           try {
-            // Load appeals for this restaurant (any status - appeals persist even after review)
+            // Load appeals for this specific dish (scoped by restaurant_id AND dish_name)
             // Include review_status, review_notes, and reviewed_at to show appeal review information
-            const { data: appeals } = await window.supabaseClient
+            let appealsQuery = window.supabaseClient
               .from('ingredient_scan_appeals')
-              .select('ingredient_name, ingredient_row_index, review_status, review_notes, reviewed_at')
+              .select('ingredient_name, ingredient_row_index, review_status, review_notes, reviewed_at, dish_name')
               .eq('restaurant_id', restaurantId);
+
+            // Filter by dish_name to scope appeals to this specific dish
+            // Note: dishName was set earlier in openAiAssistant from context.getCurrentName()
+            if (dishName) {
+              appealsQuery = appealsQuery.eq('dish_name', dishName);
+            } else {
+              // For legacy appeals without dish_name, only load them if no dish context
+              appealsQuery = appealsQuery.is('dish_name', null);
+            }
+
+            const { data: appeals } = await appealsQuery;
 
             if (appeals && appeals.length > 0) {
               // Create a map of ingredient name -> appeal data (including review status)
@@ -9314,6 +9996,10 @@
         // Show the results section
         if (aiAssistResultsEl) {
           aiAssistResultsEl.classList.add('show');
+        }
+        // Set the recipe description textarea for existing items too
+        if (aiAssistInput) {
+          aiAssistInput.value = context?.seedText || '';
         }
         // Mark as saved since we're just loading existing data
         aiAssistState.savedToDish = true;
@@ -10002,12 +10688,24 @@
       const restaurantId = state.restaurant?._id || state.restaurant?.id || null;
       if (restaurantId && window.supabaseClient) {
         try {
-          const { error: deleteError } = await window.supabaseClient
+          // Get current dish name to scope the delete to this specific dish
+          const dishName = aiAssistState.context?.getCurrentName ? aiAssistState.context.getCurrentName() : '';
+
+          let deleteQuery = window.supabaseClient
             .from('ingredient_scan_appeals')
             .delete()
             .eq('restaurant_id', restaurantId)
             .eq('ingredient_name', ingredientName)
             .eq('ingredient_row_index', rowIdx);
+
+          // Also filter by dish_name to ensure we only delete appeals for this dish
+          if (dishName) {
+            deleteQuery = deleteQuery.eq('dish_name', dishName);
+          } else {
+            deleteQuery = deleteQuery.is('dish_name', null);
+          }
+
+          const { error: deleteError } = await deleteQuery;
 
           if (deleteError) {
             console.error('Failed to delete appeal from database:', deleteError);
@@ -10313,10 +11011,13 @@
           let dbSuccess = false;
           try {
             const managerMessage = messageTextarea ? messageTextarea.value.trim() : '';
+            // Get current dish name to scope appeals per dish
+            const dishName = aiAssistState.context?.getCurrentName ? aiAssistState.context.getCurrentName() : '';
             const { error: dbError } = await client
               .from('ingredient_scan_appeals')
               .insert([{
                 restaurant_id: restaurantId,
+                dish_name: dishName || null,
                 ingredient_name: ingredientName,
                 ingredient_row_index: rowIdx,
                 photo_url: photoUrl,
@@ -10782,24 +11483,9 @@
           return;
         }
 
-        // Close modal and populate ingredient row
+        // Close modal and update row
         closeModal();
-
-        // Extract product name if available
-        const productName = extractedIngredientData.productName || ingredientName;
-        const ingredientList = extractedIngredientData.ingredientList;
-
-        // Extract brand from product name
-        let brand = '';
-        if (productName && productName !== ingredientName) {
-          const nameParts = productName.split(' ');
-          if (nameParts.length > 0) {
-            brand = nameParts[0];
-            if (nameParts.length > 1 && nameParts[1] && nameParts[1][0] === nameParts[1][0].toUpperCase()) {
-              brand = `${nameParts[0]} ${nameParts[1]}`;
-            }
-          }
-        }
+        const brand = productName || '';
 
         // Analyze ingredient list for allergens and dietary preferences
         let aiAllergens = [];
@@ -11016,6 +11702,50 @@
         window.scrollTo(0, scrollLockPosition);
       };
 
+      // Toggle ingredient in unified list based on discrepancy checkbox
+      window.toggleDiscrepancyIngredient = function (checkbox, ingredientName, rowIdx) {
+        console.log('Toggling ingredient:', ingredientName, 'Row:', rowIdx);
+        const listEl = document.getElementById(`unified-ingredient-list-${rowIdx}`);
+        if (!listEl) {
+          console.error('Unified list element not found:', `unified-ingredient-list-${rowIdx}`);
+          return;
+        }
+
+        try {
+          // Use decodeURIComponent for robust string handling
+          let ingredients = JSON.parse(decodeURIComponent(listEl.dataset.ingredients || '[]'));
+
+          // Self-healing: If data is a single string with commas (legacy bug), split it
+          if (ingredients.length === 1 && typeof ingredients[0] === 'string' && ingredients[0].includes(',')) {
+            console.log('Detected malformed ingredient list, fixing...');
+            ingredients = ingredients[0].split(',').map(s => s.trim()).filter(s => s.length > 0);
+          }
+
+          console.log('Current ingredients:', ingredients);
+
+          if (checkbox.checked) {
+            // Add if not present
+            if (!ingredients.some(i => i === ingredientName || i.trim() === ingredientName.trim())) {
+              ingredients.push(ingredientName);
+              console.log('Added ingredient');
+            } else {
+              console.log('Ingredient already present');
+            }
+          } else {
+            // Remove if present
+            const initialLength = ingredients.length;
+            ingredients = ingredients.filter(i => i !== ingredientName && i.trim() !== ingredientName.trim());
+            console.log('Removed ingredient. New length:', ingredients.length, 'Removed count:', initialLength - ingredients.length);
+          }
+
+          // Update data attribute and text
+          listEl.dataset.ingredients = encodeURIComponent(JSON.stringify(ingredients));
+          listEl.textContent = ingredients.join(', ');
+        } catch (e) {
+          console.error('Error toggling ingredient:', e);
+        }
+      };
+
       // Handle barcode lookup
       const handleBarcodeResult = async (barcode) => {
         // Don't stop scanning - allow continuous scanning
@@ -11024,7 +11754,30 @@
         if (!inFlight) {
           const startTime = Date.now();
           inFlight = (async () => {
-            const res = await fetchProductByBarcode(barcode);
+            let searchLogs = [];
+            const res = await fetchProductByBarcode(barcode, (logMsg) => {
+              searchLogs.push(logMsg);
+              // Inline update logic to avoid scope issues
+              // Inline update logic to avoid scope issues
+              // Find the row element first
+              const aiAssistTable = document.getElementById('aiAssistTable');
+              const trElement = aiAssistTable ? aiAssistTable.querySelector(`tr[data-index="${rowIdx}"]`) : null;
+
+              if (trElement) {
+                const logsDiv = trElement.querySelector('.aiRowSearchLogs');
+                const statusEl = trElement.querySelector('.barcodeLoadingStatus');
+
+                if (logsDiv) {
+                  logsDiv.style.display = 'block';
+                  logsDiv.innerHTML = searchLogs.map(log => `<div>${log}</div>`).join('');
+                  logsDiv.scrollTop = logsDiv.scrollHeight;
+                }
+
+                if (statusEl) {
+                  statusEl.textContent = logMsg;
+                }
+              }
+            });
             const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
             console.log(`Barcode lookup completed in ${elapsed}s for ${barcode}`);
             return res;
@@ -11046,7 +11799,7 @@
         closeModal();
 
         // Show loading bar in the ingredient row (not in modal)
-        showBarcodeLoadingInRow(rowIdx, ingredientName);
+        showBarcodeLoadingInRow(rowIdx, ingredientName, barcode);
 
         try {
           const result = await inFlight;
@@ -11065,17 +11818,8 @@
             const productName = result.productName || result.product?.product_name || 'Unknown Product';
             const ingredientList = result.ingredientList;
 
-            // Extract brand from product name
-            let brand = '';
-            if (productName) {
-              const nameParts = productName.split(' ');
-              if (nameParts.length > 0) {
-                brand = nameParts[0];
-                if (nameParts.length > 1 && nameParts[1] && nameParts[1][0] === nameParts[1][0].toUpperCase()) {
-                  brand = `${nameParts[0]} ${nameParts[1]}`;
-                }
-              }
-            }
+            // Use brand from API response (extracted from barcode database, not product name)
+            const brand = result.brand || '';
 
             // Get product image from Open Food Facts (prefer productImage from API, then check product object)
             const productImage = result.productImage || result.product?.image_url || result.product?.image ||
@@ -11093,6 +11837,10 @@
               if (!error && analysisData) {
                 aiAllergens = Array.isArray(analysisData.allergens) ? analysisData.allergens : [];
                 aiDiets = Array.isArray(analysisData.diets) ? analysisData.diets : [];
+                // Capture detailed dietary compliance
+                if (analysisData.dietary_compliance) {
+                  aiDiets.compliance = analysisData.dietary_compliance;
+                }
               }
             } catch (err) {
               console.error('Failed to analyze allergens/diets from barcode scan:', err);
@@ -11107,37 +11855,54 @@
               ingredientsImage: '',
               ingredientsList: [ingredientList],
               allergens: aiAllergens,
-              diets: aiDiets
+              diets: aiDiets,
+              dietaryCompliance: aiDiets.compliance // Store explicitly
             };
 
             // Show results button in the ingredient row instead of immediate popup
             showBarcodeResultsButtonInRow(rowIdx, suggestion, result);
 
             // Update the row with AI-detected allergens and diets immediately
-            // IMPORTANT: Merge with existing allergens/diets from other brands (union, not replace)
+            // IMPORTANT: Merge allergens (union) but REPLACE diets to avoid stale incompatible diets
             const data = collectAiTableData();
             if (data[rowIdx]) {
-              // Get existing allergens/diets from the row (which may include data from other brands)
+              // Get existing allergens from the row (which may include data from other brands)
               const existingAllergens = new Set((data[rowIdx].allergens || []).map(a => norm(a)));
-              const existingDiets = new Set(data[rowIdx].diets || []);
               const existingAiDetectedAllergens = new Set((data[rowIdx].aiDetectedAllergens || []).map(a => norm(a)));
-              const existingAiDetectedDiets = new Set(data[rowIdx].aiDetectedDiets || []);
 
-              // Merge new allergens/diets from this scan (union)
+              // Merge new allergens from this scan (union - allergens should accumulate)
               aiAllergens.forEach(a => {
                 existingAllergens.add(norm(a));
                 existingAiDetectedAllergens.add(norm(a));
               });
-              aiDiets.forEach(d => {
-                existingDiets.add(d);
-                existingAiDetectedDiets.add(d);
-              });
 
-              // Update with merged sets
+              // For diets: REPLACE with the new scan result, then remove any incompatible ones
+              // This fixes the issue where Gluten-free stayed checked after scanning wheat-containing products
+              const newDiets = new Set(aiDiets || []);
+              const newAiDetectedDiets = new Set(aiDiets || []);
+
+              // Remove diets that conflict with detected allergens
+              const allAllergens = Array.from(existingAllergens).map(a => a.toLowerCase());
+              if (allAllergens.includes('wheat')) {
+                newDiets.delete('Gluten-free');
+                newAiDetectedDiets.delete('Gluten-free');
+              }
+              if (allAllergens.includes('dairy') || allAllergens.includes('egg')) {
+                newDiets.delete('Vegan');
+                newAiDetectedDiets.delete('Vegan');
+              }
+              if (allAllergens.includes('fish') || allAllergens.includes('shellfish')) {
+                newDiets.delete('Vegan');
+                newDiets.delete('Vegetarian');
+                newAiDetectedDiets.delete('Vegan');
+                newAiDetectedDiets.delete('Vegetarian');
+              }
+
+              // Update with results
               data[rowIdx].allergens = Array.from(existingAllergens);
-              data[rowIdx].diets = Array.from(existingDiets);
+              data[rowIdx].diets = Array.from(newDiets);
               data[rowIdx].aiDetectedAllergens = Array.from(existingAiDetectedAllergens);
-              data[rowIdx].aiDetectedDiets = Array.from(existingAiDetectedDiets);
+              data[rowIdx].aiDetectedDiets = Array.from(newAiDetectedDiets);
               data[rowIdx].confirmed = false;
 
               // Also update the DOM row's dataset so it persists across re-renders
@@ -11363,20 +12128,67 @@
 
     // Main function: Lookup barcode using Supabase Edge Function
     // Simplified version matching the working test page implementation
-    async function fetchProductByBarcode(barcode) {
+    // Main function: Lookup barcode using Supabase Edge Function
+    // Simplified version matching the working test page implementation
+    async function fetchProductByBarcode(barcode, onLog) {
       console.log(`\n=== Looking up barcode: ${barcode} ===`);
 
       try {
-        const result = await window.supabaseClient.functions.invoke('lookup-barcode', {
-          body: { barcode }
+        // Use fetch directly to handle SSE
+        const { data: { session } } = await window.supabaseClient.auth.getSession();
+        const response = await fetch(`${window.supabaseClient.functionsUrl}/lookup-barcode`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session?.access_token || window.supabaseAnonKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ barcode })
         });
 
-        if (result.error) {
-          console.log('✗ Barcode lookup failed:', result.error);
-          return null;
+        if (!response.ok) {
+          throw new Error(`Function returned ${response.status}`);
         }
 
-        const data = result.data;
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let finalResult = null;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            const match = line.match(/^event: (.+)\ndata: (.+)$/s);
+            if (match) {
+              const event = match[1];
+              const data = JSON.parse(match[2]);
+
+              if (event === 'log') {
+                let logMsg = data.message;
+                logMsg = logMsg.replace(/\[Antigravity\]/g, '[barcode searcher]');
+                console.log(`[Stream] ${logMsg}`);
+                if (onLog) onLog(logMsg);
+              } else if (event === 'result') {
+                finalResult = data;
+              } else if (event === 'error') {
+                console.error('[Stream] Error:', data.message);
+                if (onLog) onLog(`❌ Error: ${data.message}`);
+                return { error: data.message };
+              }
+            }
+          }
+        }
+
+        if (!finalResult) {
+          return { error: 'Stream ended without result' };
+        }
+
+        const data = finalResult;
 
         // Handle success case with ingredient list
         if (data && data.success && data.ingredientList) {
@@ -11384,25 +12196,37 @@
           console.log(`  Sources verified: ${data.sources ? data.sources.length : 0}`);
           console.log(`  Consistency: ${data.consistencyInfo ? `${data.consistencyInfo.matchingSources}/${data.consistencyInfo.totalSources} sources agree` : 'N/A'}`);
 
-          // Extract brand from product name (e.g., "Quaker Instant Oatmeal" -> "Quaker")
-          let brand = '';
-          if (data.productName) {
-            const nameParts = data.productName.split(' ');
-            // Common brand patterns: first word if capitalized, or first 2 words for compound brands
-            if (nameParts.length > 0) {
-              brand = nameParts[0];
-              // Handle compound brands (e.g., "Blue Diamond", "Kraft Foods")
-              if (nameParts.length > 1 && nameParts[1][0] === nameParts[1][0].toUpperCase()) {
-                brand = `${nameParts[0]} ${nameParts[1]}`;
-              }
-            }
-          }
+          // Use brand from API response (extracted from barcode database, not product name)
+          const brand = data.brand || '';
 
           // Get product image from API response (Open Food Facts)
           // Prefer productImage from API response, then check sources for productImage
           const productImage = data.productImage ||
             (data.sources && data.sources.length > 0 && data.sources[0].productImage) ||
             '';
+
+          // Normalize dietary compliance from lookup-barcode (camelCase) to frontend expected format (snake_case + Capitalized keys)
+          const rawDc = data.dietaryCompliance || data.dietary_compliance || {};
+          const normalizedDc = {};
+          const diets = [];
+
+          // Helper to process diet keys
+          const processDiet = (sourceKey, targetKey) => {
+            const entry = rawDc[sourceKey] || rawDc[targetKey] || rawDc[targetKey.toLowerCase()];
+            if (entry) {
+              const isCompliant = entry.isCompliant === true || entry.is_compliant === true || (typeof entry.isCompliant === 'string' && entry.isCompliant === 'true');
+              normalizedDc[targetKey] = {
+                is_compliant: isCompliant,
+                reason: entry.reason || ''
+              };
+              if (isCompliant) diets.push(targetKey);
+            }
+          };
+
+          processDiet('vegan', 'Vegan');
+          processDiet('vegetarian', 'Vegetarian');
+          processDiet('pescatarian', 'Pescatarian');
+          processDiet('glutenFree', 'Gluten-free');
 
           // Return in format expected by existing code
           return {
@@ -11424,7 +12248,10 @@
             source: data.sources && data.sources.length > 0 ? `${data.sources.length} sources (Claude web search)` : 'Open Food Facts',
             sources: data.sources || [],
             consistencyInfo: data.consistencyInfo,
-            productName: data.productName
+            productName: data.productName,
+            diets: diets,
+            allergens: data.allergens || [],
+            dietary_compliance: normalizedDc
           };
         }
 
@@ -11448,8 +12275,16 @@
     }
 
     // Show loading bar in ingredient row
-    function showBarcodeLoadingInRow(rowIdx, ingredientName) {
+    function showBarcodeLoadingInRow(rowIdx, ingredientName, barcode = '') {
       console.log(`showBarcodeLoadingInRow called with rowIdx: ${rowIdx}, ingredientName: ${ingredientName}`);
+
+      // Register this lookup in the global tracking map
+      activeBarcodeLookups.set(rowIdx, {
+        barcode,
+        ingredientName,
+        startTime: Date.now()
+      });
+
       const rows = collectAiTableData();
       const row = rows[rowIdx];
       if (!row) {
@@ -11505,16 +12340,45 @@
         </div>
         <span style="font-size:0.9rem;color:#6b7ce6;white-space:nowrap">Looking up ${esc(ingredientName)}...</span>
       </div>
-      <div style="font-size:0.8rem;color:#9ca3af;font-style:italic;margin-left:0">💡 You can continue scanning other items while this lookup is in progress</div>
+      <div class="barcodeLoadingStatus" style="font-size:0.8rem;color:#a8b2d6;margin-left:0;min-height:1.2em">Searching product databases...</div>
+      <div class="aiRowSearchLogs" style="
+        margin-top: 8px;
+        padding: 8px;
+        background: rgba(0,0,0,0.2);
+        border-radius: 4px;
+        height: 100px;
+        overflow-y: auto;
+        font-family: 'Courier New', monospace;
+        font-size: 0.7rem;
+        color: #a8b2d6;
+        display: block;
+      "></div>
+      <div style="font-size:0.75rem;color:#6b7280;font-style:italic;margin-left:0">💡 You can continue scanning other items while this lookup is in progress</div>
     </div>
   `;
 
       // Animate loading bar gradually - simulate realistic progress
       const fillBar = loadingArea.querySelector('.barcodeLoadingBarFill');
+      const statusEl = loadingArea.querySelector('.barcodeLoadingStatus');
       if (fillBar) {
         const startTime = Date.now();
-        const estimatedDuration = 45000; // Estimate 45 seconds for lookup
+        const estimatedDuration = 60000; // Estimate 60 seconds for lookup (with retries)
         let progressInterval = null;
+
+        // Status messages for different stages
+        const statusMessages = [
+          { time: 0, msg: 'Searching product databases...' },
+          { time: 2000, msg: 'Checking Open Food Facts...' },
+          { time: 5000, msg: 'Searching web for ingredient sources...' },
+          { time: 15000, msg: 'Found product, gathering sources...' },
+          { time: 25000, msg: 'Validating source URLs...' },
+          { time: 30000, msg: 'Verifying ingredient lists...' },
+          { time: 40000, msg: 'Searching for additional sources...' },
+          { time: 50000, msg: 'Cross-referencing ingredients...' },
+          { time: 60000, msg: 'Almost done, finalizing results...' },
+          { time: 70000, msg: 'Still searching for more sources...' },
+          { time: 80000, msg: 'This product has limited online data...' }
+        ];
 
         // Progress function that updates based on elapsed time
         const updateProgress = () => {
@@ -11524,17 +12388,28 @@
           // Make progress more gradual with some realistic stages
           if (elapsed < 2000) {
             progress = Math.min(progress, 10); // Slow start (0-10% in first 2 seconds)
-          } else if (elapsed < 10000) {
-            progress = Math.min(progress, 10 + ((elapsed - 2000) / 8000) * 30); // 10-40% in next 8 seconds
-          } else if (elapsed < 25000) {
-            progress = Math.min(progress, 40 + ((elapsed - 10000) / 15000) * 30); // 40-70% in next 15 seconds
-          } else if (elapsed < 40000) {
-            progress = Math.min(progress, 70 + ((elapsed - 25000) / 15000) * 20); // 70-90% in next 15 seconds
+          } else if (elapsed < 15000) {
+            progress = Math.min(progress, 10 + ((elapsed - 2000) / 13000) * 30); // 10-40% in next 13 seconds
+          } else if (elapsed < 30000) {
+            progress = Math.min(progress, 40 + ((elapsed - 15000) / 15000) * 25); // 40-65% in next 15 seconds
+          } else if (elapsed < 50000) {
+            progress = Math.min(progress, 65 + ((elapsed - 30000) / 20000) * 20); // 65-85% in next 20 seconds
           } else {
-            progress = Math.min(progress, 90 + ((elapsed - 40000) / 5000) * 5); // 90-95% in remaining time
+            progress = Math.min(progress, 85 + ((elapsed - 50000) / 30000) * 10); // 85-95% slowly
           }
 
           fillBar.style.width = `${progress}%`;
+
+          // Update status message based on elapsed time - REMOVED to allow real logs to show
+          // if (statusEl) {
+          //   let currentStatus = statusMessages[0].msg;
+          //   for (const status of statusMessages) {
+          //     if (elapsed >= status.time) {
+          //       currentStatus = status.msg;
+          //     }
+          //   }
+          //   statusEl.textContent = currentStatus;
+          // }
 
           // Continue updating until lookup completes (will be stopped when done)
           if (progress < 95 && fillBar.parentElement && fillBar.parentElement.parentElement) {
@@ -11557,7 +12432,7 @@
                 progressInterval = null;
               }
             }
-          }, 500); // Update every 500ms
+          }, 500);
 
           // Store interval ID on the fill bar for cleanup if needed
           fillBar.dataset.intervalId = progressInterval;
@@ -11565,8 +12440,145 @@
       }
     }
 
+    // Show loading bar in ingredient row with a specific start time (used when restoring after re-render)
+    // This version doesn't register in activeBarcodeLookups since it's already registered
+    function showBarcodeLoadingInRowWithTime(rowIdx, ingredientName, existingStartTime) {
+      const rows = collectAiTableData();
+      const row = rows[rowIdx];
+      if (!row) return;
+
+      const aiAssistTable = document.getElementById('aiAssistTable');
+      if (!aiAssistTable) return;
+
+      const trElement = aiAssistTable.querySelector(`tr[data-index="${rowIdx}"]`);
+      if (!trElement) return;
+
+      const rowElement = trElement.querySelector('.aiIngredientRow');
+      if (!rowElement) return;
+
+      // Create the loading area
+      let loadingArea = rowElement.querySelector('.barcodeLoadingArea');
+      if (!loadingArea) {
+        loadingArea = document.createElement('div');
+        loadingArea.className = 'barcodeLoadingArea';
+        loadingArea.style.cssText = `
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: rgba(76,90,212,0.1);
+      border-radius: 8px;
+      border: 1px solid rgba(76,90,212,0.3);
+    `;
+        rowElement.appendChild(loadingArea);
+      }
+
+      loadingArea.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="flex:1;background:rgba(76,90,212,0.2);border-radius:4px;height:6px;overflow:hidden">
+          <div class="barcodeLoadingBarFill" data-row-idx="${rowIdx}" style="background:#4c5ad4;height:100%;width:0%;transition:width 0.5s ease-out"></div>
+        </div>
+        <span style="font-size:0.9rem;color:#6b7ce6;white-space:nowrap">Looking up ${esc(ingredientName)}...</span>
+      </div>
+      <div class="barcodeLoadingStatus" style="font-size:0.8rem;color:#a8b2d6;margin-left:0;min-height:1.2em">Searching product databases...</div>
+      <div class="aiRowSearchLogs" style="
+        margin-top: 8px;
+        padding: 8px;
+        background: rgba(0,0,0,0.2);
+        border-radius: 4px;
+        height: 100px;
+        overflow-y: auto;
+        font-family: 'Courier New', monospace;
+        font-size: 0.7rem;
+        color: #a8b2d6;
+        display: block;
+      "></div>
+      <div style="font-size:0.75rem;color:#6b7280;font-style:italic;margin-left:0">💡 You can continue scanning other items while this lookup is in progress</div>
+    </div>
+  `;
+
+      const fillBar = loadingArea.querySelector('.barcodeLoadingBarFill');
+      const statusEl = loadingArea.querySelector('.barcodeLoadingStatus');
+      if (fillBar) {
+        // Use the existing startTime to continue progress from where it was
+        const startTime = existingStartTime || Date.now();
+        const estimatedDuration = 60000;
+        let progressInterval = null;
+
+        const statusMessages = [
+          { time: 0, msg: 'Searching product databases...' },
+          { time: 2000, msg: 'Checking Open Food Facts...' },
+          { time: 5000, msg: 'Searching web for ingredient sources...' },
+          { time: 15000, msg: 'Found product, gathering sources...' },
+          { time: 25000, msg: 'Validating source URLs...' },
+          { time: 30000, msg: 'Verifying ingredient lists...' },
+          { time: 40000, msg: 'Searching for additional sources...' },
+          { time: 50000, msg: 'Cross-referencing ingredients...' },
+          { time: 60000, msg: 'Almost done, finalizing results...' },
+          { time: 70000, msg: 'Still searching for more sources...' },
+          { time: 80000, msg: 'This product has limited online data...' }
+        ];
+
+        const updateProgress = () => {
+          const elapsed = Date.now() - startTime;
+          let progress = Math.min(95, (elapsed / estimatedDuration) * 95);
+
+          if (elapsed < 2000) {
+            progress = Math.min(progress, 10);
+          } else if (elapsed < 15000) {
+            progress = Math.min(progress, 10 + ((elapsed - 2000) / 13000) * 30);
+          } else if (elapsed < 30000) {
+            progress = Math.min(progress, 40 + ((elapsed - 15000) / 15000) * 25);
+          } else if (elapsed < 50000) {
+            progress = Math.min(progress, 65 + ((elapsed - 30000) / 20000) * 20);
+          } else {
+            progress = Math.min(progress, 85 + ((elapsed - 50000) / 30000) * 10);
+          }
+
+          fillBar.style.width = `${progress}%`;
+
+          // Update status message based on elapsed time - REMOVED to allow real logs to show
+          // if (statusEl) {
+          //   let currentStatus = statusMessages[0].msg;
+          //   for (const status of statusMessages) {
+          //     if (elapsed >= status.time) {
+          //       currentStatus = status.msg;
+          //     }
+          //   }
+          //   statusEl.textContent = currentStatus;
+          // }
+
+          if (progress < 95 && fillBar.parentElement && fillBar.parentElement.parentElement) {
+            // Continue
+          } else if (progressInterval) {
+            clearInterval(progressInterval);
+            progressInterval = null;
+          }
+        };
+
+        // Start immediately and update regularly
+        setTimeout(() => {
+          updateProgress();
+          progressInterval = setInterval(() => {
+            if (fillBar.parentElement && fillBar.parentElement.parentElement) {
+              updateProgress();
+            } else {
+              if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+              }
+            }
+          }, 500);
+
+          fillBar.dataset.intervalId = progressInterval;
+        }, 100);
+      }
+    }
+
     // Hide loading bar in ingredient row
     function hideBarcodeLoadingInRow(rowIdx) {
+      // Unregister this lookup from the global tracking map
+      activeBarcodeLookups.delete(rowIdx);
+
       const aiAssistTable = document.getElementById('aiAssistTable');
       if (!aiAssistTable) return;
 
@@ -11637,6 +12649,10 @@
 
     // Show button to view barcode results in ingredient row
     function showBarcodeResultsButtonInRow(rowIdx, suggestion, barcodeResult) {
+      // IMPORTANT: Remove from activeBarcodeLookups since lookup is complete
+      // This prevents the restoration logic in renderAiTable from overwriting the results button
+      activeBarcodeLookups.delete(rowIdx);
+
       const rows = collectAiTableData();
       const row = rows[rowIdx];
       if (!row) return;
@@ -11722,6 +12738,12 @@
       let ingredientList = barcodeResult.ingredientList || '';
       const consistencyInfo = barcodeResult.consistencyInfo || {};
 
+      // Antigravity analysis data
+      const unifiedIngredientList = barcodeResult.unifiedIngredientList || [];
+      const top9Allergens = barcodeResult.allergens || barcodeResult.top9Allergens || suggestion.allergens || [];
+      const dietaryCompliance = barcodeResult.dietaryCompliance || barcodeResult.dietary_compliance || suggestion.dietaryCompliance || suggestion.dietary_compliance || null;
+      const sourceDifferences = barcodeResult.sourceDifferences || [];
+
       // If there's a conflict where all are different except one, use the consensus list
       const hasConflict = consistencyInfo.differentSources &&
         consistencyInfo.differentSources > 1 &&
@@ -11732,7 +12754,6 @@
         const consensusDiff = consistencyInfo.differences.find(d => d.groupSize === consistencyInfo.matchingSources);
         if (consensusDiff) {
           ingredientList = consensusDiff.ingredientsText;
-          // Update suggestion with consensus list
           suggestion.ingredientsList = [consensusDiff.ingredientsText];
         }
       }
@@ -11752,6 +12773,15 @@
     padding: 20px;
   `;
 
+      const closeModal = () => {
+        if (modal && modal.parentNode) {
+          document.body.removeChild(modal);
+        }
+      };
+
+      // Extract barcode for reporting
+      const barcode = barcodeResult.barcode || (suggestion && suggestion.barcode) || '';
+
       const modalContent = document.createElement('div');
       modalContent.style.cssText = `
     background: #0c102a;
@@ -11765,268 +12795,781 @@
     width: 100%;
   `;
 
-      // Build sources HTML
-      const sourcesHtml = sources.map((source, idx) => {
-        const urlObj = source.url ? (() => {
-          try { return new URL(source.url); } catch { return null; }
-        })() : null;
-        const domain = urlObj ? urlObj.hostname.replace('www.', '') : '';
-        const faviconUrl = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=32` : '';
-
-        return `
-      <div style="
-        background: rgba(76,212,90,0.1);
-        border: 2px solid rgba(76,212,90,0.4);
-        border-radius: 8px;
-        padding: 16px;
-        margin-bottom: 12px;
-      ">
-        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-          ${faviconUrl ? `
-            <img src="${esc(faviconUrl)}" alt="${esc(source.sourceName || '')}" 
-                 style="width: 32px; height: 32px; border-radius: 4px; flex-shrink: 0;"
-                 onerror="this.style.display='none';">
-          ` : ''}
-          <div style="flex: 1;">
-            <div style="font-weight: 600; color: #4caf50; font-size: 1.05rem; margin-bottom: 4px;">
-              ${esc(source.sourceName || `Source ${idx + 1}`)}
-            </div>
-            ${source.url ? `
-              <div style="font-size: 0.85rem; word-break: break-all;">
-                <a href="${esc(source.url)}" target="_blank" 
-                   style="color: ${source.urlValid === false ? '#999' : '#6b7ce6'}; text-decoration: ${source.urlValid === false ? 'line-through' : 'none'};" 
-                   rel="noopener noreferrer"
-                   title="${source.urlValid === false ? 'Link may be inaccessible' : ''}">
-                  ${esc(source.url)}
-                </a>
-                ${source.urlValid === false ? '<span style="color: #ff9800; font-size: 0.75rem; margin-left: 8px;">(Link may be dead)</span>' : ''}
-              </div>
-            ` : ''}
-          </div>
-        </div>
-        ${source.ingredientsText ? `
-          <div style="
-            background: rgba(0,0,0,0.3);
-            border-radius: 6px;
-            padding: 12px;
-            margin-top: 12px;
-          ">
-            <div style="font-weight: 600; color: #a0a0a0; font-size: 0.85rem; margin-bottom: 8px;">
-              Ingredient List:
-            </div>
-            <div style="
-              font-size: 0.9rem;
-              color: #e0e0e0;
-              line-height: 1.6;
-              font-family: 'Monaco', 'Courier New', monospace;
-              white-space: pre-wrap;
-              word-wrap: break-word;
-              padding: 0;
-              margin: 0;
-              text-indent: 0;
-            ">
-              ${esc(source.ingredientsText)}
-            </div>
-          </div>
-        ` : ''}
-      </div>
-    `;
-      }).join('');
-
-      // Get product image from Open Food Facts
+      // Get product image
       const productImage = barcodeResult.productImage || suggestion.brandImage || '';
 
-      modalContent.innerHTML = `
-    <div style="margin-bottom: 20px;">
-      <div style="display: flex; align-items: flex-start; gap: 16px;">
-        ${productImage ? `
-          <div style="flex-shrink: 0;">
-            <img src="${esc(productImage)}" alt="${esc(productName)}" 
-                 style="width: 120px; height: 120px; object-fit: contain; border-radius: 8px; border: 2px solid rgba(76,90,212,0.3); background: rgba(255,255,255,0.05);"
-                 onerror="this.style.display='none';">
-          </div>
-        ` : ''}
-        <div style="flex: 1;">
-          <h3 style="margin: 0 0 8px 0; color: #4c5ad4; font-size: 1.4rem;">✓ Product Found!</h3>
-          <p style="margin: 0; font-size: 1.1rem; color: #fff; font-weight: 600;">${esc(productName)}</p>
-          ${suggestion.brand ? `<p style="margin: 4px 0 0 0; color: #a0a0a0; font-size: 0.9rem;">Brand: ${esc(suggestion.brand)}</p>` : ''}
-        </div>
-      </div>
-    </div>
+      // Helper to render dietary compliance cards
+      const renderDietaryCompliance = (compliance) => {
+        if (!compliance) return '';
 
-    ${consistencyInfo.totalSources ? `
-      <div style="background: rgba(76,212,90,0.15); border: 1px solid rgba(76,212,90,0.4); border-radius: 8px; padding: 12px; margin-bottom: 20px;">
-        <div style="font-weight: 600; color: #4caf50; margin-bottom: 4px;">
-          Verification: ${consistencyInfo.matchingSources || 0} out of ${consistencyInfo.totalSources || 0} sources agree
-        </div>
-    ${(() => {
-            // Detect conflict: all different except one (consensus exists but others differ)
-            const hasConflict = consistencyInfo.differentSources &&
-              consistencyInfo.differentSources > 1 &&
-              consistencyInfo.matchingSources >= 1 &&
-              consistencyInfo.matchingSources < consistencyInfo.totalSources;
-            const consensusDiff = hasConflict && consistencyInfo.differences ?
-              consistencyInfo.differences.find(d => d.groupSize === consistencyInfo.matchingSources) : null;
-            const consensusIngredients = consensusDiff ? consensusDiff.ingredientsText : null;
+        const diets = [
+          { key: 'vegan', label: 'Vegan', data: compliance.Vegan || compliance.vegan },
+          { key: 'vegetarian', label: 'Vegetarian', data: compliance.Vegetarian || compliance.vegetarian },
+          { key: 'pescatarian', label: 'Pescatarian', data: compliance.Pescatarian || compliance.pescatarian },
+          { key: 'glutenFree', label: 'Gluten-Free', data: compliance['Gluten-free'] || compliance.glutenFree }
+        ];
 
-            if (hasConflict && consensusDiff) {
-              return `
-          <div style="font-size: 0.9rem; color: #ff9800; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,152,0,0.3);">
-            <div style="font-weight: 600; margin-bottom: 8px; color: #ff9800;">
-              ⚠️ Conflict Detected: All ingredient lists differ except one
+        return `
+          <div style="margin-bottom: 24px;">
+            <h3 style="margin: 0 0 12px 0; color: #fff; font-size: 1.1rem; font-weight: 600;">Dietary Compliance</h3>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+              ${diets.map(d => {
+          const isCompliant = d.data?.is_compliant === true || d.data?.isCompliant === true;
+          const reason = d.data?.reason;
+          // If compliant, show green check. If not, show red X.
+          // If reason exists but compliant, it might be a warning/note, but usually reason implies non-compliance.
+          // Antigravity logic: if not compliant, show red and reason.
+
+          const bgColor = isCompliant ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)';
+          const borderColor = isCompliant ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)';
+          const icon = isCompliant ? '✓' : '✕';
+          const iconColor = isCompliant ? '#4ade80' : '#f87171';
+          const titleColor = isCompliant ? '#fff' : '#fca5a5';
+
+          return `
+                  <div style="
+                    background: ${bgColor};
+                    border: 1px solid ${borderColor};
+                    border-radius: 12px;
+                    padding: 16px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 8px;
+                  ">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                      <span style="font-weight: 600; color: ${titleColor}; font-size: 1rem;">${d.label}</span>
+                      <span style="
+                        background: ${isCompliant ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'};
+                        color: ${iconColor};
+                        width: 24px;
+                        height: 24px;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 0.9rem;
+                        font-weight: bold;
+                      ">${icon}</span>
+                    </div>
+                    ${!isCompliant && reason ? `
+                      <div style="font-size: 0.85rem; color: #fca5a5; line-height: 1.4;">
+                        ${reason.split(',').map(r => `• ${esc(r.trim())}`).join('<br>')}
+                      </div>
+                    ` : ''}
+                    ${isCompliant ? `
+                      <div style="font-size: 0.85rem; color: #86efac;">
+                        Complies with diet
+                      </div>
+                    ` : ''}
+                  </div>
+                `;
+        }).join('')}
             </div>
-            <div style="background: rgba(76,212,90,0.2); border: 1px solid rgba(76,212,90,0.4); border-radius: 6px; padding: 12px; margin-bottom: 12px;">
-              <div style="font-weight: 600; color: #4caf50; margin-bottom: 8px;">
-                ✓ Consensus List (${consensusDiff.groupSize} source${consensusDiff.groupSize !== 1 ? 's' : ''} agree) - Will be used:
-              </div>
-              <div style="font-size: 0.85rem; color: #e0e0e0; font-family: 'Monaco', 'Courier New', monospace; white-space: pre-wrap; word-wrap: break-word; padding: 0; margin: 0; text-indent: 0;">
-                ${esc(consensusDiff.ingredientsText)}
-              </div>
-              <button type="button" class="confirmConsensusBtn" style="
-                padding: 8px 16px;
-                margin-top: 12px;
-                background: #4c5ad4;
-                border: none;
-                border-radius: 6px;
-                color: #fff;
-                font-weight: 600;
-                cursor: pointer;
-                font-size: 0.85rem;
-                transition: all 0.2s;
-              ">Confirm and apply this ingredient list</button>
-            </div>
-            <div style="font-weight: 600; margin-top: 12px; margin-bottom: 8px; color: #ff9800;">
-              Other variations found (${consistencyInfo.differentSources - 1} total):
-            </div>
-            ${(consistencyInfo.differences && consistencyInfo.differences.length > 0 ? consistencyInfo.differences.filter(diff => {
-                // Filter out the consensus variation - compare by ingredientsText to handle cases where
-                // all variations have the same groupSize (e.g., all are 1)
-                // Exclude the consensus variation by comparing ingredientsText
-                if (consensusIngredients && diff.ingredientsText === consensusIngredients) {
-                  return false;
-                }
-                // Also exclude by groupSize if it matches AND ingredientsText matches
-                if (diff.groupSize === consistencyInfo.matchingSources && consensusIngredients && diff.ingredientsText === consensusIngredients) {
-                  return false;
-                }
-                return true;
-              }).map((diff, idx) => `
-              <div style="margin-bottom: 8px; padding: 12px; background: rgba(255,152,0,0.1); border-radius: 4px; border-left: 3px solid #ff9800;">
-                <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 4px;">
-                  Variation ${idx + 1} (${diff.groupSize} source${diff.groupSize !== 1 ? 's' : ''}): ${esc(diff.sourceName)}
-                </div>
-                <div style="font-size: 0.75rem; color: #ccc; font-family: 'Monaco', 'Courier New', monospace; white-space: pre-wrap; word-wrap: break-word; padding: 0; margin: 0; text-indent: 0;">
-                  ${esc(diff.ingredientsText)}
-                </div>
-                <button type="button" class="confirmVariationBtn" data-variation-index="${idx}" data-ingredients="${esc(diff.ingredientsText)}" style="
-                  padding: 8px 16px;
-                  margin-top: 12px;
-                  background: #6b7280;
-                  border: none;
-                  border-radius: 6px;
-                  color: #fff;
-                  font-weight: 600;
-                  cursor: pointer;
-                  font-size: 0.85rem;
-                  transition: all 0.2s;
-                ">Confirm and Apply This Ingredient List</button>
-              </div>
-            `).join('') : '')}
           </div>
         `;
-            } else if (consistencyInfo.matchingSources === consistencyInfo.totalSources && consistencyInfo.totalSources > 0) {
-              // All sources agree - show consolidated ingredient list
-              const consolidatedIngredients = ingredientList || (sources && sources.length > 0 ? sources[0].ingredientsText : '');
-              return `
-          <div style="background: rgba(76,212,90,0.2); border: 1px solid rgba(76,212,90,0.4); border-radius: 6px; padding: 12px; margin-top: 12px;">
-            <div style="font-weight: 600; color: #4caf50; margin-bottom: 8px;">
-              ✓ Consolidated Ingredient List (All ${consistencyInfo.totalSources} source${consistencyInfo.totalSources !== 1 ? 's' : ''} agree):
-            </div>
-            <div style="font-size: 0.85rem; color: #e0e0e0; font-family: 'Monaco', 'Courier New', monospace; white-space: pre-wrap; word-wrap: break-word; padding: 0; margin: 0; text-indent: 0;">
-              ${esc(consolidatedIngredients)}
-            </div>
-            <button type="button" class="confirmIngredientListBtn" style="
-              padding: 8px 16px;
-              margin-top: 12px;
-              background: #4c5ad4;
-              border: none;
-              border-radius: 6px;
-              color: #fff;
-              font-weight: 600;
-              cursor: pointer;
-              font-size: 0.85rem;
-              transition: all 0.2s;
-            ">Confirm and apply this ingredient list</button>
-          </div>
-        `;
-            } else if (consistencyInfo.differentSources && consistencyInfo.differentSources > 1) {
-              return `
-          <div style="font-size: 0.85rem; color: #ff9800; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,152,0,0.3);">
-            <div style="font-weight: 600; margin-bottom: 8px;">⚠️ Found ${consistencyInfo.differentSources} different ingredient variations:</div>
-            ${(consistencyInfo.differences && consistencyInfo.differences.length > 0 ? consistencyInfo.differences.map((diff, idx) => `
-              <div style="margin-bottom: 8px; padding: 12px; background: rgba(255,152,0,0.1); border-radius: 4px; border-left: 3px solid #ff9800;">
-                <div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 4px;">
-                  Variation ${idx + 1} (${diff.groupSize} source${diff.groupSize !== 1 ? 's' : ''}): ${esc(diff.sourceName)}
+      };
+
+      // Helper to render allergens
+      const renderAllergens = (allergens) => {
+        const hasAllergens = allergens && allergens.length > 0;
+        const allTop9 = ['Dairy', 'Egg', 'Peanut', 'Tree Nut', 'Soy', 'Wheat', 'Fish', 'Shellfish', 'Sesame'];
+
+        // Normalize detected allergens to match the list
+        const detectedNames = (allergens || []).map(a => {
+          const name = typeof a === 'string' ? a : a.name;
+          return name.toLowerCase().replace(/s$/, ''); // simple plural handling
+        });
+
+        // Helper to check if an allergen is detected
+        const isDetected = (allergen) => {
+          const normalized = allergen.toLowerCase();
+          // Handle aliases
+          if (normalized === 'dairy') {
+            return detectedNames.some(d => d.includes('milk') || d.includes('dairy'));
+          }
+          return detectedNames.some(d => d.includes(normalized) || normalized.includes(d));
+        };
+
+        return `
+          <div style="margin-bottom: 24px;">
+            <h3 style="margin: 0 0 12px 0; color: #fff; font-size: 1.1rem; font-weight: 600;">Allergen Check</h3>
+            
+            ${!hasAllergens ? `
+              <div style="
+                background: rgba(34,197,94,0.1);
+                border: 1px solid rgba(34,197,94,0.2);
+                border-radius: 12px;
+                padding: 16px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+              ">
+                <div style="
+                  width: 32px; height: 32px; border-radius: 50%;
+                  background: rgba(34,197,94,0.2);
+                  display: flex; align-items: center; justify-content: center;
+                  font-size: 1.2rem;
+                ">✓</div>
+                <div>
+                  <div style="font-weight: 600; color: #4ade80; font-size: 1rem;">No Top 9 Allergens Detected</div>
+                  <div style="font-size: 0.85rem; color: #86efac; margin-top: 2px;">Based on ingredient analysis</div>
                 </div>
-                <div style="font-size: 0.8rem; color: #ccc; font-family: 'Monaco', 'Courier New', monospace; white-space: pre-wrap; word-wrap: break-word; padding: 0; margin: 0; text-indent: 0;">
-                  ${esc(diff.ingredientsText)}
-                </div>
-                <button type="button" class="confirmVariationBtn" data-variation-index="${idx}" data-ingredients="${esc(diff.ingredientsText)}" style="
-                  padding: 8px 16px;
-                  margin-top: 12px;
-                  background: #6b7280;
-                  border: none;
-                  border-radius: 6px;
-                  color: #fff;
-                  font-weight: 600;
-                  cursor: pointer;
-                  font-size: 0.85rem;
-                  transition: all 0.2s;
-                ">Confirm and Apply This Ingredient List</button>
               </div>
-            `).join('') : '')}
-          </div>
-        `;
+            ` : `
+               <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                ${allTop9.map(allergen => {
+          const detected = isDetected(allergen);
+          // Find specific details if detected
+          let details = [];
+          if (detected) {
+            // 1. Try to extract from "Allergen (Trigger)" format in the allergens list
+            const found = allergens.find(a => {
+              const name = typeof a === 'string' ? a : a.name;
+              const n = name.toLowerCase();
+              const t = allergen.toLowerCase();
+              if (t === 'dairy') return n.includes('milk') || n.includes('dairy');
+              return n.includes(t) || t.includes(n);
+            });
+
+            if (found) {
+              const str = typeof found === 'string' ? found : found.name;
+              const match = str.match(/\(([^)]+)\)/);
+              if (match) {
+                details = match[1].split(',').map(s => s.trim());
+              } else if (typeof found === 'object' && found.triggers) {
+                details = found.triggers;
+              }
             }
-            return '';
-          })()}
+
+            // 2. If no details found, we rely on the AI to have provided them.
+            // If the AI failed to provide triggers, we show nothing rather than guessing.
+          }
+
+          const bgColor = detected ? 'rgba(239,68,68,0.1)' : 'rgba(34,197,94,0.1)';
+          const borderColor = detected ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)';
+          const titleColor = detected ? '#fca5a5' : '#fff';
+          const icon = detected ? '✕' : '✓';
+          const iconBg = detected ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)';
+          const iconColor = detected ? '#f87171' : '#4ade80';
+
+          return `
+                    <div style="
+                      background: ${bgColor};
+                      border: 1px solid ${borderColor};
+                      border-radius: 12px;
+                      padding: 16px;
+                      display: flex;
+                      flex-direction: column;
+                      gap: 8px;
+                    ">
+                      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <span style="font-weight: 600; color: ${titleColor}; font-size: 1rem;">${allergen}</span>
+                        <span style="
+                          background: ${iconBg};
+                          color: ${iconColor};
+                          width: 24px;
+                          height: 24px;
+                          border-radius: 50%;
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                          font-size: 0.9rem;
+                          font-weight: bold;
+                        ">${icon}</span>
+                      </div>
+                      ${detected && details && details.length > 0 ? `
+                        <div style="font-size: 0.85rem; color: #fca5a5; opacity: 0.9; line-height: 1.4;">
+                          ${details.map(t => `• ${esc(t)}`).join('<br>')}
+                        </div>
+                      ` : ''}
+                      ${!detected ? `
+                        <div style="font-size: 0.85rem; color: #86efac;">
+                          Safe for this allergen
+                        </div>
+                      ` : ''}
+                    </div>
+                  `;
+        }).join('')}
+              </div>
+            `}
+          </div>
+        `;
+      };
+
+      // Helper to render unified ingredient list
+      const renderIngredientList = (list, rowIdx) => {
+        let ingredients = Array.isArray(list) ? list : [list];
+
+        // Robustness: if single item contains commas, split it
+        if (ingredients.length === 1 && typeof ingredients[0] === 'string' && ingredients[0].includes(',')) {
+          ingredients = ingredients[0].split(',').map(s => s.trim()).filter(s => s.length > 0);
+        }
+
+        const text = ingredients.join(', ');
+
+        return `
+          <div style="margin-bottom: 24px;">
+            <h3 style="margin: 0 0 12px 0; color: #fff; font-size: 1.1rem; font-weight: 600;">Unified Ingredient List</h3>
+            <div style="
+              background: rgba(30, 41, 59, 0.5);
+              border: 1px solid rgba(148, 163, 184, 0.2);
+              border-radius: 12px;
+              padding: 16px;
+            ">
+              <p id="unified-ingredient-list-${rowIdx}" 
+                 data-ingredients="${encodeURIComponent(JSON.stringify(ingredients))}"
+                 style="
+                margin: 0;
+                color: #e2e8f0;
+                font-size: 0.95rem;
+                line-height: 1.6;
+              ">${esc(text)}</p>
+            </div>
+          </div>
+        `;
+      };
+
+      // Helper to render source consistency
+      const renderSourceConsistency = (consistency, rowIdx) => {
+        if (!consistency) return '';
+        const { totalSources, matchingSources, differentSources, differences } = consistency;
+
+        // Calculate score/color
+        const percent = totalSources > 0 ? (matchingSources / totalSources) * 100 : 0;
+        let color = '#4ade80'; // green
+        let label = 'High Consistency';
+
+        if (percent === 100 || matchingSources === totalSources) {
+          label = 'No discrepancies';
+        } else if (percent < 50) {
+          color = '#f87171'; // red
+          label = 'Low Consistency';
+        } else if (percent < 80) {
+          color = '#facc15'; // yellow
+          label = 'Moderate Consistency';
+        }
+
+        return `
+          <div style="margin-bottom: 24px;">
+            ${(!differences || differences.length === 0) ? `
+              <h3 style="margin: 0 0 12px 0; color: #4ade80; font-size: 1.1rem; font-weight: 600;">No ingredient discrepancies</h3>
+            ` : `
+              <h3 style="margin: 0 0 12px 0; color: #fff; font-size: 1.1rem; font-weight: 600;">Source Consistency</h3>
+            `}
+            
+            ${differences && differences.length > 0 ? `
+              <div style="
+                background: rgba(255, 166, 0, 0.05); 
+                border: 1px solid rgba(255, 166, 0, 0.1); 
+                border-radius: 8px; 
+                padding: 12px; 
+                margin-bottom: 16px; 
+                color: #fbbf24; 
+                font-size: 0.9rem;
+              ">
+                Found ${differences.length} discrepancies between sources.
+              </div>
+            ` : ''}
+
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+              ${(differences || []).map(diff => `
+                <div style="
+                  background: rgba(30, 41, 59, 0.5);
+                  border: 1px solid rgba(148, 163, 184, 0.2);
+                  border-radius: 8px;
+                  padding: 16px;
+                ">
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                    <h4 style="margin: 0; color: #fff; font-size: 1rem; font-weight: 600;">${esc(diff.ingredient)}</h4>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                      <span style="color: #94a3b8; font-size: 0.8rem;">Include</span>
+                      <input type="checkbox" checked 
+                        onchange="toggleDiscrepancyIngredient(this, ${esc(JSON.stringify(diff.ingredient))}, ${rowIdx})"
+                        style="
+                          width: 16px; 
+                          height: 16px; 
+                          accent-color: #10b981; 
+                          cursor: pointer;
+                        "
+                      >
+                    </label>
+                  </div>
+                  
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div>
+                      <div style="color: #4ade80; font-size: 0.75rem; font-weight: 700; margin-bottom: 8px; text-transform: uppercase;">Present In</div>
+                      <ul style="margin: 0; padding: 0; list-style: none;">
+                        ${diff.presentIn.map(source => `
+                          <li style="
+                            color: #94a3b8; 
+                            font-size: 0.85rem; 
+                            margin-bottom: 4px; 
+                            display: flex; 
+                            align-items: center; 
+                            gap: 6px;
+                          ">
+                            <span style="width: 4px; height: 4px; border-radius: 50%; background: #4ade80;"></span>
+                            ${esc(new URL(source).hostname.replace('www.', ''))}
+                          </li>
+                        `).join('')}
+                      </ul>
+                    </div>
+                    
+                    <div>
+                      <div style="color: #f87171; font-size: 0.75rem; font-weight: 700; margin-bottom: 8px; text-transform: uppercase;">Missing In</div>
+                      <ul style="margin: 0; padding: 0; list-style: none;">
+                        ${diff.missingIn.map(source => `
+                          <li style="
+                            color: #94a3b8; 
+                            font-size: 0.85rem; 
+                            margin-bottom: 4px; 
+                            display: flex; 
+                            align-items: center; 
+                            gap: 6px;
+                          ">
+                            <span style="width: 4px; height: 4px; border-radius: 50%; background: #f87171;"></span>
+                            ${esc(new URL(source).hostname.replace('www.', ''))}
+                          </li>
+                        `).join('')}
+                      </ul>
+                    </div>
+                  </div>
+                  
+                  ${diff.note ? `
+                    <div style="
+                      margin-top: 12px; 
+                      padding-top: 12px; 
+                      border-top: 1px solid rgba(148, 163, 184, 0.1); 
+                      color: #64748b; 
+                      font-size: 0.85rem; 
+                      font-style: italic;
+                    ">
+                      Note: ${esc(diff.note)}
+                    </div>
+                  ` : ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      };
+
+      // Helper to render source details
+      const renderSourceDetails = (sources) => {
+        if (!sources || sources.length === 0) return '';
+
+        return `
+          <div style="margin-bottom: 24px;">
+            <h3 style="margin: 0 0 12px 0; color: #fff; font-size: 1.1rem; font-weight: 600;">Analyzed Sources</h3>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              ${sources.map(s => {
+          const domain = s.url ? new URL(s.url).hostname.replace('www.', '') : 'Unknown Source';
+          return `
+                  <a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    background: rgba(30, 41, 59, 0.5);
+                    border: 1px solid rgba(148, 163, 184, 0.2);
+                    border-radius: 8px;
+                    padding: 12px;
+                    text-decoration: none;
+                    transition: background 0.2s;
+                  " onmouseover="this.style.background='rgba(30, 41, 59, 0.8)'" onmouseout="this.style.background='rgba(30, 41, 59, 0.5)'">
+                    <div style="display: flex; align-items: center; gap: 10px; overflow: hidden;">
+                      <div style="
+                        width: 24px; height: 24px; border-radius: 4px;
+                        background: rgba(148, 163, 184, 0.1);
+                        display: flex; align-items: center; justify-content: center;
+                        font-size: 0.8rem; color: #94a3b8;
+                      ">🔗</div>
+                      <div style="display: flex; flex-direction: column; overflow: hidden;">
+                        <span style="color: #e2e8f0; font-size: 0.9rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                          ${esc(domain)}
+                        </span>
+                        <span style="color: #94a3b8; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                          ${s.ingredients ? `${s.ingredients.length} ingredients` : (s.ingredientsText ? `${s.ingredientsText.split(',').length} ingredients` : 'No ingredients found')}
+                        </span>
+                      </div>
+                    </div>
+                    <span style="color: #64748b; font-size: 1.2rem;">›</span>
+                  </a>
+                  ${s.ingredientsText ? `
+                    <div style="
+                      margin-top: -4px;
+                      margin-bottom: 8px;
+                      margin-left: 12px;
+                      margin-right: 12px;
+                      padding: 10px;
+                      background: rgba(15, 23, 42, 0.6);
+                      border: 1px solid rgba(148, 163, 184, 0.1);
+                      border-top: none;
+                      border-bottom-left-radius: 8px;
+                      border-bottom-right-radius: 8px;
+                      font-size: 0.8rem;
+                      color: #94a3b8;
+                      line-height: 1.4;
+                    ">
+                      <div style="font-weight: 600; margin-bottom: 4px; color: #64748b; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Source Ingredients:</div>
+                      ${esc(s.ingredientsText)}
+                    </div>
+                  ` : ''}
+                `;
+        }).join('')}
+            </div>
+          </div>
+        `;
+      };
+
+      modalContent.innerHTML = `
+        <div style="margin-bottom: 24px;">
+          <div style="display: flex; align-items: flex-start; gap: 16px;">
+            ${productImage ? `
+              <div style="flex-shrink: 0;">
+                <img src="${esc(productImage)}" alt="${esc(productName)}"
+                     style="width: 80px; height: 80px; object-fit: contain; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.2); background: #fff;"
+                     onerror="console.log('Image load error:', this.src); this.style.display='none';">
+              </div>
+            ` : `
+              <div style="
+                flex-shrink: 0; width: 80px; height: 80px; border-radius: 12px;
+                background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+                display: flex; align-items: center; justify-content: center;
+                font-size: 2rem;
+              ">📦</div>
+            `}
+            <div style="flex: 1;">
+              <h2 style="margin: 0 0 4px 0; font-size: 1.4rem; color: #fff; font-weight: 700; line-height: 1.2;">
+                ${esc(productName)}
+              </h2>
+              ${suggestion.brand ? `
+                <div style="color: #94a3b8; font-size: 0.95rem; font-weight: 500;">${esc(suggestion.brand)}</div>
+              ` : ''}
+              <div style="margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); padding: 4px 10px; border-radius: 20px;">
+                <span style="width: 8px; height: 8px; background: #4ade80; border-radius: 50%;"></span>
+                <span style="color: #4ade80; font-size: 0.85rem; font-weight: 600;">${sources.length} Verified Sources</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        ${renderDietaryCompliance(dietaryCompliance)}
+        ${renderAllergens(top9Allergens)}
+        ${renderIngredientList(unifiedIngredientList.length > 0 ? unifiedIngredientList : ingredientList, rowIdx)}
+        ${renderSourceConsistency(consistencyInfo, rowIdx)}
+        ${renderSourceDetails(sources)}
+
+      <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+        <button type="button" class="reportIssueBtn" style="
+          padding: 12px 20px;
+          background: transparent;
+          border: 1px solid rgba(248, 113, 113, 0.3);
+          border-radius: 8px;
+          color: #f87171;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+          margin-right: auto;
+        ">Something doesn't look right</button>
+
+        <button type="button" class="cancelBtn" style="
+          padding: 12px 20px;
+          background: #4c5ad4;
+          border: 1px solid #4c5ad4;
+          border-radius: 8px;
+          color: #fff;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+        ">Cancel</button>
+
+        <button type="button" class="confirmApplyBtn" style="
+          padding: 12px 24px;
+          background: #10b981;
+          border: 1px solid #10b981;
+          border-radius: 8px;
+          color: #fff;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s;
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        ">Confirm & Apply</button>
       </div>
-    ` : ''}
-
-
-    <div style="margin-bottom: 24px;">
-      <div style="font-weight: 600; color: #4c5ad4; font-size: 1.05rem; margin-bottom: 12px;">
-        Sources Verified (${sources.length} total):
-      </div>
-      <p style="font-size: 0.85rem; color: #999; margin-bottom: 12px; font-style: italic;">
-        ⚠️ Note: URLs are provided for reference. Some links may be outdated or inaccessible due to website changes.
-      </p>
-      ${sourcesHtml}
-    </div>
-
-    <div style="display: flex; gap: 12px; justify-content: flex-end;">
-      <button type="button" class="cancelBtn" style="
-        padding: 14px 24px;
-        background: rgba(255,255,255,0.1);
-        border: 1px solid rgba(255,255,255,0.2);
-        border-radius: 8px;
-        color: #fff;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.2s;
-      ">Cancel</button>
-    </div>
   `;
 
       modal.appendChild(modalContent);
       document.body.appendChild(modal);
 
-      // Close modal handlers
+      // Event handlers
       const cancelBtn = modalContent.querySelector('.cancelBtn');
+      const confirmApplyBtn = modalContent.querySelector('.confirmApplyBtn');
+      const reportIssueBtn = modalContent.querySelector('.reportIssueBtn');
+      const discrepancyCheckboxes = modalContent.querySelectorAll('input[type="checkbox"][onchange^="toggleDiscrepancyIngredient"]');
+
+      // Handle Report Issue
+      if (reportIssueBtn) {
+        reportIssueBtn.addEventListener('click', () => {
+          const reportModal = document.createElement('div');
+          reportModal.style.cssText = `
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8); z-index: 10002;
+            display: flex; align-items: center; justify-content: center;
+          `;
+
+          reportModal.innerHTML = `
+            <div style="background: #1e293b; padding: 24px; border-radius: 12px; width: 90%; max-width: 500px; border: 1px solid rgba(148, 163, 184, 0.2);">
+              <h3 style="color: #fff; margin: 0 0 16px 0;">Report Issue</h3>
+              <p style="color: #94a3b8; margin-bottom: 16px; font-size: 0.9rem;">Please describe what's wrong with the analysis.</p>
+              <textarea style="width: 100%; height: 100px; background: rgba(0,0,0,0.2); border: 1px solid rgba(148, 163, 184, 0.2); border-radius: 8px; color: #fff; padding: 12px; margin-bottom: 16px; resize: vertical;" placeholder="e.g. The ingredient list is missing..."></textarea>
+              <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                <button class="cancelReportBtn" style="padding: 8px 16px; background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 6px; cursor: pointer;">Cancel</button>
+                <button class="sendReportBtn" style="padding: 8px 16px; background: #f87171; border: none; color: #fff; border-radius: 6px; cursor: pointer; font-weight: 600;">Send Report</button>
+              </div>
+            </div>
+          `;
+
+          document.body.appendChild(reportModal);
+
+          reportModal.querySelector('.cancelReportBtn').onclick = () => document.body.removeChild(reportModal);
+
+          reportModal.querySelector('.sendReportBtn').onclick = async function () {
+            const msg = reportModal.querySelector('textarea').value;
+            if (!msg) return;
+
+            this.textContent = 'Sending...';
+            this.disabled = true;
+
+            try {
+              await fetch('https://fgoiyycctnwnghrvsilt.supabase.co/functions/v1/report-issue', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  message: msg,
+                  productName: productName,
+                  barcode: barcode,
+                  analysisDetails: barcodeResult
+                })
+              });
+
+              document.body.removeChild(reportModal);
+              aiAssistSetStatus('Issue reported. Thank you!', 'success');
+            } catch (e) {
+              console.error('Failed to report issue:', e);
+              this.textContent = 'Error';
+              setTimeout(() => {
+                document.body.removeChild(reportModal);
+                aiAssistSetStatus('Failed to send report.', 'error');
+              }, 1000);
+            }
+          };
+        });
+      }
+
+      // Handle Confirm & Apply button
+      if (confirmApplyBtn) {
+        let confirmed = false;
+
+        confirmApplyBtn.addEventListener('mouseenter', () => {
+          if (!confirmed) confirmApplyBtn.style.background = '#5d6ae5';
+        });
+
+        confirmApplyBtn.addEventListener('mouseleave', () => {
+          if (!confirmed) confirmApplyBtn.style.background = '#4c5ad4';
+        });
+
+        confirmApplyBtn.addEventListener('click', async () => {
+          confirmed = true;
+          confirmApplyBtn.style.background = '#4caf50';
+          confirmApplyBtn.innerHTML = '✓ Applied!';
+          confirmApplyBtn.style.cursor = 'default';
+          confirmApplyBtn.disabled = true;
+
+          // Get selected discrepancy ingredients
+          const selectedDiffs = [];
+          discrepancyCheckboxes.forEach(cb => {
+            if (cb.checked) {
+              selectedDiffs.push(cb.dataset.ingredient);
+            }
+          });
+
+          // Build final ingredient list including selected discrepancies
+          // The unified list displayed in the UI is the source of truth
+          const listEl = document.getElementById(`unified-ingredient-list-${rowIdx}`);
+          let finalIngredients = [];
+          if (listEl) {
+            try {
+              finalIngredients = JSON.parse(decodeURIComponent(listEl.dataset.ingredients || '[]'));
+              // Robustness check
+              if (finalIngredients.length === 1 && typeof finalIngredients[0] === 'string' && finalIngredients[0].includes(',')) {
+                finalIngredients = finalIngredients[0].split(',').map(s => s.trim()).filter(s => s.length > 0);
+              }
+            } catch (e) {
+              console.error('Error parsing final ingredients:', e);
+              finalIngredients = [...unifiedIngredientList];
+            }
+          } else {
+            finalIngredients = [...unifiedIngredientList];
+          }
+
+          const finalIngredientList = finalIngredients.join(', ');
+
+          // Update suggestion with the final list
+          suggestion.ingredientsList = [finalIngredientList];
+
+          // Use already-analyzed allergens and diets from antigravity
+          // Use already-analyzed allergens and diets from antigravity
+          const allergens = top9Allergens.map(a => {
+            // Handle object format {name: "...", triggers: [...]}
+            if (typeof a === 'object' && a.name) {
+              return a.name;
+            }
+            // Handle string format "Allergen (trigger)"
+            if (typeof a === 'string') {
+              const match = a.match(/^([^(]+)(?:\s*\(([^)]+)\))?$/);
+              if (match) {
+                return match[1].trim();
+              }
+              return a;
+            }
+            return String(a);
+          });
+
+          // Convert dietary compliance to diets array
+          // Handle different naming conventions: camelCase vs snake_case, lowercase vs Capitalized keys
+          let diets = [];
+          if (dietaryCompliance) {
+            const getCompliant = (key1, key2) => {
+              const entry = dietaryCompliance[key1] || dietaryCompliance[key2];
+              return entry?.isCompliant === true || entry?.is_compliant === true;
+            };
+            if (getCompliant('vegan', 'Vegan')) diets.push('Vegan');
+            if (getCompliant('vegetarian', 'Vegetarian')) diets.push('Vegetarian');
+            if (getCompliant('pescatarian', 'Pescatarian')) diets.push('Pescatarian');
+            if (getCompliant('glutenFree', 'Gluten-free')) diets.push('Gluten-free');
+          }
+
+          // Fallback to diets array from barcodeResult or suggestion if dietaryCompliance yielded nothing
+          if (diets.length === 0) {
+            const fallbackDiets = barcodeResult.diets || suggestion.diets || [];
+            if (Array.isArray(fallbackDiets) && fallbackDiets.length > 0) {
+              diets = fallbackDiets.map(d => {
+                // Normalize to proper casing
+                const lower = (d || '').toLowerCase().trim();
+                const proper = DIETS.find(pd => pd.toLowerCase() === lower);
+                return proper || d;
+              });
+            }
+          }
+
+          // Update suggestion with allergens and diets
+          suggestion.allergens = allergens;
+          suggestion.diets = diets;
+
+          // Close modal and apply
+          document.body.removeChild(modal);
+          closeModal();
+
+          const sourceCount = sources.length;
+          aiAssistSetStatus(`Product confirmed from ${sourceCount} source${sourceCount !== 1 ? 's' : ''}.`, 'success');
+
+          setTimeout(() => {
+            applyBrandSuggestionConfirmed(rowIdx, suggestion);
+          }, 0);
+        });
+      }
+
+      // Legacy handlers for old button types (keeping for backwards compatibility)
       const confirmBtn = modalContent.querySelector('.confirmBtn');
       const confirmConsensusBtn = modalContent.querySelector('.confirmConsensusBtn');
       const confirmIngredientListBtn = modalContent.querySelector('.confirmIngredientListBtn');
       const confirmVariationBtns = modalContent.querySelectorAll('.confirmVariationBtn');
+      const confirmGroupBtns = modalContent.querySelectorAll('.confirmGroupIngredientListBtn');
+
+      // Handle grouped ingredient list confirmation buttons
+      confirmGroupBtns.forEach(btn => {
+        let groupConfirmed = false;
+
+        btn.addEventListener('mouseenter', () => {
+          if (!groupConfirmed) {
+            btn.style.background = btn.dataset.groupIdx === '0' ? '#5d6ae5' : '#f59e0b';
+          }
+        });
+
+        btn.addEventListener('mouseleave', () => {
+          if (!groupConfirmed) {
+            btn.style.background = btn.dataset.groupIdx === '0' ? '#4c5ad4' : '#ff9800';
+          }
+        });
+
+        btn.addEventListener('click', async () => {
+          groupConfirmed = true;
+          btn.style.background = '#4caf50';
+          btn.innerHTML = '✓ Confirmed';
+          btn.style.cursor = 'default';
+
+          // Get ingredient text from the parent group div
+          const groupDiv = btn.closest('[data-ingredients-text]');
+          const groupIngredientList = groupDiv ? groupDiv.dataset.ingredientsText : (ingredientList || '');
+
+          // Show loading message next to button
+          const loadingMsg = document.createElement('span');
+          loadingMsg.textContent = ' Loading...';
+          loadingMsg.style.cssText = 'color: #9ca3af; font-size: 0.85rem; font-style: italic;';
+          btn.parentElement.appendChild(loadingMsg);
+
+          // Update suggestion with selected ingredient list
+          suggestion.ingredientsList = [groupIngredientList];
+
+          try {
+            const analysisResult = await window.supabaseClient.functions.invoke('analyze-brand-allergens', {
+              body: {
+                ingredientText: groupIngredientList,
+                productName: productName,
+                labels: [],
+                categories: []
+              }
+            });
+
+            if (!analysisResult.error && analysisResult.data) {
+              const { allergens, diets } = analysisResult.data;
+
+              if (loadingMsg.parentElement) {
+                loadingMsg.remove();
+              }
+
+              showAllergenDietPreview(rowIdx, suggestion, {
+                allergens: allergens || [],
+                diets: diets || [],
+                ingredientList: groupIngredientList,
+                productName: productName
+              });
+
+              document.body.removeChild(modal);
+              closeModal();
+              return;
+            }
+          } catch (err) {
+            console.error('Failed to analyze allergens/diets:', err);
+            if (loadingMsg.parentElement) {
+              loadingMsg.remove();
+            }
+          }
+
+          // If analysis fails, proceed normally
+          if (loadingMsg.parentElement) {
+            loadingMsg.remove();
+          }
+          document.body.removeChild(modal);
+          closeModal();
+
+          const sourceCount = sources.length;
+          aiAssistSetStatus(`Product found! Verified from ${sourceCount} source${sourceCount !== 1 ? 's' : ''}.`, 'success');
+
+          setTimeout(() => {
+            applyBrandSuggestionConfirmed(rowIdx, suggestion);
+          }, 0);
+        });
+      });
 
       // Handle ingredient list confirmation button (for non-conflict cases)
       if (confirmIngredientListBtn) {
@@ -13444,7 +14987,7 @@
         color: #a8b2d6;
         text-align: left;
         line-height: 1.5;
-        display: none;
+        display: block;
       "></div>
       <div style="
         margin-top: 12px;
@@ -13480,6 +15023,7 @@
       if (!resultsDiv) return;
 
       const logsDiv = resultsDiv.querySelector('.aiRowSearchLogs');
+      console.log(`[updateRowSearchLogs] rowIdx=${rowIdx} logsDiv=${!!logsDiv} logs=${logs?.length}`);
       if (!logsDiv) return;
 
       if (logs && logs.length > 0) {
@@ -13555,17 +15099,84 @@
 
         console.log('Request body:', JSON.stringify(requestBody, null, 2));
 
-        const result = await window.supabaseClient.functions.invoke('verify-brand-sources', {
-          body: requestBody
+        // Use fetch with streaming for real-time logs
+        const functionUrl = `${SUPABASE_URL}/functions/v1/verify-brand-sources`;
+        const response = await fetch(functionUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody)
         });
 
-        console.log('Function response received:', result);
+        if (!response.ok) {
+          throw new Error(`Function error: ${response.statusText}`);
+        }
 
-        // Clear progress updater
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let result = { data: null, error: null };
+        let allLogs = [];
+
+        // Clear progress updater as we'll use real logs now
         clearInterval(progressUpdater);
         progressTimers.forEach(timer => clearTimeout(timer));
 
-        // Parse search logs for real-time progress updates
+        // Show logs container
+        updateRowSearchLogs(rowIdx, ['Starting search stream...']);
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            console.log('[Stream] Reader done');
+            break;
+          }
+
+          const chunkStr = decoder.decode(value, { stream: true });
+          console.log(`[Stream] Received chunk (${value.length} bytes):`, chunkStr);
+          buffer += chunkStr;
+          const chunks = buffer.split('\n\n');
+          buffer = chunks.pop(); // Keep incomplete chunk
+
+          console.log(`[Stream] Processing ${chunks.length} complete events`);
+
+          for (const chunk of chunks) {
+            const lines = chunk.split('\n');
+            let event = null;
+            let data = null;
+
+            for (const line of lines) {
+              if (line.startsWith('event: ')) {
+                event = line.substring(7).trim();
+              } else if (line.startsWith('data: ')) {
+                try {
+                  data = JSON.parse(line.substring(6).trim());
+                } catch (e) {
+                  console.error('[Stream] Error parsing JSON data:', e, line);
+                }
+              }
+            }
+
+            console.log(`[Stream] Parsed event: ${event}`, data);
+
+            if (event && data) {
+              if (event === 'log') {
+                allLogs.push(data.message);
+                updateRowSearchLogs(rowIdx, allLogs); // Pass all logs to render full history
+              } else if (event === 'result') {
+                result.data = data;
+              } else if (event === 'error') {
+                result.error = data;
+              }
+            }
+          }
+        }
+
+        console.log('Function response received:', result);
+
+        // Parse search logs for real-time progress updates (fallback if stream didn't update UI enough)
         const verificationData = result.data;
         if (verificationData && verificationData.searchLogs && verificationData.searchLogs.length > 0) {
           // Update progress based on log milestones
@@ -14499,21 +16110,22 @@
         const baseAiDetectedAllergens = new Set((allData[rowIdx].aiDetectedAllergens || []).map(a => norm(a)));
         const baseAiDetectedDiets = new Set(allData[rowIdx].aiDetectedDiets || []);
 
-        // Merge brand allergens/diets into base (union)
-        brandAllergens.forEach(a => {
-          baseAllergens.add(a);
-          baseAiDetectedAllergens.add(a);
-        });
-        brandDiets.forEach(d => {
-          baseDiets.add(d);
-          baseAiDetectedDiets.add(d);
-        });
+        // OVERWRITE base allergens/diets with brand allergens/diets
+        // This clears any previous AI-detected allergens from the text (e.g. "sesame seeds")
+        // and ensures only the brand's allergens are present.
+        allData[rowIdx].allergens = Array.from(brandAllergens);
 
-        // Update with merged sets
-        allData[rowIdx].allergens = Array.from(baseAllergens);
-        allData[rowIdx].diets = Array.from(baseDiets);
-        allData[rowIdx].aiDetectedAllergens = Array.from(baseAiDetectedAllergens);
-        allData[rowIdx].aiDetectedDiets = Array.from(baseAiDetectedDiets);
+        // Normalize diets to match DIETS constant casing
+        const normalizedBrandDiets = Array.from(brandDiets).map(d => {
+          const lower = d.toLowerCase().trim();
+          const proper = DIETS.find(pd => pd.toLowerCase() === lower);
+          return proper || d;
+        });
+        console.log('Applying brand diets (normalized):', normalizedBrandDiets);
+
+        allData[rowIdx].diets = normalizedBrandDiets;
+        allData[rowIdx].aiDetectedAllergens = Array.from(brandAllergens);
+        allData[rowIdx].aiDetectedDiets = normalizedBrandDiets;
         allData[rowIdx].confirmed = false;
 
         // Ensure diets/allergens stay consistent (e.g., vegan removes dairy)
@@ -15688,62 +17300,126 @@
       const el = document.getElementById('topbar'); el.innerHTML = '';
       const isQrExperience = !!(state.qr || urlQR);
       document.body.classList.toggle('qrMode', isQrExperience);
+      const OWNER_EMAIL = 'matt.29.ds@gmail.com';
+      const isOwner = state.user?.email === OWNER_EMAIL;
+      const isManager = state.user?.role === 'manager';
+
+      // Check editor mode from localStorage - defined early for brand click
+      const currentMode = localStorage.getItem('clarivoreManagerMode') || 'editor';
+      const isEditorMode = currentMode === 'editor';
+
       const brand = div(`<img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt=""><span>Clarivore</span>`, 'brand');
-      brand.onclick = () => window.location.href = 'restaurants.html';
+      // Go to dashboard in editor mode, home page in customer mode
+      brand.onclick = () => {
+        if ((isOwner || isManager) && isEditorMode) {
+          window.location.href = 'manager-dashboard.html';
+        } else {
+          window.location.href = 'home.html';
+        }
+      };
       brand.style.cursor = 'pointer';
       el.appendChild(brand);
+      const managerRestaurants = state.user?.managerRestaurants || [];
+
       if (!isQrExperience) {
         const navWrap = div('', 'topNav');
         const tabs = div('', 'tabs');
         const navStructure = [];
-        const OWNER_EMAIL = 'matt.29.ds@gmail.com';
-        const isOwner = state.user?.email === OWNER_EMAIL;
-        const isManager = state.user?.role === 'manager';
 
-        const isManagerView = state.user?.loggedIn && isManager && !isOwner;
-
-        if (isManagerView) {
+        if (isOwner && isEditorMode) {
+          // Owner in editor mode - same nav as admin-dashboard
+          navStructure.push({ t: 'Admin', to: '/admin-dashboard', external: true });
+          navStructure.push({ t: 'Dashboard', to: '/manager-dashboard', external: true });
+          // Webpage editor dropdown
+          if (managerRestaurants.length === 1) {
+            navStructure.push({ t: 'Webpage editor', to: `restaurant.html?slug=${encodeURIComponent(managerRestaurants[0].slug)}&edit=1`, external: true, fullUrl: true });
+          } else if (managerRestaurants.length > 1) {
+            navStructure.push({
+              type: 'group',
+              label: 'Webpage editor',
+              items: managerRestaurants.map(r => ({
+                t: r.name,
+                to: `restaurant.html?slug=${encodeURIComponent(r.slug)}&edit=1`,
+                external: true,
+                fullUrl: true
+              }))
+            });
+          }
           navStructure.push({
             type: 'group',
-            label: 'Management',
+            label: 'Tablet pages',
             items: [
-              { t: 'My restaurants', to: '/restaurants' },
-              { t: 'Server monitor', to: '/server-tablet', external: true },
-              { t: 'Kitchen monitor', to: '/kitchen-tablet', external: true }
+              { t: 'Server tablet', to: '/server-tablet', external: true },
+              { t: 'Kitchen tablet', to: '/kitchen-tablet', external: true }
             ]
           });
-        } else {
+          navStructure.push({ t: 'Account settings', to: '/account', external: true });
+        } else if (isOwner && !isEditorMode) {
+          // Owner in customer mode
+          navStructure.push({ t: 'Home', to: '/home', external: true });
           navStructure.push({
             type: 'group',
             label: 'By restaurant',
             items: [
-              { t: 'All restaurants', to: '/restaurants' },
-              { t: 'Favorite restaurants', to: '/favorites' }
+              { t: 'All restaurants', to: '/restaurants', external: true },
+              { t: 'Favorite restaurants', to: '/favorites', external: true }
             ]
           });
           navStructure.push({
             type: 'group',
             label: 'By dish',
             items: [
-              { t: 'Dish search', to: '/dish-search' },
-              { t: 'My dishes', to: '/loved-dishes' }
+              { t: 'Dish search', to: '/dish-search', external: true },
+              { t: 'My dishes', to: '/my-dishes', external: true }
             ]
           });
-          navStructure.push({ t: 'Our mission', to: '/our-mission', external: true });
-          navStructure.push({ t: 'How it works', to: '/how-it-works', external: true });
-
-          if (state.user?.loggedIn && isOwner) {
+          navStructure.push({ t: 'Account settings', to: '/account', external: true });
+        } else if (isManager && isEditorMode) {
+          // Manager in editor mode
+          navStructure.push({ t: 'Dashboard', to: '/manager-dashboard', external: true });
+          if (managerRestaurants.length === 1) {
+            navStructure.push({ t: 'Webpage editor', to: `restaurant.html?slug=${encodeURIComponent(managerRestaurants[0].slug)}&edit=1`, external: true, fullUrl: true });
+          } else if (managerRestaurants.length > 1) {
             navStructure.push({
               type: 'group',
-              label: 'Management',
-              items: [
-                { t: 'Admin', to: '/admin-dashboard', external: true },
-                { t: 'Manager dashboard', to: '/manager-dashboard', external: true },
-                { t: 'Server monitor', to: '/server-tablet', external: true },
-                { t: 'Kitchen monitor', to: '/kitchen-tablet', external: true }
-              ]
+              label: 'Webpage editor',
+              items: managerRestaurants.map(r => ({
+                t: r.name,
+                to: `restaurant.html?slug=${encodeURIComponent(r.slug)}&edit=1`,
+                external: true,
+                fullUrl: true
+              }))
             });
           }
+          navStructure.push({
+            type: 'group',
+            label: 'Tablet pages',
+            items: [
+              { t: 'Server tablet', to: '/server-tablet', external: true },
+              { t: 'Kitchen tablet', to: '/kitchen-tablet', external: true }
+            ]
+          });
+          navStructure.push({ t: 'Account settings', to: '/account', external: true });
+        } else {
+          // Regular user or manager in customer mode
+          navStructure.push({ t: 'Home', to: '/home', external: true });
+          navStructure.push({
+            type: 'group',
+            label: 'By restaurant',
+            items: [
+              { t: 'All restaurants', to: '/restaurants', external: true },
+              { t: 'Favorite restaurants', to: '/favorites', external: true }
+            ]
+          });
+          navStructure.push({
+            type: 'group',
+            label: 'By dish',
+            items: [
+              { t: 'Dish search', to: '/dish-search', external: true },
+              { t: 'My dishes', to: '/my-dishes', external: true }
+            ]
+          });
+          navStructure.push({ t: 'Account settings', to: '/account', external: true });
         }
         navStructure.forEach(item => {
           if (item.type === 'group') {
@@ -15754,7 +17430,9 @@
             item.items.forEach(sub => {
               const b = div(sub.t, 'tab');
               b.onclick = () => {
-                if (sub.external) {
+                if (sub.fullUrl) {
+                  window.location.href = sub.to;
+                } else if (sub.external) {
                   window.location.href = sub.to + '.html';
                 } else {
                   send({ type: 'navigate', to: sub.to });
@@ -15778,17 +17456,32 @@
             tabs.appendChild(b);
           }
         });
-        const acct = div(state.user?.loggedIn ? 'Account settings' : 'Sign in', 'tab');
-        acct.onclick = () => {
-          if (state.user?.loggedIn) {
-            send({ type: 'navigate', to: '/accounts' });
-          } else {
-            requestSignIn();
-          }
-        };
-        tabs.appendChild(acct);
         navWrap.appendChild(tabs);
         el.appendChild(navWrap);
+      }
+
+      // Mode toggle for managers and owner
+      const modeToggleContainer = document.getElementById('modeToggleContainer');
+      if (modeToggleContainer && state.user?.loggedIn && (isManager || isOwner)) {
+        modeToggleContainer.style.display = 'flex';
+        modeToggleContainer.innerHTML = `
+          <span class="mode-toggle-label">${isEditorMode ? 'Editor mode' : 'Customer mode'}</span>
+          <div class="mode-toggle ${isEditorMode ? 'active' : ''}" id="modeToggle" title="Toggle between Editor and Customer mode"></div>
+        `;
+        const toggle = document.getElementById('modeToggle');
+        if (toggle) {
+          toggle.onclick = () => {
+            if (isEditorMode) {
+              localStorage.setItem('clarivoreManagerMode', 'customer');
+              window.location.href = 'home.html';
+            } else {
+              localStorage.setItem('clarivoreManagerMode', 'editor');
+              window.location.href = 'manager-dashboard.html';
+            }
+          };
+        }
+      } else if (modeToggleContainer) {
+        modeToggleContainer.style.display = 'none';
       }
     }
 
@@ -16453,8 +18146,14 @@
 
       // Track dish interaction for analytics
       const trackedDishes = new Set(); // Prevent duplicate tracking in same session
+      const OWNER_EMAIL = 'matt.29.ds@gmail.com';
       async function trackDishInteraction(item) {
         if (!item || !state.user?.loggedIn) return;
+
+        // Don't track interactions from managers or owner - they're editing, not browsing
+        const isOwner = state.user?.email === OWNER_EMAIL;
+        const isManager = state.user?.role === 'manager';
+        if (isOwner || isManager) return;
 
         const dishName = item.id || item.name || item.label;
         if (!dishName) return;
@@ -16831,8 +18530,7 @@
       root.innerHTML = `
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap;gap:10px">
       <h1 style="margin:0">${esc(rs.name || 'Restaurant')}</h1>
-      ${state.canEdit ? `<button class="btn btnPrimary" id="mgrEdit">Manager Edit</button>` : ''}
-    </div>
+          </div>
     <div class="pill">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:8px">
         <div style="font-weight:600">${(state.qr || !state.user?.loggedIn) ? 'Select Your Allergens' : 'Your saved allergens'}</div>
@@ -17024,12 +18722,6 @@
         const editDietsBtn = document.getElementById('editSavedDietsBtn');
         if (editDietsBtn) editDietsBtn.onclick = () => send({ type: 'navigate', to: '/accounts', slug: rs.slug });
       }
-
-      if (state.canEdit) {
-        const mgr = document.getElementById('mgrEdit');
-        if (mgr) mgr.onclick = () => { state.page = 'editor'; renderEditor(); };
-      }
-
 
       // Wire up restaurant action buttons
       const websiteBtn = document.getElementById('restaurantWebsiteBtn');
@@ -17414,13 +19106,13 @@
     }
 
     function renderEditor() {
+      window.editorDirty = false; // Reset on editor entry
       renderTopbar();
       const rs = state.restaurant || {};
       const root = document.getElementById('root');
       root.innerHTML = `
-    <h1>${esc(rs.name || 'Restaurant')} — Menu Editor</h1>
-    <div class="mgrRow" style="justify-content:space-between">
-      <button class="btn" id="backBtn">← Done</button>
+    <h1>Webpage editor</h1>
+    <div class="mgrRow" style="justify-content:flex-end">
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
         <button class="btn" id="undoBtn" title="Undo (Ctrl+Z)" style="opacity:0.5">↶ Undo</button>
         <button class="btn" id="redoBtn" title="Redo (Ctrl+Y)" style="opacity:0.5">↷ Redo</button>
@@ -17443,21 +19135,12 @@
         </div>
       </div>
       <div style="display:flex;gap:12px">
-        <button type="button" class="btn btnPrimary" id="editorSaveAndExitBtn" style="flex:1;padding:12px;font-size:1rem">💾 Save and Exit</button>
+        <button type="button" class="btn btnPrimary" id="editorSaveAndExitBtn" style="flex:1;padding:12px;font-size:1rem">💾 Save Changes</button>
         <button type="button" class="btn" id="editorExitWithoutSavingBtn" style="flex:1;padding:12px;font-size:1rem;background:#4a1a1a;border-color:#721c24">Exit Without Saving</button>
       </div>
       <button type="button" class="btn" id="editorCancelExitBtn" style="width:100%;margin-top:12px;padding:8px;font-size:0.9rem;background:rgba(76,90,212,0.2);border-color:rgba(76,90,212,0.4)">Cancel</button>
     </div>
 
-    ${(() => {
-          if (!rs.lastConfirmed) return '<div class="note" id="lastConfirmedText" style="text-align:right;font-size:12px;margin-top:4px">Last confirmed: Never</div>';
-          const isAdmin = state.user?.email === 'matt.29.ds@gmail.com';
-          const isManager = state.user?.role === 'manager';
-          const showAll = isAdmin || isManager;
-          const info = getWeeksAgoInfo(rs.lastConfirmed, showAll);
-          if (!info || !info.text) return '<div class="note" id="lastConfirmedText" style="text-align:right;font-size:12px;margin-top:4px">Last confirmed: Never</div>';
-          return `<div class="note" id="lastConfirmedText" style="text-align:right;font-size:12px;margin-top:4px;color: ${info.color}">Last confirmed by staff: ${esc(info.text)}</div>`;
-        })()}
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div class="note" id="editorNote">Drag to move. Drag any corner to resize. Click ✏️ to edit details.</div>
       <div style="display:flex;gap:8px;align-items:center">
@@ -17583,7 +19266,7 @@
         aiIngredientsPreview: o.aiIngredients ? (typeof o.aiIngredients === 'string' ? o.aiIngredients.substring(0, 100) + '...' : JSON.stringify(o.aiIngredients).substring(0, 100)) : null
       })));
 
-      let dirty = false; function setDirty(v = true) { dirty = v; document.getElementById('saveBtn').style.display = dirty ? 'inline-flex' : 'none'; }
+      let dirty = false; function setDirty(v = true) { dirty = v; window.editorDirty = v; document.getElementById('saveBtn').style.display = dirty ? 'inline-flex' : 'none'; }
 
       // Track all changes as they happen
       let pendingChanges = [];
@@ -17736,13 +19419,40 @@
           const uiChanges = [...pendingChanges];
           const comparisonChanges = describeOverlayChanges(JSON.parse(originalOverlaysRef), overlays);
 
-          // Merge and deduplicate changes
+          // Extract renamed dishes to filter out redundant add/remove changes
+          const renamedDishes = new Map(); // oldName -> newName
+          uiChanges.forEach(change => {
+            const renameMatch = change.match(/^Renamed "(.+)" to "(.+)"$/);
+            if (renameMatch) {
+              renamedDishes.set(renameMatch[1], renameMatch[2]);
+            }
+          });
+
+          // Merge and deduplicate changes, filtering out redundant add/remove for renames
           const allChanges = [...uiChanges];
           comparisonChanges.forEach(change => {
             // Only add if not already in uiChanges (avoid duplicates)
-            if (!uiChanges.includes(change)) {
-              allChanges.push(change);
+            if (uiChanges.includes(change)) return;
+
+            // Skip "Added overlay" for new name if it was renamed
+            const addedMatch = change.match(/^(.+): Added overlay$/);
+            if (addedMatch) {
+              const dishName = addedMatch[1];
+              // Check if this dish is the new name of a renamed dish
+              for (const [oldName, newName] of renamedDishes) {
+                if (newName === dishName) return; // Skip, rename already tracked
+              }
             }
+
+            // Skip "Removed overlay" for old name if it was renamed
+            const removedMatch = change.match(/^(.+): Removed overlay$/);
+            if (removedMatch) {
+              const dishName = removedMatch[1];
+              // Check if this dish is the old name of a renamed dish
+              if (renamedDishes.has(dishName)) return; // Skip, rename already tracked
+            }
+
+            allChanges.push(change);
           });
 
           let changesList = allChanges;
@@ -17869,37 +19579,8 @@
             const newAiIngredients = item.aiIngredients;
             const hasAiIngredientsChange = JSON.stringify(oldAiIngredients) !== JSON.stringify(newAiIngredients);
 
-            // Only track dish-level allergen/diet changes if there's no aiIngredients change
-            // (ingredient-level changes are more specific and preferred)
-            if (!hasAiIngredientsChange) {
-              // Compare allergens
-              const oldAllergens = new Set((old.allergens || []).map(norm));
-              const newAllergens = new Set((item.allergens || []).map(norm));
-              const added = [...newAllergens].filter(a => !oldAllergens.has(a));
-              const removed = [...oldAllergens].filter(a => !newAllergens.has(a));
-              if (added.length) {
-                const allergenWord = added.length === 1 ? 'allergen' : 'allergens';
-                changes.push(`${itemName}: Added ${allergenWord} ${added.join(', ')}`);
-              }
-              if (removed.length) {
-                const allergenWord = removed.length === 1 ? 'allergen' : 'allergens';
-                changes.push(`${itemName}: Removed ${allergenWord} ${removed.join(', ')}`);
-              }
-
-              // Track dietary preference changes
-              const oldDiets = new Set(old.diets || []);
-              const newDiets = new Set(item.diets || []);
-              const addedDiets = [...newDiets].filter(d => !oldDiets.has(d));
-              const removedDiets = [...oldDiets].filter(d => !newDiets.has(d));
-              if (addedDiets.length) {
-                const dietWord = addedDiets.length === 1 ? 'dietary option' : 'dietary options';
-                changes.push(`${itemName}: Added ${dietWord} ${addedDiets.join(', ')}`);
-              }
-              if (removedDiets.length) {
-                const dietWord = removedDiets.length === 1 ? 'dietary option' : 'dietary options';
-                changes.push(`${itemName}: Removed ${dietWord} ${removedDiets.join(', ')}`);
-              }
-            }
+            // Note: Dish-level allergen/diet changes are not logged here.
+            // All allergen/diet changes should come from ingredient-level tracking in aiIngredients.
 
             // Track position changes
             const moved = old.x !== item.x || old.y !== item.y || old.w !== item.w || old.h !== item.h;
@@ -17907,26 +19588,8 @@
               changes.push(`${itemName}: Adjusted overlay position`);
             }
 
-            // Track cross-contamination changes
-            const oldCross = new Set(old.crossContamination || []);
-            const newCross = new Set(item.crossContamination || []);
-            const addedCross = [...newCross].filter(c => !oldCross.has(c));
-            const removedCross = [...oldCross].filter(c => !newCross.has(c));
-            if (addedCross.length) {
-              changes.push(`${itemName}: Added cross-contamination risk for ${addedCross.join(', ')}`);
-            }
-            if (removedCross.length) {
-              changes.push(`${itemName}: Removed cross-contamination risk for ${removedCross.join(', ')}`);
-            }
-
-            // Track noCrossContamination changes
-            if (old.noCrossContamination !== item.noCrossContamination) {
-              if (item.noCrossContamination) {
-                changes.push(`${itemName}: Set to no cross-contamination risk`);
-              } else {
-                changes.push(`${itemName}: Removed no cross-contamination status`);
-              }
-            }
+            // Note: Cross-contamination changes are tracked in pendingChanges (doneBtn handler),
+            // not here, to avoid duplicate logging.
 
             // Track aiIngredients changes with specific details
             // (oldAiIngredients, newAiIngredients, hasAiIngredientsChange already declared above)
@@ -17963,6 +19626,26 @@
                         const removedAllergens = [...oldAllergens].filter(a => !newAllergens.has(a));
                         if (addedAllergens.length) specificChanges.push(`${newIng.name}: added allergen ${addedAllergens.join(', ')}`);
                         if (removedAllergens.length) specificChanges.push(`${newIng.name}: removed allergen ${removedAllergens.join(', ')}`);
+                        if (removedAllergens.length) specificChanges.push(`${newIng.name}: removed allergen ${removedAllergens.join(', ')}`);
+
+                        // Check for added brands
+                        const oldBrands = oldIng.brands || [];
+                        const newBrands = newIng.brands || [];
+                        const getBrandKey = (b) => `${b.name}|${b.barcode || ''}`;
+                        const oldBrandKeys = new Set(oldBrands.map(getBrandKey));
+                        const newBrandKeys = new Set(newBrands.map(getBrandKey));
+
+                        newBrands.forEach(b => {
+                          if (!oldBrandKeys.has(getBrandKey(b))) {
+                            specificChanges.push(`${newIng.name}: ${b.name} added as brand item`);
+                          }
+                        });
+
+                        oldBrands.forEach(b => {
+                          if (!newBrandKeys.has(getBrandKey(b))) {
+                            specificChanges.push(`${newIng.name}: ${b.name} removed as brand item`);
+                          }
+                        });
                       }
                     });
 
@@ -18718,18 +20401,9 @@
                 const result = await fetchProductByBarcode(scannedBarcode);
 
                 if (result && result.success && result.ingredientList) {
-                  // Extract brand info
-                  let brand = '';
+                  // Use brand from API response (extracted from barcode database, not product name)
+                  const brand = result.brand || '';
                   const productName = result.productName || result.product?.name || result.product?.product_name || 'Unknown Product';
-                  if (productName) {
-                    const nameParts = productName.split(' ');
-                    if (nameParts.length > 0) {
-                      brand = nameParts[0];
-                      if (nameParts.length > 1 && nameParts[1][0] === nameParts[1][0].toUpperCase()) {
-                        brand = `${nameParts[0]} ${nameParts[1]}`;
-                      }
-                    }
-                  }
 
                   const productImage = result.productImage || result.product?.image_url || result.product?.image ||
                     (result.sources && result.sources.length > 0 && result.sources[0].productImage) || '';
@@ -18895,40 +20569,10 @@
           width: 100%;
         `;
 
-            // Build sources HTML (simplified version - can reuse from showReplacementBarcodeSourcesModal)
-            const sourcesHtml = sources.map((source, sourceIdx) => {
-              const urlObj = source.url ? (() => {
-                try { return new URL(source.url); } catch { return null; }
-              })() : null;
-              const domain = urlObj ? urlObj.hostname.replace('www.', '') : '';
-              const faviconUrl = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=32` : '';
-
-              return `
-            <div style="background: rgba(76,212,90,0.1); border: 2px solid rgba(76,212,90,0.4); border-radius: 8px; padding: 16px; margin-bottom: 12px;">
-              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-                ${faviconUrl ? `<img src="${esc(faviconUrl)}" alt="${esc(source.sourceName || '')}" style="width: 32px; height: 32px; border-radius: 4px; flex-shrink: 0;" onerror="this.style.display='none';">` : ''}
-                <div style="flex: 1;">
-                  <div style="font-weight: 600; color: #4caf50; font-size: 1.05rem; margin-bottom: 4px;">
-                    ${esc(source.sourceName || `Source ${sourceIdx + 1}`)}
-                  </div>
-                  ${source.url ? `<div style="font-size: 0.85rem; word-break: break-all;">
-                    <a href="${esc(source.url)}" target="_blank" style="color: ${source.urlValid === false ? '#999' : '#6b7ce6'}; text-decoration: ${source.urlValid === false ? 'line-through' : 'none'};" rel="noopener noreferrer">
-                      ${esc(source.url)}
-                    </a>
-                  </div>` : ''}
-                </div>
-              </div>
-              ${source.ingredientsText ? `
-                <div style="background: rgba(0,0,0,0.3); border-radius: 6px; padding: 12px; margin-top: 12px;">
-                  <div style="font-weight: 600; color: #a0a0a0; font-size: 0.85rem; margin-bottom: 8px;">Ingredient List:</div>
-                  <div style="font-size: 0.9rem; color: #e0e0e0; line-height: 1.6; font-family: 'Monaco', 'Courier New', monospace; white-space: pre-wrap; word-wrap: break-word;">
-                    ${esc(source.ingredientsText)}
-                  </div>
-                </div>
-              ` : ''}
-            </div>
-          `;
-            }).join('');
+            // Build sources HTML using grouped display
+            const sourcesHtml = renderGroupedSourcesHtml(sources, {
+              ingredientNames: barcodeResult.ingredientNames || null
+            });
 
             modalContent.innerHTML = `
           <div style="margin-bottom: 20px;">
@@ -19226,18 +20870,9 @@
               const result = await fetchProductByBarcode(scannedBarcode);
 
               if (result && result.success && result.ingredientList) {
-                // Extract brand from product name
-                let brand = '';
+                // Use brand from API response (extracted from barcode database, not product name)
+                const brand = result.brand || '';
                 const productName = result.productName || result.product?.name || result.product?.product_name || 'Unknown Product';
-                if (productName) {
-                  const nameParts = productName.split(' ');
-                  if (nameParts.length > 0) {
-                    brand = nameParts[0];
-                    if (nameParts.length > 1 && nameParts[1][0] === nameParts[1][0].toUpperCase()) {
-                      brand = `${nameParts[0]} ${nameParts[1]}`;
-                    }
-                  }
-                }
 
                 // Get product image
                 const productImage = result.productImage || result.product?.image_url || result.product?.image ||
@@ -19301,22 +20936,10 @@
               const data = result.data || result;
 
               if (data.success && data.ingredientList) {
-                // Extract brand from product name if available
-                let brand = '';
+                // For photo extraction, use the full product name as the brand display
+                // (We don't have barcode API data to get the real brand)
                 const productName = data.productName || 'Unknown Product';
-                if (data.productName) {
-                  const nameParts = data.productName.split(' ');
-                  if (nameParts.length > 0) {
-                    brand = nameParts[0];
-                    if (nameParts.length > 1 && nameParts[1][0] === nameParts[1][0].toUpperCase()) {
-                      brand = `${nameParts[0]} ${nameParts[1]}`;
-                    }
-                  }
-                }
-                // If no brand extracted, use a placeholder
-                if (!brand) {
-                  brand = 'Unknown Brand';
-                }
+                const brand = productName;
 
                 // Hide loading - for photo extraction, go directly to allergen preview (no sources to show)
                 hideReplacementLoadingInCard(idx);
@@ -19681,73 +21304,10 @@
       width: 100%;
     `;
 
-        // Build sources HTML (same as showBarcodeSourcesModal)
-        const sourcesHtml = sources.map((source, sourceIdx) => {
-          const urlObj = source.url ? (() => {
-            try { return new URL(source.url); } catch { return null; }
-          })() : null;
-          const domain = urlObj ? urlObj.hostname.replace('www.', '') : '';
-          const faviconUrl = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=32` : '';
-
-          return `
-        <div style="
-          background: rgba(76,212,90,0.1);
-          border: 2px solid rgba(76,212,90,0.4);
-          border-radius: 8px;
-          padding: 16px;
-          margin-bottom: 12px;
-        ">
-          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-            ${faviconUrl ? `
-              <img src="${esc(faviconUrl)}" alt="${esc(source.sourceName || '')}" 
-                   style="width: 32px; height: 32px; border-radius: 4px; flex-shrink: 0;"
-                   onerror="this.style.display='none';">
-            ` : ''}
-            <div style="flex: 1;">
-              <div style="font-weight: 600; color: #4caf50; font-size: 1.05rem; margin-bottom: 4px;">
-                ${esc(source.sourceName || `Source ${sourceIdx + 1}`)}
-              </div>
-              ${source.url ? `
-                <div style="font-size: 0.85rem; word-break: break-all;">
-                  <a href="${esc(source.url)}" target="_blank" 
-                     style="color: ${source.urlValid === false ? '#999' : '#6b7ce6'}; text-decoration: ${source.urlValid === false ? 'line-through' : 'none'};" 
-                     rel="noopener noreferrer"
-                     title="${source.urlValid === false ? 'Link may be inaccessible' : ''}">
-                    ${esc(source.url)}
-                  </a>
-                  ${source.urlValid === false ? '<span style="color: #ff9800; font-size: 0.75rem; margin-left: 8px;">(Link may be dead)</span>' : ''}
-                </div>
-              ` : ''}
-            </div>
-          </div>
-          ${source.ingredientsText ? `
-            <div style="
-              background: rgba(0,0,0,0.3);
-              border-radius: 6px;
-              padding: 12px;
-              margin-top: 12px;
-            ">
-              <div style="font-weight: 600; color: #a0a0a0; font-size: 0.85rem; margin-bottom: 8px;">
-                Ingredient List:
-              </div>
-              <div style="
-                font-size: 0.9rem;
-                color: #e0e0e0;
-                line-height: 1.6;
-                font-family: 'Monaco', 'Courier New', monospace;
-                white-space: pre-wrap;
-                word-wrap: break-word;
-                padding: 0;
-                margin: 0;
-                text-indent: 0;
-              ">
-                ${esc(source.ingredientsText)}
-              </div>
-            </div>
-          ` : ''}
-        </div>
-      `;
-        }).join('');
+        // Build sources HTML using grouped display
+        const sourcesHtml = renderGroupedSourcesHtml(sources, {
+          ingredientNames: barcodeResult.ingredientNames || null
+        });
 
         modalContent.innerHTML = `
       <div style="margin-bottom: 20px;">
@@ -19757,164 +21317,7 @@
         <p style="margin: 4px 0 0 0; color: #a0a0a0; font-size: 0.9rem;">Replacing: ${esc(oldItem.brandName)} → ${esc(suggestion.brand || 'New Brand')}</p>
       </div>
 
-      ${consistencyInfo.totalSources ? `
-        <div style="background: rgba(76,212,90,0.15); border: 1px solid rgba(76,212,90,0.4); border-radius: 8px; padding: 12px; margin-bottom: 20px;">
-          <div style="font-weight: 600; color: #4caf50; margin-bottom: 4px;">
-            Verification: ${consistencyInfo.matchingSources || 0} out of ${consistencyInfo.totalSources || 0} sources agree
-          </div>
-    ${(() => {
-              // Detect conflict: all different except one (consensus exists but others differ)
-              const hasConflict = consistencyInfo.differentSources &&
-                consistencyInfo.differentSources > 1 &&
-                consistencyInfo.matchingSources >= 1 &&
-                consistencyInfo.matchingSources < consistencyInfo.totalSources;
-              const consensusDiff = hasConflict && consistencyInfo.differences ?
-                consistencyInfo.differences.find(d => d.groupSize === consistencyInfo.matchingSources) : null;
-              const consensusIngredients = consensusDiff ? consensusDiff.ingredientsText : null;
-
-              if (hasConflict && consensusDiff) {
-                return `
-          <div style="font-size: 0.9rem; color: #ff9800; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,152,0,0.3);">
-            <div style="font-weight: 600; margin-bottom: 8px; color: #ff9800;">
-              ⚠️ Conflict Detected: All ingredient lists differ except one
-            </div>
-            <div style="background: rgba(76,212,90,0.2); border: 1px solid rgba(76,212,90,0.4); border-radius: 6px; padding: 12px; margin-bottom: 12px;">
-              <div style="font-weight: 600; color: #4caf50; margin-bottom: 8px;">
-                ✓ Consensus List (${consensusDiff.groupSize} source${consensusDiff.groupSize !== 1 ? 's' : ''} agree) - Will be used:
-              </div>
-              <div style="font-size: 0.85rem; color: #e0e0e0; font-family: 'Monaco', 'Courier New', monospace; white-space: pre-wrap; word-wrap: break-word; padding: 0; margin: 0; text-indent: 0;">
-                ${esc(consensusDiff.ingredientsText)}
-              </div>
-              <button type="button" class="confirmReplacementConsensusBtn" style="
-                padding: 8px 16px;
-                margin-top: 12px;
-                background: #4c5ad4;
-                border: none;
-                border-radius: 6px;
-                color: #fff;
-                font-weight: 600;
-                cursor: pointer;
-                font-size: 0.85rem;
-                transition: all 0.2s;
-              ">Confirm and apply this ingredient list</button>
-            </div>
-            <div style="font-weight: 600; margin-top: 12px; margin-bottom: 8px; color: #ff9800;">
-              Other variations found (${consistencyInfo.differentSources - 1} total):
-            </div>
-            ${(consistencyInfo.differences && consistencyInfo.differences.length > 0 ? consistencyInfo.differences.filter(diff => {
-                  // Filter out the consensus variation - compare by ingredientsText to handle cases where
-                  // all variations have the same groupSize (e.g., all are 1)
-                  // Exclude the consensus variation by comparing ingredientsText
-                  if (consensusIngredients && diff.ingredientsText === consensusIngredients) {
-                    return false;
-                  }
-                  // Also exclude by groupSize if it matches AND ingredientsText matches
-                  if (diff.groupSize === consistencyInfo.matchingSources && consensusIngredients && diff.ingredientsText === consensusIngredients) {
-                    return false;
-                  }
-                  return true;
-                }).map((diff, idx) => `
-              <div style="margin-bottom: 8px; padding: 12px; background: rgba(255,152,0,0.1); border-radius: 4px; border-left: 3px solid #ff9800;">
-                <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 4px;">
-                  Variation ${idx + 1} (${diff.groupSize} source${diff.groupSize !== 1 ? 's' : ''}): ${esc(diff.sourceName)}
-                </div>
-                <div style="font-size: 0.75rem; color: #ccc; font-family: 'Monaco', 'Courier New', monospace; white-space: pre-wrap; word-wrap: break-word; padding: 0; margin: 0; text-indent: 0;">
-                  ${esc(diff.ingredientsText)}
-                </div>
-                <button type="button" class="confirmVariationBtn" data-variation-index="${idx}" data-ingredients="${esc(diff.ingredientsText)}" style="
-                  padding: 8px 16px;
-                  margin-top: 12px;
-                  background: #6b7280;
-                  border: none;
-                  border-radius: 6px;
-                  color: #fff;
-                  font-weight: 600;
-                  cursor: pointer;
-                  font-size: 0.85rem;
-                  transition: all 0.2s;
-                ">Confirm and Apply This Ingredient List</button>
-              </div>
-            `).join('') : '')}
-          </div>
-        `;
-              } else if (consistencyInfo.differentSources && consistencyInfo.differentSources > 1) {
-                let variationsHtml = '';
-                if (consistencyInfo.differences && consistencyInfo.differences.length > 0) {
-                  variationsHtml = consistencyInfo.differences.map((diff, idx) => {
-                    const varNum = idx + 1;
-                    const sourceText = diff.groupSize !== 1 ? 's' : '';
-                    const sourceName = esc(diff.sourceName || 'Unknown Source');
-                    const ingredientsText = esc(diff.ingredientsText || '');
-                    return '<div style="margin-bottom: 8px; padding: 12px; background: rgba(255,152,0,0.1); border-radius: 4px; border-left: 3px solid #ff9800;">' +
-                      '<div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 4px;">' +
-                      'Variation ' + varNum + ' (' + diff.groupSize + ' source' + sourceText + '): ' + sourceName +
-                      '</div>' +
-                      '<div style="font-size: 0.8rem; color: #ccc; font-family: \'Monaco\', \'Courier New\', monospace; white-space: pre-wrap; word-wrap: break-word; padding: 0; margin: 0; text-indent: 0;">' +
-                      ingredientsText +
-                      '</div>' +
-                      '<button type="button" class="confirmVariationBtn" data-variation-index="' + idx + '" data-ingredients="' + ingredientsText.replace(/"/g, '&quot;') + '" style="' +
-                      'padding: 8px 16px;' +
-                      'margin-top: 12px;' +
-                      'background: #6b7280;' +
-                      'border: none;' +
-                      'border-radius: 6px;' +
-                      'color: #fff;' +
-                      'font-weight: 600;' +
-                      'cursor: pointer;' +
-                      'font-size: 0.85rem;' +
-                      'transition: all 0.2s;' +
-                      '">Confirm and Apply This Ingredient List</button>' +
-                      '</div>';
-                  }).join('');
-                }
-                return `
-          <div style="font-size: 0.85rem; color: #ff9800; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,152,0,0.3);">
-            <div style="font-weight: 600; margin-bottom: 8px;">⚠️ Found ${consistencyInfo.differentSources} different ingredient variations:</div>
-            ${variationsHtml}
-          </div>
-        `;
-              }
-              return '';
-            })()}
-        </div>
-      ` : ''}
-
-      <div style="margin-bottom: 20px;">
-        <div style="font-weight: 600; color: #4c5ad4; font-size: 1.05rem; margin-bottom: 12px;">
-          Consolidated Ingredient List:
-        </div>
-        <div style="
-          background: rgba(76,90,212,0.1);
-          border: 1px solid rgba(76,90,212,0.3);
-          border-radius: 8px;
-          padding: 16px;
-          font-size: 0.95rem;
-          line-height: 1.6;
-          color: #e0e0e0;
-          white-space: pre-wrap;
-          word-wrap: break-word;
-          position: relative;
-        ">
-          ${esc(ingredientList)}
-          <button type="button" class="confirmReplacementIngredientListBtn" style="
-            padding: 8px 16px;
-            margin-top: 12px;
-            background: #4c5ad4;
-            border: none;
-            border-radius: 6px;
-            color: #fff;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: all 0.2s;
-          ">Confirm and apply this ingredient list</button>
-        </div>
-      </div>
-
       <div style="margin-bottom: 24px;">
-        <div style="font-weight: 600; color: #4c5ad4; font-size: 1.05rem; margin-bottom: 12px;">
-          Sources Verified (${sources.length} total):
-        </div>
         <p style="font-size: 0.85rem; color: #999; margin-bottom: 12px; font-style: italic;">
           ⚠️ Note: URLs are provided for reference. Some links may be outdated or inaccessible due to website changes.
         </p>
@@ -19942,6 +21345,7 @@
         const confirmBtn = modalContent.querySelector('.confirmReplacementIngredientListBtn');
         const confirmConsensusBtn = modalContent.querySelector('.confirmReplacementConsensusBtn');
         const confirmVariationBtns = modalContent.querySelectorAll('.confirmReplacementVariationBtn');
+        const confirmGroupBtns = modalContent.querySelectorAll('.confirmGroupIngredientListBtn');
 
         cancelBtn.addEventListener('click', () => {
           if (modal.parentNode) {
@@ -19958,6 +21362,19 @@
           // Proceed with allergen/diet preview for replacement
           await showReplacementPreview(oldItem, suggestion.brand || '', suggestion.barcode || '', finalIngredientList, suggestion.brandImage || '', productName);
         };
+
+        // Handle grouped ingredient list confirmation buttons
+        confirmGroupBtns.forEach(btn => {
+          btn.addEventListener('click', async () => {
+            btn.style.background = '#4caf50';
+            btn.innerHTML = '✓ Confirmed';
+            btn.style.cursor = 'default';
+
+            const groupDiv = btn.closest('[data-ingredients-text]');
+            const groupIngredientList = groupDiv ? groupDiv.dataset.ingredientsText : (ingredientList || '');
+            await handleConfirm(groupIngredientList);
+          });
+        });
 
         // Handle consensus confirmation
         if (confirmConsensusBtn) {
@@ -20045,73 +21462,10 @@
       width: 100%;
     `;
 
-        // Build sources HTML (same as showBarcodeSourcesModal)
-        const sourcesHtml = sources.map((source, sourceIdx) => {
-          const urlObj = source.url ? (() => {
-            try { return new URL(source.url); } catch { return null; }
-          })() : null;
-          const domain = urlObj ? urlObj.hostname.replace('www.', '') : '';
-          const faviconUrl = domain ? `https://www.google.com/s2/favicons?domain=${domain}&sz=32` : '';
-
-          return `
-        <div style="
-          background: rgba(76,212,90,0.1);
-          border: 2px solid rgba(76,212,90,0.4);
-          border-radius: 8px;
-          padding: 16px;
-          margin-bottom: 12px;
-        ">
-          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
-            ${faviconUrl ? `
-              <img src="${esc(faviconUrl)}" alt="${esc(source.sourceName || '')}" 
-                   style="width: 32px; height: 32px; border-radius: 4px; flex-shrink: 0;"
-                   onerror="this.style.display='none';">
-            ` : ''}
-            <div style="flex: 1;">
-              <div style="font-weight: 600; color: #4caf50; font-size: 1.05rem; margin-bottom: 4px;">
-                ${esc(source.sourceName || `Source ${sourceIdx + 1}`)}
-              </div>
-              ${source.url ? `
-                <div style="font-size: 0.85rem; word-break: break-all;">
-                  <a href="${esc(source.url)}" target="_blank" 
-                     style="color: ${source.urlValid === false ? '#999' : '#6b7ce6'}; text-decoration: ${source.urlValid === false ? 'line-through' : 'none'};" 
-                     rel="noopener noreferrer"
-                     title="${source.urlValid === false ? 'Link may be inaccessible' : ''}">
-                    ${esc(source.url)}
-                  </a>
-                  ${source.urlValid === false ? '<span style="color: #ff9800; font-size: 0.75rem; margin-left: 8px;">(Link may be dead)</span>' : ''}
-                </div>
-              ` : ''}
-            </div>
-          </div>
-          ${source.ingredientsText ? `
-            <div style="
-              background: rgba(0,0,0,0.3);
-              border-radius: 6px;
-              padding: 12px;
-              margin-top: 12px;
-            ">
-              <div style="font-weight: 600; color: #a0a0a0; font-size: 0.85rem; margin-bottom: 8px;">
-                Ingredient List:
-              </div>
-              <div style="
-                font-size: 0.9rem;
-                color: #e0e0e0;
-                line-height: 1.6;
-                font-family: 'Monaco', 'Courier New', monospace;
-                white-space: pre-wrap;
-                word-wrap: break-word;
-                padding: 0;
-                margin: 0;
-                text-indent: 0;
-              ">
-                ${esc(source.ingredientsText)}
-              </div>
-            </div>
-          ` : ''}
-        </div>
-      `;
-        }).join('');
+        // Build sources HTML using grouped display
+        const sourcesHtml = renderGroupedSourcesHtml(sources, {
+          ingredientNames: result.ingredientNames || null
+        });
 
         modalContent.innerHTML = `
       <div style="margin-bottom: 20px;">
@@ -20121,164 +21475,7 @@
         <p style="margin: 4px 0 0 0; color: #a0a0a0; font-size: 0.9rem;">Replacing: ${esc(oldItem.brandName)} → ${esc(brandName || 'New Brand')}</p>
       </div>
 
-      ${consistencyInfo.totalSources ? `
-        <div style="background: rgba(76,212,90,0.15); border: 1px solid rgba(76,212,90,0.4); border-radius: 8px; padding: 12px; margin-bottom: 20px;">
-          <div style="font-weight: 600; color: #4caf50; margin-bottom: 4px;">
-            Verification: ${consistencyInfo.matchingSources || 0} out of ${consistencyInfo.totalSources || 0} sources agree
-          </div>
-    ${(() => {
-              // Detect conflict: all different except one (consensus exists but others differ)
-              const hasConflict = consistencyInfo.differentSources &&
-                consistencyInfo.differentSources > 1 &&
-                consistencyInfo.matchingSources >= 1 &&
-                consistencyInfo.matchingSources < consistencyInfo.totalSources;
-              const consensusDiff = hasConflict && consistencyInfo.differences ?
-                consistencyInfo.differences.find(d => d.groupSize === consistencyInfo.matchingSources) : null;
-              const consensusIngredients = consensusDiff ? consensusDiff.ingredientsText : null;
-
-              if (hasConflict && consensusDiff) {
-                return `
-          <div style="font-size: 0.9rem; color: #ff9800; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255,152,0,0.3);">
-            <div style="font-weight: 600; margin-bottom: 8px; color: #ff9800;">
-              ⚠️ Conflict Detected: All ingredient lists differ except one
-            </div>
-            <div style="background: rgba(76,212,90,0.2); border: 1px solid rgba(76,212,90,0.4); border-radius: 6px; padding: 12px; margin-bottom: 12px;">
-              <div style="font-weight: 600; color: #4caf50; margin-bottom: 8px;">
-                ✓ Consensus List (${consensusDiff.groupSize} source${consensusDiff.groupSize !== 1 ? 's' : ''} agree) - Will be used:
-              </div>
-              <div style="font-size: 0.85rem; color: #e0e0e0; font-family: 'Monaco', 'Courier New', monospace; white-space: pre-wrap; word-wrap: break-word; padding: 0; margin: 0; text-indent: 0;">
-                ${esc(consensusDiff.ingredientsText)}
-              </div>
-              <button type="button" class="confirmReplacementConsensusBtn" style="
-                padding: 8px 16px;
-                margin-top: 12px;
-                background: #4c5ad4;
-                border: none;
-                border-radius: 6px;
-                color: #fff;
-                font-weight: 600;
-                cursor: pointer;
-                font-size: 0.85rem;
-                transition: all 0.2s;
-              ">Confirm and apply this ingredient list</button>
-            </div>
-            <div style="font-weight: 600; margin-top: 12px; margin-bottom: 8px; color: #ff9800;">
-              Other variations found (${consistencyInfo.differentSources - 1} total):
-            </div>
-            ${(consistencyInfo.differences && consistencyInfo.differences.length > 0 ? consistencyInfo.differences.filter(diff => {
-                  // Filter out the consensus variation - compare by ingredientsText to handle cases where
-                  // all variations have the same groupSize (e.g., all are 1)
-                  // Exclude the consensus variation by comparing ingredientsText
-                  if (consensusIngredients && diff.ingredientsText === consensusIngredients) {
-                    return false;
-                  }
-                  // Also exclude by groupSize if it matches AND ingredientsText matches
-                  if (diff.groupSize === consistencyInfo.matchingSources && consensusIngredients && diff.ingredientsText === consensusIngredients) {
-                    return false;
-                  }
-                  return true;
-                }).map((diff, idx) => `
-              <div style="margin-bottom: 8px; padding: 12px; background: rgba(255,152,0,0.1); border-radius: 4px; border-left: 3px solid #ff9800;">
-                <div style="font-weight: 600; font-size: 0.85rem; margin-bottom: 4px;">
-                  Variation ${idx + 1} (${diff.groupSize} source${diff.groupSize !== 1 ? 's' : ''}): ${esc(diff.sourceName)}
-                </div>
-                <div style="font-size: 0.75rem; color: #ccc; font-family: 'Monaco', 'Courier New', monospace; white-space: pre-wrap; word-wrap: break-word; padding: 0; margin: 0; text-indent: 0;">
-                  ${esc(diff.ingredientsText)}
-                </div>
-                <button type="button" class="confirmVariationBtn" data-variation-index="${idx}" data-ingredients="${esc(diff.ingredientsText)}" style="
-                  padding: 8px 16px;
-                  margin-top: 12px;
-                  background: #6b7280;
-                  border: none;
-                  border-radius: 6px;
-                  color: #fff;
-                  font-weight: 600;
-                  cursor: pointer;
-                  font-size: 0.85rem;
-                  transition: all 0.2s;
-                ">Confirm and Apply This Ingredient List</button>
-              </div>
-            `).join('') : '')}
-          </div>
-        `;
-              } else if (consistencyInfo.differentSources && consistencyInfo.differentSources > 1) {
-                let variationsHtml = '';
-                if (consistencyInfo.differences && consistencyInfo.differences.length > 0) {
-                  variationsHtml = consistencyInfo.differences.map((diff, idx) => {
-                    const varNum = idx + 1;
-                    const sourceText = diff.groupSize !== 1 ? 's' : '';
-                    const sourceName = esc(diff.sourceName || 'Unknown Source');
-                    const ingredientsText = esc(diff.ingredientsText || '');
-                    return '<div style="margin-bottom: 8px; padding: 12px; background: rgba(255,152,0,0.1); border-radius: 4px; border-left: 3px solid #ff9800;">' +
-                      '<div style="font-weight: 600; font-size: 0.9rem; margin-bottom: 4px;">' +
-                      'Variation ' + varNum + ' (' + diff.groupSize + ' source' + sourceText + '): ' + sourceName +
-                      '</div>' +
-                      '<div style="font-size: 0.8rem; color: #ccc; font-family: \'Monaco\', \'Courier New\', monospace; white-space: pre-wrap; word-wrap: break-word; padding: 0; margin: 0; text-indent: 0;">' +
-                      ingredientsText +
-                      '</div>' +
-                      '<button type="button" class="confirmVariationBtn" data-variation-index="' + idx + '" data-ingredients="' + ingredientsText.replace(/"/g, '&quot;') + '" style="' +
-                      'padding: 8px 16px;' +
-                      'margin-top: 12px;' +
-                      'background: #6b7280;' +
-                      'border: none;' +
-                      'border-radius: 6px;' +
-                      'color: #fff;' +
-                      'font-weight: 600;' +
-                      'cursor: pointer;' +
-                      'font-size: 0.85rem;' +
-                      'transition: all 0.2s;' +
-                      '">Confirm and Apply This Ingredient List</button>' +
-                      '</div>';
-                  }).join('');
-                }
-                return `
-          <div style="font-size: 0.85rem; color: #ff9800; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,152,0,0.3);">
-            <div style="font-weight: 600; margin-bottom: 8px;">⚠️ Found ${consistencyInfo.differentSources} different ingredient variations:</div>
-            ${variationsHtml}
-          </div>
-        `;
-              }
-              return '';
-            })()}
-        </div>
-      ` : ''}
-
-      <div style="margin-bottom: 20px;">
-        <div style="font-weight: 600; color: #4c5ad4; font-size: 1.05rem; margin-bottom: 12px;">
-          Consolidated Ingredient List:
-        </div>
-        <div style="
-          background: rgba(76,90,212,0.1);
-          border: 1px solid rgba(76,90,212,0.3);
-          border-radius: 8px;
-          padding: 16px;
-          font-size: 0.95rem;
-          line-height: 1.6;
-          color: #e0e0e0;
-          white-space: pre-wrap;
-          word-wrap: break-word;
-          position: relative;
-        ">
-          ${esc(ingredientList)}
-          <button type="button" class="confirmReplacementIngredientListBtn" style="
-            padding: 8px 16px;
-            margin-top: 12px;
-            background: #4c5ad4;
-            border: none;
-            border-radius: 6px;
-            color: #fff;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: all 0.2s;
-          ">Confirm and apply this ingredient list</button>
-        </div>
-      </div>
-
       <div style="margin-bottom: 24px;">
-        <div style="font-weight: 600; color: #4c5ad4; font-size: 1.05rem; margin-bottom: 12px;">
-          Sources Verified (${sources.length} total):
-        </div>
         <p style="font-size: 0.85rem; color: #999; margin-bottom: 12px; font-style: italic;">
           ⚠️ Note: URLs are provided for reference. Some links may be outdated or inaccessible due to website changes.
         </p>
@@ -20309,12 +21506,10 @@
         const cancelBtn = modalContent.querySelector('.cancelReplacementSourcesBtn');
         const confirmBtn = modalContent.querySelector('.confirmReplacementIngredientListBtn');
         const confirmConsensusBtn = modalContent.querySelector('.confirmReplacementConsensusBtn');
+        const confirmGroupBtns = modalContent.querySelectorAll('.confirmGroupIngredientListBtn');
 
         if (!cancelBtn) {
           console.error('Cancel button not found in replacement sources modal!');
-        }
-        if (!confirmBtn) {
-          console.error('Confirm button not found in replacement sources modal!');
         }
 
         cancelBtn.addEventListener('click', () => {
@@ -20331,6 +21526,19 @@
           await showReplacementPreview(oldItem, brandName, barcode, finalIngredientList, brandImage, productName);
         };
 
+        // Handle grouped ingredient list confirmation buttons
+        confirmGroupBtns.forEach(btn => {
+          btn.addEventListener('click', async () => {
+            btn.style.background = '#4caf50';
+            btn.innerHTML = '✓ Confirmed';
+            btn.style.cursor = 'default';
+
+            const groupDiv = btn.closest('[data-ingredients-text]');
+            const groupIngredientList = groupDiv ? groupDiv.dataset.ingredientsText : (ingredientList || '');
+            await handleConfirm(groupIngredientList);
+          });
+        });
+
         // Handle consensus confirmation
         if (confirmConsensusBtn) {
           confirmConsensusBtn.addEventListener('click', async () => {
@@ -20342,9 +21550,11 @@
         }
 
         // Handle consolidated list confirmation
-        confirmBtn.addEventListener('click', async () => {
-          await handleConfirm(ingredientList);
-        });
+        if (confirmBtn) {
+          confirmBtn.addEventListener('click', async () => {
+            await handleConfirm(ingredientList);
+          });
+        }
       }
 
       function openPhotoCapture() {
@@ -21937,7 +23147,8 @@
       };
 
 
-      document.getElementById('backBtn').onclick = () => {
+      const backBtn = document.getElementById('backBtn');
+      if (backBtn) backBtn.onclick = () => {
         if (dirty) {
           // Show inline warning instead of confirm dialog
           const warningEl = document.getElementById('editorUnsavedWarning');
@@ -21971,9 +23182,10 @@
               if (changesList.length) {
                 const formattedChanges = formatChangesForLog(changesList);
                 send({ type: 'saveOverlays', overlays, menuImages: menuImages, menuImage: menuImages[0] || rs.menuImage || '', changes: formattedChanges });
-                setTimeout(() => { state.page = 'restaurant'; renderRestaurant(); }, 500);
+                // Stay in editor after saving - dirty flag will be reset by setSaveState('saved')
               } else {
-                state.page = 'restaurant'; renderRestaurant();
+                // No changes to save, just hide the warning
+                setSaveState('saved');
               }
             };
 
@@ -22224,6 +23436,13 @@
           }
           it.aiIngredients = JSON.stringify(rows);
           console.log('Saved it.aiIngredients (full):', it.aiIngredients);
+
+          // Save the recipe description text from the textarea
+          const recipeTextArea = document.getElementById('aiAssistInput');
+          if (recipeTextArea && recipeTextArea.value.trim()) {
+            it.recipeDescription = recipeTextArea.value.trim();
+            console.log('Saved recipe description:', it.recipeDescription.substring(0, 100) + '...');
+          }
           // Also verify the parsed data includes appeal state
           try {
             const parsed = JSON.parse(it.aiIngredients);
@@ -22447,29 +23666,8 @@
             console.log(`Added pendingChange: ${dishName}: Removed ${word} for ${removedCross.join(', ')}`);
           }
 
-          // Track allergen changes
-          const addedAllergens = [...activeAllergens].filter(a => !oldAllergens.has(a));
-          const removedAllergens = [...oldAllergens].filter(a => !activeAllergens.has(a));
-          if (addedAllergens.length) {
-            const word = addedAllergens.length === 1 ? 'allergen' : 'allergens';
-            pendingChanges.push(`${dishName}: Added ${word} ${addedAllergens.join(', ')}`);
-          }
-          if (removedAllergens.length) {
-            const word = removedAllergens.length === 1 ? 'allergen' : 'allergens';
-            pendingChanges.push(`${dishName}: Removed ${word} ${removedAllergens.join(', ')}`);
-          }
-
-          // Track dietary changes
-          const addedDiets = [...activeDiets].filter(d => !oldDiets.has(d));
-          const removedDiets = [...oldDiets].filter(d => !activeDiets.has(d));
-          if (addedDiets.length) {
-            const word = addedDiets.length === 1 ? 'diet' : 'diets';
-            pendingChanges.push(`${dishName}: Added ${word} ${addedDiets.join(', ')}`);
-          }
-          if (removedDiets.length) {
-            const word = removedDiets.length === 1 ? 'diet' : 'diets';
-            pendingChanges.push(`${dishName}: Removed ${word} ${removedDiets.join(', ')}`);
-          }
+          // Note: Dish-level allergen/diet changes are NOT logged here.
+          // All allergen/diet changes are tracked at the ingredient level in aiIngredients.
 
           // Update the overlay name from the AI Assistant name input only if user explicitly changed it
           const aiNameInput = document.getElementById('aiAssistNameInput');
@@ -22520,7 +23718,9 @@
         // Auto-open AI assistant immediately
         // For new items (no allergens): show input screen (photo/upload/describe)
         // For existing items with data: show ingredient editing table
-        const seedText = Object.values(it.details || {}).join('\n');
+
+        // Use saved recipe description if available, otherwise fall back to allergen details
+        const seedText = it.recipeDescription || Object.values(it.details || {}).join('\n');
         const isNewItem = !it.allergens || it.allergens.length === 0;
 
         // If there's existing AI ingredients data, parse and pass it to the assistant
@@ -23035,6 +24235,13 @@
 
     /* Warn on page unload if there are unsaved changes */
     window.addEventListener('beforeunload', (event) => {
+      // Check if editor has unsaved changes
+      if (window.editorDirty) {
+        event.preventDefault();
+        event.returnValue = '';
+        return '';
+      }
+
       // Check if AI Assistant modal is open and has unsaved changes
       const modalIsOpen = aiAssistBackdrop && aiAssistBackdrop.classList.contains('show');
 
@@ -23264,6 +24471,16 @@
 
       renderTopbar(); render(); maybeInitHowItWorksTour();
       updateFullScreenAllergySummary();
+
+      // Auto-open change log modal if requested via URL parameter
+      if (window.__openLogOnLoad && state.page === 'editor') {
+        setTimeout(() => {
+          if (typeof openChangeLog === 'function') {
+            openChangeLog();
+            window.__openLogOnLoad = false; // Reset to avoid re-opening
+          }
+        }, 100);
+      }
     });
 
     // Auto-open specific dish editor if coming from WordPress, or overlay if coming from dish search
@@ -23368,7 +24585,13 @@
                 // Use 'touchend' type to trigger mobile panel instead of desktop tooltip
                 const fakeEvent = { type: 'touchend', pointerType: 'touch' };
                 try {
-                  showOverlayFn(fakeEvent, item, box);
+                  // Scroll the overlay box into view FIRST, then show the tooltip
+                  // This ensures the tooltip is positioned correctly relative to where the box ends up
+                  box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  // Wait for scroll to settle before showing the overlay tooltip
+                  setTimeout(() => {
+                    showOverlayFn(fakeEvent, item, box);
+                  }, 500);
                   // Since we're coming from dish search, full-screen will open soon
                   // Set up a MutationObserver to update panel size when full-screen activates
                   const observer = new MutationObserver((mutations) => {

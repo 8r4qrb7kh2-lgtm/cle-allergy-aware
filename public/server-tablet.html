@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Server Monitor - Clarivore</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .tablet-page {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+    .tablet-status {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .tablet-status-badge {
+      background: var(--surface-raised);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+    .server-queue {
+      display: grid;
+      gap: 16px;
+    }
+    .server-order-card {
+      background: var(--surface-elevated);
+      border-radius: 14px;
+      padding: 18px;
+      border: 1px solid rgba(92, 108, 210, 0.24);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    }
+    .server-order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .server-order-meta {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .server-order-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .server-order-actions button {
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 0.95rem;
+    }
+    .empty-tablet-state {
+      text-align: center;
+      padding: 48px 24px;
+      border: 1px dashed rgba(92, 108, 210, 0.45);
+      border-radius: 18px;
+      color: var(--text-muted);
+      background: rgba(13, 19, 42, 0.6);
+    }
+    .server-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .server-tab {
+      border-radius: 999px;
+      padding: 8px 16px;
+      background: rgba(92, 108, 210, 0.12);
+      color: var(--text-muted);
+      cursor: pointer;
+      border: none;
+    }
+    .server-tab.is-active {
+      background: rgba(92, 108, 210, 0.3);
+      color: var(--text-primary);
+    }
+  </style>
+</head>
+<body class="page-shell">
+  <header class="simple-topbar">
+    <div class="simple-topbar-inner">
+      <a class="simple-brand" href="restaurants.html">
+        <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt="Clarivore logo">
+        <span>Clarivore</span>
+      </a>
+      <div class="simple-nav"></div>
+    </div>
+  </header>
+
+  <main class="page-main">
+    <div class="page-content tablet-page">
+      <header>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 12px;">
+          <div>
+            <h1>Server monitor</h1>
+            <p class="muted-text">Review allergy notices waiting for approval or dispatch.</p>
+          </div>
+          <button id="refresh-btn" type="button" class="secondary-btn" style="white-space: nowrap;">
+            Refresh orders
+          </button>
+        </div>
+        <div class="tablet-status" id="server-status"></div>
+      </header>
+      <section>
+        <div id="server-tabs" class="server-tabs" role="tablist"></div>
+        <div id="server-queue" class="server-queue"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://fgoiyycctnwnghrvsilt.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnb2l5eWNjdG53bmdocnZzaWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0MzY1MjYsImV4cCI6MjA3NjAxMjUyNn0.xlSSXr0Gl7j-vsckrj-2anpPmp4BG2SUIdN-_dquSA8';
+    const { createClient } = supabase;
+    window.supabaseClient = window.supabaseClient || createClient(SUPABASE_URL, SUPABASE_KEY);
+    window.SUPABASE_URL = SUPABASE_URL;
+    window.SUPABASE_ANON_KEY = SUPABASE_KEY;
+  </script>
+  <script type="module" src="js/server-tablet.js"></script>
+</body>
+</html>
+
