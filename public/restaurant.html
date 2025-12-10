@@ -599,21 +599,176 @@
 
     .overlay.selected {
       animation: overlayPulse 1.5s ease-in-out infinite;
-      background: transparent !important
+      background: transparent !important;
     }
 
     @keyframes overlayPulse {
-
-      0%,
-      100% {
+      0%, 100% {
         box-shadow: 0 0 0 0 var(--pulse-color-start, rgba(255, 255, 255, 0.5));
-        border-width: 1.5px
+        border-width: 1.5px;
       }
-
       50% {
-        box-shadow: 0 0 0 4px var(--pulse-color-end, rgba(255, 255, 255, 0.9));
-        border-width: 2.5px
+        box-shadow: 0 0 8px 3px var(--pulse-color-end, rgba(255, 255, 255, 0.9));
+        border-width: 3px;
       }
+    }
+
+    /* When zoomed, the parent is scaled so we need smaller values that will appear correct */
+    .menuWrap.zoomed .overlay.selected {
+      animation: overlayPulseZoomed 1.5s ease-in-out infinite;
+    }
+
+    @keyframes overlayPulseZoomed {
+      0%, 100% {
+        box-shadow: 0 0 0 0 var(--pulse-color-start, rgba(255, 255, 255, 0.5));
+        border-width: 0.75px;
+      }
+      50% {
+        box-shadow: 0 0 4px 2px var(--pulse-color-end, rgba(255, 255, 255, 0.9));
+        border-width: 1.5px;
+      }
+    }
+
+    /* Mobile overlay zoom mode */
+    .menuWrap.zoomed {
+      overflow: hidden;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #0b1020;
+      z-index: 998;
+    }
+
+    .menuWrap.zoomed .menuInner {
+      transition: transform 0.3s ease-out;
+    }
+
+    /* Top gradient overlay when zoomed */
+    .zoomTopOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: linear-gradient(to bottom, rgba(11, 16, 32, 1) 0%, rgba(11, 16, 32, 0.8) 60%, transparent 100%);
+      z-index: 999;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .zoomTopOverlay.show {
+      opacity: 1;
+    }
+
+    .zoomBackButton {
+      position: fixed;
+      bottom: 200px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.95);
+      border: none;
+      border-radius: 24px;
+      padding: 12px 24px;
+      color: #1a1a2e;
+      font-size: 1rem;
+      font-weight: 600;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .zoomBackButton.show {
+      display: flex;
+    }
+
+    .zoomBackButton:active {
+      background: rgba(230, 230, 230, 0.95);
+      transform: translateX(-50%) scale(0.96);
+    }
+
+    .zoomBackButton svg {
+      width: 18px;
+      height: 18px;
+      stroke: #1a1a2e;
+    }
+
+    /* Zoomed dish info overlay */
+    .zoomedDishInfo {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(to top,
+        rgba(11, 16, 32, 1) 0%,
+        rgba(11, 16, 32, 1) 20%,
+        rgba(11, 16, 32, 0.97) 35%,
+        rgba(11, 16, 32, 0.92) 45%,
+        rgba(11, 16, 32, 0.82) 55%,
+        rgba(11, 16, 32, 0.65) 65%,
+        rgba(11, 16, 32, 0.45) 75%,
+        rgba(11, 16, 32, 0.25) 85%,
+        rgba(11, 16, 32, 0.1) 92%,
+        rgba(11, 16, 32, 0.03) 96%,
+        transparent 100%);
+      padding: 28px 16px 36px;
+      padding-top: 60px;
+      z-index: 999;
+      display: none;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .zoomedDishInfo.show {
+      display: block;
+    }
+
+    .zoomedDishInfo h3 {
+      margin: 0 0 12px;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .zoomedDishInfo .allergenChips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .zoomedDishInfo .allergenChip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .zoomedDishInfo .allergenChip.danger {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+    }
+
+    .zoomedDishInfo .allergenChip.safe {
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+      color: #86efac;
+    }
+
+    .zoomedDishInfo .allergenChip.caution {
+      background: rgba(250, 204, 21, 0.15);
+      border: 1px solid rgba(250, 204, 21, 0.3);
+      color: #fde047;
     }
 
     /* Remove tip pulse animation - no longer needed */
@@ -2830,6 +2985,20 @@
       font-size: 0.85rem !important
     }
 
+    .btnLink {
+      background: transparent;
+      border: none;
+      color: #6b7cff;
+      font-size: 0.85rem;
+      padding: 4px 0;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      cursor: pointer;
+    }
+    .btnLink:hover {
+      color: #8b9aff;
+    }
+
     .aiBrandPreview {
       display: flex;
       gap: 10px;
@@ -4252,6 +4421,21 @@
         <button class="btn btnPrimary" id="editorLockRefresh" type="button">Check again</button>
       </div>
     </div>
+  </div>
+
+  <!-- Mobile Zoom UI Elements -->
+  <div class="zoomTopOverlay" id="zoomTopOverlay"></div>
+  <button class="zoomBackButton" id="zoomBackButton" type="button">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 18 9 12 15 6"></polyline>
+    </svg>
+    Back
+  </button>
+
+  <!-- Zoomed Dish Info Panel -->
+  <div class="zoomedDishInfo" id="zoomedDishInfo">
+    <h3 id="zoomedDishName">Dish Name</h3>
+    <div class="allergenChips" id="zoomedAllergenChips"></div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -6973,6 +7157,238 @@
     let mobileViewerChrome = null;
     let mobileZoomLevel = 1;
     let mobileViewerKeyHandler = null;
+
+    // ========== Mobile Overlay Zoom ==========
+    let isOverlayZoomed = false;
+    let zoomedOverlayItem = null;
+    let preZoomScrollPos = { x: 0, y: 0 };
+
+    // Diet emoji mapping
+    const DIET_EMOJI = {
+      'vegan': '🌱',
+      'vegetarian': '🥬',
+      'gluten-free': '🌾',
+      'halal': '☪️',
+      'kosher': '✡️',
+      'pescatarian': '🐟',
+      'keto': '🥑',
+      'paleo': '🦴'
+    };
+
+    let currentZoomScale = 1;
+
+    function zoomToOverlay(item, overlayEl, isTransition = false) {
+      const menuWrap = document.querySelector('.menuWrap');
+      const menuInner = menuWrap?.querySelector('.menuInner');
+      const menuImg = menuInner?.querySelector('.menuImg');
+      if (!menuWrap || !menuInner || !menuImg || !overlayEl) return;
+
+      // Save scroll position only on first zoom (not transitions)
+      if (!isTransition) {
+        preZoomScrollPos = { x: window.scrollX, y: window.scrollY };
+      }
+
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+
+      // First, add zoomed class to get the correct layout
+      // Clear any existing transform first
+      menuInner.style.transition = 'none';
+      menuInner.style.transform = '';
+      menuWrap.classList.add('zoomed');
+
+      // Force reflow to apply zoomed layout before measuring
+      void menuWrap.offsetWidth;
+
+      // Now measure with the zoomed layout
+      const imgRect = menuImg.getBoundingClientRect();
+
+      // Use the item's percentage-based position for accuracy
+      // item.x, item.y, item.w, item.h are percentages (0-100)
+      const overlayX = (parseFloat(item.x) || 0) / 100;
+      const overlayY = (parseFloat(item.y) || 0) / 100;
+      const overlayW = (parseFloat(item.w) || 0) / 100;
+      const overlayH = (parseFloat(item.h) || 0) / 100;
+
+      // Calculate overlay position in pixels relative to the image
+      const overlayLeftPx = overlayX * imgRect.width;
+      const overlayTopPx = overlayY * imgRect.height;
+      const overlayWidthPx = overlayW * imgRect.width;
+      const overlayHeightPx = overlayH * imgRect.height;
+
+      // Overlay center relative to menuInner (which contains the image)
+      const relX = overlayLeftPx + overlayWidthPx / 2;
+      const relY = overlayTopPx + overlayHeightPx / 2;
+
+      // Calculate zoom to fit overlay with padding
+      // Leave space for info panel at bottom
+      const topPadding = 20;
+      const bottomUIHeight = 220; // info panel + back button
+      const availableWidth = screenWidth * 0.92;
+      const availableHeight = screenHeight - topPadding - bottomUIHeight;
+
+      const scaleByWidth = availableWidth / overlayWidthPx;
+      const scaleByHeight = availableHeight / overlayHeightPx;
+      const zoomScale = Math.min(Math.max(Math.min(scaleByWidth, scaleByHeight), 1.5), 3.5);
+
+      // Store zoom scale for pulse animation
+      currentZoomScale = zoomScale;
+
+      // Update CSS custom property for scaled animations
+      document.documentElement.style.setProperty('--overlay-zoom-scale', zoomScale);
+
+      // Target position: center of available viewing area
+      const targetX = screenWidth / 2;
+      const targetY = topPadding + (availableHeight / 2);
+
+      // Calculate translation to center the overlay
+      // After transform translate(tx,ty) scale(s) with origin 0,0:
+      // Point at (relX, relY) moves to (tx + relX*s, ty + relY*s)
+      // We want this to equal (targetX, targetY)
+      const translateX = targetX - relX * zoomScale;
+      const translateY = targetY - relY * zoomScale;
+
+      // Re-enable transition and apply the transform
+      menuInner.style.transition = '';
+      menuInner.style.transformOrigin = '0 0';
+
+      // Use requestAnimationFrame to ensure transition works
+      requestAnimationFrame(() => {
+        menuInner.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomScale})`;
+      });
+
+      // Show back button and top overlay
+      const backBtn = document.getElementById('zoomBackButton');
+      if (backBtn) backBtn.classList.add('show');
+      const topOverlay = document.getElementById('zoomTopOverlay');
+      if (topOverlay) topOverlay.classList.add('show');
+
+      // Show zoomed dish info
+      showZoomedDishInfo(item);
+
+      // Update state
+      isOverlayZoomed = true;
+      zoomedOverlayItem = item;
+
+      // Prevent body scroll while zoomed
+      document.body.style.overflow = 'hidden';
+    }
+
+    function zoomOutOverlay() {
+      const menuWrap = document.querySelector('.menuWrap');
+      const menuInner = menuWrap?.querySelector('.menuInner');
+      if (!menuWrap || !menuInner) return;
+
+      // Reset zoom scale
+      currentZoomScale = 1;
+      document.documentElement.style.setProperty('--overlay-zoom-scale', 1);
+
+      // Reset transform
+      menuInner.style.transform = '';
+      menuWrap.classList.remove('zoomed');
+
+      // Hide back button and top overlay
+      const backBtn = document.getElementById('zoomBackButton');
+      if (backBtn) backBtn.classList.remove('show');
+      const topOverlay = document.getElementById('zoomTopOverlay');
+      if (topOverlay) topOverlay.classList.remove('show');
+
+      // Hide zoomed dish info
+      const dishInfo = document.getElementById('zoomedDishInfo');
+      if (dishInfo) dishInfo.classList.remove('show');
+
+      // Re-enable body scroll
+      document.body.style.overflow = '';
+
+      // Clear selection
+      document.querySelectorAll('.overlay.selected').forEach(ov => ov.classList.remove('selected'));
+
+      // Update state
+      isOverlayZoomed = false;
+      zoomedOverlayItem = null;
+
+      // Restore scroll position
+      window.scrollTo(preZoomScrollPos.x, preZoomScrollPos.y);
+    }
+
+    function showZoomedDishInfo(item) {
+      const dishInfo = document.getElementById('zoomedDishInfo');
+      const nameEl = document.getElementById('zoomedDishName');
+      const chipsEl = document.getElementById('zoomedAllergenChips');
+      if (!dishInfo || !nameEl || !chipsEl) return;
+
+      nameEl.textContent = item.name || item.id || 'Dish';
+
+      // Build allergen chips based on user's allergens
+      const userAllergens = state.allergies || [];
+      const userDiets = state.diets || [];
+      const dishAllergens = item.allergens || [];
+      const dishDiets = item.diets || [];
+      const crossContamination = item.crossContamination || [];
+
+      let chipsHTML = '';
+
+      // Check which of user's allergens are in the dish
+      userAllergens.forEach(allergen => {
+        const allergenLower = allergen.toLowerCase();
+        const isDanger = dishAllergens.some(a => a.toLowerCase() === allergenLower);
+        const isCaution = crossContamination.some(a => a.toLowerCase() === allergenLower);
+        const emoji = ALLERGEN_EMOJI[allergenLower] || '⚠️';
+
+        if (isDanger) {
+          chipsHTML += `<span class="allergenChip danger">${emoji} Contains ${allergen}</span>`;
+        } else if (isCaution) {
+          chipsHTML += `<span class="allergenChip caution">${emoji} Cross-contact risk</span>`;
+        } else {
+          chipsHTML += `<span class="allergenChip safe">${emoji} ${allergen}-free</span>`;
+        }
+      });
+
+      // Check diets
+      userDiets.forEach(diet => {
+        const dietLower = diet.toLowerCase();
+        const isCompatible = dishDiets.some(d => d.toLowerCase() === dietLower);
+        const emoji = DIET_EMOJI[dietLower] || '🍽️';
+
+        if (isCompatible) {
+          chipsHTML += `<span class="allergenChip safe">${emoji} ${diet}</span>`;
+        } else {
+          chipsHTML += `<span class="allergenChip danger">${emoji} Not ${diet}</span>`;
+        }
+      });
+
+      // If user has no allergens/diets set, show the dish's allergens
+      if (userAllergens.length === 0 && userDiets.length === 0) {
+        if (dishAllergens.length > 0) {
+          chipsHTML = dishAllergens.map(a => {
+            const emoji = ALLERGEN_EMOJI[a.toLowerCase()] || '⚠️';
+            return `<span class="allergenChip caution">${emoji} Contains ${a}</span>`;
+          }).join('');
+        } else {
+          chipsHTML = '<span class="allergenChip safe">✓ No common allergens</span>';
+        }
+      }
+
+      chipsEl.innerHTML = chipsHTML;
+      dishInfo.classList.add('show');
+    }
+
+    // Set up back button handler
+    document.getElementById('zoomBackButton')?.addEventListener('click', () => {
+      zoomOutOverlay();
+    });
+
+    // Also zoom out when clicking outside the overlay (on the zoomed menu)
+    document.addEventListener('click', (e) => {
+      if (!isOverlayZoomed) return;
+      const clickedOverlay = e.target.closest('.overlay');
+      const clickedBackBtn = e.target.closest('.zoomBackButton');
+      const clickedDishInfo = e.target.closest('.zoomedDishInfo');
+      if (!clickedOverlay && !clickedBackBtn && !clickedDishInfo) {
+        zoomOutOverlay();
+      }
+    });
+    // ========== End Mobile Overlay Zoom ==========
 
     function ensureMobileInfoPanel() {
       if (mobileInfoPanel && mobileInfoPanel.isConnected) return mobileInfoPanel;
@@ -19838,37 +20254,34 @@
             if (typeof evt.stopPropagation === 'function') evt.stopPropagation();
           }
 
-          if (currentMobileInfoItem === item && mobileInfoPanel?.classList.contains('show')) {
-            renderMobileInfo(null);
-          } else {
-            hideTip();
-
-            // Add selected class to overlay for pulse animation on mobile AFTER hideTip
-            const overlayBox = target?.classList?.contains('overlay') ? target : (target?.closest ? target.closest('.overlay') : null);
-            const isClick = evt && (evt.type === 'click' || evt.type === 'touchend');
-            if (overlayBox && isClick) {
-              document.querySelectorAll('.overlay').forEach(ov => ov.classList.remove('selected'));
-              overlayBox.classList.add('selected');
-              setOverlayPulseColor(overlayBox);
-              // Force reflow to ensure animation starts
-              void overlayBox.offsetWidth;
-              // Track which overlay was selected for re-applying after renderLayer
-              const layer = document.querySelector('.overlayLayer');
-              if (layer) {
-                const boxes = layer.querySelectorAll('.overlay');
-                boxes.forEach((box, idx) => {
-                  if (box === overlayBox) {
-                    window.__lastSelectedOverlay = { index: idx, item: item };
-                  }
-                });
-              }
-            }
-
-            renderMobileInfo(item);
-
-            // Track dish interaction for analytics (mobile)
-            trackDishInteraction(item);
+          // If already zoomed to this item, zoom out
+          if (isOverlayZoomed && zoomedOverlayItem === item) {
+            zoomOutOverlay();
+            return;
           }
+
+          hideTip();
+
+          // Add selected class to overlay for pulse animation on mobile
+          const overlayBox = target?.classList?.contains('overlay') ? target : (target?.closest ? target.closest('.overlay') : null);
+          const isClick = evt && (evt.type === 'click' || evt.type === 'touchend');
+          if (overlayBox && isClick) {
+            document.querySelectorAll('.overlay').forEach(ov => ov.classList.remove('selected'));
+            overlayBox.classList.add('selected');
+            setOverlayPulseColor(overlayBox);
+            void overlayBox.offsetWidth;
+          }
+
+          // Check if already zoomed (transitioning between dishes)
+          const isTransition = isOverlayZoomed;
+
+          // Use zoom instead of mobile panel - pass isTransition for smooth animation
+          if (overlayBox) {
+            zoomToOverlay(item, overlayBox, isTransition);
+          }
+
+          // Track dish interaction for analytics (mobile)
+          trackDishInteraction(item);
           return;
         }
         if (mobileInfoPanel && mobileInfoPanel.classList.contains('show')) {
@@ -19952,6 +20365,8 @@
             // Create two rgba colors with different opacities
             overlayElement.style.setProperty('--pulse-color-start', `rgba(${r}, ${g}, ${b}, 0.5)`);
             overlayElement.style.setProperty('--pulse-color-end', `rgba(${r}, ${g}, ${b}, 0.9)`);
+            // Set outline color to match border
+            overlayElement.style.outlineColor = borderColor;
             return;
           }
         }
@@ -19973,6 +20388,8 @@
           const b = rgbMatch[3];
           overlayElement.style.setProperty('--pulse-color-start', `rgba(${r}, ${g}, ${b}, 0.5)`);
           overlayElement.style.setProperty('--pulse-color-end', `rgba(${r}, ${g}, ${b}, 0.9)`);
+          // Set outline color to match border
+          overlayElement.style.outlineColor = borderColor;
         }
       }
 
@@ -20140,14 +20557,14 @@
     <div class="pill">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:8px">
         <div style="font-weight:600">${(state.qr || !state.user?.loggedIn) ? 'Select Your Allergens' : 'Your saved allergens'}</div>
-        ${(!state.qr && state.user?.loggedIn) ? `<button class="btn clickable" id="editSavedBtn">Edit Saved Allergens</button>` : ''}
+        ${(!state.qr && state.user?.loggedIn) ? `<button class="btnLink clickable" id="editSavedBtn">Edit saved allergens</button>` : ''}
       </div>
       <div id="savedChips"></div>
     </div>
     <div class="pill">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;flex-wrap:wrap;gap:8px">
         <div style="font-weight:600">${(state.qr || !state.user?.loggedIn) ? 'Dietary Preferences' : 'Your saved diets'}</div>
-        ${(!state.qr && state.user?.loggedIn) ? `<button class="btn clickable" id="editSavedDietsBtn">Edit Saved Dietary Preferences</button>` : ''}
+        ${(!state.qr && state.user?.loggedIn) ? `<button class="btnLink clickable" id="editSavedDietsBtn">Edit saved diets</button>` : ''}
       </div>
       <div id="dietChips"></div>
     </div>
