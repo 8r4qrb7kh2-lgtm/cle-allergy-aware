@@ -7362,17 +7362,17 @@
       // Re-enable body scroll
       document.body.style.overflow = '';
 
-      // "Nuclear" Scroll Fix (Async):
-      // Reset scroll to 0,0 but wait slightly to ensure browser registers the change relative to layout
+      // "Nuclear" Scroll Fix (Async RAF):
+      // 1. Reset to 0,0 to invalidate viewport
       window.scrollTo(0, 0);
 
-      // Use setTimeout to allow the browser a frame to process the 0,0 position
-      // before restoring the original position. This is more reliable than immediate synchronous restoration.
-      setTimeout(() => {
+      // 2. Wait for next paint frame
+      requestAnimationFrame(() => {
+        // 3. Restore position
         window.scrollTo(preZoomScrollPos.x, preZoomScrollPos.y);
-        // Force reflow after restoration
+        // 4. Force reflow
         if (menuWrap) void menuWrap.offsetHeight;
-      }, 20);
+      });
 
       // Clear selection
       document.querySelectorAll('.overlay.selected').forEach(ov => ov.classList.remove('selected'));
@@ -20492,18 +20492,16 @@
           box.style.width = (+it.w || 0) + '%';
           box.style.height = (+it.h || 0) + '%';
 
-          const hasCross = hasCrossContamination(it, state.allergies || []);
-          if (hasCross) {
+          // Determine status icons
+          const isDanger = st === 'unsafe';
+          const isCaution = st === 'removable';
+
+          if (isDanger || isCaution) {
             const warning = document.createElement('div');
-            warning.className = 'ovWarning';
-            warning.title = 'Cross-contamination warning';
+            warning.className = isDanger ? 'ovWarning' : 'ovCaution';
+            warning.title = isDanger ? 'Contains allergens' : 'Cross-contamination risk';
             warning.textContent = '⚠';
-            warning.addEventListener('click', (e) => { showOverlayDetails(e, it, box); });
-            warning.addEventListener('touchend', (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              showOverlayDetails(e, it, box);
-            }, { passive: false });
+            // Click handler bubbles to box
             box.appendChild(warning);
           }
 
@@ -20511,12 +20509,7 @@
           badge.className = 'ovBadge';
           badge.title = 'Details';
           badge.textContent = 'i';
-          badge.addEventListener('click', (e) => { showOverlayDetails(e, it, box); });
-          badge.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            showOverlayDetails(e, it, box);
-          }, { passive: false });
+          // Click handler bubbles to box
           box.appendChild(badge);
 
           box.addEventListener('mousemove', (e) => {
@@ -20535,16 +20528,11 @@
             // hideTip already checks if tipPinned is true before hiding
             hideTip();
           });
+
+          // Consolidated Click/Touch Handler
           box.addEventListener('click', (e) => {
-            // showOverlayDetails will handle pinning via showTipIn
             showOverlayDetails(e, it, box);
           });
-          box.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            // showOverlayDetails will handle pinning via showTipIn
-            showOverlayDetails(e, it, box);
-          }, { passive: false });
 
           layer.appendChild(box);
         });
