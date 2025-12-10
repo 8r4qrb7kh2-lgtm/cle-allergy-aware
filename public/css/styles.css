@@ -256,7 +256,7 @@ nav a:hover {
 .mode-toggle-container {
   position: absolute;
   top: 12px;
-  right: 16px;
+  left: 16px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -309,7 +309,7 @@ nav a:hover {
 @media (max-width: 600px) {
   .mode-toggle-container {
     top: 8px;
-    right: 10px;
+    left: 10px;
   }
   .mode-toggle-label {
     font-size: 0.75rem;
