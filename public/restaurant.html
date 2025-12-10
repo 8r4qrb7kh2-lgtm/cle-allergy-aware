@@ -7361,6 +7361,11 @@
       // Re-enable body scroll
       document.body.style.overflow = '';
 
+      // Force layout update with microscopic scroll to fix misalignment
+      // This forces the browser to re-evaluate viewport-relative positioning
+      window.scrollBy(0, 1);
+      window.scrollBy(0, -1);
+
       // Force reflow to ensure layout snaps back correctly
       void menuWrap.offsetWidth;
 
@@ -7376,6 +7381,12 @@
 
       // Force another reflow after scroll restoration to ensure sticky elements/overlays are correct
       void menuWrap.offsetWidth;
+
+      // One more scroll jiggle after restoration to be safe
+      setTimeout(() => {
+        window.scrollBy(0, 1);
+        window.scrollBy(0, -1);
+      }, 50);
     }
 
     function showZoomedDishInfo(item) {
@@ -20419,70 +20430,39 @@
       // Make showOverlayDetails globally accessible for auto-opening overlays from dish search
       window.showOverlayDetails = showOverlayDetails;
 
-      // Helper function to set pulse color based on overlay's border-color
+      // Helper function to set pulse color based on overlay's status class
       function setOverlayPulseColor(overlayElement) {
         if (!overlayElement) return;
 
-        const computedStyle = window.getComputedStyle(overlayElement);
-        // Use borderTopColor as specific side is more reliable than shorthand borderColor
-        let borderColor = computedStyle.borderTopColor || computedStyle.borderColor;
+        // Define colors matching CSS variables
+        // These match the values in renderLayer and CSS
+        const colors = {
+          safe: '22, 163, 74',      // var(--ok) equivalent (green-600)
+          removable: '202, 138, 4', // var(--warn) equivalent (yellow-600)
+          unsafe: '220, 38, 38',    // var(--bad) equivalent (red-600)
+          neutral: '255, 255, 255'
+        };
 
-        // If border color is empty or transparent, try to get it from inline style or fallback
-        if (!borderColor || borderColor === 'rgba(0, 0, 0, 0)' || borderColor === 'transparent') {
-          borderColor = overlayElement.style.borderColor || overlayElement.style.borderTopColor;
+        let rgb = colors.neutral;
+        let borderColor = 'rgba(255, 255, 255, 0.2)'; // Default border
+
+        if (overlayElement.classList.contains('safe')) {
+          rgb = colors.safe;
+          borderColor = 'var(--ok)';
+        } else if (overlayElement.classList.contains('removable')) {
+          rgb = colors.removable;
+          borderColor = 'var(--warn)';
+        } else if (overlayElement.classList.contains('unsafe')) {
+          rgb = colors.unsafe;
+          borderColor = 'var(--bad)';
         }
 
-        // Convert border-color to rgba format with opacity
-        // If it's already rgba/rgb, extract the rgb values and add opacity
-        // If it's a hex color, convert it
+        // Apply pulse colors
+        overlayElement.style.setProperty('--pulse-color-start', `rgba(${rgb}, 0.5)`);
+        overlayElement.style.setProperty('--pulse-color-end', `rgba(${rgb}, 0.9)`);
 
-        // Handle rgb/rgba format
-        if (borderColor && borderColor.startsWith('rgb')) {
-          const match = borderColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
-          if (match) {
-            const r = match[1];
-            const g = match[2];
-            const b = match[3];
-            // Create two rgba colors with different opacities
-            overlayElement.style.setProperty('--pulse-color-start', `rgba(${r}, ${g}, ${b}, 0.5)`);
-            overlayElement.style.setProperty('--pulse-color-end', `rgba(${r}, ${g}, ${b}, 0.9)`);
-            // Set outline color to match border
-            overlayElement.style.outlineColor = borderColor;
-            return;
-          }
-        }
-
-        // Handle hex colors or CSS variables
-        if (borderColor) {
-          // Create a temporary element to convert the color, attached to the overlay's parent to inherit variables
-          const tempEl = document.createElement('div');
-          tempEl.style.color = borderColor;
-          tempEl.style.position = 'absolute';
-          tempEl.style.visibility = 'hidden';
-          // Append to parent if possible, otherwise body
-          if (overlayElement.parentElement) {
-            overlayElement.parentElement.appendChild(tempEl);
-          } else {
-            document.body.appendChild(tempEl);
-          }
-
-          const rgb = window.getComputedStyle(tempEl).color;
-          // Clean up
-          if (tempEl.parentElement) {
-            tempEl.parentElement.removeChild(tempEl);
-          }
-
-          const rgbMatch = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
-          if (rgbMatch) {
-            const r = rgbMatch[1];
-            const g = rgbMatch[2];
-            const b = rgbMatch[3];
-            overlayElement.style.setProperty('--pulse-color-start', `rgba(${r}, ${g}, ${b}, 0.5)`);
-            overlayElement.style.setProperty('--pulse-color-end', `rgba(${r}, ${g}, ${b}, 0.9)`);
-            // Set outline color to match border
-            overlayElement.style.outlineColor = borderColor;
-          }
-        }
+        // Ensure outline matches
+        overlayElement.style.outlineColor = borderColor;
       }
 
       function renderLayer() {
@@ -20505,8 +20485,9 @@
         pageOverlays.forEach(it => {
 
           const box = document.createElement('div');
-          box.className = 'overlay';
           const st = computeStatus(it, state.allergies || [], state.diets || []);
+          // Add status as class for easier styling and selection
+          box.className = `overlay ${st}`;
           box.style.borderColor = colors[st] || colors.neutral;
           box.style.left = (+it.x || 0) + '%';
           box.style.top = (+it.y || 0) + '%';
