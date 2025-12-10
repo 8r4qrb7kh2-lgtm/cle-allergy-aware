@@ -19226,14 +19226,32 @@
         if (unsafeHits.length) {
           const list = unsafeHits.map(a => {
             const emoji = ALLERGEN_EMOJI[a.toLowerCase()] || '⚠️';
-            return `<div style="margin-bottom:4px">${emoji} Contains <strong>${esc(a.toLowerCase())}</strong></div>`;
+            const allergenLower = a.toLowerCase();
+            // Get specific ingredients containing this allergen
+            const ingredientInfo = details[allergenLower] || details[a];
+            let text = `${emoji} Contains <strong>${esc(allergenLower)}</strong>`;
+            if (ingredientInfo) {
+              // Extract just the ingredients part (remove "Contains " prefix if present)
+              const ingredients = ingredientInfo.replace(/^Contains\s+/i, '');
+              text += `<div style="font-size:0.85em;opacity:0.85;margin-top:2px;margin-left:20px">in: ${esc(ingredients)}</div>`;
+            }
+            return `<div style="margin-bottom:4px">${text}</div>`;
           }).join('');
           html += `<div class="note tooltipDangerText">${list}</div>`;
         }
         if (removableHits.length) {
           const list = removableHits.map(a => {
             const emoji = ALLERGEN_EMOJI[a.toLowerCase()] || '⚠️';
-            return `<div style="margin-bottom:4px">${emoji} Contains <strong>${esc(a.toLowerCase())}</strong> (can be accommodated)</div>`;
+            const allergenLower = a.toLowerCase();
+            // Get specific ingredients containing this allergen
+            const ingredientInfo = details[allergenLower] || details[a];
+            let text = `${emoji} Contains <strong>${esc(allergenLower)}</strong> (can be accommodated)`;
+            if (ingredientInfo) {
+              // Extract just the ingredients part (remove "Contains " prefix if present)
+              const ingredients = ingredientInfo.replace(/^Contains\s+/i, '');
+              text += `<div style="font-size:0.85em;opacity:0.85;margin-top:2px;margin-left:20px">in: ${esc(ingredients)}</div>`;
+            }
+            return `<div style="margin-bottom:4px">${text}</div>`;
           }).join('');
           html += `<div class="note tooltipWarnText">${list}</div>`;
         }
@@ -19342,7 +19360,18 @@
               html += `<div style="margin-bottom:6px;color:#facc15;font-size:0.9rem">${emoji} This dish can be made <strong>${esc(dietLower)}</strong></div>`;
             } else {
               // Cannot be made to meet the diet - show red
-              html += `<div style="margin-bottom:6px;color:#e85d5d;font-size:0.9rem">${emoji} This dish is not <strong>${esc(dietLower)}</strong></div>`;
+              let dietText = `${emoji} This dish is not <strong>${esc(dietLower)}</strong>`;
+              // Show which ingredients are blocking this diet
+              if (blockingIngredients.length > 0) {
+                const ingredientNames = blockingIngredients
+                  .map(ing => ing.name || ing)
+                  .filter(name => name)
+                  .join(', ');
+                if (ingredientNames) {
+                  dietText += `<div style="font-size:0.85em;opacity:0.85;margin-top:2px;margin-left:20px">due to: ${esc(ingredientNames)}</div>`;
+                }
+              }
+              html += `<div style="margin-bottom:6px;color:#e85d5d;font-size:0.9rem">${dietText}</div>`;
             }
           }
         });
