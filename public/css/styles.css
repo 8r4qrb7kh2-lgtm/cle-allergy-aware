@@ -312,7 +312,7 @@ nav a:hover {
     left: 10px;
   }
   .mode-toggle-label {
-    font-size: 0.75rem;
+    display: none;
   }
   .mode-toggle {
     width: 48px;
