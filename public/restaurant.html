@@ -7197,6 +7197,10 @@
       menuInner.style.transform = '';
       menuWrap.classList.add('zoomed');
 
+      // Set zoomed state immediately to prevent resize handler from re-rendering overlays
+      isOverlayZoomed = true;
+      zoomedOverlayItem = item;
+
       // Force reflow to apply zoomed layout before measuring
       void menuWrap.offsetWidth;
 
@@ -7252,9 +7256,18 @@
       menuInner.style.transition = '';
       menuInner.style.transformOrigin = '0 0';
 
-      // Use requestAnimationFrame to ensure transition works
+      // Use requestAnimationFrame to ensure transition works and re-apply selected class
       requestAnimationFrame(() => {
         menuInner.style.transform = `translate(${translateX}px, ${translateY}px) scale(${zoomScale})`;
+
+        // Ensure the overlay has the selected class (might have been removed by a re-render)
+        if (overlayEl && !overlayEl.classList.contains('selected')) {
+          document.querySelectorAll('.overlay').forEach(ov => ov.classList.remove('selected'));
+          overlayEl.classList.add('selected');
+          if (typeof setOverlayPulseColor === 'function') {
+            setOverlayPulseColor(overlayEl);
+          }
+        }
       });
 
       // Show back button and top overlay
@@ -7265,10 +7278,6 @@
 
       // Show zoomed dish info
       showZoomedDishInfo(item);
-
-      // Update state
-      isOverlayZoomed = true;
-      zoomedOverlayItem = item;
 
       // Prevent body scroll while zoomed
       document.body.style.overflow = 'hidden';
@@ -20496,6 +20505,9 @@
       }
 
       addEventListener('resize', () => {
+        // Skip re-render when zoomed - the transform handles positioning
+        // and re-rendering would remove the selected class
+        if (isOverlayZoomed) return;
         requestAnimationFrame(renderLayer);
       }, { passive: true });
 
