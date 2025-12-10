@@ -683,41 +683,29 @@
     }
 
     .zoomBackButton {
-      position: fixed;
-      bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 3600;
-      background: rgba(255, 255, 255, 0.95);
-      border: none;
-      border-radius: 20px;
-      padding: 12px 28px;
-      color: #1a1a2e;
-      font-size: 0.95rem;
-      font-weight: 600;
-      display: none;
-      align-items: center;
-      gap: 6px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      padding: 8px;
       cursor: pointer;
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-      pointer-events: auto;
-    }
-
-    .zoomBackButton.show {
       display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s ease;
     }
 
     .zoomBackButton:active {
-      background: rgba(230, 230, 230, 0.95);
-      transform: translateX(-50%) scale(0.94);
+      background: rgba(255, 255, 255, 0.25);
+      transform: scale(0.92);
     }
 
     .zoomBackButton svg {
-      width: 18px;
-      height: 18px;
-      stroke: #1a1a2e;
+      width: 20px;
+      height: 20px;
+      stroke: rgba(255, 255, 255, 0.9);
     }
 
     /* Zoomed dish info overlay */
@@ -734,8 +722,7 @@
           rgba(11, 16, 32, 0.4) 82%,
           rgba(11, 16, 32, 0.15) 92%,
           transparent 100%);
-      padding: 20px 16px calc(80px + env(safe-area-inset-bottom, 0px));
-      padding-top: 60px;
+      padding: 60px 16px calc(20px + env(safe-area-inset-bottom, 0px)) 16px;
       z-index: 999;
       display: none;
     }
@@ -745,7 +732,6 @@
     }
 
     .zoomedDishInfo h3 {
-      margin: 0 0 12px;
       font-size: 1.3rem;
       font-weight: 600;
       color: var(--ink);
@@ -4476,17 +4462,18 @@
 
   <!-- Mobile Zoom UI Elements -->
   <div class="zoomTopOverlay" id="zoomTopOverlay"></div>
-  <button class="zoomBackButton" id="zoomBackButton" type="button">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-      stroke-linejoin="round">
-      <polyline points="15 18 9 12 15 6"></polyline>
-    </svg>
-    Back
-  </button>
 
   <!-- Zoomed Dish Info Panel -->
   <div class="zoomedDishInfo" id="zoomedDishInfo">
-    <h3 id="zoomedDishName">Dish Name</h3>
+    <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+      <button class="zoomBackButton" id="zoomBackButton" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+          stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+      <h3 id="zoomedDishName" style="margin: 0;">Dish Name</h3>
+    </div>
     <div class="allergenChips" id="zoomedAllergenChips"></div>
   </div>
 
