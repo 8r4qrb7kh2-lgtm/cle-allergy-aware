@@ -10123,7 +10123,7 @@
       // Use the same tooltip HTML generator that's used for the actual overlays
       const allAllergens = ALLERGENS.slice();
       const allDiets = ['Vegan', 'Vegetarian', 'Pescatarian', 'Gluten-free'];
-      let html = tooltipBodyHTML(tempOverlay, allAllergens, allDiets);
+      let html = tooltipBodyHTML(tempOverlay, allAllergens, allDiets, true);
 
       // Note: Cross-contamination information is already included in tooltipBodyHTML,
       // so we don't need to add it again here
@@ -19205,10 +19205,14 @@
       try { return (window.visualViewport && window.visualViewport.scale) ? window.visualViewport.scale : 1; }
       catch (_) { return 1; }
     }
-    function tooltipBodyHTML(item, sel, userDiets) {
+    function tooltipBodyHTML(item, sel, userDiets, isClick = false) {
       const status = computeStatus(item, sel, userDiets);
       const details = item.details || {};
       const hasCross = hasCrossContamination(item, sel);
+
+      // Detect if mobile - on mobile always show details, on desktop only when clicked
+      const isMobile = prefersMobileInfo();
+      const showDetails = isMobile || isClick;
 
       if (!sel.length && (!userDiets || !userDiets.length)) return `<div class="note">No dietary preferences saved. Sign in to save your preferences.</div>`;
 
@@ -19227,13 +19231,20 @@
           const list = unsafeHits.map(a => {
             const emoji = ALLERGEN_EMOJI[a.toLowerCase()] || '⚠️';
             const allergenLower = a.toLowerCase();
-            // Get specific ingredients containing this allergen
-            const ingredientInfo = details[allergenLower] || details[a];
             let text = `${emoji} Contains <strong>${esc(allergenLower)}</strong>`;
-            if (ingredientInfo) {
-              // Extract just the ingredients part (remove "Contains " prefix if present)
-              const ingredients = ingredientInfo.replace(/^Contains\s+/i, '');
-              text += `<div style="font-size:0.85em;opacity:0.85;margin-top:2px;margin-left:20px">in: ${esc(ingredients)}</div>`;
+
+            // Only show ingredient details when clicked (desktop) or always on mobile
+            if (showDetails) {
+              const ingredientInfo = details[allergenLower] || details[a];
+              if (ingredientInfo) {
+                // Extract just the ingredients part (remove "Contains " prefix if present)
+                const ingredients = ingredientInfo.replace(/^Contains\s+/i, '');
+                // More compact styling for mobile
+                const detailStyle = isMobile
+                  ? 'font-size:0.8em;opacity:0.8;margin-top:1px;margin-left:18px;line-height:1.2'
+                  : 'font-size:0.85em;opacity:0.85;margin-top:2px;margin-left:20px';
+                text += `<div style="${detailStyle}">in: ${esc(ingredients)}</div>`;
+              }
             }
             return `<div style="margin-bottom:4px">${text}</div>`;
           }).join('');
@@ -19243,13 +19254,20 @@
           const list = removableHits.map(a => {
             const emoji = ALLERGEN_EMOJI[a.toLowerCase()] || '⚠️';
             const allergenLower = a.toLowerCase();
-            // Get specific ingredients containing this allergen
-            const ingredientInfo = details[allergenLower] || details[a];
             let text = `${emoji} Contains <strong>${esc(allergenLower)}</strong> (can be accommodated)`;
-            if (ingredientInfo) {
-              // Extract just the ingredients part (remove "Contains " prefix if present)
-              const ingredients = ingredientInfo.replace(/^Contains\s+/i, '');
-              text += `<div style="font-size:0.85em;opacity:0.85;margin-top:2px;margin-left:20px">in: ${esc(ingredients)}</div>`;
+
+            // Only show ingredient details when clicked (desktop) or always on mobile
+            if (showDetails) {
+              const ingredientInfo = details[allergenLower] || details[a];
+              if (ingredientInfo) {
+                // Extract just the ingredients part (remove "Contains " prefix if present)
+                const ingredients = ingredientInfo.replace(/^Contains\s+/i, '');
+                // More compact styling for mobile
+                const detailStyle = isMobile
+                  ? 'font-size:0.8em;opacity:0.8;margin-top:1px;margin-left:18px;line-height:1.2'
+                  : 'font-size:0.85em;opacity:0.85;margin-top:2px;margin-left:20px';
+                text += `<div style="${detailStyle}">in: ${esc(ingredients)}</div>`;
+              }
             }
             return `<div style="margin-bottom:4px">${text}</div>`;
           }).join('');
@@ -19361,14 +19379,19 @@
             } else {
               // Cannot be made to meet the diet - show red
               let dietText = `${emoji} This dish is not <strong>${esc(dietLower)}</strong>`;
-              // Show which ingredients are blocking this diet
-              if (blockingIngredients.length > 0) {
+
+              // Only show ingredient details when clicked (desktop) or always on mobile
+              if (showDetails && blockingIngredients.length > 0) {
                 const ingredientNames = blockingIngredients
                   .map(ing => ing.name || ing)
                   .filter(name => name)
                   .join(', ');
                 if (ingredientNames) {
-                  dietText += `<div style="font-size:0.85em;opacity:0.85;margin-top:2px;margin-left:20px">due to: ${esc(ingredientNames)}</div>`;
+                  // More compact styling for mobile
+                  const detailStyle = isMobile
+                    ? 'font-size:0.8em;opacity:0.8;margin-top:1px;margin-left:18px;line-height:1.2'
+                    : 'font-size:0.85em;opacity:0.85;margin-top:2px;margin-left:20px';
+                  dietText += `<div style="${detailStyle}">due to: ${esc(ingredientNames)}</div>`;
                 }
               }
               html += `<div style="margin-bottom:6px;color:#e85d5d;font-size:0.9rem">${dietText}</div>`;
@@ -19745,7 +19768,7 @@
         return;
       }
       currentMobileInfoItem = item;
-      const bodyHTML = tooltipBodyHTML(item, state.allergies || [], state.diets || []);
+      const bodyHTML = tooltipBodyHTML(item, state.allergies || [], state.diets || [], true);
 
       mobileInfoPanel.innerHTML = `
     <div class="mobileInfoHeaderRow">
@@ -20468,7 +20491,7 @@
           }
         }
 
-        showTipIn(pageTip, clientX, clientY, item.id || 'Item', tooltipBodyHTML(item, state.allergies || [], state.diets || []), rect, isClick, item);
+        showTipIn(pageTip, clientX, clientY, item.id || 'Item', tooltipBodyHTML(item, state.allergies || [], state.diets || [], isClick), rect, isClick, item);
 
         // Track dish interaction for analytics (only on click, not hover)
         if (isClick) {
@@ -20589,7 +20612,7 @@
               ? e.currentTarget.getBoundingClientRect()
               : box.getBoundingClientRect();
             // mousemove is hover, not click
-            showTipIn(pageTip, e.clientX, e.clientY, it.id || 'Item', tooltipBodyHTML(it, state.allergies || [], state.diets || []), rect, false, it);
+            showTipIn(pageTip, e.clientX, e.clientY, it.id || 'Item', tooltipBodyHTML(it, state.allergies || [], state.diets || [], false), rect, false, it);
           });
           box.addEventListener('mouseleave', () => {
             // hideTip already checks if tipPinned is true before hiding
@@ -26153,7 +26176,7 @@
             return !hasConflict;
           });
 
-          document.getElementById('previewBox').innerHTML = tooltipBodyHTML(tmp, ALLERGENS.slice(), DIETS.slice());
+          document.getElementById('previewBox').innerHTML = tooltipBodyHTML(tmp, ALLERGENS.slice(), DIETS.slice(), true);
         }
         updatePreview();
 
