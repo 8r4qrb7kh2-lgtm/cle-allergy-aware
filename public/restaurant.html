@@ -20604,8 +20604,9 @@
 
           box.addEventListener('mousemove', (e) => {
             if (prefersMobileInfo()) return;
-            // If a different overlay is pinned, don't show hover tips
-            if (tipPinned && pinnedOverlayItem && pinnedOverlayItem !== it) {
+            // If any overlay is pinned (including this one), don't reposition/re-render the tooltip
+            // The pinned tooltip should stay in place until explicitly closed or another overlay is clicked
+            if (tipPinned) {
               return;
             }
             const rect = (e.currentTarget && e.currentTarget.getBoundingClientRect)
