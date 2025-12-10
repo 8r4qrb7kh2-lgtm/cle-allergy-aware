@@ -630,13 +630,13 @@
       0%,
       100% {
         box-shadow: 0 0 0 0 var(--pulse-color-start, rgba(255, 255, 255, 0.5));
-        border-width: 2px;
+        border-width: 1.5px;
       }
 
       50% {
-        box-shadow: 0 0 12px 6px var(--pulse-color-end, rgba(255, 255, 255, 0.9));
-        border-width: 6px;
-        /* Dramatic change to ensure visibility */
+        box-shadow: 0 0 8px 4px var(--pulse-color-end, rgba(255, 255, 255, 0.9));
+        border-width: 3px;
+        /* Reduced from 6px based on feedback */
       }
     }
 
@@ -7362,11 +7362,17 @@
       // Re-enable body scroll
       document.body.style.overflow = '';
 
-      // "Nuclear" Scroll Fix:
-      // Completely reset scroll to 0,0 and then restore it.
-      // This forces the mobile browser to invalidate the entire viewport buffer and re-render the layout.
+      // "Nuclear" Scroll Fix (Async):
+      // Reset scroll to 0,0 but wait slightly to ensure browser registers the change relative to layout
       window.scrollTo(0, 0);
-      void menuWrap.offsetHeight; // Force reflow at top
+
+      // Use setTimeout to allow the browser a frame to process the 0,0 position
+      // before restoring the original position. This is more reliable than immediate synchronous restoration.
+      setTimeout(() => {
+        window.scrollTo(preZoomScrollPos.x, preZoomScrollPos.y);
+        // Force reflow after restoration
+        if (menuWrap) void menuWrap.offsetHeight;
+      }, 20);
 
       // Clear selection
       document.querySelectorAll('.overlay.selected').forEach(ov => ov.classList.remove('selected'));
@@ -7374,19 +7380,6 @@
       // Update state
       isOverlayZoomed = false;
       zoomedOverlayItem = null;
-
-      // Restore scroll position
-      window.scrollTo(preZoomScrollPos.x, preZoomScrollPos.y);
-
-      // Force another reflow after scroll restoration
-      void menuWrap.offsetHeight;
-
-      // Secondary restoration in case of async scrolling behavior
-      requestAnimationFrame(() => {
-        if (Math.abs(window.scrollY - preZoomScrollPos.y) > 5) {
-          window.scrollTo(preZoomScrollPos.x, preZoomScrollPos.y);
-        }
-      });
     }
 
     function showZoomedDishInfo(item) {
@@ -20334,7 +20327,10 @@
             pointerType = 'pen';
           }
         }
-        const useMobilePanel = (pointerType !== 'mouse') && prefersMobileInfo();
+
+        // RELAXED CHECK: If we are on mobile (prefersMobileInfo), ALWAYS use mobile panel/zoom
+        // This fixes issues where some mobile browsers report 'mouse' for tap events
+        const useMobilePanel = prefersMobileInfo() || (pointerType !== 'mouse');
         if (useMobilePanel) {
           if (evt) {
             if (typeof evt.preventDefault === 'function') evt.preventDefault();
