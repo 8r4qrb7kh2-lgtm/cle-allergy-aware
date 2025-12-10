@@ -607,10 +607,13 @@
     }
 
     @keyframes overlayPulse {
-      0%, 100% {
+
+      0%,
+      100% {
         box-shadow: 0 0 0 0 var(--pulse-color-start, rgba(255, 255, 255, 0.5));
         border-width: 1.5px;
       }
+
       50% {
         box-shadow: 0 0 8px 3px var(--pulse-color-end, rgba(255, 255, 255, 0.9));
         border-width: 3px;
@@ -623,10 +626,13 @@
     }
 
     @keyframes overlayPulseZoomed {
-      0%, 100% {
+
+      0%,
+      100% {
         box-shadow: 0 0 0 0 var(--pulse-color-start, rgba(255, 255, 255, 0.5));
         border-width: 0.75px;
       }
+
       50% {
         box-shadow: 0 0 4px 2px var(--pulse-color-end, rgba(255, 255, 255, 0.9));
         border-width: 1.5px;
@@ -714,17 +720,17 @@
       left: 0;
       right: 0;
       background: linear-gradient(to top,
-        rgba(11, 16, 32, 1) 0%,
-        rgba(11, 16, 32, 1) 20%,
-        rgba(11, 16, 32, 0.97) 35%,
-        rgba(11, 16, 32, 0.92) 45%,
-        rgba(11, 16, 32, 0.82) 55%,
-        rgba(11, 16, 32, 0.65) 65%,
-        rgba(11, 16, 32, 0.45) 75%,
-        rgba(11, 16, 32, 0.25) 85%,
-        rgba(11, 16, 32, 0.1) 92%,
-        rgba(11, 16, 32, 0.03) 96%,
-        transparent 100%);
+          rgba(11, 16, 32, 1) 0%,
+          rgba(11, 16, 32, 1) 20%,
+          rgba(11, 16, 32, 0.97) 35%,
+          rgba(11, 16, 32, 0.92) 45%,
+          rgba(11, 16, 32, 0.82) 55%,
+          rgba(11, 16, 32, 0.65) 65%,
+          rgba(11, 16, 32, 0.45) 75%,
+          rgba(11, 16, 32, 0.25) 85%,
+          rgba(11, 16, 32, 0.1) 92%,
+          rgba(11, 16, 32, 0.03) 96%,
+          transparent 100%);
       padding: 28px 16px 36px;
       padding-top: 60px;
       z-index: 999;
@@ -3007,6 +3013,7 @@
       text-underline-offset: 2px;
       cursor: pointer;
     }
+
     .btnLink:hover {
       color: #8b9aff;
     }
@@ -4101,13 +4108,15 @@
       font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
-      box-shadow: 0 4px 20px rgba(255,152,0,0.4);
+      box-shadow: 0 4px 20px rgba(255, 152, 0, 0.4);
       display: none;
     }
+
     #autoFillBtn:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 25px rgba(255,152,0,0.5);
+      box-shadow: 0 6px 25px rgba(255, 152, 0, 0.5);
     }
+
     #autoFillBtn:disabled {
       opacity: 0.6;
       cursor: not-allowed;
@@ -4120,23 +4129,27 @@
       top: 80px;
       right: 20px;
       z-index: 10001;
-      background: rgba(26,31,53,0.95);
-      border: 2px solid rgba(76,90,212,0.5);
+      background: rgba(26, 31, 53, 0.95);
+      border: 2px solid rgba(76, 90, 212, 0.5);
       border-radius: 10px;
       padding: 12px;
       width: 240px;
       display: none;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
       font-size: 0.8rem;
     }
+
     #autoFillProgress h3 {
       margin: 0 0 8px 0;
       color: #fff;
       font-size: 1rem;
     }
+
     .autoFillProgressList {
-      display: none; /* Hide full list by default */
+      display: none;
+      /* Hide full list by default */
     }
+
     #autoFillProgress.expanded .autoFillProgressList {
       display: flex;
       flex-direction: column;
@@ -4145,40 +4158,60 @@
       max-height: 200px;
       overflow-y: auto;
     }
+
     .autoFillProgressItem {
       display: flex;
       align-items: center;
       gap: 6px;
       padding: 4px 6px;
-      background: rgba(11,16,40,0.6);
+      background: rgba(11, 16, 40, 0.6);
       border-radius: 4px;
       font-size: 0.75rem;
       color: #e0e0e0;
     }
-    .autoFillProgressItem.pending { opacity: 0.3; }
-    .autoFillProgressItem.active { background: rgba(76,90,212,0.3); border: 1px solid rgba(76,90,212,0.5); }
-    .autoFillProgressItem.completed { color: #6ee7b7; opacity: 0.6; }
-    .autoFillProgressItem.error { color: #fca5a5; }
+
+    .autoFillProgressItem.pending {
+      opacity: 0.3;
+    }
+
+    .autoFillProgressItem.active {
+      background: rgba(76, 90, 212, 0.3);
+      border: 1px solid rgba(76, 90, 212, 0.5);
+    }
+
+    .autoFillProgressItem.completed {
+      color: #6ee7b7;
+      opacity: 0.6;
+    }
+
+    .autoFillProgressItem.error {
+      color: #fca5a5;
+    }
+
     .autoFillProgressStatus {
       width: 16px;
       text-align: center;
       flex-shrink: 0;
       font-size: 0.7rem;
     }
+
     .autoFillProgressText {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+
     .autoFillProgressOverlay {
       display: none !important;
     }
+
     #autoFillCurrentStatus {
-      background: rgba(76,90,212,0.2);
+      background: rgba(76, 90, 212, 0.2);
       border-radius: 6px;
       padding: 8px;
       margin-bottom: 8px;
     }
+
     #autoFillCurrentDish {
       font-weight: 600;
       color: #fff;
@@ -4187,10 +4220,12 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+
     #autoFillCurrentAction {
       color: #a8b2d6;
       font-size: 0.75rem;
     }
+
     #autoFillExpandBtn {
       background: none;
       border: none;
@@ -4200,6 +4235,7 @@
       padding: 4px;
       margin-top: 4px;
     }
+
     #autoFillCloseBtn {
       position: absolute;
       top: 12px;
@@ -4210,10 +4246,11 @@
       font-size: 1.5rem;
       cursor: pointer;
     }
+
     #autoFillOverallProgress {
       margin-top: 12px;
       padding: 12px;
-      background: rgba(76,90,212,0.15);
+      background: rgba(76, 90, 212, 0.15);
       border-radius: 8px;
       text-align: center;
       color: #a8b2d6;
@@ -4428,7 +4465,8 @@
         <span id="editorLockUser">Another user</span> is currently editing this restaurant's menu.
       </p>
       <p class="editorLockSince">Editing since: <span id="editorLockSince">--</span></p>
-      <p class="editorLockInfo">To avoid conflicts, only one person can edit at a time. The editor will become available when they finish or after 2 minutes of inactivity.</p>
+      <p class="editorLockInfo">To avoid conflicts, only one person can edit at a time. The editor will become available
+        when they finish or after 2 minutes of inactivity.</p>
       <div class="editorLockActions">
         <button class="btn btnPrimary" id="editorLockRefresh" type="button">Check again</button>
       </div>
@@ -4438,7 +4476,8 @@
   <!-- Mobile Zoom UI Elements -->
   <div class="zoomTopOverlay" id="zoomTopOverlay"></div>
   <button class="zoomBackButton" id="zoomBackButton" type="button">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+      stroke-linejoin="round">
       <polyline points="15 18 9 12 15 6"></polyline>
     </svg>
     Back
@@ -4606,7 +4645,7 @@
           p_session_id: EditorLock.sessionId
         }),
         keepalive: true  // Critical: allows request to outlive the page
-      }).catch(() => {}); // Ignore errors on unload
+      }).catch(() => { }); // Ignore errors on unload
 
       EditorLock.hasLock = false;
       EditorLock.stopHeartbeat();
@@ -7322,6 +7361,9 @@
       // Re-enable body scroll
       document.body.style.overflow = '';
 
+      // Force reflow to ensure layout snaps back correctly
+      void menuWrap.offsetWidth;
+
       // Clear selection
       document.querySelectorAll('.overlay.selected').forEach(ov => ov.classList.remove('selected'));
 
@@ -7331,6 +7373,9 @@
 
       // Restore scroll position
       window.scrollTo(preZoomScrollPos.x, preZoomScrollPos.y);
+
+      // Force another reflow after scroll restoration to ensure sticky elements/overlays are correct
+      void menuWrap.offsetWidth;
     }
 
     function showZoomedDishInfo(item) {
@@ -20379,15 +20424,20 @@
         if (!overlayElement) return;
 
         const computedStyle = window.getComputedStyle(overlayElement);
-        const borderColor = computedStyle.borderColor;
+        // Use borderTopColor as specific side is more reliable than shorthand borderColor
+        let borderColor = computedStyle.borderTopColor || computedStyle.borderColor;
+
+        // If border color is empty or transparent, try to get it from inline style or fallback
+        if (!borderColor || borderColor === 'rgba(0, 0, 0, 0)' || borderColor === 'transparent') {
+          borderColor = overlayElement.style.borderColor || overlayElement.style.borderTopColor;
+        }
 
         // Convert border-color to rgba format with opacity
         // If it's already rgba/rgb, extract the rgb values and add opacity
         // If it's a hex color, convert it
-        let rgbaColor = borderColor;
 
         // Handle rgb/rgba format
-        if (borderColor.startsWith('rgb')) {
+        if (borderColor && borderColor.startsWith('rgb')) {
           const match = borderColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
           if (match) {
             const r = match[1];
@@ -20403,24 +20453,35 @@
         }
 
         // Handle hex colors or CSS variables
-        // Create a temporary element to convert the color
-        const tempEl = document.createElement('div');
-        tempEl.style.color = borderColor;
-        tempEl.style.position = 'absolute';
-        tempEl.style.visibility = 'hidden';
-        document.body.appendChild(tempEl);
-        const rgb = window.getComputedStyle(tempEl).color;
-        document.body.removeChild(tempEl);
+        if (borderColor) {
+          // Create a temporary element to convert the color, attached to the overlay's parent to inherit variables
+          const tempEl = document.createElement('div');
+          tempEl.style.color = borderColor;
+          tempEl.style.position = 'absolute';
+          tempEl.style.visibility = 'hidden';
+          // Append to parent if possible, otherwise body
+          if (overlayElement.parentElement) {
+            overlayElement.parentElement.appendChild(tempEl);
+          } else {
+            document.body.appendChild(tempEl);
+          }
 
-        const rgbMatch = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
-        if (rgbMatch) {
-          const r = rgbMatch[1];
-          const g = rgbMatch[2];
-          const b = rgbMatch[3];
-          overlayElement.style.setProperty('--pulse-color-start', `rgba(${r}, ${g}, ${b}, 0.5)`);
-          overlayElement.style.setProperty('--pulse-color-end', `rgba(${r}, ${g}, ${b}, 0.9)`);
-          // Set outline color to match border
-          overlayElement.style.outlineColor = borderColor;
+          const rgb = window.getComputedStyle(tempEl).color;
+          // Clean up
+          if (tempEl.parentElement) {
+            tempEl.parentElement.removeChild(tempEl);
+          }
+
+          const rgbMatch = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*[\d.]+)?\)/);
+          if (rgbMatch) {
+            const r = rgbMatch[1];
+            const g = rgbMatch[2];
+            const b = rgbMatch[3];
+            overlayElement.style.setProperty('--pulse-color-start', `rgba(${r}, ${g}, ${b}, 0.5)`);
+            overlayElement.style.setProperty('--pulse-color-end', `rgba(${r}, ${g}, ${b}, 0.9)`);
+            // Set outline color to match border
+            overlayElement.style.outlineColor = borderColor;
+          }
         }
       }
 
@@ -27554,7 +27615,7 @@
       // Observe state changes
       const originalRender = window.render;
       if (originalRender) {
-        window.render = function() {
+        window.render = function () {
           originalRender.apply(this, arguments);
           updateAutoFillButtonVisibility();
         };
