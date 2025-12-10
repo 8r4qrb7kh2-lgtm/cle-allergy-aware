@@ -238,13 +238,14 @@
 <body class="page-shell">
   <header class="simple-topbar">
     <div class="simple-topbar-inner">
-      <a class="simple-brand" href="restaurants.html">
+      <a class="simple-brand" href="home.html">
         <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt="Clarivore logo">
         <span>Clarivore</span>
       </a>
       <div class="simple-nav">
         <!-- Navigation populated by shared-nav.js -->
       </div>
+      <div class="mode-toggle-container" id="modeToggleContainer" style="display:none"></div>
     </div>
   </header>
 
@@ -329,6 +330,37 @@
       }
 
       document.getElementById('admin-content').style.display = 'block';
+
+      // Setup mode toggle for owner (admin pages are owner-only)
+      const modeToggleContainer = document.getElementById('modeToggleContainer');
+      if (modeToggleContainer) {
+        let currentMode = localStorage.getItem('clarivoreManagerMode');
+        if (!currentMode) {
+          currentMode = 'editor';
+          localStorage.setItem('clarivoreManagerMode', 'editor');
+        }
+        const isEditorMode = currentMode === 'editor';
+
+        modeToggleContainer.style.display = 'flex';
+        modeToggleContainer.innerHTML = `
+          <span class="mode-toggle-label">${isEditorMode ? 'Editor mode' : 'Customer mode'}</span>
+          <div class="mode-toggle ${isEditorMode ? 'active' : ''}" id="modeToggle" title="Toggle between Editor and Customer mode"></div>
+        `;
+
+        const toggle = document.getElementById('modeToggle');
+        if (toggle) {
+          toggle.onclick = () => {
+            if (isEditorMode) {
+              localStorage.setItem('clarivoreManagerMode', 'customer');
+              window.location.href = 'home.html';
+            } else {
+              localStorage.setItem('clarivoreManagerMode', 'editor');
+              window.location.href = 'manager-dashboard.html';
+            }
+          };
+        }
+      }
+
       await loadRestaurantData();
       return true;
     }
@@ -447,6 +479,7 @@
           return `
             <div class="item-card has-content">
               <div class="item-meta">
+                ${appeal.dish_name ? `<span><strong>Dish:</strong> ${escapeHtml(appeal.dish_name)}</span>` : ''}
                 <span><strong>Ingredient:</strong> ${escapeHtml(appeal.ingredient_name)}</span>
                 <span><strong>Submitted:</strong> ${submittedDate}</span>
                 ${reviewedDate ? `<span><strong>Reviewed:</strong> ${reviewedDate}</span>` : ''}

@@ -91,18 +91,64 @@
       .brand img{width:26px;height:26px;}
       .topNav a{font-size:0.9rem;}
     }
+
+    /* Mode toggle styles */
+    .mode-toggle-container {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin-left: auto;
+      padding-left: 16px;
+    }
+
+    .mode-toggle-label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .mode-toggle {
+      width: 44px;
+      height: 24px;
+      background: var(--border);
+      border-radius: 12px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .mode-toggle::after {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      background: white;
+      border-radius: 50%;
+      top: 3px;
+      left: 3px;
+      transition: transform 0.2s;
+    }
+
+    .mode-toggle.active {
+      background: var(--hover);
+    }
+
+    .mode-toggle.active::after {
+      transform: translateX(20px);
+    }
   </style>
 </head>
 <body>
   <header class="simple-topbar">
     <div class="simple-topbar-inner">
-      <a class="simple-brand" href="restaurants.html">
+      <a class="simple-brand" href="home.html">
         <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt="">
         <span>Clarivore</span>
       </a>
       <div class="simple-nav">
         <!-- Navigation populated by shared-nav.js -->
       </div>
+      <div class="mode-toggle-container" id="modeToggleContainer" style="display:none"></div>
     </div>
   </header>
   <main>
@@ -122,6 +168,40 @@
       setupNav('report-issue', user);
       if (user) {
         attachSignOutHandler(supabaseClient);
+
+        // Setup mode toggle for managers/owners
+        const OWNER_EMAIL = 'matt.29.ds@gmail.com';
+        const isOwner = user.email === OWNER_EMAIL;
+        const isManager = user.user_metadata?.role === 'manager';
+        const modeToggleContainer = document.getElementById('modeToggleContainer');
+
+        if ((isManager || isOwner) && modeToggleContainer) {
+          let currentMode = localStorage.getItem('clarivoreManagerMode');
+          if (!currentMode) {
+            currentMode = 'editor';
+            localStorage.setItem('clarivoreManagerMode', 'editor');
+          }
+          const isEditorMode = currentMode === 'editor';
+
+          modeToggleContainer.style.display = 'flex';
+          modeToggleContainer.innerHTML = `
+            <span class="mode-toggle-label">${isEditorMode ? 'Editor mode' : 'Customer mode'}</span>
+            <div class="mode-toggle ${isEditorMode ? 'active' : ''}" id="modeToggle" title="Toggle between Editor and Customer mode"></div>
+          `;
+
+          const toggle = document.getElementById('modeToggle');
+          if (toggle) {
+            toggle.onclick = () => {
+              if (isEditorMode) {
+                localStorage.setItem('clarivoreManagerMode', 'customer');
+                window.location.href = 'home.html';
+              } else {
+                localStorage.setItem('clarivoreManagerMode', 'editor');
+                window.location.href = 'manager-dashboard.html';
+              }
+            };
+          }
+        }
       }
     }
     initNav();

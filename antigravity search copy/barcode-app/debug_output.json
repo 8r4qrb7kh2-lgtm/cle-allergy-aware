@@ -1,0 +1,385 @@
+{
+  "steps": [
+    {
+      "step": "Search",
+      "timestamp": "2025-12-01T03:25:35.909Z",
+      "data": {
+        "urls": [
+          "https://www.foodproductdata.com/pacific-foods-organic-broth-beef-32-fl-oz-052603054447",
+          "https://www.amazon.com/Pacific-Foods-Organic-Beef-Broth/dp/B004SI9W7M",
+          "https://www.target.com/p/pacific-foods-gluten-free-organic-beef-broth-32oz/-/A-14769058",
+          "https://nutritiondatalist.com/product/beef-broth-upc-052603054447",
+          "https://tc.farm/beef-broth/",
+          "https://breadroot.provisions.coop/products/pacific-beef-broth-og-12-32-oz",
+          "https://allergeninside.com/foods/ingredients/052603054447/Pacific-Organic-Beef-Broth",
+          "https://www.pacificfoods.com/products/pacific-foods/beef-broth/",
+          "https://www.vons.com/shop/product-details.125250156.html",
+          "https://www.hy-vee.com/aisles-online/p/17646/Pacific-Foods-Beef-Broth",
+          "https://isitclean.org/food/pacific-foods-beef-broth/",
+          "https://www.azurestandard.com/shop/product/food/soups-broths/broth/beef/asceptically-packaged/beef-broth-organic/6556",
+          "https://www.kroger.com/p/pacific-foods-organic-beef-broth-carton/0005260305444",
+          "https://world.openfoodfacts.org/product/052603054447",
+          "https://www.upcitemdb.com/upc/052603054447",
+          "https://www.barcodelookup.com/052603054447",
+          "https://go-upc.com/search?q=052603054447",
+          "https://www.itemmaster.com/item/052603054447",
+          "https://www.foodrepo.org/en/products/052603054447",
+          "https://world.openfoodfacts.net/product/052603054447",
+          "https://www.ean-search.org/perl/ean-search.pl?q=052603054447",
+          "https://www.buycott.com/upc/052603054447",
+          "https://www.digit-eyes.com/cgi-bin/digiteyes.cgi?upc=052603054447"
+        ],
+        "product": {
+          "name": "Beef Broth",
+          "brand": "Pacific,  Pacific Foods Of Oregon  Inc."
+        }
+      }
+    },
+    {
+      "step": "Scrape",
+      "timestamp": "2025-12-01T03:25:38.796Z",
+      "data": {
+        "count": 15,
+        "data": [
+          {
+            "url": "https://www.amazon.com/Pacific-Foods-Organic-Beef-Broth/dp/B004SI9W7M",
+            "title": "Amazon.com : Pacific Foods Organic Beef Broth, 32 oz : Packaged Broths : Grocery & Gourmet Food",
+            "contentLength": 15017
+          },
+          {
+            "url": "https://www.target.com/p/pacific-foods-gluten-free-organic-beef-broth-32oz/-/A-14769058",
+            "title": "Pacific Foods Gluten Free Organic Beef Broth - 32oz : Target",
+            "contentLength": 1336
+          },
+          {
+            "url": "https://tc.farm/beef-broth/",
+            "title": "PACIFIC FOODS Beef Broth",
+            "contentLength": 1775
+          },
+          {
+            "url": "https://breadroot.provisions.coop/products/pacific-beef-broth-og-12-32-oz",
+            "title": "OG2 Pacific Beef Broth 12/32 OZ [UNFI #32188]\n  \n  \n  \n  – Breadroot Provisions",
+            "contentLength": 2633
+          },
+          {
+            "url": "https://allergeninside.com/foods/ingredients/052603054447/Pacific-Organic-Beef-Broth",
+            "title": "Pacific Organic Beef Broth Allergy and Ingredient Information",
+            "contentLength": 2992
+          },
+          {
+            "url": "https://www.pacificfoods.com/products/pacific-foods/beef-broth/",
+            "title": "Beef Broth | Pacific Foods®",
+            "contentLength": 1737
+          },
+          {
+            "url": "https://www.vons.com/shop/product-details.125250156.html",
+            "title": "",
+            "contentLength": 17
+          },
+          {
+            "url": "https://www.hy-vee.com/aisles-online/p/17646/Pacific-Foods-Beef-Broth",
+            "title": "Hy-Vee Aisles Online Grocery Shopping",
+            "contentLength": 17
+          },
+          {
+            "url": "https://isitclean.org/food/pacific-foods-beef-broth/",
+            "title": "Pacific Foods - Is It Clean",
+            "contentLength": 4302
+          },
+          {
+            "url": "https://www.azurestandard.com/shop/product/food/soups-broths/broth/beef/asceptically-packaged/beef-broth-organic/6556",
+            "title": "Organic, non-GMO Food and Produce Delivered - Azure Standard",
+            "contentLength": 17
+          },
+          {
+            "url": "https://world.openfoodfacts.org/product/052603054447",
+            "contentLength": 441
+          },
+          {
+            "url": "https://www.upcitemdb.com/upc/052603054447",
+            "title": "UPC 052603054447 - Pacific Foods Organic Beef Broth  32 oz Carton | upcitemdb.com",
+            "contentLength": 3783
+          },
+          {
+            "url": "https://www.itemmaster.com/item/052603054447",
+            "title": "Syndigo Product Experience Cloud",
+            "contentLength": 5017
+          },
+          {
+            "url": "https://www.ean-search.org/perl/ean-search.pl?q=052603054447",
+            "title": "EAN-Search.org | EAN, GTIN, UPC & ISBN Lookup and API",
+            "contentLength": 3852
+          },
+          {
+            "url": "https://www.digit-eyes.com/cgi-bin/digiteyes.cgi?upc=052603054447",
+            "title": "Log in to Digit-Eyes Voice Labeling System",
+            "contentLength": 1621
+          }
+        ]
+      }
+    },
+    {
+      "step": "UniqueDomains",
+      "timestamp": "2025-12-01T03:25:38.796Z",
+      "data": [
+        "https://www.amazon.com/Pacific-Foods-Organic-Beef-Broth/dp/B004SI9W7M",
+        "https://www.target.com/p/pacific-foods-gluten-free-organic-beef-broth-32oz/-/A-14769058",
+        "https://tc.farm/beef-broth/",
+        "https://breadroot.provisions.coop/products/pacific-beef-broth-og-12-32-oz",
+        "https://allergeninside.com/foods/ingredients/052603054447/Pacific-Organic-Beef-Broth",
+        "https://www.pacificfoods.com/products/pacific-foods/beef-broth/",
+        "https://www.vons.com/shop/product-details.125250156.html",
+        "https://www.hy-vee.com/aisles-online/p/17646/Pacific-Foods-Beef-Broth",
+        "https://isitclean.org/food/pacific-foods-beef-broth/",
+        "https://www.azurestandard.com/shop/product/food/soups-broths/broth/beef/asceptically-packaged/beef-broth-organic/6556",
+        "https://world.openfoodfacts.org/product/052603054447",
+        "https://www.upcitemdb.com/upc/052603054447",
+        "https://www.itemmaster.com/item/052603054447",
+        "https://www.ean-search.org/perl/ean-search.pl?q=052603054447",
+        "https://www.digit-eyes.com/cgi-bin/digiteyes.cgi?upc=052603054447"
+      ]
+    },
+    {
+      "step": "QualitySources",
+      "timestamp": "2025-12-01T03:25:38.796Z",
+      "data": [
+        "https://www.amazon.com/Pacific-Foods-Organic-Beef-Broth/dp/B004SI9W7M",
+        "https://tc.farm/beef-broth/",
+        "https://breadroot.provisions.coop/products/pacific-beef-broth-og-12-32-oz",
+        "https://allergeninside.com/foods/ingredients/052603054447/Pacific-Organic-Beef-Broth",
+        "https://www.pacificfoods.com/products/pacific-foods/beef-broth/",
+        "https://isitclean.org/food/pacific-foods-beef-broth/",
+        "https://world.openfoodfacts.org/product/052603054447",
+        "https://www.upcitemdb.com/upc/052603054447"
+      ]
+    },
+    {
+      "step": "Analysis",
+      "timestamp": "2025-12-01T03:25:55.917Z",
+      "data": {
+        "productName": "Pacific Foods Organic Beef Broth",
+        "sources": [
+          {
+            "url": "https://www.amazon.com/Pacific-Foods-Organic-Beef-Broth/dp/B004SI9W7M",
+            "ingredients": [
+              "Water",
+              "Beef (Organic)",
+              "Sea Salt",
+              "Cane Sugar (Organic)",
+              "Autolyzed Yeast Extract",
+              "Onion Powder (Organic)",
+              "Garlic Powder (Organic)",
+              "Caramel Color (Organic)",
+              "Black Pepper (Organic)"
+            ],
+            "hasIngredients": true
+          },
+          {
+            "url": "https://tc.farm/beef-broth/",
+            "ingredients": [
+              "Water",
+              "Organic Beef",
+              "Sea Salt",
+              "Organic Onion Powder",
+              "Organic Yeast Extract",
+              "Organic Garlic Powder",
+              "Organic Caramel Color",
+              "Organic Black Pepper"
+            ],
+            "hasIngredients": true
+          },
+          {
+            "url": "https://breadroot.provisions.coop/products/pacific-beef-broth-og-12-32-oz",
+            "ingredients": [
+              "Water",
+              "Beef (Organic)",
+              "Sea Salt",
+              "Cane Sugar (Organic)",
+              "Autolyzed Yeast Extract",
+              "Onion Powder (Organic)",
+              "Garlic Powder (Organic)",
+              "Caramel Color (Organic)",
+              "Black Pepper (Organic)"
+            ],
+            "hasIngredients": true
+          },
+          {
+            "url": "https://allergeninside.com/foods/ingredients/052603054447/Pacific-Organic-Beef-Broth",
+            "ingredients": [],
+            "hasIngredients": false
+          },
+          {
+            "url": "https://www.pacificfoods.com/products/pacific-foods/beef-broth/",
+            "ingredients": [
+              "Beef Stock",
+              "Salt",
+              "Natural Flavor",
+              "Torula Yeast",
+              "Garlic Powder",
+              "Gelatin (Beef)",
+              "Yeast Extract",
+              "Maltodextrin (Potato)"
+            ],
+            "hasIngredients": true
+          }
+        ],
+        "unifiedIngredientList": [
+          "Water",
+          "Beef (Organic)",
+          "Sea Salt",
+          "Cane Sugar (Organic)",
+          "Autolyzed Yeast Extract",
+          "Onion Powder (Organic)",
+          "Garlic Powder (Organic)",
+          "Caramel Color (Organic)",
+          "Black Pepper (Organic)"
+        ],
+        "differences": [
+          {
+            "ingredient": "Beef",
+            "presentIn": [
+              "Amazon",
+              "tc.farm",
+              "breadroot"
+            ],
+            "missingIn": [
+              "pacificfoods.com"
+            ],
+            "note": "pacificfoods.com uses 'Beef Stock' instead"
+          },
+          {
+            "ingredient": "Cane Sugar",
+            "presentIn": [
+              "Amazon",
+              "breadroot"
+            ],
+            "missingIn": [
+              "tc.farm",
+              "pacificfoods.com"
+            ],
+            "note": "Only in some versions of the product"
+          },
+          {
+            "ingredient": "Autolyzed Yeast Extract",
+            "presentIn": [
+              "Amazon",
+              "breadroot"
+            ],
+            "missingIn": [
+              "tc.farm",
+              "pacificfoods.com"
+            ]
+          },
+          {
+            "ingredient": "Onion Powder",
+            "presentIn": [
+              "Amazon",
+              "tc.farm",
+              "breadroot"
+            ],
+            "missingIn": [
+              "pacificfoods.com"
+            ]
+          },
+          {
+            "ingredient": "Caramel Color",
+            "presentIn": [
+              "Amazon",
+              "breadroot"
+            ],
+            "missingIn": [
+              "tc.farm",
+              "pacificfoods.com"
+            ]
+          },
+          {
+            "ingredient": "Black Pepper",
+            "presentIn": [
+              "Amazon",
+              "tc.farm",
+              "breadroot"
+            ],
+            "missingIn": [
+              "pacificfoods.com"
+            ]
+          },
+          {
+            "ingredient": "Beef Stock",
+            "presentIn": [
+              "pacificfoods.com"
+            ],
+            "missingIn": [
+              "Amazon",
+              "tc.farm",
+              "breadroot"
+            ],
+            "note": "Other sources use 'Beef' instead"
+          },
+          {
+            "ingredient": "Natural Flavor",
+            "presentIn": [
+              "pacificfoods.com"
+            ],
+            "missingIn": [
+              "Amazon",
+              "tc.farm",
+              "breadroot"
+            ]
+          },
+          {
+            "ingredient": "Torula Yeast",
+            "presentIn": [
+              "pacificfoods.com"
+            ],
+            "missingIn": [
+              "Amazon",
+              "tc.farm",
+              "breadroot"
+            ]
+          },
+          {
+            "ingredient": "Gelatin (Beef)",
+            "presentIn": [
+              "pacificfoods.com"
+            ],
+            "missingIn": [
+              "Amazon",
+              "tc.farm",
+              "breadroot"
+            ]
+          },
+          {
+            "ingredient": "Maltodextrin (Potato)",
+            "presentIn": [
+              "pacificfoods.com"
+            ],
+            "missingIn": [
+              "Amazon",
+              "tc.farm",
+              "breadroot"
+            ]
+          }
+        ],
+        "top9Allergens": [],
+        "dietaryCompliance": {
+          "vegan": {
+            "isCompliant": false,
+            "reason": "Contains beef and beef-derived ingredients"
+          },
+          "vegetarian": {
+            "isCompliant": false,
+            "reason": "Contains beef and beef-derived ingredients"
+          },
+          "pescatarian": {
+            "isCompliant": false,
+            "reason": "Contains beef"
+          },
+          "glutenFree": {
+            "isCompliant": true,
+            "reason": "Product is labeled gluten-free and contains no gluten ingredients"
+          }
+        }
+      }
+    }
+  ]
+}

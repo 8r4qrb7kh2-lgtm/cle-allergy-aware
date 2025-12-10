@@ -19,6 +19,9 @@ interface Source {
   crossContaminationWarnings?: string;
   allergens?: string[];
   diets?: string[];
+  dietary_compliance?: {
+    [key: string]: { is_compliant: boolean; reason: string };
+  };
   confidence: number;
   dataAvailable: boolean;
 }
@@ -41,6 +44,9 @@ interface VerificationResult {
   allergensInferred: boolean;
   diets: string[];
   dietsInferred: boolean;
+  dietary_compliance?: {
+    [key: string]: { is_compliant: boolean; reason: string };
+  };
   visualMatching: {
     imagesAvailable: number;
     primaryImage: string;
@@ -58,13 +64,18 @@ const MINIMUM_SOURCES_REQUIRED = 3;
 // Top 9 FDA allergens (must match exactly)
 const APPROVED_ALLERGENS = new Set([
   'milk',
+  'dairy',
   'eggs',
+  'egg',
   'fish',
   'shellfish',
   'tree nuts',
+  'tree nut',
   'peanuts',
+  'peanut',
   'wheat',
   'soybeans',
+  'soy',
   'sesame'
 ]);
 
@@ -78,10 +89,10 @@ function filterApprovedAllergens(allergens: string[]): string[] {
 // Helper function to scrape ingredients directly from HTML
 async function scrapeIngredientsFromHtml(url: string, addLog?: (msg: string) => void): Promise<string | null> {
   const log = addLog || console.log;
-  
+
   try {
     log(`📥 Fetching HTML from ${url}...`);
-    
+
     const response = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -124,7 +135,7 @@ async function scrapeIngredientsFromHtml(url: string, addLog?: (msg: string) => 
         }
         return null;
       },
-      
+
       // Strategy 2: Look for JSON-LD structured data
       () => {
         const jsonLdPattern = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
@@ -135,8 +146,8 @@ async function scrapeIngredientsFromHtml(url: string, addLog?: (msg: string) => 
             // Check if it's product data with ingredients
             if (jsonData['@type'] === 'Product' || jsonData['@type'] === 'FoodProduct') {
               if (jsonData.ingredients) {
-                return typeof jsonData.ingredients === 'string' 
-                  ? jsonData.ingredients 
+                return typeof jsonData.ingredients === 'string'
+                  ? jsonData.ingredients
                   : Array.isArray(jsonData.ingredients)
                     ? jsonData.ingredients.join(', ')
                     : null;
@@ -156,7 +167,7 @@ async function scrapeIngredientsFromHtml(url: string, addLog?: (msg: string) => 
         }
         return null;
       },
-      
+
       // Strategy 3: Look for data attributes or specific class names common on retailer sites
       () => {
         const dataPatterns = [
@@ -164,7 +175,7 @@ async function scrapeIngredientsFromHtml(url: string, addLog?: (msg: string) => 
           /data-product-ingredients=["']([^"']+)["']/i,
           /class=["'][^"']*ingredient[^"']*["'][^>]*>([^<]+?)</i,
         ];
-        
+
         for (const pattern of dataPatterns) {
           const match = html.match(pattern);
           if (match && match[1]) {
@@ -183,7 +194,7 @@ async function scrapeIngredientsFromHtml(url: string, addLog?: (msg: string) => 
         }
         return null;
       },
-      
+
       // Strategy 4: Look for text content after "Ingredients" label with various HTML structures
       () => {
         // Find text nodes or elements containing "Ingredients" and extract following content
@@ -193,10 +204,10 @@ async function scrapeIngredientsFromHtml(url: string, addLog?: (msg: string) => 
             .replace(/[\r\n]+/g, ' ')
             .replace(/\s+/g, ' ')
             .trim();
-          
+
           // Remove HTML tags if any got through
           ingredients = ingredients.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-          
+
           // Stop at common ending markers
           const stopMarkers = ['Allergen', 'Contains', 'Nutrition', 'Serving', '<div', '<span'];
           for (const marker of stopMarkers) {
@@ -206,14 +217,14 @@ async function scrapeIngredientsFromHtml(url: string, addLog?: (msg: string) => 
               break;
             }
           }
-          
+
           if (ingredients.length > 20 && ingredients.length < 2000) {
             return ingredients;
           }
         }
         return null;
       },
-      
+
       // Strategy 5: Kroger-specific patterns (most accurate extraction for kroger.com)
       () => {
         // Kroger uses specific HTML structure for ingredients in Nutrition Information section
@@ -235,10 +246,10 @@ async function scrapeIngredientsFromHtml(url: string, addLog?: (msg: string) => 
           const match = html.match(pattern);
           if (match) {
             let ingredients = (match[1] || match[0]).trim();
-            
+
             // Remove HTML tags
             ingredients = ingredients.replace(/<[^>]+>/g, ' ');
-            
+
             // Clean up HTML entities
             ingredients = ingredients
               .replace(/&amp;/g, '&')
@@ -252,7 +263,7 @@ async function scrapeIngredientsFromHtml(url: string, addLog?: (msg: string) => 
               .replace(/[\r\n]+/g, ' ')
               .replace(/\s+/g, ' ')
               .trim();
-            
+
             // Stop at common ending markers
             const stopMarkers = ['Allergen Info', 'Allergen', 'Contains', 'Nutrition Facts', 'Serving', 'Disclaimer', 'FoodHealth', 'Learn More'];
             for (const marker of stopMarkers) {
@@ -262,18 +273,18 @@ async function scrapeIngredientsFromHtml(url: string, addLog?: (msg: string) => 
                 break;
               }
             }
-            
+
             // Validate it looks like an ingredient list
-            if (ingredients.length > 30 && ingredients.length < 2000 && 
-                /[A-Za-z]/.test(ingredients) && 
-                ingredients.split(',').length >= 2) {
+            if (ingredients.length > 30 && ingredients.length < 2000 &&
+              /[A-Za-z]/.test(ingredients) &&
+              ingredients.split(',').length >= 2) {
               return ingredients;
             }
           }
         }
         return null;
       },
-      
+
       // Strategy 6: Look for structured data patterns specific to retailers (Kroger, Target, etc.)
       () => {
         // Common patterns for retailer ingredient sections
@@ -298,7 +309,7 @@ async function scrapeIngredientsFromHtml(url: string, addLog?: (msg: string) => 
               .replace(/[\r\n]+/g, ' ')
               .replace(/\s+/g, ' ')
               .trim();
-            
+
             // Clean up HTML entities
             ingredients = ingredients
               .replace(/&amp;/g, '&')
@@ -308,7 +319,7 @@ async function scrapeIngredientsFromHtml(url: string, addLog?: (msg: string) => 
               .replace(/&#39;/g, "'")
               .replace(/&nbsp;/g, ' ')
               .trim();
-            
+
             // Stop at common ending markers
             const stopMarkers = ['Allergen', 'Contains', 'Nutrition', 'Serving', 'Disclaimer', '<div', '<span', '</div>'];
             for (const marker of stopMarkers) {
@@ -318,7 +329,7 @@ async function scrapeIngredientsFromHtml(url: string, addLog?: (msg: string) => 
                 break;
               }
             }
-            
+
             if (ingredients.length > 20 && ingredients.length < 2000) {
               return ingredients;
             }
@@ -364,14 +375,14 @@ const RETAILER_DISCLAIMERS = [
 // Helper function to filter out generic retailer disclaimers from warnings
 function filterRetailerDisclaimers(text: string): string | null {
   if (!text || text.trim().length === 0) return null;
-  
+
   // Check if this is just a generic retailer disclaimer
   for (const pattern of RETAILER_DISCLAIMERS) {
     if (pattern.test(text)) {
       return null; // Filter it out
     }
   }
-  
+
   return text; // Keep it if it's not a disclaimer
 }
 
@@ -392,7 +403,7 @@ function isKnownRetailer(url: string): { domain: string; name: string } | null {
   try {
     const urlObj = new URL(url);
     const hostname = urlObj.hostname.toLowerCase().replace('www.', '');
-    
+
     for (const retailer of KNOWN_RETAILERS) {
       if (hostname === retailer.domain || hostname.endsWith('.' + retailer.domain)) {
         return retailer;
@@ -416,21 +427,28 @@ async function extractIngredientsWithClaude(
   explicitAllergenStatement: string;
   crossContaminationWarnings: string;
   allergens: string[];
+  dietary_compliance?: {
+    [key: string]: {
+      is_compliant: boolean;
+      reason: string;
+    }
+  };
+  diets?: string[];
 } | null> {
   const log = addLog || console.log;
-  
+
   log(`🤖 [CLAUDE] Extracting ingredients from HTML using Claude Sonnet 4.5...`);
-  
+
   if (!ANTHROPIC_API_KEY) {
     log(`❌ [CLAUDE] ANTHROPIC_API_KEY not available`);
     return null;
   }
-  
+
   try {
     // Extract larger HTML sections to capture full ingredient lists
     // Find the ingredient section and include more context around it
     let htmlSnippet = '';
-    
+
     // First, try to find JSON-LD structured data (most reliable)
     const jsonLdMatches = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
     if (jsonLdMatches) {
@@ -442,7 +460,7 @@ async function extractIngredientsWithClaude(
         }
       }
     }
-    
+
     // Extract HTML sections that likely contain ingredients
     // Look for "Ingredients" heading/section and capture a MUCH larger surrounding context
     // Increased from 5000 to 15000 chars to ensure we capture full ingredient lists with all sub-ingredients
@@ -454,7 +472,7 @@ async function extractIngredientsWithClaude(
       /<p[^>]*>[\s\S]{0,100}ingredients?[:\s]*[:\-]?[\s\S]{0,15000}/i,
       /nutrition[\s\S]{0,500}ingredients?[\s\S]{0,15000}/i,
     ];
-    
+
     let foundIngredientSection = false;
     for (const pattern of ingredientPatterns) {
       const match = html.match(pattern);
@@ -465,7 +483,7 @@ async function extractIngredientsWithClaude(
         break;
       }
     }
-    
+
     // If no specific section found, extract a larger chunk around ingredient keywords
     if (!foundIngredientSection) {
       const keywordIndex = html.toLowerCase().indexOf('ingredient');
@@ -480,14 +498,14 @@ async function extractIngredientsWithClaude(
         log(`   ⚠️ Using fallback: first 50k chars of HTML`);
       }
     }
-    
+
     // Also include any "Allergen" or "Contains" sections
     const allergenPatterns = [
       /allergen[^<]{0,500}contains?[^<]{0,2000}/i,
       /contains[^<]{0,2000}/i,
       /allergen[\s\S]{0,2000}/i,
     ];
-    
+
     for (const pattern of allergenPatterns) {
       const match = html.match(pattern);
       if (match && match[0] && !htmlSnippet.includes(match[0])) {
@@ -496,19 +514,19 @@ async function extractIngredientsWithClaude(
         break;
       }
     }
-    
+
     log(`   📄 Extracted HTML snippet (${htmlSnippet.length} chars) for Claude analysis`);
-    
+
     // Log what we're sending to Claude for debugging
     log(`   🔍 HTML snippet preview (first 1000 chars):\n${htmlSnippet.substring(0, 1000)}...`);
     log(`   🔍 HTML snippet preview (last 1000 chars):\n...${htmlSnippet.substring(Math.max(0, htmlSnippet.length - 1000))}`);
-    
+
     // Also log if ingredient keywords are in the snippet
     const snippetLower = htmlSnippet.toLowerCase();
     const hasIngredientKeyword = snippetLower.includes('ingredient');
     const ingredientKeywordCount = (snippetLower.match(/ingredient/g) || []).length;
     log(`   🔍 HTML snippet contains 'ingredient' keyword: ${hasIngredientKeyword} (${ingredientKeywordCount} times)`);
-    
+
     const claudePrompt = `You are extracting ingredient and allergen information from HTML content. This is CRITICAL for food safety - accuracy is essential.
 
 Product: ${brand} ${productName}
@@ -572,8 +590,33 @@ Return JSON ONLY (no markdown, no explanations):
   "ingredientsText": "Exact ingredient list as it appears in HTML - verbatim copy",
   "explicitAllergenStatement": "Exact text if found (e.g., 'CONTAINS: TREE NUTS (ALMONDS)') or empty string",
   "crossContaminationWarnings": "Exact text if found (e.g., 'May contain sesame') or empty string",
-  "allergens": ["tree nuts", "milk"]  // Only from actual ingredients or statements, not inferred
+  "allergens": [
+    { "name": "tree nuts", "triggers": ["almonds"] },
+    { "name": "milk", "triggers": ["milk powder", "whey"] }
+  ],
+  // CRITICAL: For each allergen, you MUST list the specific ingredients (triggers) that caused it to be flagged.
+  // Do NOT return simple strings like ["milk"]. Return objects with "name" and "triggers".
+  "dietary_compliance": {
+    "Vegan": { "is_compliant": boolean, "reason": "string" },
+    "Vegetarian": { "is_compliant": boolean, "reason": "string" },
+    "Pescatarian": { "is_compliant": boolean, "reason": "string" },
+    "Gluten-free": { "is_compliant": boolean, "reason": "string" }
+  }
 }
+
+DIETARY COMPATIBILITY RULES:
+- Plant-based ONLY (no animal-derived terms) → Vegan/Vegetarian/Pescatarian = true.
+- Contains dairy/eggs but NO meat/fish → Vegetarian/Pescatarian = true, Vegan = false.
+- Contains fish/seafood but no other meat → Pescatarian = true, Vegan/Vegetarian = false.
+- Contains meat/poultry/pork/gelatin → Vegan/Vegetarian/Pescatarian = false.
+- Gluten-free: true ONLY if NO wheat, barley, rye, malt, or gluten-containing grains.
+
+CRITICAL FOR "REASON" FIELD:
+- If is_compliant is FALSE, the "reason" MUST be a comma-separated list of the SPECIFIC INGREDIENTS from the text that cause the violation.
+- DO NOT use generic terms like "Contains dairy" or "Contains meat".
+- ONLY list the actual ingredient names found in the text.
+- Example: "Pasteurized Lowfat Milk, Nonfat Milk" (NOT "Contains dairy products")
+- Example: "Wheat Flour, Barley Malt" (NOT "Contains gluten")
 
 EXAMPLE - If HTML contains:
 "<h3>Ingredients</h3><p>Almonds, Elote Seasoning (Corn Maltodextrin, Salt, Cane Sugar, Cayenne Pepper Powder, Chili Pepper, Spices, Citric Acid, Chipotle Pepper Powder, Sunflower Oil, Corn Powder, Natural Flavor, Natural Smoke Flavor), Vegetable Oil (Almond, Canola, Safflower and/or Sunflower).</p>"
@@ -583,7 +626,13 @@ You MUST return:
   "ingredientsText": "Almonds, Elote Seasoning (Corn Maltodextrin, Salt, Cane Sugar, Cayenne Pepper Powder, Chili Pepper, Spices, Citric Acid, Chipotle Pepper Powder, Sunflower Oil, Corn Powder, Natural Flavor, Natural Smoke Flavor), Vegetable Oil (Almond, Canola, Safflower and/or Sunflower).",
   "explicitAllergenStatement": "",
   "crossContaminationWarnings": "",
-  "allergens": ["tree nuts"]
+  "allergens": ["tree nuts"],
+  "dietary_compliance": {
+    "Vegan": { "is_compliant": true, "reason": "No animal products found." },
+    "Vegetarian": { "is_compliant": true, "reason": "No meat found." },
+    "Pescatarian": { "is_compliant": true, "reason": "No meat found." },
+    "Gluten-free": { "is_compliant": true, "reason": "No gluten sources found." }
+  }
 }
 
 CRITICAL: Your ingredientsText must match the HTML EXACTLY. Check character-by-character.`;
@@ -596,7 +645,7 @@ CRITICAL: Your ingredientsText must match the HTML EXACTLY. Check character-by-c
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 2000,
         temperature: 0.0, // Zero temperature for maximum determinism
         messages: [{
@@ -614,10 +663,10 @@ CRITICAL: Your ingredientsText must match the HTML EXACTLY. Check character-by-c
 
     const claudeResult = await claudeResponse.json();
     const responseText = claudeResult.content?.[0]?.text || '';
-    
+
     log(`📥 [CLAUDE] Received response (${responseText.length} chars)`);
     log(`   🔍 Raw response preview: ${responseText.substring(0, 1000)}...`);
-    
+
     // Extract JSON from response
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
@@ -625,9 +674,9 @@ CRITICAL: Your ingredientsText must match the HTML EXACTLY. Check character-by-c
       log(`   Full response: ${responseText}`);
       return null;
     }
-    
+
     log(`   🔍 Extracted JSON: ${jsonMatch[0].substring(0, 500)}...`);
-    
+
     let extractedData;
     try {
       extractedData = JSON.parse(jsonMatch[0]);
@@ -635,15 +684,15 @@ CRITICAL: Your ingredientsText must match the HTML EXACTLY. Check character-by-c
       log(`❌ [CLAUDE] JSON parse error: ${(e as any).message}`);
       return null;
     }
-    
+
     if (!extractedData.ingredientsText || extractedData.ingredientsText.trim().length < 20) {
       log(`⚠️ [CLAUDE] Invalid or too short ingredient text`);
       return null;
     }
-    
+
     log(`✅ [CLAUDE] Successfully extracted ingredients (${extractedData.ingredientsText.length} chars)`);
     log(`   🔍 Full extracted text: ${extractedData.ingredientsText}`);
-    
+
     // Enhanced validation: Check that extracted ingredients actually appear in HTML
     // First, extract clean text from HTML for comparison
     const htmlTextOnly = html
@@ -658,25 +707,25 @@ CRITICAL: Your ingredientsText must match the HTML EXACTLY. Check character-by-c
       .replace(/&apos;/g, "'")
       .replace(/\s+/g, ' ')
       .trim();
-    
+
     const htmlLower = htmlTextOnly.toLowerCase();
     const extractedLower = extractedData.ingredientsText.toLowerCase().trim();
-    
+
     log(`   🔍 Validating against HTML (${htmlTextOnly.length} chars of text content)...`);
     log(`   🔍 HTML text preview (first 1000 chars): ${htmlTextOnly.substring(0, 1000)}...`);
-    
+
     // Check if key ingredients appear in HTML text (word-level check)
     const ingredientWords = extractedData.ingredientsText
       .split(/[,\s\(\)\.]+/)
       .filter(w => w.length > 3 && !['and', 'and/or', 'or', 'the', 'may', 'contain'].includes(w.toLowerCase()));
-    
+
     let matchingWords = 0;
     const checkedWords: string[] = [];
-    
+
     for (const word of ingredientWords.slice(0, 15)) { // Check first 15 significant words
       const wordLower = word.toLowerCase().trim();
       if (wordLower.length < 2) continue;
-      
+
       // Check if word appears in HTML (as whole word or part of larger word)
       if (htmlLower.includes(wordLower)) {
         matchingWords++;
@@ -685,34 +734,34 @@ CRITICAL: Your ingredientsText must match the HTML EXACTLY. Check character-by-c
         checkedWords.push(`✗${wordLower}`);
       }
     }
-    
+
     log(`   📊 Word-level validation: ${matchingWords}/${ingredientWords.slice(0, 15).length} words found`);
     log(`   Words checked: ${checkedWords.join(', ')}`);
-    
+
     // STRICT VALIDATION: Check for exact phrase matches (character-by-character)
     // Extract first 50 characters of ingredient list and check if it appears in HTML
     const extractedFirst50 = extractedData.ingredientsText.substring(0, 50).toLowerCase().trim();
     const extractedFirst100 = extractedData.ingredientsText.substring(0, 100).toLowerCase().trim();
-    
+
     const hasExactPhrase50 = htmlLower.includes(extractedFirst50);
     const hasExactPhrase100 = htmlLower.includes(extractedFirst100);
-    
+
     log(`   🔍 Exact phrase validation (first 50 chars): ${hasExactPhrase50 ? '✓ FOUND' : '✗ NOT FOUND'}`);
     log(`   🔍 Exact phrase validation (first 100 chars): ${hasExactPhrase100 ? '✓ FOUND' : '✗ NOT FOUND'}`);
-    
+
     if (!hasExactPhrase50) {
       log(`   ⚠️ CRITICAL: First 50 chars of extracted text NOT found in HTML!`);
       log(`   Extracted first 50: "${extractedFirst50}"`);
       log(`   This strongly suggests hallucination or reformatting!`);
     }
-    
+
     // Check for key phrases that should definitely match
     const keyPhrases = extractedData.ingredientsText
       .split(',')
       .slice(0, 5)
       .map(p => p.trim().toLowerCase())
       .filter(p => p.length > 5);
-    
+
     let matchingPhrases = 0;
     for (const phrase of keyPhrases) {
       if (htmlLower.includes(phrase)) {
@@ -722,9 +771,9 @@ CRITICAL: Your ingredientsText must match the HTML EXACTLY. Check character-by-c
         log(`   ✗ MISSING phrase: "${phrase.substring(0, 40)}..."`);
       }
     }
-    
+
     log(`   📊 Phrase-level validation: ${matchingPhrases}/${keyPhrases.length} phrases found`);
-    
+
     if (matchingWords < 5 || !hasExactPhrase50 || matchingPhrases < 3) {
       log(`⚠️ [CLAUDE] WARNING: Validation failed!`);
       log(`   - Word match: ${matchingWords}/15`);
@@ -733,7 +782,7 @@ CRITICAL: Your ingredientsText must match the HTML EXACTLY. Check character-by-c
       log(`   This may indicate the ingredient list was hallucinated or reformatted`);
       log(`   Extracted: ${extractedData.ingredientsText.substring(0, 300)}`);
       log(`   HTML snippet sent (first 1000 chars): ${htmlSnippet.substring(0, 1000)}...`);
-      
+
       // Reject the result if validation is too poor
       if (matchingWords < 3 || (!hasExactPhrase50 && matchingPhrases < 2)) {
         log(`❌ [CLAUDE] REJECTING result due to poor validation`);
@@ -742,14 +791,28 @@ CRITICAL: Your ingredientsText must match the HTML EXACTLY. Check character-by-c
     } else {
       log(`✅ [CLAUDE] Validation passed: ${matchingWords} key words and exact phrases found in HTML`);
     }
-    
+
+    // Extract diets from dietary_compliance
+    const dietaryCompliance = extractedData.dietary_compliance || {};
+    const diets: string[] = [];
+
+    if (dietaryCompliance) {
+      Object.entries(dietaryCompliance).forEach(([diet, data]: [string, any]) => {
+        if (data && (data.is_compliant === true || data.isCompliant === true)) {
+          diets.push(diet);
+        }
+      });
+    }
+
     return {
       ingredientsText: extractedData.ingredientsText.trim(),
       explicitAllergenStatement: extractedData.explicitAllergenStatement || '',
       crossContaminationWarnings: extractedData.crossContaminationWarnings || '',
-      allergens: Array.isArray(extractedData.allergens) ? extractedData.allergens : []
+      allergens: Array.isArray(extractedData.allergens) ? extractedData.allergens : [],
+      dietary_compliance: dietaryCompliance,
+      diets: diets
     };
-    
+
   } catch (error) {
     log(`❌ [CLAUDE] Error: ${(error as any).message}`);
     return null;
@@ -764,7 +827,7 @@ async function extractAllergenInfoFromHtml(url: string, html: string, addLog?: (
   const log = addLog || console.log;
   let explicitAllergenStatement = '';
   let crossContaminationWarnings = '';
-  
+
   try {
     // Look for explicit allergen statements
     const allergenPatterns = [
@@ -773,7 +836,7 @@ async function extractAllergenInfoFromHtml(url: string, html: string, addLog?: (
       /allergen[:\s]+([^<\.]+?)(?:\.|<\/|contains)/i,
       /contains[:\s]+allergen[^<]*:?\s*([^<\.]+?)(?:\.|<\/)/i,
     ];
-    
+
     for (const pattern of allergenPatterns) {
       const match = html.match(pattern);
       if (match && match[1]) {
@@ -783,7 +846,7 @@ async function extractAllergenInfoFromHtml(url: string, html: string, addLog?: (
           .replace(/&nbsp;/g, ' ')
           .replace(/\s+/g, ' ')
           .trim();
-        
+
         if (statement.length > 5 && statement.length < 500) {
           explicitAllergenStatement = statement;
           log(`   📋 Found explicit allergen statement: ${statement.substring(0, 100)}...`);
@@ -791,7 +854,7 @@ async function extractAllergenInfoFromHtml(url: string, html: string, addLog?: (
         }
       }
     }
-    
+
     // Look for cross-contamination warnings
     const crossContaminationPatterns = [
       /may\s+contain[:\s]+([^<\.]+?)(?:\.|<\/)/i,
@@ -799,7 +862,7 @@ async function extractAllergenInfoFromHtml(url: string, html: string, addLog?: (
       /manufactured\s+on\s+equipment[^<]+([^<\.]+?)(?:\.|<\/)/i,
       /may\s+contain\s+traces[^<]+([^<\.]+?)(?:\.|<\/)/i,
     ];
-    
+
     for (const pattern of crossContaminationPatterns) {
       const match = html.match(pattern);
       if (match && match[1]) {
@@ -809,7 +872,7 @@ async function extractAllergenInfoFromHtml(url: string, html: string, addLog?: (
           .replace(/&nbsp;/g, ' ')
           .replace(/\s+/g, ' ')
           .trim();
-        
+
         if (warning.length > 5 && warning.length < 500) {
           crossContaminationWarnings = warning;
           log(`   ⚠️  Found cross-contamination warning: ${warning.substring(0, 100)}...`);
@@ -820,7 +883,7 @@ async function extractAllergenInfoFromHtml(url: string, html: string, addLog?: (
   } catch (error) {
     log(`   ⚠️  Error extracting allergen info: ${(error as any).message}`);
   }
-  
+
   return { explicitAllergenStatement, crossContaminationWarnings };
 }
 
@@ -833,10 +896,10 @@ async function tryDirectScrapingForRetailer(
   addLog?: (msg: string) => void
 ): Promise<Source | null> {
   const log = addLog || console.log;
-  
+
   log(`🔍 [EXTRACTION] Processing ${retailerInfo.name}...`);
   log(`   Step 1: Fetching HTML from ${url}...`);
-  
+
   try {
     // STEP 1: Fetch HTML
     const response = await fetch(url, {
@@ -854,15 +917,15 @@ async function tryDirectScrapingForRetailer(
 
     const html = await response.text();
     log(`✅ Step 1 complete: Fetched ${html.length} characters of HTML`);
-    
+
     // STEP 2: Try regex extraction first (for validation/comparison)
     log(`   Step 2: Attempting regex-based extraction (for validation)...`);
     const regexIngredients = await scrapeIngredientsFromHtml(url, log);
-    
+
     // STEP 3: Use Claude to extract from HTML
     log(`   Step 3: Using Claude Sonnet 4.5 to extract ingredients from HTML...`);
     const claudeResult = await extractIngredientsWithClaude(url, html, productName, brand, log);
-    
+
     if (!claudeResult) {
       log(`❌ Step 3 failed: Claude extraction returned null`);
       // Fallback to regex if Claude fails
@@ -871,7 +934,7 @@ async function tryDirectScrapingForRetailer(
         const allergenInfo = await extractAllergenInfoFromHtml(url, html, log);
         const ingredientText = regexIngredients.toLowerCase();
         const allergens: string[] = [];
-        
+
         if (ingredientText.includes('milk') || ingredientText.includes('whey') || ingredientText.includes('casein') || ingredientText.includes('lactose')) allergens.push('milk');
         if (ingredientText.includes('egg') || ingredientText.includes('albumin')) allergens.push('eggs');
         if (ingredientText.match(/\bfish\b/) || ingredientText.includes('anchovy')) allergens.push('fish');
@@ -881,7 +944,7 @@ async function tryDirectScrapingForRetailer(
         if (ingredientText.includes('wheat') && ingredientText.includes('flour')) allergens.push('wheat');
         if (ingredientText.includes('soy')) allergens.push('soybeans');
         if (ingredientText.includes('sesame')) allergens.push('sesame');
-        
+
         return {
           name: retailerInfo.name,
           url: url,
@@ -898,17 +961,17 @@ async function tryDirectScrapingForRetailer(
       }
       return null;
     }
-    
+
     log(`✅ Step 3 complete: Claude extracted ingredients (${claudeResult.ingredientsText.length} chars)`);
-    
+
     // STEP 4: Validation - Compare Claude extraction with regex (if both succeeded)
     if (regexIngredients && regexIngredients.trim().length > 30) {
       log(`   Step 4: Validating Claude extraction against regex extraction...`);
-      
+
       // Normalize both for comparison
       const claudeNorm = claudeResult.ingredientsText.toLowerCase().replace(/\s+/g, ' ').trim();
       const regexNorm = regexIngredients.toLowerCase().replace(/\s+/g, ' ').trim();
-      
+
       // Check similarity (simple character-based comparison)
       const minLength = Math.min(claudeNorm.length, regexNorm.length);
       const maxLength = Math.max(claudeNorm.length, regexNorm.length);
@@ -917,9 +980,9 @@ async function tryDirectScrapingForRetailer(
         if (claudeNorm[i] === regexNorm[i]) matchingChars++;
       }
       const similarity = matchingChars / maxLength;
-      
+
       log(`   Similarity score: ${(similarity * 100).toFixed(1)}%`);
-      
+
       if (similarity < 0.7) {
         log(`⚠️ WARNING: Significant discrepancy between Claude and regex extraction!`);
         log(`   Claude: ${claudeResult.ingredientsText.substring(0, 200)}...`);
@@ -929,7 +992,7 @@ async function tryDirectScrapingForRetailer(
         log(`✅ Validation passed: Claude and regex extractions match closely`);
       }
     }
-    
+
     // STEP 5: Final validation - verify key ingredients appear in HTML
     log(`   Step 5: Final validation - checking ingredients appear in HTML...`);
     const htmlLower = html.toLowerCase();
@@ -937,23 +1000,23 @@ async function tryDirectScrapingForRetailer(
     const keyWords = claudeResult.ingredientsText.split(/[,\s\(\)]+/)
       .filter(w => w.length > 4)
       .slice(0, 5);
-    
+
     let verifiedWords = 0;
     for (const word of keyWords) {
       if (htmlLower.includes(word.toLowerCase())) {
         verifiedWords++;
       }
     }
-    
+
     if (verifiedWords < 3) {
       log(`⚠️ WARNING: Only ${verifiedWords}/5 key words found in HTML - possible hallucination`);
     } else {
       log(`✅ Final validation passed: ${verifiedWords}/5 key words verified in HTML`);
     }
-    
+
     log(`✅ [EXTRACTION] Successfully extracted from ${retailerInfo.name}`);
     log(`   Final ingredients: ${claudeResult.ingredientsText.substring(0, 150)}...`);
-    
+
     return {
       name: retailerInfo.name,
       url: url,
@@ -964,10 +1027,11 @@ async function tryDirectScrapingForRetailer(
       crossContaminationWarnings: claudeResult.crossContaminationWarnings || '',
       allergens: filterApprovedAllergens(claudeResult.allergens || []),
       diets: [],
+      dietary_compliance: claudeResult.dietary_compliance || {},
       confidence: verifiedWords >= 3 ? 95 : 85, // Higher confidence if validated
       dataAvailable: true
     };
-    
+
   } catch (error) {
     log(`❌ [EXTRACTION] Error: ${(error as any).message}`);
     log(`   Stack: ${(error as any).stack}`);
@@ -1028,7 +1092,23 @@ function ingredientsMatch(text1: string, text2: string): boolean {
   // Use lenient threshold if EITHER list is short (≤15 words)
   // This handles cases where one source has detailed list and another has abbreviated list
   const isShortList = minWords <= 15;
-  const threshold = isShortList ? 0.60 : 0.85; // 60% for short lists, 85% for long lists
+  // DRASTICALLY increased thresholds to prevent false positives
+  // Short lists must be almost identical (0.90)
+  // Long lists must be very similar (0.85)
+  const threshold = isShortList ? 0.90 : 0.85;
+
+  // Additional check: if lists are very different in length (e.g. one is >2x the other), they likely don't match
+  // unless the shorter one is a subset of the longer one (which simple word overlap captures, but let's be safe)
+  if (words1.length > words2.length * 2 || words2.length > words1.length * 2) {
+    // If length discrepancy is huge, require even higher similarity (effectively requiring the shorter to be fully contained)
+    // But wait, similarity = common / max_length. So if lengths are 10 and 30, max is 30.
+    // If all 10 match, common=10. 10/30 = 0.33. This will ALREADY fail the 0.85 threshold.
+    // So the standard similarity metric handles length discrepancy well.
+    // The issue might be that "Chicken stock" (2 words) and "Chicken broth" (2 words) have 1 common word -> 0.5 similarity.
+    // "Chicken stock, salt" (3 words) vs "Chicken stock" (2 words) -> 2 common, max 3 -> 0.66.
+    // With 0.90 threshold, "Chicken stock, salt" vs "Chicken stock" will FAIL (0.66 < 0.90).
+    // This is GOOD. We want to flag that "salt" is missing.
+  }
 
   console.log(`Matching: "${text1.substring(0, 50)}..." vs "${text2.substring(0, 50)}..."`);
   console.log(`  Words: ${words1.length} vs ${words2.length}, Common: ${commonWords}, Similarity: ${(similarity * 100).toFixed(1)}%, Threshold: ${(threshold * 100)}%, Match: ${similarity >= threshold}`);
@@ -1093,17 +1173,25 @@ async function analyzeSourceAgreement(
 
   // ALSO validate sources WITHIN the largest group if it has multiple sources
   // This catches cases where all sources were grouped together but shouldn't have been
-  const sourcesInLargestGroup = largestGroup.length > 1 
+  const sourcesInLargestGroup = largestGroup.length > 1
     ? largestGroup.slice(1).filter(s => s && s.ingredientsText)
     : [];
 
   // Combine sources to analyze
   const allSourcesToAnalyze = [...sourcesToAnalyze, ...sourcesInLargestGroup];
 
-  // If all sources were in one group, they passed simple matching - trust it
+  // If all sources were in one group, they passed simple matching
   const allSourcesInLargestGroup = largestGroup.length === validSources.length && sourcesToAnalyze.length === 0;
-  
-  if (allSourcesToAnalyze.length > 0 && !allSourcesInLargestGroup) {
+
+  // Check if sources are nearly identical (simple text match might be too lenient)
+  const areSourcesIdentical = allSourcesInLargestGroup && sourcesInLargestGroup.every(s => {
+    return s.ingredientsText === referenceSource.ingredientsText ||
+      (s.ingredientsText.length === referenceSource.ingredientsText.length && s.ingredientsText === referenceSource.ingredientsText);
+  });
+
+  // Always run AI validation unless sources are literally identical
+  // This fixes the issue where "No discrepancies" was reported for different ingredient lists
+  if (allSourcesToAnalyze.length > 0 && !areSourcesIdentical) {
     const aiAnalysis = await analyzeIngredientVariations(
       allSourcesToAnalyze,
       referenceSource,
@@ -1119,7 +1207,7 @@ async function analyzeSourceAgreement(
     // Start with just the reference source
     const validatedLargestGroup: Source[] = [referenceSource];
     const aiMatchedUrls = new Set(aiAnalysis.matchingSources.map(s => s.url).filter(url => url));
-    
+
     // Add all sources that AI confirmed match (including those originally in largest group)
     for (const source of validSources) {
       if (source && source.url && aiMatchedUrls.has(source.url) && !validatedLargestGroup.includes(source)) {
@@ -1127,13 +1215,13 @@ async function analyzeSourceAgreement(
         addLog(`      ✅ AI confirmed: ${source.name}`);
       }
     }
-    
+
     // Track sources that were analyzed but not matched by AI
     const unmatchedSources = allSourcesToAnalyze.filter(s => !aiMatchedUrls.has(s.url));
     for (const source of unmatchedSources) {
       addLog(`      ❌ AI determined ${source.name} is different formulation`);
     }
-    
+
     // Update largestGroup to only include validated sources
     largestGroup.length = 0;
     largestGroup.push(...validatedLargestGroup);
@@ -1373,13 +1461,13 @@ function findIngredientDifferences(sources: Source[]): string[] {
   // BUT: Only group if the last word is a specific ingredient, not a generic descriptor
   const specificIngredients = ['barley', 'malt', 'yeast', 'wheat', 'rice', 'oat', 'corn', 'sugar', 'salt', 'oil'];
   const genericDescriptors = ['powder', 'flavor', 'spice', 'extract', 'seasoning'];
-  
+
   const phraseGroups = new Map<string, Set<string>>();
 
   for (const phrase of allPhrases) {
     const words = phrase.split(/\s+/);
     const lastWord = words[words.length - 1];
-    
+
     // Only group if last word is a specific ingredient AND phrase has 2+ words
     // Don't group if last word is a generic descriptor like "powder" or "flavor"
     if (words.length >= 2 && specificIngredients.includes(lastWord) && !genericDescriptors.includes(lastWord)) {
@@ -1428,7 +1516,7 @@ function findIngredientDifferences(sources: Source[]): string[] {
         const firstSourcePhrases = new Set<string>();
         let isFirstSource = true;
         let allSourcesAgree = true;
-        
+
         for (const si of sourceIngredientPhrases) {
           const thisSourcePhrases = new Set<string>();
           for (const phrase of phrases) {
@@ -1436,7 +1524,7 @@ function findIngredientDifferences(sources: Source[]): string[] {
               thisSourcePhrases.add(phrase);
             }
           }
-          
+
           if (isFirstSource) {
             firstSourcePhrases.clear();
             thisSourcePhrases.forEach(p => firstSourcePhrases.add(p));
@@ -1444,13 +1532,13 @@ function findIngredientDifferences(sources: Source[]): string[] {
           } else {
             // Check if this source has the same phrases as the first source
             if (thisSourcePhrases.size !== firstSourcePhrases.size ||
-                ![...thisSourcePhrases].every(p => firstSourcePhrases.has(p))) {
+              ![...thisSourcePhrases].every(p => firstSourcePhrases.has(p))) {
               allSourcesAgree = false;
               break;
             }
           }
         }
-        
+
         // Only report if sources actually disagree
         if (!allSourcesAgree) {
           const comparisons: string[] = [];
@@ -1492,7 +1580,7 @@ async function searchSingleRetailerClaude(
   model: string = 'claude-haiku-4-5-20251001'
 ): Promise<Source | null> {
   console.log(`🔍 [CLAUDE] Finding ${retailerName} product page URL for ${brand} ${productName}`);
-  
+
   if (!ANTHROPIC_API_KEY) {
     console.log(`Anthropic API key not available for ${retailerName}`);
     return null;
@@ -1523,7 +1611,7 @@ If you cannot find this product on ${retailerName}, return: {"found": false}`;
 
   try {
     console.log(`📡 [CLAUDE] Making API call to Claude for ${retailerName}...`);
-    
+
     const claudeResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -1552,7 +1640,7 @@ If you cannot find this product on ${retailerName}, return: {"found": false}`;
     if (!claudeResponse.ok) {
       const errorText = await claudeResponse.text();
       console.log(`❌ [CLAUDE] ${retailerName} search failed:`, claudeResponse.status, errorText);
-      
+
       // Try a more capable model if we used Haiku
       if (model === 'claude-haiku-4-5-20251001' || model === 'claude-3-5-haiku-latest') {
         console.log(`Trying more capable model: claude-sonnet-4-5-20250929`);
@@ -1562,7 +1650,7 @@ If you cannot find this product on ${retailerName}, return: {"found": false}`;
     }
 
     const claudeResult = await claudeResponse.json();
-    
+
     // Extract text response from Claude
     let responseText = '';
     for (const block of claudeResult.content) {
@@ -1599,18 +1687,18 @@ If you cannot find this product on ${retailerName}, return: {"found": false}`;
     }
 
     console.log(`✓ ${retailerName}: Found product page URL: ${url}`);
-    
+
     // ALWAYS scrape directly from HTML - never use LLM for ingredient extraction
     const retailerInfo = isKnownRetailer(url) || { domain: new URL(url).hostname, name: retailerName };
-    
+
     try {
       console.log(`🔍 [${retailerName}] Scraping ingredients directly from HTML (no LLM extraction)...`);
       const directScrapedSource = await tryDirectScrapingForRetailer(url, retailerInfo, productName, brand);
-      
+
       if (directScrapedSource && directScrapedSource.ingredientsText.trim().length > 30) {
         console.log(`✅ [${retailerName}] Successfully scraped ingredients (${directScrapedSource.ingredientsText.length} chars)`);
         console.log(`📝 [${retailerName}] Using DIRECT SCRAPED ingredients only (no LLM hallucination)`);
-        
+
         return {
           name: retailerName,
           url: url,
@@ -1704,7 +1792,7 @@ async function searchSourceTypePerplexityBulk_OLD(
 ): Promise<Source[]> {
   console.log(`Starting ${sourceType} bulk search with Perplexity...`);
   console.log(`Search query: ${searchQuery}`);
-  
+
   const searchPrompt = `Find ingredient information for this food product from MULTIPLE SOURCES:
 
 Product: ${brand} ${productName}
@@ -1888,7 +1976,7 @@ CRITICAL REMINDERS:
 
     // Extract text response
     const responseText = perplexityResult.choices?.[0]?.message?.content || '';
-    
+
     console.log(`\n=== ${sourceType} Perplexity Response ===`);
     console.log(`Response length: ${responseText.length} chars`);
     console.log(`First 500 chars: ${responseText.substring(0, 500)}`);
@@ -1906,7 +1994,7 @@ CRITICAL REMINDERS:
       searchData = JSON.parse(jsonMatch[0]);
       console.log(`${sourceType}: Parsed JSON successfully`);
       console.log(`Sources in JSON: ${searchData.sources?.length || 0}`);
-      
+
       // Debug: Log what sources were returned
       if (searchData.sources && Array.isArray(searchData.sources)) {
         console.log(`\n=== Sources returned by Perplexity ===`);
@@ -1919,7 +2007,7 @@ CRITICAL REMINDERS:
       console.log(`Attempted to parse: ${jsonMatch[0].substring(0, 200)}...`);
       return [];
     }
-    
+
     const sources: Source[] = [];
 
     if (searchData.sources && Array.isArray(searchData.sources)) {
@@ -2071,7 +2159,7 @@ Before including a source in your response, verify:
 If you are uncertain about the exact ingredient list, DO NOT guess or infer. Only include sources where you can see the exact ingredient list on the page.`;
 
     log(`📡 Calling Perplexity to find product page URLs (URL discovery only - no ingredient extraction)...`);
-    
+
     // MODIFIED: Use Perplexity ONLY for URL discovery, NOT for ingredient extraction
     // This prevents hallucination - we will scrape ingredients directly from HTML
     const urlDiscoveryPrompt = `Find product pages for this food product on multiple retailer websites:
@@ -2135,7 +2223,7 @@ Find 3-5 different retailer URLs. Only return URLs that point to specific produc
 
     const perplexityResult = await perplexityResponse.json();
     const responseText = perplexityResult.choices?.[0]?.message?.content || '';
-    
+
     log(`📨 Response received (${responseText.length} chars)`);
     log(`   First 1000 chars: ${responseText.substring(0, 1000)}`);
 
@@ -2148,16 +2236,16 @@ Find 3-5 different retailer URLs. Only return URLs that point to specific produc
 
     // Try multiple strategies to extract JSON
     let searchData = null;
-    
+
     // Strategy 1: Look for JSON object with "sources" key
     let jsonMatch = responseText.match(/\{[\s\S]*"sources"[\s\S]*\}/);
-    
+
     // Strategy 2: Look for any JSON object
     if (!jsonMatch) {
       jsonMatch = responseText.match(/\{[\s\S]{20,}\}/);
       log(`⚠️  No "sources" key found, trying to parse any JSON object...`);
     }
-    
+
     // Strategy 3: Look for code blocks with JSON
     if (!jsonMatch) {
       const codeBlockMatch = responseText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
@@ -2177,9 +2265,9 @@ Find 3-5 different retailer URLs. Only return URLs that point to specific produc
     try {
       searchData = JSON.parse(jsonMatch[0] || jsonMatch[1] || '{}');
       log(`✅ Parsed JSON successfully`);
-      
+
       // Check if it has urls array (new format) or sources array (old format)
-      let urls: Array<{name: string, url: string}> = [];
+      let urls: Array<{ name: string, url: string }> = [];
       if (searchData.urls && Array.isArray(searchData.urls)) {
         urls = searchData.urls;
         log(`✅ Found ${urls.length} URLs for direct scraping`);
@@ -2197,7 +2285,7 @@ Find 3-5 different retailer URLs. Only return URLs that point to specific produc
         }
         return [];
       }
-      
+
       log(`✅ Found ${urls.length} URLs for direct scraping`);
     } catch (e) {
       log(`❌ JSON parse error: ${(e as any).message}`);
@@ -2212,7 +2300,7 @@ Find 3-5 different retailer URLs. Only return URLs that point to specific produc
     for (const urlData of urls) {
       const url = urlData.url;
       const retailerName = urlData.name || new URL(url).hostname.replace('www.', '');
-      
+
       if (!url || url.includes('/search') || url.includes('/s?') || url.length < 10) {
         log(`✗ Rejected: ${retailerName} - invalid URL: ${url}`);
         continue;
@@ -2222,15 +2310,15 @@ Find 3-5 different retailer URLs. Only return URLs that point to specific produc
 
       // ALWAYS scrape directly - never use LLM-extracted ingredients
       const retailerInfo = isKnownRetailer(url) || { domain: new URL(url).hostname, name: retailerName };
-      
+
       try {
         log(`   🔍 Scraping ingredients directly from HTML (no LLM extraction)...`);
         const scrapedSource = await tryDirectScrapingForRetailer(url, retailerInfo, productName, brand, log);
-        
+
         if (scrapedSource && scrapedSource.ingredientsText.trim().length > 30) {
           log(`   ✅ Successfully scraped ingredients (${scrapedSource.ingredientsText.length} chars)`);
           log(`   📝 Using DIRECT SCRAPED ingredients only (no LLM hallucination)`);
-          
+
           sources.push({
             name: retailerName,
             url: url,
@@ -2318,7 +2406,7 @@ Return JSON: {"sources": [{"name":"","url":"","productTitle":"","ingredientsText
     if (!resp.ok) {
       const errorText = await resp.text();
       console.log(`General Web Claude search failed:`, resp.status, errorText);
-      
+
       // Try a more capable model if we used Haiku
       if (model === 'claude-haiku-4-5-20251001' || model === 'claude-3-5-haiku-latest') {
         console.log(`Trying more capable model: claude-sonnet-4-5-20250929`);
@@ -2358,7 +2446,7 @@ Return JSON: {"sources": [{"name":"","url":"","productTitle":"","ingredientsText
       }
     }
     console.log(`General Web Claude: ${out.length} sources`);
-    
+
     // If we got insufficient sources with Haiku, try a more capable model
     if (out.length < 2 && (model === 'claude-haiku-4-5-20251001' || model === 'claude-3-5-haiku-latest')) {
       console.log(`Insufficient sources with Haiku (${out.length}), trying Sonnet 4.5...`);
@@ -2367,11 +2455,11 @@ Return JSON: {"sources": [{"name":"","url":"","productTitle":"","ingredientsText
         return sonnetSources;
       }
     }
-    
+
     return out;
   } catch (e) {
     console.log('General Web Claude error:', (e as any).message);
-    
+
     // Try a more capable model on error if we used Haiku
     if (model === 'claude-haiku-4-5-20251001' || model === 'claude-3-5-haiku-latest') {
       console.log(`Error with Haiku, trying Sonnet 4.5...`);
@@ -2429,7 +2517,7 @@ Return JSON: {"sources": [{"name":"","url":"","productTitle":"","ingredientsText
     if (!resp.ok) {
       const errorText = await resp.text();
       log(`Phase 2 search failed:`, resp.status, errorText);
-      
+
       // Try a more capable model if we used Haiku
       if (model === 'claude-haiku-4-5-20251001' || model === 'claude-3-5-haiku-latest') {
         log(`Trying more capable model: claude-sonnet-4-5-20250929`);
@@ -2469,11 +2557,11 @@ Return JSON: {"sources": [{"name":"","url":"","productTitle":"","ingredientsText
       }
     }
     log(`Phase 2 search: ${out.length} sources`);
-    
+
     return out;
   } catch (e) {
     log(`Phase 2 search error:`, (e as any).message);
-    
+
     // Try a more capable model on error if we used Haiku
     if (model === 'claude-haiku-4-5-20251001' || model === 'claude-3-5-haiku-latest') {
       log(`Error with Haiku, trying Sonnet 4.5...`);
@@ -2642,7 +2730,7 @@ Accept sources with ANY length ingredient list - even very short lists like "Wat
     if (!claudeResponse.ok) {
       const errorText = await claudeResponse.text();
       console.log(`${sourceType} search failed:`, claudeResponse.status, errorText);
-      
+
       // Try a more capable model if we used Haiku
       if (model === 'claude-haiku-4-5-20251001' || model === 'claude-3-5-haiku-latest') {
         console.log(`Trying more capable model: claude-sonnet-4-5-20250929`);
@@ -2707,7 +2795,7 @@ Accept sources with ANY length ingredient list - even very short lists like "Wat
     }
 
     console.log(`${sourceType} search complete: ${sources.length} sources found`);
-    
+
     // If we got insufficient sources with Haiku, try a more capable model
     if (sources.length < 2 && (model === 'claude-haiku-4-5-20251001' || model === 'claude-3-5-haiku-latest')) {
       console.log(`Insufficient sources with Haiku (${sources.length}), trying Sonnet 4.5...`);
@@ -2716,12 +2804,12 @@ Accept sources with ANY length ingredient list - even very short lists like "Wat
         return sonnetSources;
       }
     }
-    
+
     return sources;
 
   } catch (error) {
     console.log(`${sourceType} search error:`, error.message);
-    
+
     // Try a more capable model on error if we used Haiku
     if (model === 'claude-haiku-4-5-20251001' || model === 'claude-3-5-haiku-latest') {
       console.log(`Error with Haiku, trying Sonnet 4.5...`);
@@ -2742,7 +2830,7 @@ async function searchSourceType(
   addLog?: (msg: string) => void
 ): Promise<Source[]> {
   const log = addLog || console.log;
-  
+
   // Always use Claude - Perplexity is deprecated
   log(`🎯 Using Claude web search (Perplexity is deprecated)`);
   log(`🔑 Anthropic API Key available: ${!!ANTHROPIC_API_KEY}`);
@@ -2768,464 +2856,577 @@ serve(async (req) => {
     })
   }
 
-  // Initialize search logs array
-  const searchLogs: string[] = [];
-  const addLog = (message: string) => {
-    console.log(message);
-    searchLogs.push(message);
-  };
+  // Initialize streaming response
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      const sendSSE = (event: string, data: any) => {
+        const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+        controller.enqueue(encoder.encode(message));
+      };
 
-  try {
-    const { productName, brand, barcode, openFoodFactsData, provider = 'claude' } = await req.json();
+      // Initialize search logs array within the stream scope
+      const searchLogs: string[] = [];
+      const addLog = (message: string) => {
+        console.log(message);
+        searchLogs.push(message);
+        sendSSE('log', { message });
+      };
 
-    addLog(`🔍 Starting search for: ${brand} ${productName}`);
-    addLog(`📊 Barcode: ${barcode}`);
-    addLog(`🤖 Using: Claude web search (Perplexity is deprecated)`);
-    addLog(`⚙️ Minimum sources required: 3 with matching ingredients`);
+      try {
+        const { productName, brand, barcode, openFoodFactsData, provider = 'claude' } = await req.json();
 
-    // Always use Claude - Perplexity is deprecated
-    if (!ANTHROPIC_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY not configured. Please set it in Supabase environment variables.');
-    }
-    
-    // Always use Claude
-    const searchProvider: SearchProvider = 'claude';
+        addLog(`🔍 Starting search for: ${brand} ${productName}`);
+        addLog(`📊 Barcode: ${barcode}`);
+        addLog(`🤖 Using: Claude web search (Perplexity is deprecated)`);
+        addLog(`⚙️ Minimum sources required: 3 with matching ingredients`);
 
-    let allSources: Source[] = [];
+        // Always use Claude - Perplexity is deprecated
+        if (!ANTHROPIC_API_KEY) {
+          throw new Error('ANTHROPIC_API_KEY not configured. Please set it in Supabase environment variables.');
+        }
 
-    // Add Open Food Facts if available
-    if (openFoodFactsData && openFoodFactsData.ingredients_text) {
-      addLog('✅ Found product in Open Food Facts database');
-      allSources.push({
-        name: 'Open Food Facts',
-        url: `https://world.openfoodfacts.org/product/${barcode}`,
-        productImage: openFoodFactsData.image_url || '',
-        ingredientsText: openFoodFactsData.ingredients_text,
-        explicitAllergenStatement: '',
-        explicitDietaryLabels: '',
-        crossContaminationWarnings: '',
-        allergens: [],
-        diets: [],
-        confidence: 75,
-        dataAvailable: true
-      });
-    }
+        // Always use Claude
+        const searchProvider: SearchProvider = 'claude';
 
-    // PHASE 1: Launch initial parallel searches targeting specific retailers and sources
-    addLog('');
-    addLog('🌐 PHASE 1: Searching the web for ingredient sources...');
-    addLog(`📝 Search query: "${brand} ${productName} ingredients"`);
-    const phase1Promises = [
-      searchSourceType('General Web', `${brand} ${productName} ingredients`, productName, brand, barcode, searchProvider, addLog)
-    ];
+        let allSources: Source[] = [];
 
-    const phase1Results = await Promise.all(phase1Promises);
-    for (const sources of phase1Results) {
-      // Filter out any undefined/null sources before adding
-      const validSources = sources.filter(s => s !== null && s !== undefined);
-      allSources.push(...validSources);
-    }
+        // Add Open Food Facts if available
+        if (openFoodFactsData && openFoodFactsData.ingredients_text) {
+          addLog('✅ Found product in Open Food Facts database');
+          allSources.push({
+            name: 'Open Food Facts',
+            url: `https://world.openfoodfacts.org/product/${barcode}`,
+            productImage: openFoodFactsData.image_url || '',
+            ingredientsText: openFoodFactsData.ingredients_text,
+            explicitAllergenStatement: '',
+            explicitDietaryLabels: '',
+            crossContaminationWarnings: '',
+            allergens: [],
+            diets: [],
+            confidence: 75,
+            dataAvailable: true
+          });
+        }
 
-    addLog(`📊 Phase 1 complete: Found ${allSources.length} potential sources`);
+        // PHASE 1: Launch initial parallel searches targeting specific retailers and sources
+        addLog('');
+        addLog('🌐 PHASE 1: Searching the web for ingredient sources...');
+        addLog(`📝 Search query: "${brand} ${productName} ingredients"`);
 
-    // DEDUPLICATE by URL - same URL means same source
-    addLog('');
-    addLog('🔄 Deduplicating sources by URL...');
-    const seenUrls = new Map<string, Source>();
-    for (const source of allSources) {
-      // Skip undefined or invalid sources
-      if (!source || !source.url || !source.name) continue;
+        let attempt = 1;
+        const maxAttempts = 3;
+        const targetSourceCount = 5;
 
-      const normalizedUrl = source.url.toLowerCase().trim();
-      if (!seenUrls.has(normalizedUrl)) {
-        seenUrls.set(normalizedUrl, source);
-        addLog(`  ✓ ${source.name}: ${source.url.substring(0, 60)}...`);
-      }
-    }
-    allSources = Array.from(seenUrls.values());
-    addLog(`✅ ${allSources.length} unique sources after deduplication`);
+        while (attempt <= maxAttempts && allSources.length < targetSourceCount) {
+          if (attempt > 1) {
+            addLog(`   ⚠️ Found only ${allSources.length} sources. Retrying search (Attempt ${attempt}/${maxAttempts})...`);
+          }
 
-    // OPTIMIZED ALGORITHM: Start with exactly 3 WEB sources (excluding Open Food Facts), analyze, then add 2 more only if needed
-    addLog('');
-    addLog('🎯 PHASE 1 ANALYSIS: Checking agreement among first 3 web sources...');
-    
-    // Separate Open Food Facts from web sources for analysis
-    const openFoodFactsSource = allSources.find(s => s.name === 'Open Food Facts');
-    const webSources = allSources.filter(s => s.name !== 'Open Food Facts');
-    
-    // Limit to first 3 WEB sources for initial analysis (excluding Open Food Facts)
-    const initialSources = webSources.slice(0, 3);
-    if (initialSources.length < 3) {
-      addLog(`⚠️ Only found ${initialSources.length} web sources initially. Need at least 3.`);
-    } else {
-      addLog(`   Analyzing ${initialSources.length} web sources: ${initialSources.map(s => s.name).join(', ')}`);
-      if (openFoodFactsSource) {
-        addLog(`   (Open Food Facts will be analyzed separately)`);
-      }
-    }
+          // Vary search query based on attempt to find different sources
+          let currentQuery = `${brand} ${productName} ingredients`;
+          if (attempt === 2) {
+            currentQuery = `${productName} ingredients label`;
+          } else if (attempt === 3) {
+            currentQuery = `${brand} ${productName} nutrition facts ingredients`;
+          }
 
-    // Use AI to group sources by formulation (handles wording variations)
-    const phase1Analysis = await analyzeSourceAgreement(initialSources, addLog);
+          addLog(`📝 Search query: "${currentQuery}"`);
 
-    addLog(`   Found ${phase1Analysis.groups.length} different formulation(s)`);
-    addLog(`   Largest group: ${phase1Analysis.largestGroup.length} source(s) agreeing`);
+          const phase1Promises = [
+            searchSourceType('General Web', currentQuery, productName, brand, barcode, searchProvider, addLog)
+          ];
 
-    let matchingSources: Source[] = phase1Analysis.largestGroup;
+          const phase1Results = await Promise.all(phase1Promises);
+          for (const sources of phase1Results) {
+            // Filter out any undefined/null sources before adding
+            const validSources = sources.filter(s => s !== null && s !== undefined);
 
-    // If Open Food Facts is available, check if it matches the web sources
-    if (openFoodFactsSource && matchingSources.length >= 3 && initialSources.length >= 3) {
-      addLog('');
-      addLog(`🔍 Validating Open Food Facts against web sources...`);
-      
-      // Check if Open Food Facts matches the winning formulation
-      const offAnalysis = await analyzeIngredientVariations(
-        [openFoodFactsSource],
-        matchingSources[0],
-        addLog
-      );
-      
-      if (offAnalysis.matchingSources.length > 0) {
-        addLog(`   ✅ Open Food Facts confirms the formulation`);
-        matchingSources.push(openFoodFactsSource);
-      } else {
-        addLog(`   ❌ Open Food Facts differs from web sources`);
-        // Don't add Open Food Facts to matching sources
-      }
-    }
+            // Deduplicate against existing sources immediately
+            for (const source of validSources) {
+              const isDuplicate = allSources.some(s => s.url === source.url);
+              if (!isDuplicate) {
+                allSources.push(source);
+              }
+            }
+          }
 
-    // Check if we have consensus among all sources
-    const totalSourcesAnalyzed = initialSources.length + (openFoodFactsSource ? 1 : 0);
-    if (matchingSources.length >= 3 && totalSourcesAnalyzed === matchingSources.length) {
-      addLog('');
-      addLog(`✅ SUCCESS: All sources agree!`);
-      addLog(`   Total: ${matchingSources.length} sources (${initialSources.length} web + ${openFoodFactsSource ? '1 Open Food Facts' : '0'})`);
-      addLog(`   Stopping search - no need for additional sources`);
-      addLog(`   Efficiently verified with minimum required sources`);
-    } else if ((matchingSources.length >= 1 && matchingSources.length <= 2 && initialSources.length === 3) || 
-               (matchingSources.length === 3 && initialSources.length === 3 && openFoodFactsSource && !matchingSources.includes(openFoodFactsSource))) {
-      // Phase 2 trigger conditions:
-      // 1. 1-2 out of 3 web sources agree, others differ - need more sources to determine consensus
-      // 2. 3 out of 3 web sources agree BUT Open Food Facts differs
-      addLog('');
-      if (openFoodFactsSource && matchingSources.length === 3 && !matchingSources.includes(openFoodFactsSource)) {
-        addLog(`⚠️ Web sources all agree, but Open Food Facts differs from them.`);
-      } else if (matchingSources.length === 1) {
-        addLog(`⚠️ Only 1/3 web sources agree. Two sources differ.`);
-      } else {
-        addLog(`⚠️ Only 2/3 web sources agree. One source differs.`);
-      }
-      addLog(`🌐 PHASE 2: Getting 2 more sources for 4/5 majority vote...`);
-      addLog(`📝 This will help determine the correct formulation`);
-
-      const phase2Promises = [
-        searchGeneralWebPhase2(productName, brand, barcode, addLog)
-      ];
-
-      const phase2Results = await Promise.all(phase2Promises);
-      const newSources: Source[] = [];
-      for (const sources of phase2Results) {
-        // Filter out any undefined/null sources before adding
-        const validSources = sources.filter(s => s !== null && s !== undefined);
-        newSources.push(...validSources);
-      }
-
-      addLog(`📊 Phase 2 found ${newSources.length} additional sources`);
-
-      // Add new sources to existing list, avoiding duplicates
-      for (const source of newSources) {
-        if (!source || !source.url || !source.name) continue;
-        
-        const normalizedUrl = source.url.toLowerCase().trim();
-        const isDuplicate = webSources.some(s => s.url.toLowerCase().trim() === normalizedUrl);
-        
-        if (!isDuplicate) {
-          webSources.push(source);
-          allSources.push(source); // Also update allSources for error response
-          addLog(`  ✓ Added: ${source.name}`);
-          
-          // Stop when we have 5 total web sources (Open Food Facts is separate)
-          if (webSources.length >= 5) {
-            addLog(`   Reached 5 web sources total, stopping search`);
+          if (allSources.length >= targetSourceCount) {
+            addLog(`   ✅ Reached target of ${allSources.length} sources.`);
             break;
           }
+
+          attempt++;
+        }
+
+        addLog(`📊 Phase 1 complete: Found ${allSources.length} potential sources`);
+
+        // DEDUPLICATE by URL - same URL means same source
+        addLog('');
+        addLog('🔄 Deduplicating sources by URL...');
+        const seenUrls = new Map<string, Source>();
+        for (const source of allSources) {
+          // Skip undefined or invalid sources
+          if (!source || !source.url || !source.name) continue;
+
+          const normalizedUrl = source.url.toLowerCase().trim();
+          if (!seenUrls.has(normalizedUrl)) {
+            seenUrls.set(normalizedUrl, source);
+            addLog(`  ✓ ${source.name}: ${source.url.substring(0, 60)}...`);
+          }
+        }
+        allSources = Array.from(seenUrls.values());
+        addLog(`✅ ${allSources.length} unique sources after deduplication`);
+
+        // OPTIMIZED ALGORITHM: Start with exactly 3 WEB sources (excluding Open Food Facts), analyze, then add 2 more only if needed
+        addLog('');
+        addLog('🎯 PHASE 1 ANALYSIS: Checking agreement among first 3 web sources...');
+
+        // Separate Open Food Facts from web sources for analysis
+        const openFoodFactsSource = allSources.find(s => s.name === 'Open Food Facts');
+        const webSources = allSources.filter(s => s.name !== 'Open Food Facts');
+
+        // Limit to first 3 WEB sources for initial analysis (excluding Open Food Facts)
+        const initialSources = webSources.slice(0, 3);
+        if (initialSources.length < 3) {
+          addLog(`⚠️ Only found ${initialSources.length} web sources initially. Need at least 3.`);
         } else {
-          addLog(`  ⚠️  Skipped duplicate: ${source.name}`);
+          addLog(`   Analyzing ${initialSources.length} web sources: ${initialSources.map(s => s.name).join(', ')}`);
+          if (openFoodFactsSource) {
+            addLog(`   (Open Food Facts will be analyzed separately)`);
+          }
         }
-      }
 
-      // Use only the 5 web sources for Phase 2 analysis (no Open Food Facts)
-      const finalSources = webSources.slice(0, 5);
-      addLog(`✅ ${finalSources.length} total web sources for final analysis`);
+        // Use AI to group sources by formulation (handles wording variations)
+        const phase1Analysis = await analyzeSourceAgreement(initialSources, addLog);
 
-      // Re-analyze all sources with AI
-      addLog('');
-      addLog(`🎯 FINAL ANALYSIS: Checking agreement among all ${finalSources.length} sources...`);
-      
-      // Calculate required majority: for 5 sources need 4, for 4 sources need 3
-      const MAJORITY_REQUIRED = finalSources.length === 5 ? 4 : 3;
-      addLog(`   Need ${MAJORITY_REQUIRED}+ agreeing sources for success (allows 1 outlier)`);
+        addLog(`   Found ${phase1Analysis.groups.length} different formulation(s)`);
+        addLog(`   Largest group: ${phase1Analysis.largestGroup.length} source(s) agreeing`);
 
-      const finalAnalysis = await analyzeSourceAgreement(finalSources, addLog);
+        let matchingSources: Source[] = phase1Analysis.largestGroup;
 
-      addLog(`   Found ${finalAnalysis.groups.length} different formulation(s)`);
-      addLog(`   Largest group: ${finalAnalysis.largestGroup.length} source(s) agreeing`);
+        // If Open Food Facts is available, check if it matches the web sources
+        if (openFoodFactsSource && matchingSources.length >= 3 && initialSources.length >= 3) {
+          addLog('');
+          addLog(`🔍 Validating Open Food Facts against web sources...`);
 
-      matchingSources = finalAnalysis.largestGroup;
+          // Check if Open Food Facts matches the winning formulation
+          const offAnalysis = await analyzeIngredientVariations(
+            [openFoodFactsSource],
+            matchingSources[0],
+            addLog
+          );
 
-      // Check if we have the required majority
-      if (matchingSources.length >= MAJORITY_REQUIRED) {
-        addLog('');
-        addLog(`✅ SUCCESS: ${matchingSources.length}/${finalSources.length} sources agree (majority vote)`);
-        if (matchingSources.length < finalSources.length) {
-          const outliers = finalSources.filter(s => s && !matchingSources.includes(s)).map(s => s.name);
-          addLog(`   ⚠️  Outlier(s) detected and ignored: ${outliers.join(', ')}`);
+          if (offAnalysis.matchingSources.length > 0) {
+            addLog(`   ✅ Open Food Facts confirms the formulation`);
+            matchingSources.push(openFoodFactsSource);
+          } else {
+            addLog(`   ❌ Open Food Facts differs from web sources`);
+            // Don't add Open Food Facts to matching sources
+          }
         }
-      } else {
+
+        // Check if we have consensus among all sources
+        const totalSourcesAnalyzed = initialSources.length + (openFoodFactsSource ? 1 : 0);
+        if (matchingSources.length >= 3 && totalSourcesAnalyzed === matchingSources.length) {
+          addLog('');
+          addLog(`✅ SUCCESS: All sources agree!`);
+          addLog(`   Total: ${matchingSources.length} sources (${initialSources.length} web + ${openFoodFactsSource ? '1 Open Food Facts' : '0'})`);
+          addLog(`   Stopping search - no need for additional sources`);
+          addLog(`   Efficiently verified with minimum required sources`);
+        } else if ((matchingSources.length >= 1 && matchingSources.length <= 2 && initialSources.length === 3) ||
+          (matchingSources.length === 3 && initialSources.length === 3 && openFoodFactsSource && !matchingSources.includes(openFoodFactsSource))) {
+          // Phase 2 trigger conditions:
+          // 1. 1-2 out of 3 web sources agree, others differ - need more sources to determine consensus
+          // 2. 3 out of 3 web sources agree BUT Open Food Facts differs
+          addLog('');
+          if (openFoodFactsSource && matchingSources.length === 3 && !matchingSources.includes(openFoodFactsSource)) {
+            addLog(`⚠️ Web sources all agree, but Open Food Facts differs from them.`);
+          } else if (matchingSources.length === 1) {
+            addLog(`⚠️ Only 1/3 web sources agree. Two sources differ.`);
+          } else {
+            addLog(`⚠️ Only 2/3 web sources agree. One source differs.`);
+          }
+          addLog(`🌐 PHASE 2: Getting 2 more sources for 4/5 majority vote...`);
+          addLog(`📝 This will help determine the correct formulation`);
+
+          const phase2Promises = [
+            searchGeneralWebPhase2(productName, brand, barcode, addLog)
+          ];
+
+          const phase2Results = await Promise.all(phase2Promises);
+          const newSources: Source[] = [];
+          for (const sources of phase2Results) {
+            // Filter out any undefined/null sources before adding
+            const validSources = sources.filter(s => s !== null && s !== undefined);
+            newSources.push(...validSources);
+          }
+
+          addLog(`📊 Phase 2 found ${newSources.length} additional sources`);
+
+          // Add new sources to existing list, avoiding duplicates
+          for (const source of newSources) {
+            if (!source || !source.url || !source.name) continue;
+
+            const normalizedUrl = source.url.toLowerCase().trim();
+            const isDuplicate = webSources.some(s => s.url.toLowerCase().trim() === normalizedUrl);
+
+            if (!isDuplicate) {
+              webSources.push(source);
+              allSources.push(source); // Also update allSources for error response
+              addLog(`  ✓ Added: ${source.name}`);
+
+              // Stop when we have 5 total web sources (Open Food Facts is separate)
+              if (webSources.length >= 5) {
+                addLog(`   Reached 5 web sources total, stopping search`);
+                break;
+              }
+            } else {
+              addLog(`  ⚠️  Skipped duplicate: ${source.name}`);
+            }
+          }
+
+          // Use only the 5 web sources for Phase 2 analysis (no Open Food Facts)
+          const finalSources = webSources.slice(0, 5);
+          addLog(`✅ ${finalSources.length} total web sources for final analysis`);
+
+          // Re-analyze all sources with AI
+          addLog('');
+          addLog(`🎯 FINAL ANALYSIS: Checking agreement among all ${finalSources.length} sources...`);
+
+          // Calculate required majority: for 5 sources need 4, for 4 sources need 3
+          const MAJORITY_REQUIRED = finalSources.length === 5 ? 4 : 3;
+          addLog(`   Need ${MAJORITY_REQUIRED}+ agreeing sources for success (allows 1 outlier)`);
+
+          const finalAnalysis = await analyzeSourceAgreement(finalSources, addLog);
+
+          addLog(`   Found ${finalAnalysis.groups.length} different formulation(s)`);
+          addLog(`   Largest group: ${finalAnalysis.largestGroup.length} source(s) agreeing`);
+
+          matchingSources = finalAnalysis.largestGroup;
+
+          // Check if we have the required majority
+          if (matchingSources.length >= MAJORITY_REQUIRED) {
+            addLog('');
+            addLog(`✅ SUCCESS: ${matchingSources.length}/${finalSources.length} sources agree (majority vote)`);
+            if (matchingSources.length < finalSources.length) {
+              const outliers = finalSources.filter(s => s && !matchingSources.includes(s)).map(s => s.name);
+              addLog(`   ⚠️  Outlier(s) detected and ignored: ${outliers.join(', ')}`);
+            }
+          } else {
+            addLog('');
+            addLog(`❌ INSUFFICIENT AGREEMENT: Only ${matchingSources.length}/${finalSources.length} sources agree`);
+            addLog(`   Need at least ${MAJORITY_REQUIRED} agreeing sources for verification`);
+            addLog(`   This product requires MANUAL ingredient entry by the manager`);
+          }
+        } else {
+          // Less than 2 sources agree, or we don't have 3 sources yet
+          addLog('');
+          if (initialSources.length < 3) {
+            addLog(`❌ INSUFFICIENT SOURCES: Only found ${initialSources.length} sources`);
+            addLog(`   Need at least 3 sources for verification`);
+          } else {
+            addLog(`❌ INSUFFICIENT AGREEMENT: Only ${matchingSources.length}/${initialSources.length} sources agree`);
+            addLog(`   This product requires MANUAL ingredient entry by the manager`);
+          }
+        }
+
+        let sourcesWithData = matchingSources.filter(s => s.dataAvailable);
+
+        // FINAL DEDUPLICATION - ensure no duplicate domains/retailers in final results
         addLog('');
-        addLog(`❌ INSUFFICIENT AGREEMENT: Only ${matchingSources.length}/${finalSources.length} sources agree`);
-        addLog(`   Need at least ${MAJORITY_REQUIRED} agreeing sources for verification`);
-        addLog(`   This product requires MANUAL ingredient entry by the manager`);
-      }
-    } else {
-      // Less than 2 sources agree, or we don't have 3 sources yet
-      addLog('');
-      if (initialSources.length < 3) {
-        addLog(`❌ INSUFFICIENT SOURCES: Only found ${initialSources.length} sources`);
-        addLog(`   Need at least 3 sources for verification`);
-      } else {
-        addLog(`❌ INSUFFICIENT AGREEMENT: Only ${matchingSources.length}/${initialSources.length} sources agree`);
-        addLog(`   This product requires MANUAL ingredient entry by the manager`);
-      }
-    }
+        addLog('🔄 Final deduplication of matching sources...');
+        const finalSeenDomains = new Map<string, Source>();
+        for (const source of sourcesWithData) {
+          // Skip undefined or invalid sources
+          if (!source || !source.url || !source.name) continue;
 
-    let sourcesWithData = matchingSources.filter(s => s.dataAvailable);
+          // Extract domain from URL (e.g., "kroger.com" from "https://www.kroger.com/...")
+          let domain = source.name.toLowerCase();
+          try {
+            const url = new URL(source.url);
+            domain = url.hostname.replace('www.', '');
+          } catch (e) {
+            // If URL parsing fails, use source.name
+            domain = source.name.toLowerCase();
+          }
 
-    // FINAL DEDUPLICATION - ensure no duplicate domains/retailers in final results
-    addLog('');
-    addLog('🔄 Final deduplication of matching sources...');
-    const finalSeenDomains = new Map<string, Source>();
-    for (const source of sourcesWithData) {
-      // Skip undefined or invalid sources
-      if (!source || !source.url || !source.name) continue;
+          if (!finalSeenDomains.has(domain)) {
+            finalSeenDomains.set(domain, source);
+          } else {
+            addLog(`  ⚠️  Removed duplicate retailer: ${source.name} (already have ${domain})`);
+          }
+        }
+        sourcesWithData = Array.from(finalSeenDomains.values());
+        addLog(`✅ ${sourcesWithData.length} unique sources after final deduplication`);
 
-      // Extract domain from URL (e.g., "kroger.com" from "https://www.kroger.com/...")
-      let domain = source.name.toLowerCase();
-      try {
-        const url = new URL(source.url);
-        domain = url.hostname.replace('www.', '');
-      } catch (e) {
-        // If URL parsing fails, use source.name
-        domain = source.name.toLowerCase();
-      }
+        console.log(`\nFinal matching sources: ${sourcesWithData.length}`);
+        console.log(`Minimum required: ${MINIMUM_SOURCES_REQUIRED}`);
 
-      if (!finalSeenDomains.has(domain)) {
-        finalSeenDomains.set(domain, source);
-      } else {
-        addLog(`  ⚠️  Removed duplicate retailer: ${source.name} (already have ${domain})`);
-      }
-    }
-    sourcesWithData = Array.from(finalSeenDomains.values());
-    addLog(`✅ ${sourcesWithData.length} unique sources after final deduplication`);
+        // Check if we have minimum required sources (either 3/3 or 4/5)
+        if (sourcesWithData.length < MINIMUM_SOURCES_REQUIRED) {
+          const errorResult = {
+            error: `MANUAL ENTRY REQUIRED: Unable to verify ingredients with sufficient confidence. Please manually enter allergens and dietary preferences from the product label.`,
+            requiresManualEntry: true,
+            minimumSourcesRequired: MINIMUM_SOURCES_REQUIRED,
+            sourcesFound: sourcesWithData.length,
+            sources: allSources,
+            consolidatedIngredients: '',
+            crossContaminationWarnings: '',
+            allergens: [],
+            allergensInferred: false,
+            diets: [],
+            dietsInferred: false,
+            searchLogs
+          };
+          sendSSE('result', errorResult);
+          controller.close();
+          return;
+        }
 
-    console.log(`\nFinal matching sources: ${sourcesWithData.length}`);
-    console.log(`Minimum required: ${MINIMUM_SOURCES_REQUIRED}`);
+        addLog('');
+        addLog('✅ VERIFICATION SUCCESSFUL!');
+        addLog(`   Found ${sourcesWithData.length} independent sources with matching ingredients`);
 
-    // Check if we have minimum required sources (either 3/3 or 4/5)
-    if (sourcesWithData.length < MINIMUM_SOURCES_REQUIRED) {
-      return new Response(
-        JSON.stringify({
-          error: `MANUAL ENTRY REQUIRED: Unable to verify ingredients with sufficient confidence. Please manually enter allergens and dietary preferences from the product label.`,
-          requiresManualEntry: true,
+        // Collect all cross-contamination warnings (filter out generic retailer disclaimers)
+        const allCrossContaminationWarnings = sourcesWithData
+          .map(s => s.crossContaminationWarnings)
+          .map(w => filterRetailerDisclaimers(w || '')) // Filter out generic disclaimers
+          .filter(w => w !== null && w.length > 0) as string[];
+
+        const consolidatedCrossContaminationWarnings = allCrossContaminationWarnings.length > 0
+          ? [...new Set(allCrossContaminationWarnings)].join('; ')
+          : '';
+
+        // Consolidate allergens and diets from all sources (already analyzed by Claude in each search)
+        console.log('\nConsolidating allergens and dietary information from sources...');
+
+        const allAllergens = new Set<string>();
+        const allDiets = new Set<string>();
+        const explicitAllergenStatements: string[] = [];
+        const explicitDietaryLabels: string[] = [];
+
+        for (const source of sourcesWithData) {
+          // Collect allergens
+          if (source.allergens && source.allergens.length > 0) {
+            source.allergens.forEach(a => allAllergens.add(a.toLowerCase()));
+          }
+
+          // Collect diets
+          if (source.diets && source.diets.length > 0) {
+            source.diets.forEach(d => allDiets.add(d.toLowerCase()));
+          }
+
+          // Track if we have explicit statements
+          if (source.explicitAllergenStatement && source.explicitAllergenStatement.length > 0) {
+            explicitAllergenStatements.push(source.explicitAllergenStatement);
+          }
+
+          if (source.explicitDietaryLabels && source.explicitDietaryLabels.length > 0) {
+            explicitDietaryLabels.push(source.explicitDietaryLabels);
+          }
+        }
+
+        // Consolidate dietary compliance
+        // Rule: If ANY source says a diet is NOT compliant, mark it as NOT compliant.
+        // Reason: Safety first.
+        const consolidatedCompliance: { [key: string]: { is_compliant: boolean; reason: string } } = {};
+        const allDietKeys = new Set<string>();
+
+        // First, gather all diet keys
+        for (const source of sourcesWithData) {
+          if (source.dietary_compliance) {
+            Object.keys(source.dietary_compliance).forEach(k => allDietKeys.add(k));
+          }
+        }
+
+        // Then consolidate
+        for (const diet of allDietKeys) {
+          let isCompliant = true;
+          const reasons: string[] = [];
+
+          for (const source of sourcesWithData) {
+            if (source.dietary_compliance && source.dietary_compliance[diet]) {
+              const compliance = source.dietary_compliance[diet];
+              if (!compliance.is_compliant) {
+                isCompliant = false;
+                if (compliance.reason) reasons.push(compliance.reason);
+              } else if (isCompliant && compliance.reason) {
+                // Only add compliant reasons if we haven't found a non-compliant one yet
+                // (though we'll likely overwrite this if we find a non-compliant one later)
+                // Actually, for compliant, we can just take the first reason or merge them.
+                // Let's just collect all reasons for now.
+              }
+            }
+          }
+
+          // If compliant, use a generic or merged reason. If not, use the negative reasons.
+          // Filter reasons to avoid duplicates
+          const uniqueReasons = [...new Set(reasons)];
+
+          // If we found non-compliant sources, use their reasons
+          if (!isCompliant) {
+            consolidatedCompliance[diet] = {
+              is_compliant: false,
+              reason: uniqueReasons.join('; ') || 'Not compliant based on ingredient analysis.'
+            };
+          } else {
+            // If all sources say compliant (or don't mention it), check if we have positive reasons
+            // We need to find positive reasons from the sources
+            const positiveReasons: string[] = [];
+            for (const source of sourcesWithData) {
+              if (source.dietary_compliance && source.dietary_compliance[diet] && source.dietary_compliance[diet].is_compliant) {
+                positiveReasons.push(source.dietary_compliance[diet].reason);
+              }
+            }
+            const uniquePositiveReasons = [...new Set(positiveReasons)];
+
+            consolidatedCompliance[diet] = {
+              is_compliant: true,
+              reason: uniquePositiveReasons.join('; ') || 'No non-compliant ingredients found.'
+            };
+          }
+        }
+
+        // Validate allergens against ingredient lists
+        // If an allergen is mentioned in an explicit statement but NOT in the ingredient list,
+        // it's likely a cross-contamination warning, not a direct ingredient
+        const validatedAllergens = new Set<string>();
+        const ingredientTexts = sourcesWithData.map(s => s.ingredientsText.toLowerCase());
+
+        for (const allergen of allAllergens) {
+          const allergenLower = allergen.toLowerCase();
+          let foundInIngredients = false;
+
+          // Check if allergen appears in any ingredient list
+          for (const ingredientText of ingredientTexts) {
+            // Common patterns for allergen detection in ingredients
+            const allergenPatterns: { [key: string]: RegExp[] } = {
+              'milk': [/milk/, /butter/, /cheese/, /whey/, /casein/, /lactose/, /cream/, /yogurt/],
+              'eggs': [/egg/, /albumin/, /mayonnaise/, /meringue/],
+              'fish': [/fish/, /anchovy/, /cod/, /salmon/, /tuna/, /bass/, /sardine/],
+              'shellfish': [/shrimp/, /crab/, /lobster/, /clam/, /oyster/, /mussel/],
+              'tree nuts': [/almond/, /cashew/, /walnut/, /pecan/, /pistachio/, /hazelnut/, /macadamia/],
+              'peanuts': [/peanut/],
+              'wheat': [/wheat/, /wheat flour/, /wheat-based/],
+              'soybeans': [/soy/, /soybean/, /tofu/, /edamame/],
+              'sesame': [/sesame/, /tahini/]
+            };
+
+            const patterns = allergenPatterns[allergenLower];
+            if (patterns) {
+              foundInIngredients = patterns.some(pattern => pattern.test(ingredientText));
+              if (foundInIngredients) break;
+            }
+          }
+
+          // Also check if any explicit statement mentions it AND it's in ingredients
+          // (if not in ingredients, it's likely cross-contamination and should go in warnings)
+          if (foundInIngredients) {
+            validatedAllergens.add(allergenLower);
+          } else {
+            // Check explicit statements - if mentioned but not in ingredients, log as potential cross-contamination
+            const mentionedInStatement = explicitAllergenStatements.some(stmt =>
+              stmt.toLowerCase().includes(allergenLower)
+            );
+            if (mentionedInStatement) {
+              addLog(`⚠️  "${allergen}" mentioned in explicit allergen statement but not found in ingredient lists - treating as cross-contamination risk`);
+              // Don't add to allergens, but ensure it's in cross-contamination warnings if not already
+            }
+          }
+        }
+
+        // Filter validated allergens to only include top 9 FDA allergens
+        const rawAllergens = Array.from(validatedAllergens);
+        const allergens = filterApprovedAllergens(rawAllergens);
+
+        // Log if any allergens were filtered out
+        const filteredOut = rawAllergens.filter(a => !APPROVED_ALLERGENS.has(a.toLowerCase()));
+        if (filteredOut.length > 0) {
+          addLog(`⚠️  Filtered out non-FDA allergens: ${filteredOut.join(', ')} (only top 9 FDA allergens are included)`);
+        }
+
+        const diets = Array.from(allDiets);
+
+        // If we found explicit statements on ANY source, mark as not inferred
+        const allergensInferred = explicitAllergenStatements.length === 0 && allergens.length > 0;
+        const dietsInferred = explicitDietaryLabels.length === 0 && diets.length > 0;
+
+        console.log(`Allergens found: ${allergens.join(', ')} ${allergensInferred ? '(inferred from ingredients)' : '(from explicit statements)'}`);
+        if (filteredOut.length > 0) {
+          console.log(`Filtered out: ${filteredOut.join(', ')}`);
+        }
+        console.log(`Diets: ${diets.join(', ')} ${dietsInferred ? '(inferred from ingredients)' : '(from explicit labels)'}`);
+        console.log(`Cross-contamination warnings: ${consolidatedCrossContaminationWarnings || 'None'}`);
+
+        // Check for ingredient wording differences
+        const differences = findIngredientDifferences(sourcesWithData);
+        const allMatch = differences.length === 0;
+        console.log(`Ingredient consistency: ${allMatch ? 'Perfect match' : `${differences.length} differences found`}`);
+        if (differences.length > 0) {
+          differences.forEach(diff => console.log(`  - ${diff}`));
+        }
+
+        // Build final result
+        const result: VerificationResult = {
+          product: {
+            name: productName,
+            brand: brand,
+            barcode: barcode
+          },
+          sources: sourcesWithData,
+          consistency: {
+            score: allMatch ? 100 : 95,
+            allMatch: allMatch,
+            differences: differences
+          },
+          consolidatedIngredients: sourcesWithData[0]?.ingredientsText || '',
+          crossContaminationWarnings: consolidatedCrossContaminationWarnings,
+          allergens: Array.from(allAllergens),
+          allergensInferred: explicitAllergenStatements.length === 0,
+          diets: Array.from(allDiets),
+          dietsInferred: explicitDietaryLabels.length === 0,
+          dietary_compliance: consolidatedCompliance,
+          visualMatching: {
+            imagesAvailable: sourcesWithData.filter(s => s.productImage).length,
+            primaryImage: sourcesWithData.find(s => s.productImage)?.productImage || ''
+          },
           minimumSourcesRequired: MINIMUM_SOURCES_REQUIRED,
-          sourcesFound: sourcesWithData.length,
-          sources: allSources,
-          consolidatedIngredients: '',
-          crossContaminationWarnings: '',
-          allergens: [],
-          allergensInferred: false,
-          diets: [],
-          dietsInferred: false,
-          searchLogs
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    addLog('');
-    addLog('✅ VERIFICATION SUCCESSFUL!');
-    addLog(`   Found ${sourcesWithData.length} independent sources with matching ingredients`);
-
-    // Collect all cross-contamination warnings (filter out generic retailer disclaimers)
-    const allCrossContaminationWarnings = sourcesWithData
-      .map(s => s.crossContaminationWarnings)
-      .map(w => filterRetailerDisclaimers(w || '')) // Filter out generic disclaimers
-      .filter(w => w !== null && w.length > 0) as string[];
-
-    const consolidatedCrossContaminationWarnings = allCrossContaminationWarnings.length > 0
-      ? [...new Set(allCrossContaminationWarnings)].join('; ')
-      : '';
-
-    // Consolidate allergens and diets from all sources (already analyzed by Claude in each search)
-    console.log('\nConsolidating allergens and dietary information from sources...');
-
-    const allAllergens = new Set<string>();
-    const allDiets = new Set<string>();
-    const explicitAllergenStatements: string[] = [];
-    const explicitDietaryLabels: string[] = [];
-
-    for (const source of sourcesWithData) {
-      // Collect allergens
-      if (source.allergens && source.allergens.length > 0) {
-        source.allergens.forEach(a => allAllergens.add(a.toLowerCase()));
-      }
-
-      // Collect diets
-      if (source.diets && source.diets.length > 0) {
-        source.diets.forEach(d => allDiets.add(d.toLowerCase()));
-      }
-
-      // Track if we have explicit statements
-      if (source.explicitAllergenStatement && source.explicitAllergenStatement.length > 0) {
-        explicitAllergenStatements.push(source.explicitAllergenStatement);
-      }
-
-      if (source.explicitDietaryLabels && source.explicitDietaryLabels.length > 0) {
-        explicitDietaryLabels.push(source.explicitDietaryLabels);
-      }
-    }
-
-    // Validate allergens against ingredient lists
-    // If an allergen is mentioned in an explicit statement but NOT in the ingredient list,
-    // it's likely a cross-contamination warning, not a direct ingredient
-    const validatedAllergens = new Set<string>();
-    const ingredientTexts = sourcesWithData.map(s => s.ingredientsText.toLowerCase());
-    
-    for (const allergen of allAllergens) {
-      const allergenLower = allergen.toLowerCase();
-      let foundInIngredients = false;
-      
-      // Check if allergen appears in any ingredient list
-      for (const ingredientText of ingredientTexts) {
-        // Common patterns for allergen detection in ingredients
-        const allergenPatterns: { [key: string]: RegExp[] } = {
-          'milk': [/milk/, /butter/, /cheese/, /whey/, /casein/, /lactose/, /cream/, /yogurt/],
-          'eggs': [/egg/, /albumin/, /mayonnaise/, /meringue/],
-          'fish': [/fish/, /anchovy/, /cod/, /salmon/, /tuna/, /bass/, /sardine/],
-          'shellfish': [/shrimp/, /crab/, /lobster/, /clam/, /oyster/, /mussel/],
-          'tree nuts': [/almond/, /cashew/, /walnut/, /pecan/, /pistachio/, /hazelnut/, /macadamia/],
-          'peanuts': [/peanut/],
-          'wheat': [/wheat/, /wheat flour/, /wheat-based/],
-          'soybeans': [/soy/, /soybean/, /tofu/, /edamame/],
-          'sesame': [/sesame/, /tahini/]
+          sourcesFound: sourcesWithData.length
         };
-        
-        const patterns = allergenPatterns[allergenLower];
-        if (patterns) {
-          foundInIngredients = patterns.some(pattern => pattern.test(ingredientText));
-          if (foundInIngredients) break;
-        }
+
+        // Add search logs to result
+        result.searchLogs = searchLogs;
+
+        console.log('\n========================================');
+        console.log('Verification Complete');
+        console.log(`Sources: ${result.sourcesFound}/${result.minimumSourcesRequired}`);
+        console.log(`Consistency: ${result.consistency.score}%`);
+        console.log('========================================\n');
+
+        sendSSE('result', result);
+        controller.close();
+
+      } catch (error) {
+        console.error('Error in verify-brand-sources:', error);
+        const errorResult = {
+          error: error.message,
+          minimumSourcesRequired: MINIMUM_SOURCES_REQUIRED,
+          sourcesFound: 0,
+          searchLogs // Include logs up to the point of error
+        };
+        sendSSE('error', errorResult);
+        controller.close();
       }
-      
-      // Also check if any explicit statement mentions it AND it's in ingredients
-      // (if not in ingredients, it's likely cross-contamination and should go in warnings)
-      if (foundInIngredients) {
-        validatedAllergens.add(allergenLower);
-      } else {
-        // Check explicit statements - if mentioned but not in ingredients, log as potential cross-contamination
-        const mentionedInStatement = explicitAllergenStatements.some(stmt => 
-          stmt.toLowerCase().includes(allergenLower)
-        );
-        if (mentionedInStatement) {
-          addLog(`⚠️  "${allergen}" mentioned in explicit allergen statement but not found in ingredient lists - treating as cross-contamination risk`);
-          // Don't add to allergens, but ensure it's in cross-contamination warnings if not already
-        }
-      }
     }
-    
-    // Filter validated allergens to only include top 9 FDA allergens
-    const rawAllergens = Array.from(validatedAllergens);
-    const allergens = filterApprovedAllergens(rawAllergens);
-    
-    // Log if any allergens were filtered out
-    const filteredOut = rawAllergens.filter(a => !APPROVED_ALLERGENS.has(a.toLowerCase()));
-    if (filteredOut.length > 0) {
-      addLog(`⚠️  Filtered out non-FDA allergens: ${filteredOut.join(', ')} (only top 9 FDA allergens are included)`);
-    }
-    
-    const diets = Array.from(allDiets);
+  });
 
-    // If we found explicit statements on ANY source, mark as not inferred
-    const allergensInferred = explicitAllergenStatements.length === 0 && allergens.length > 0;
-    const dietsInferred = explicitDietaryLabels.length === 0 && diets.length > 0;
-
-    console.log(`Allergens found: ${allergens.join(', ')} ${allergensInferred ? '(inferred from ingredients)' : '(from explicit statements)'}`);
-    if (filteredOut.length > 0) {
-      console.log(`Filtered out: ${filteredOut.join(', ')}`);
-    }
-    console.log(`Diets: ${diets.join(', ')} ${dietsInferred ? '(inferred from ingredients)' : '(from explicit labels)'}`);
-    console.log(`Cross-contamination warnings: ${consolidatedCrossContaminationWarnings || 'None'}`);
-
-    // Check for ingredient wording differences
-    const differences = findIngredientDifferences(sourcesWithData);
-    const allMatch = differences.length === 0;
-    console.log(`Ingredient consistency: ${allMatch ? 'Perfect match' : `${differences.length} differences found`}`);
-    if (differences.length > 0) {
-      differences.forEach(diff => console.log(`  - ${diff}`));
-    }
-
-    // Build final result
-    const result: VerificationResult = {
-      product: {
-        name: productName,
-        brand: brand,
-        barcode: barcode
-      },
-      sources: sourcesWithData,
-      consistency: {
-        score: allMatch ? 100 : 95,
-        allMatch: allMatch,
-        differences: differences
-      },
-      consolidatedIngredients: sourcesWithData[0]?.ingredientsText || '',
-      crossContaminationWarnings: consolidatedCrossContaminationWarnings,
-      allergens: allergens,
-      allergensInferred: allergensInferred,
-      diets: diets,
-      dietsInferred: dietsInferred,
-      visualMatching: {
-        imagesAvailable: sourcesWithData.filter(s => s.productImage).length,
-        primaryImage: openFoodFactsData?.image_url || sourcesWithData.find(s => s.productImage)?.productImage || ''
-      },
-      minimumSourcesRequired: MINIMUM_SOURCES_REQUIRED,
-      sourcesFound: sourcesWithData.length
-    };
-
-    // Add search logs to result
-    result.searchLogs = searchLogs;
-
-    console.log('\n========================================');
-    console.log('Verification Complete');
-    console.log(`Sources: ${result.sourcesFound}/${result.minimumSourcesRequired}`);
-    console.log(`Consistency: ${result.consistency.score}%`);
-    console.log('========================================\n');
-
-    return new Response(
-      JSON.stringify(result),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error) {
-    console.error('Error in verify-brand-sources:', error);
-    return new Response(
-      JSON.stringify({
-        error: error.message,
-        minimumSourcesRequired: MINIMUM_SOURCES_REQUIRED,
-        sourcesFound: 0
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      }
-    );
-  }
+  return new Response(stream, {
+    headers: {
+      ...corsHeaders,
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+    },
+  });
 });

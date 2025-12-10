@@ -10,6 +10,7 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const FOODDATA_CENTRAL_API_KEY = Deno.env.get('FOODDATA_CENTRAL_API_KEY');
 const FATSECRET_CLIENT_ID = Deno.env.get('FATSECRET_CLIENT_ID');
 const FATSECRET_CLIENT_SECRET = Deno.env.get('FATSECRET_CLIENT_SECRET');
+const BARCODE_LOOKUP_API_KEY = Deno.env.get('BARCODE_LOOKUP_API_KEY');
 
 // Cache for FatSecret access token (expires after ~24 hours)
 let fatSecretAccessToken: string | null = null;
@@ -382,15 +383,14 @@ async function getFatSecretAccessToken(): Promise<string | null> {
     // OAuth 2.0 Client Credentials flow
     const credentials = btoa(`${FATSECRET_CLIENT_ID}:${FATSECRET_CLIENT_SECRET}`);
 
-    // NOTE: Change scope from "basic" to "premier" once Premier tier is approved
-    // Basic scope only supports OAuth 1.0 for barcode endpoint, Premier supports OAuth 2.0
+    // FatSecret barcode endpoint requires Premier tier
     const response = await fetch('https://oauth.fatsecret.com/connect/token', {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${credentials}`,
         'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: 'grant_type=client_credentials&scope=basic'
+      body: 'grant_type=client_credentials&scope=premier'
     });
 
     if (!response.ok) {
@@ -418,17 +418,21 @@ async function getFatSecretAccessToken(): Promise<string | null> {
 //   - food_attributes: May contain diet-related attributes
 //   NOTE: Most allergen data requires Premier API tier
 //   The food_ingredients field may also contain embedded "Contains:" statements
-async function fetchFromFatSecret(barcode: string): Promise<{ source: IngredientSource | null; brand: string; productName: string }> {
+async function fetchFromFatSecret(barcode: string): Promise<{ source: IngredientSource | null; brand: string; productName: string; error?: string }> {
   const accessToken = await getFatSecretAccessToken();
   if (!accessToken) {
-    return { source: null, brand: '', productName: '' };
+    return { source: null, brand: '', productName: '', error: 'Failed to get FatSecret access token' };
   }
 
   try {
     console.log('Trying FatSecret...');
 
+    // FatSecret requires GTIN-13 format (13 digits, zero-padded on the left)
+    const paddedBarcode = barcode.padStart(13, '0');
+    console.log(`  Using padded barcode: ${paddedBarcode}`);
+
     // Step 1: Find food by barcode
-    const searchUrl = `https://platform.fatsecret.com/rest/food/barcode/find-by-id/v1?barcode=${barcode}&format=json`;
+    const searchUrl = `https://platform.fatsecret.com/rest/food/barcode/find-by-id/v1?barcode=${paddedBarcode}&format=json`;
 
     const searchResponse = await fetch(searchUrl, {
       headers: {
@@ -439,7 +443,7 @@ async function fetchFromFatSecret(barcode: string): Promise<{ source: Ingredient
     if (!searchResponse.ok) {
       const errorText = await searchResponse.text();
       console.log(`✗ FatSecret barcode lookup failed: ${searchResponse.status} - ${errorText}`);
-      return { source: null, brand: '', productName: '' };
+      return { source: null, brand: '', productName: '', error: `API error ${searchResponse.status}: ${errorText.substring(0, 100)}` };
     }
 
     const searchData = await searchResponse.json();
@@ -447,7 +451,7 @@ async function fetchFromFatSecret(barcode: string): Promise<{ source: Ingredient
     // Check if food was found
     if (!searchData.food) {
       console.log('✗ FatSecret found no food for this barcode');
-      return { source: null, brand: '', productName: '' };
+      return { source: null, brand: '', productName: '', error: 'Barcode not in FatSecret database' };
     }
 
     const food = searchData.food;
@@ -528,6 +532,77 @@ async function fetchFromFatSecret(barcode: string): Promise<{ source: Ingredient
   } catch (err) {
     console.log('✗ FatSecret failed:', (err as any).message);
     return { source: null, brand: '', productName: '' };
+  }
+}
+
+// Fetch from Barcode Lookup API (barcodelookup.com)
+// This is a commercial API with good coverage of US products
+async function fetchFromBarcodeLookup(barcode: string): Promise<{ source: IngredientSource | null; brand: string; productName: string; error?: string }> {
+  if (!BARCODE_LOOKUP_API_KEY) {
+    console.log('✗ Barcode Lookup API key not configured');
+    return { source: null, brand: '', productName: '', error: 'API key not configured' };
+  }
+
+  try {
+    console.log('Trying Barcode Lookup API...');
+
+    const apiUrl = `https://api.barcodelookup.com/v3/products?barcode=${barcode}&key=${BARCODE_LOOKUP_API_KEY}`;
+
+    const response = await fetch(apiUrl, {
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log(`✗ Barcode Lookup API failed: ${response.status} - ${errorText}`);
+      return { source: null, brand: '', productName: '', error: `API error ${response.status}` };
+    }
+
+    const data = await response.json();
+
+    // Check if products were found
+    if (!data.products || data.products.length === 0) {
+      console.log('✗ Barcode Lookup found no products for this barcode');
+      return { source: null, brand: '', productName: '', error: 'Barcode not in database' };
+    }
+
+    const product = data.products[0];
+    const productName = product.title || product.product_name || '';
+    const brand = product.brand || product.manufacturer || '';
+
+    console.log(`✓ Barcode Lookup found: "${productName}"${brand ? ` (Brand: ${brand})` : ''}`);
+
+    // Extract ingredients if available
+    const ingredientsText = product.ingredients || '';
+
+    // Extract other useful fields
+    const productImage = product.images?.[0] || '';
+    const description = product.description || '';
+
+    if (!ingredientsText || ingredientsText.trim().length < 10) {
+      console.log('✓ Barcode Lookup found product but no ingredients');
+      return { source: null, brand: brand, productName: productName };
+    }
+
+    console.log(`✓ Found ingredients in Barcode Lookup (${ingredientsText.length} chars)`);
+
+    return {
+      source: {
+        sourceName: 'Barcode Lookup',
+        url: `https://www.barcodelookup.com/${barcode}`,
+        ingredientsText: ingredientsText.trim(),
+        productName: productName,
+        productImage: productImage,
+        brand: brand
+      },
+      brand: brand,
+      productName: productName
+    };
+  } catch (err) {
+    console.log('✗ Barcode Lookup failed:', (err as any).message);
+    return { source: null, brand: '', productName: '', error: (err as any).message };
   }
 }
 
@@ -895,19 +970,67 @@ async function antigravitySearchYahoo(query: string, addLog?: (msg: string) => v
     }
 
     log(`  Yahoo found ${links.length} links`);
-    return links.slice(0, 10);
+    return links.slice(0, 15);
   } catch (error) {
     log(`  Yahoo search failed: ${(error as any).message}`);
     return [];
   }
 }
 
-// Search Bing for product URLs
-async function antigravitySearchBing(query: string, addLog?: (msg: string) => void): Promise<string[]> {
+// Search Ecosia for product URLs (uses Bing's index but different blocking)
+async function antigravitySearchEcosia(query: string, addLog?: (msg: string) => void): Promise<string[]> {
   const log = addLog || console.log;
-  log(`[Antigravity] Bing search: ${query}`);
+  log(`[Antigravity] Ecosia search: ${query}`);
   try {
-    const searchUrl = `https://www.bing.com/search?q=${encodeURIComponent(query)}`;
+    const searchUrl = `https://www.ecosia.org/search?method=index&q=${encodeURIComponent(query)}`;
+    const response = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9'
+      }
+    });
+
+    if (!response.ok) return [];
+    const html = await response.text();
+
+    const links: string[] = [];
+    // Ecosia result links have data-test-id="mainline-result-link"
+    const linkRegex = /href="(https?:\/\/(?!ecosia\.org)[^"]+)"[^>]*data-test-id="mainline-result-link"/gi;
+    let match;
+    while ((match = linkRegex.exec(html)) !== null) {
+      if (!links.includes(match[1])) links.push(match[1]);
+    }
+
+    // Fallback: look for result links with class patterns
+    const fallbackRegex = /<a[^>]+class="[^"]*result__link[^"]*"[^>]*href="(https?:\/\/(?!ecosia)[^"]+)"/gi;
+    while ((match = fallbackRegex.exec(html)) !== null) {
+      if (!links.includes(match[1])) links.push(match[1]);
+    }
+
+    // Another fallback: external https links
+    const externalRegex = /href="(https?:\/\/(?!ecosia\.org|www\.ecosia)[^"]+)"/gi;
+    while ((match = externalRegex.exec(html)) !== null) {
+      const href = match[1];
+      if (!href.includes('ecosia.org') && !href.includes('bing.com') && !links.includes(href)) {
+        links.push(href);
+      }
+    }
+
+    log(`  Ecosia found ${links.length} links`);
+    return links.slice(0, 15);
+  } catch (error) {
+    log(`  Ecosia search failed: ${(error as any).message}`);
+    return [];
+  }
+}
+
+// Search Mojeek for product URLs (independent index, good for diversity)
+async function antigravitySearchMojeek(query: string, addLog?: (msg: string) => void): Promise<string[]> {
+  const log = addLog || console.log;
+  log(`[Antigravity] Mojeek search: ${query}`);
+  try {
+    const searchUrl = `https://www.mojeek.com/search?q=${encodeURIComponent(query)}`;
     const response = await fetch(searchUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -918,21 +1041,27 @@ async function antigravitySearchBing(query: string, addLog?: (msg: string) => vo
     if (!response.ok) return [];
     const html = await response.text();
 
-    // Extract links from Bing results
     const links: string[] = [];
-    const linkRegex = /<a[^>]+href="(https?:\/\/[^"]+)"[^>]*>/gi;
+    // Mojeek uses class="ob" for result links
+    const linkRegex = /<a[^>]+class="ob"[^>]*href="(https?:\/\/[^"]+)"/gi;
     let match;
     while ((match = linkRegex.exec(html)) !== null) {
+      if (!links.includes(match[1])) links.push(match[1]);
+    }
+
+    // Fallback: any external links in results section
+    const fallbackRegex = /href="(https?:\/\/(?!mojeek\.com|www\.mojeek)[^"]+)"/gi;
+    while ((match = fallbackRegex.exec(html)) !== null) {
       const href = match[1];
-      if (!href.includes('bing.com') && !href.includes('microsoft.com') && !href.includes('go.microsoft')) {
+      if (!href.includes('mojeek.com') && !links.includes(href)) {
         links.push(href);
       }
     }
 
-    log(`  Bing found ${links.length} links`);
-    return links.slice(0, 10);
+    log(`  Mojeek found ${links.length} links`);
+    return links.slice(0, 15);
   } catch (error) {
-    log(`  Bing search failed: ${(error as any).message}`);
+    log(`  Mojeek search failed: ${(error as any).message}`);
     return [];
   }
 }
@@ -983,6 +1112,94 @@ async function antigravitySearchGoogle(query: string, addLog?: (msg: string) => 
   }
 }
 
+// Search Brave for product URLs (better results than Google scraping)
+async function antigravitySearchBrave(query: string, addLog?: (msg: string) => void): Promise<string[]> {
+  const log = addLog || console.log;
+  log(`[Antigravity] Brave search: ${query}`);
+  try {
+    const searchUrl = `https://search.brave.com/search?q=${encodeURIComponent(query)}`;
+    const response = await fetch(searchUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5'
+      }
+    });
+
+    if (!response.ok) return [];
+    const html = await response.text();
+
+    const links: string[] = [];
+    // Brave uses data-href or href in result links
+    const linkRegex = /href="(https?:\/\/(?!search\.brave\.com)[^"]+)"/gi;
+    let match;
+    while ((match = linkRegex.exec(html)) !== null) {
+      const href = match[1];
+      if (!href.includes('brave.com') &&
+          !href.includes('youtube.com') &&
+          !href.includes('google.com') &&
+          !links.includes(href)) {
+        links.push(href);
+      }
+    }
+
+    log(`  Brave found ${links.length} links`);
+    return links.slice(0, 15);
+  } catch (error) {
+    log(`  Brave search failed: ${(error as any).message}`);
+    return [];
+  }
+}
+
+// Search Startpage for product URLs (proxies Google results)
+async function antigravitySearchStartpage(query: string, addLog?: (msg: string) => void): Promise<string[]> {
+  const log = addLog || console.log;
+  log(`[Antigravity] Startpage search: ${query}`);
+  try {
+    const response = await fetch('https://www.startpage.com/sp/search', {
+      method: 'POST',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+      },
+      body: `query=${encodeURIComponent(query)}&cat=web`
+    });
+
+    if (!response.ok) return [];
+    const html = await response.text();
+
+    const links: string[] = [];
+    // Startpage wraps results in specific classes
+    const linkRegex = /class="w-gl__result-url[^"]*"[^>]*href="(https?:\/\/[^"]+)"/gi;
+    let match;
+    while ((match = linkRegex.exec(html)) !== null) {
+      if (!links.includes(match[1])) links.push(match[1]);
+    }
+
+    // Fallback: look for result links
+    const fallbackRegex = /<a[^>]+class="[^"]*result[^"]*"[^>]*href="(https?:\/\/(?!startpage)[^"]+)"/gi;
+    while ((match = fallbackRegex.exec(html)) !== null) {
+      if (!links.includes(match[1])) links.push(match[1]);
+    }
+
+    // Another fallback: any external links
+    const externalRegex = /href="(https?:\/\/(?!startpage|www\.startpage)[^"]+)"/gi;
+    while ((match = externalRegex.exec(html)) !== null) {
+      const href = match[1];
+      if (!href.includes('startpage.com') && !links.includes(href)) {
+        links.push(href);
+      }
+    }
+
+    log(`  Startpage found ${links.length} links`);
+    return links.slice(0, 15);
+  } catch (error) {
+    log(`  Startpage search failed: ${(error as any).message}`);
+    return [];
+  }
+}
+
 // Search DuckDuckGo Lite for product URLs
 async function antigravitySearchDDGLite(query: string, addLog?: (msg: string) => void): Promise<string[]> {
   const log = addLog || console.log;
@@ -1015,7 +1232,7 @@ async function antigravitySearchDDGLite(query: string, addLog?: (msg: string) =>
     }
 
     log(`  DuckDuckGo found ${links.length} links`);
-    return links.slice(0, 10);
+    return links.slice(0, 15);
   } catch (error) {
     log(`  DuckDuckGo search failed: ${(error as any).message}`);
     return [];
@@ -1067,14 +1284,176 @@ Brands: ${data.product.brands || 'Unknown'}`;
 
     if (!response.ok) return null;
     const html = await response.text();
-    const { text, title } = parseHtml(html);
+    let { text, title } = parseHtml(html);
+
+    // Extract JSON-LD structured data - many sites include product info for SEO
+    const jsonLdMatches = html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+    for (const match of jsonLdMatches) {
+      try {
+        const jsonLd = JSON.parse(match[1]);
+        // Handle both single object and array
+        const items = Array.isArray(jsonLd) ? jsonLd : [jsonLd];
+        for (const item of items) {
+          // Look for Product schema with ingredients
+          if (item['@type'] === 'Product' || item['@type']?.includes?.('Product')) {
+            if (item.description) {
+              text += '\n\n--- Product Schema Description ---\n' + item.description;
+            }
+            // Some sites put ingredients directly in schema
+            if (item.ingredients) {
+              const ingStr = Array.isArray(item.ingredients) ? item.ingredients.join(', ') : item.ingredients;
+              text += '\n\nIngredients: ' + ingStr;
+              console.log(`[JSON-LD] Found ingredients in schema: ${ingStr.substring(0, 100)}...`);
+            }
+          }
+          // Look for NutritionInformation
+          if (item['@type'] === 'NutritionInformation' && item.ingredients) {
+            text += '\n\nIngredients: ' + item.ingredients;
+          }
+        }
+      } catch (e) {
+        // Invalid JSON-LD, skip
+      }
+    }
+
+    // Extract data from __NEXT_DATA__ (Next.js sites) or similar hydration scripts
+    const nextDataMatch = html.match(/<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);
+    if (nextDataMatch) {
+      try {
+        const nextData = JSON.parse(nextDataMatch[1]);
+        // Recursively search for ingredients in the data
+        const searchForIngredients = (obj: any, depth = 0): string | null => {
+          if (depth > 10 || !obj) return null;
+          if (typeof obj === 'string' && obj.toLowerCase().includes('ingredients')) {
+            return obj;
+          }
+          if (typeof obj === 'object') {
+            // Check for common ingredient field names
+            for (const key of ['ingredients', 'ingredientList', 'ingredient_list', 'ingredientStatement']) {
+              if (obj[key] && typeof obj[key] === 'string' && obj[key].length > 20) {
+                return obj[key];
+              }
+            }
+            // Recurse into objects/arrays
+            for (const key in obj) {
+              const found = searchForIngredients(obj[key], depth + 1);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+        const foundIngredients = searchForIngredients(nextData);
+        if (foundIngredients) {
+          text += '\n\n--- NEXT_DATA Ingredients ---\n' + foundIngredients;
+          console.log(`[NEXT_DATA] Found ingredients: ${foundIngredients.substring(0, 100)}...`);
+        }
+      } catch (e) {
+        // Invalid JSON, skip
+      }
+    }
+
+    // Look for data in window.__PRELOADED_STATE__ or similar (Redux/Zustand stores)
+    const preloadedStateMatch = html.match(/window\.__(?:PRELOADED_STATE__|INITIAL_STATE__|APP_STATE__)__?\s*=\s*({[\s\S]*?});?\s*(?:<\/script>|window\.)/i);
+    if (preloadedStateMatch) {
+      try {
+        const stateData = JSON.parse(preloadedStateMatch[1]);
+        const searchForIngredients = (obj: any, depth = 0): string | null => {
+          if (depth > 8 || !obj) return null;
+          if (typeof obj === 'object') {
+            for (const key of ['ingredients', 'ingredientList', 'ingredient_list']) {
+              if (obj[key] && typeof obj[key] === 'string' && obj[key].length > 20) {
+                return obj[key];
+              }
+            }
+            for (const key in obj) {
+              const found = searchForIngredients(obj[key], depth + 1);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+        const foundIngredients = searchForIngredients(stateData);
+        if (foundIngredients) {
+          text += '\n\n--- Preloaded State Ingredients ---\n' + foundIngredients;
+          console.log(`[PRELOAD] Found ingredients: ${foundIngredients.substring(0, 100)}...`);
+        }
+      } catch (e) {
+        // Invalid JSON, skip
+      }
+    }
+
+    // Special handling for eBay - fetch item description from iframe
+    if (url.includes('ebay.com')) {
+      // eBay loads descriptions in iframes - try to find and fetch the iframe content
+      // Look for iframe src pointing to description (vi.vipr.ebaydesc.com or similar)
+      const iframeSrcMatch = html.match(/iframe[^>]+src=["']([^"']*(?:ebaydesc|vi\.vipr)[^"']*)["']/i) ||
+                            html.match(/iframe[^>]+src=["']([^"']*desc[^"']*)["']/i);
+
+      if (iframeSrcMatch) {
+        try {
+          let iframeUrl = iframeSrcMatch[1];
+          // Handle relative URLs
+          if (iframeUrl.startsWith('//')) iframeUrl = 'https:' + iframeUrl;
+          else if (iframeUrl.startsWith('/')) iframeUrl = 'https://www.ebay.com' + iframeUrl;
+
+          console.log(`[eBay] Fetching description iframe: ${iframeUrl.substring(0, 100)}...`);
+          const iframeResponse = await fetch(iframeUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              'Accept': 'text/html,*/*',
+              'Referer': url
+            }
+          });
+
+          if (iframeResponse.ok) {
+            const iframeHtml = await iframeResponse.text();
+            const iframeContent = parseHtml(iframeHtml);
+            if (iframeContent.text.length > 100) {
+              console.log(`[eBay] Got iframe content: ${iframeContent.text.length} chars`);
+              // Append iframe content to main content
+              text = text + '\n\n--- Item Description ---\n\n' + iframeContent.text;
+            }
+          }
+        } catch (e) {
+          console.log(`[eBay] Failed to fetch iframe: ${(e as any).message}`);
+        }
+      }
+
+      // Also try eBay's GetSingleItem API if we have an item ID
+      const itemIdMatch = url.match(/\/itm\/(\d+)/);
+      if (itemIdMatch && !text.toLowerCase().includes('ingredients')) {
+        const itemId = itemIdMatch[1];
+        // Try the description endpoint directly
+        try {
+          const descUrl = `https://vi.vipr.ebaydesc.com/ws/eBayISAPI.dll?ViewItemDescV4&item=${itemId}`;
+          console.log(`[eBay] Trying direct desc URL for item ${itemId}`);
+          const descResponse = await fetch(descUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              'Accept': 'text/html,*/*',
+              'Referer': url
+            }
+          });
+          if (descResponse.ok) {
+            const descHtml = await descResponse.text();
+            const descContent = parseHtml(descHtml);
+            if (descContent.text.length > 100) {
+              console.log(`[eBay] Got direct desc: ${descContent.text.length} chars`);
+              text = text + '\n\n--- Seller Description ---\n\n' + descContent.text;
+            }
+          }
+        } catch (e) {
+          console.log(`[eBay] Direct desc failed: ${(e as any).message}`);
+        }
+      }
+    }
 
     // Extract og:image
     const ogImageMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i);
     const productImage = ogImageMatch ? ogImageMatch[1] : undefined;
 
     // Check for blocked pages
-    const lowerContent = text.toLowerCase();
+    let lowerContent = text.toLowerCase();
     const blockKeywords = ['access denied', 'security check', 'captcha', 'robot',
       'human verification', '403 forbidden', '404 not found', 'enable javascript'];
 
@@ -1082,8 +1461,12 @@ Brands: ${data.product.brands || 'Unknown'}`;
       return null;
     }
 
-    // Limit content size
-    const content = text.substring(0, 15000);
+    // Skip rendered scraping for now - Jina/Microlink have rate limits that cause issues
+    // Sites that need JS rendering (eBay, etc.) will just be filtered out if no ingredients found
+    // This keeps the scraping fast and reliable for sites that work with simple fetch
+
+    // Limit content size (reduced to save memory)
+    const content = text.substring(0, 8000);
 
     if (content.length < 50) return null;
 
@@ -1094,14 +1477,126 @@ Brands: ${data.product.brands || 'Unknown'}`;
   }
 }
 
-// Scrape multiple URLs in parallel
-async function antigravityScrapeUrls(urls: string[], addLog?: (msg: string) => void): Promise<AntigravityScrapedSource[]> {
+// Extract the most ingredient-relevant portion of content
+// Instead of blindly taking first N chars, find sections with ingredient keywords
+function extractIngredientRelevantContent(content: string, maxLength: number = 10000): string {
+  const lowerContent = content.toLowerCase();
+
+  // Keywords that indicate ingredient sections
+  const ingredientKeywords = [
+    'ingredients:', 'ingredients', 'contains:', 'made with:',
+    'allergen', 'nutrition facts', 'nutritional information'
+  ];
+
+  // Find all positions where ingredient keywords appear
+  const keywordPositions: number[] = [];
+  for (const keyword of ingredientKeywords) {
+    let pos = lowerContent.indexOf(keyword);
+    while (pos !== -1) {
+      keywordPositions.push(pos);
+      pos = lowerContent.indexOf(keyword, pos + 1);
+    }
+  }
+
+  // If no ingredient keywords found, return first portion of content
+  if (keywordPositions.length === 0) {
+    return content.substring(0, maxLength);
+  }
+
+  // Sort positions
+  keywordPositions.sort((a, b) => a - b);
+
+  // Extract content around keyword positions
+  // Take 500 chars before and 3000 chars after each keyword position
+  const segments: string[] = [];
+  let usedLength = 0;
+  const seenRanges: [number, number][] = [];
+
+  for (const pos of keywordPositions) {
+    if (usedLength >= maxLength) break;
+
+    const start = Math.max(0, pos - 500);
+    const end = Math.min(content.length, pos + 3500);
+
+    // Check if this range overlaps with already extracted ranges
+    const overlaps = seenRanges.some(([s, e]) => start < e && end > s);
+    if (overlaps) continue;
+
+    seenRanges.push([start, end]);
+    const segment = content.substring(start, end);
+    segments.push(segment);
+    usedLength += segment.length;
+  }
+
+  // If we found ingredient sections, return those
+  if (segments.length > 0) {
+    const result = segments.join('\n\n---\n\n');
+    // Also include beginning of content for product name/brand context
+    const beginning = content.substring(0, 1500);
+    if (!result.includes(beginning.substring(0, 500))) {
+      return (beginning + '\n\n---\n\n' + result).substring(0, maxLength);
+    }
+    return result.substring(0, maxLength);
+  }
+
+  return content.substring(0, maxLength);
+}
+
+// Scrape a single batch of URLs (5 at a time)
+async function antigravityScrapeBatch(urls: string[]): Promise<AntigravityScrapedSource[]> {
+  const batchResults = await Promise.all(urls.map(url => antigravityScrapeUrl(url)));
+  return batchResults.filter((r): r is AntigravityScrapedSource => r !== null);
+}
+
+// Filter sources by barcode or brand+product presence
+function antigravityFilterByContent(
+  sources: AntigravityScrapedSource[],
+  barcode: string,
+  brandName: string,
+  productName: string,
+  seenDomains: Set<string>,
+  addLog?: (msg: string) => void
+): { passed: AntigravityScrapedSource[], failed: string[] } {
   const log = addLog || console.log;
-  log(`[Antigravity] Scraping ${urls.length} URLs...`);
-  const results = await Promise.all(urls.map(url => antigravityScrapeUrl(url)));
-  const valid = results.filter((r): r is AntigravityScrapedSource => r !== null);
-  log(`  Scraped ${valid.length} successfully`);
-  return valid;
+  const passed: AntigravityScrapedSource[] = [];
+  const failed: string[] = [];
+
+  for (const s of sources) {
+    // Skip if we already have this domain
+    const domain = new URL(s.url).hostname.replace('www.', '');
+    if (seenDomains.has(domain)) continue;
+
+    const content = s.content.toLowerCase();
+    const hasBarcode = content.includes(barcode);
+
+    let hasBrandAndProduct = false;
+    if (brandName && productName) {
+      const b = brandName.toLowerCase();
+      const p = productName.toLowerCase();
+      const hasBrand = content.includes(b);
+      if (hasBrand) {
+        const tokens = p.replace(/,/g, '').split(/\s+/).filter(t => t.length > 2);
+        if (tokens.length > 0) {
+          const matchedTokens = tokens.filter(t => content.includes(t));
+          if (matchedTokens.length / tokens.length >= 0.6) {
+            hasBrandAndProduct = true;
+          }
+        } else {
+          hasBrandAndProduct = content.includes(p);
+        }
+      }
+    }
+
+    if (hasBarcode || hasBrandAndProduct) {
+      passed.push(s);
+      seenDomains.add(domain);
+      log(`[Antigravity] ✓ ${domain} (${hasBarcode ? 'has barcode' : 'has brand+product'})`);
+    } else {
+      failed.push(domain);
+    }
+  }
+
+  return { passed, failed };
 }
 
 // Extract best title from scraped sources
@@ -1110,7 +1605,9 @@ function antigravityExtractBestTitle(data: AntigravityScrapedSource[]): string {
     'nutrition facts', 'calories in', 'upc lookup', 'barcode lookup',
     'search results', 'item', 'product', 'food', 'amazon.com',
     'walmart.com', 'target.com', 'access denied', 'captcha',
-    'page not found', '404', 'error', 'log in', 'sign in'
+    'page not found', '404', 'error', 'log in', 'sign in',
+    'ndc lookup', 'ndc search', 'drug code', 'national drug code',
+    'go-upc', 'upcitemdb', 'barcode spider', 'ean lookup'
   ];
 
   for (const d of data) {
@@ -1121,6 +1618,9 @@ function antigravityExtractBestTitle(data: AntigravityScrapedSource[]): string {
       let cleanTitle = d.title
         .replace(/UPC\s*\d+/i, '')
         .replace(/Barcode\s*lookup/i, '')
+        .replace(/NDC\s*Lookup/i, '')
+        .replace(/Go-?UPC/i, '')
+        .replace(/UPCitemdb/i, '')
         .replace(/\|\s*.*$/, '')
         .replace(/-\s*.*$/, '')
         .replace(/Nutrition\s*Facts/i, '')
@@ -1133,48 +1633,13 @@ function antigravityExtractBestTitle(data: AntigravityScrapedSource[]): string {
 }
 
 // Filter sources by relevance to product
+// SIMPLIFIED: No title filtering - all sources pass through to content-based filtering
 function antigravityFilterData(data: AntigravityScrapedSource[], title: string): {
   valid: AntigravityScrapedSource[];
   rejected: AntigravityScrapedSource[];
 } {
-  const result = { valid: [] as AntigravityScrapedSource[], rejected: [] as AntigravityScrapedSource[] };
-  if (!title) {
-    result.valid = data;
-    return result;
-  }
-
-  const brandBlacklist = ['nutrition', 'calories', 'facts', 'the', 'a', 'an', 'food', 'product', 'item', 'organic', 'natural'];
-  const keywords = title.toLowerCase().split(' ').filter(w => w.length > 2 && !brandBlacklist.includes(w));
-
-  if (keywords.length === 0) {
-    result.valid = data;
-    return result;
-  }
-
-  for (const d of data) {
-    if (!d.title) continue;
-    const titleLower = d.title.toLowerCase().replace(/[^\w\s]/g, '');
-
-    const matchCount = keywords.reduce((acc, k) => {
-      const kClean = k.replace(/[^\w\s]/g, '');
-      return titleLower.includes(kClean) ? acc + 1 : acc;
-    }, 0);
-
-    // Relaxed logic: Just need some keyword overlap
-    // If we have few keywords (e.g. "Tofu"), need 1 match
-    // If we have many (e.g. "Premium Extra Firm Tofu"), need 2 matches
-    const minMatches = keywords.length > 2 ? 2 : 1;
-    const isRelevant = matchCount >= minMatches;
-
-    if (isRelevant) {
-      result.valid.push(d);
-    } else {
-      d.matchCount = matchCount;
-      result.rejected.push(d);
-    }
-  }
-
-  return result;
+  // Pass all sources through - real filtering happens later based on barcode/brand+product in content
+  return { valid: data, rejected: [] };
 }
 
 // Get unique domains from sources
@@ -1219,16 +1684,16 @@ async function antigravityAnalyzeWithAI(
 
     Target Product: "${brandName || ''} ${productName || ''}".
     Target Barcode: "${barcode || ''}".
-    
+
     Your task is to:
-    1. Identify the product name AND BRAND. If you cannot find a clear product name, use "Product Analysis".
-       - VERIFY that the source is for this specific product (or very similar variant).
-       - CHECK THE BRAND: Ensure the target brand (or a close variant) is mentioned in the source.
-       - ALLOW PARENT COMPANIES: Do NOT reject the source just because other company names are present (they might be parent companies or distributors).
-       - REJECT ONLY IF: The target brand is COMPLETELY MISSING and the source is clearly for a competitor brand (e.g. target is 'Pacific Foods' but source is ONLY 'Brodo').
-       - CHECK FOR BARCODE: Look for the barcode "${barcode || 'N/A'}" in the text. If the barcode is present, it is a high-quality source.
-       - FILTER RECIPES: If the source does NOT contain the barcode AND looks like a home recipe (e.g. "instructions", "prep time", "cook time"), return "ingredients: []".
-       - If the text is for a different brand or a significantly different product, return "ingredients: []".
+    1. For EACH source, determine if it is for the EXACT target product.
+       - The source MUST be for "${brandName || ''} ${productName || ''}" specifically.
+       - Different flavors, variants, or sizes of the same brand are WRONG. For example:
+         - If target is "Momofuku Spicy Noodles", then "Momofuku Soy & Scallion Noodles" is WRONG.
+         - If target is "Coca-Cola Classic", then "Coca-Cola Zero" is WRONG.
+       - Set "isCorrectProduct": false if the source is for a different variant.
+       - Only set "isCorrectProduct": true if you are confident the source matches the exact target product.
+       - If the barcode "${barcode || 'N/A'}" appears in the source, it is likely correct.
     2. Extract the ingredient list from EACH source.
        - Look for "Ingredients:", "Contains:", or lists of food items.
        - Ingredients MUST be specific food items (e.g. "Water", "Beef", "Salt").
@@ -1252,22 +1717,53 @@ async function antigravityAnalyzeWithAI(
        - Do NOT leave "unifiedIngredientList" empty if any source has ingredients.
        - CLEAN the ingredients: Remove trailing text like "Product Details", "Additional Info", "Certified Organic", or punctuation.
        - Example: "Black Pepper (Organic).\nPRODUCT DETAILS" -> "Black Pepper (Organic)"
-    4. Check the unified list for ONLY these top 9 allergens: Milk, Eggs, Fish, Crustacean Shellfish, Tree Nuts, Peanuts, Wheat, Soybeans, Sesame.
+    4. Check the unified list for the FDA top 9 allergens.
        - Return a list of objects with "allergen" and "trigger".
-       - The "trigger" MUST be the specific ingredient from the list that causes the allergen warning (e.g., allergen: "Wheat", trigger: "Enriched Flour").
+       - The "trigger" MUST be the specific ingredient from the list that causes the allergen warning.
        - Do not leave "trigger" empty.
        - Do NOT include any other allergens (e.g., no Coconut, no Mustard, no Celery).
-       - CRITICAL: You MUST list the specific ingredients (triggers) that caused the allergen to be flagged.
-       - Do NOT return simple strings like ["milk"]. Return objects with "allergen" and "trigger".
-    5. Analyze the unified list for dietary compliance (Vegan, Vegetarian, Pescatarian, Gluten-Free).
+
+       EXACT ALLERGEN NAMES - Use these EXACT strings (case-sensitive):
+       - "Dairy" (for milk, cream, butter, cheese, whey, casein, lactose, yogurt, kefir)
+       - "Egg" (for eggs, egg whites, yolks, albumen, mayonnaise)
+       - "Peanut" (for peanuts, peanut butter, peanut oil, groundnuts)
+       - "Tree Nut" (for almonds, cashews, walnuts, pecans, pistachios, hazelnuts, macadamia)
+       - "Shellfish" (for shrimp, crab, lobster, clams, mussels, scallops, oysters)
+       - "Fish" (for fish, salmon, tuna, cod, anchovies, sardines)
+       - "Wheat" (for wheat, flour, bread, pasta, barley, rye, malt, semolina)
+       - "Soy" (for soy, soya, soybeans, tofu, tempeh, edamame, soy protein, soy lecithin)
+       - "Sesame" (for sesame seeds, tahini, sesame oil)
+
+       DO NOT use: "Milk", "Eggs", "Peanuts", "Tree Nuts", "Crustacean Shellfish", "Soybeans", etc.
+
+    5. Analyze the unified list for dietary compliance.
        - Return isCompliant (boolean), reason (string), and trigger (string).
-        - IF NOT COMPLIANT: You MUST identify the specific ingredient (trigger).
-          - Example: {"isCompliant": false, "reason": "Contains Honey", "trigger": "Honey"}
-          - CRITICAL: For the "reason" field, you MUST list the SPECIFIC ingredients that violate the diet.
-          - DO NOT use generic phrases like "Contains dairy" or "Animal products".
-          - CORRECT: "reason": "Pasteurized Lowfat Milk, Nonfat Milk"
-          - INCORRECT: "reason": "Contains dairy products"
-          - Do not use "Unknown ingredient" if you can find the specific item.
+
+       EXACT DIET NAMES - Use these EXACT strings (case-sensitive):
+       - "Vegan"
+       - "Vegetarian"
+       - "Pescatarian"
+       - "Gluten-free"
+
+       DO NOT use "Gluten-Free" (capital F) - use "Gluten-free".
+
+       CRITICAL DIETARY RULES:
+       - VEGAN: NOT compatible with animal products ONLY: dairy (milk, cream, butter, cheese, whey, casein, yogurt), eggs, meat, fish, shellfish, honey, gelatin/collagen
+         - Tree nuts (almonds, walnuts, cashews, etc.) ARE VEGAN - they are plant-based
+         - Peanuts and peanut oil ARE VEGAN - they are plant-based legumes
+         - All plant oils ARE VEGAN
+         - Soy products ARE VEGAN
+       - VEGETARIAN: Compatible with dairy, eggs, honey. NOT compatible with meat, fish, shellfish, gelatin
+       - PESCATARIAN: Compatible with dairy, eggs, honey, fish, shellfish. NOT compatible with meat, gelatin
+       - GLUTEN-FREE: NOT compatible with wheat, barley, rye, malt, semolina
+
+       - IF NOT COMPLIANT: You MUST identify the specific ingredient (trigger).
+         - Example: {"isCompliant": false, "reason": "Contains Honey", "trigger": "Honey"}
+         - CRITICAL: For the "reason" field, you MUST list the SPECIFIC ingredients that violate the diet.
+         - DO NOT use generic phrases like "Contains dairy" or "Animal products".
+         - CORRECT: "reason": "Pasteurized Lowfat Milk, Nonfat Milk"
+         - INCORRECT: "reason": "Contains dairy products"
+         - Do not use "Unknown ingredient" if you can find the specific item.
 
     6. Identify discrepancies between sources.
        - Compare each source's ingredient list to the "unifiedIngredientList".
@@ -1280,15 +1776,18 @@ async function antigravityAnalyzeWithAI(
        - Return: { ingredient: "Name", presentIn: ["url1"], missingIn: ["url2"], note: "Optional explanation" }
        - If a source lists "Spices" and another lists specific spices, report it as a discrepancy.
 
-    7. Extract a product image URL.
-       - Look for a high-quality image URL of the product in the sources.
-       - Prefer clear, isolated product shots.
+    7. Extract a product image URL for the TARGET PRODUCT ONLY.
+       - The image MUST be of "${brandName || ''} ${productName || ''}" - the specific food product we're analyzing.
+       - DO NOT return images of unrelated products, ads, or other items on the page.
+       - Look for a high-quality image URL in og:image tags or product image URLs.
+       - Prefer clear, isolated product shots of the target food item.
+       - If you cannot find an image that clearly matches the target product, return null.
        - Return "productImage": "https://..." or null if none found.
 
     IMPORTANT: You MUST return a valid JSON object matching the schema.
 
     Here is the data:
-    ${JSON.stringify(scrapedData.map(s => ({ url: s.url, content: s.content.substring(0, 5000) })))}
+    ${JSON.stringify(scrapedData.map(s => ({ url: s.url, content: extractIngredientRelevantContent(s.content, 5000) })))}
   `;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -1300,14 +1799,15 @@ async function antigravityAnalyzeWithAI(
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 4000,
+        max_tokens: 8000,  // Increased to handle larger source batches
         temperature: 0,
         messages: [{ role: 'user', content: prompt }]
       }),
     });
 
     if (!response.ok) {
-      console.log(`[Antigravity] AI analysis failed: ${response.status}`);
+      const errorText = await response.text();
+      console.log(`[Antigravity] AI analysis failed: ${response.status} - ${errorText.substring(0, 500)}`);
       return null;
     }
 
@@ -1318,13 +1818,63 @@ async function antigravityAnalyzeWithAI(
     console.log('[Antigravity] Raw AI response length:', content.length);
     console.log('[Antigravity] Raw AI response (first 2000 chars):', content.substring(0, 2000));
 
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.log('[Antigravity] Failed to parse AI response - no JSON found');
+    // Extract first complete JSON object using balanced brace counting
+    // This handles cases where AI adds text with curly braces after the JSON
+    function extractFirstJsonObject(text: string): string | null {
+      const startIdx = text.indexOf('{');
+      if (startIdx === -1) return null;
+
+      let depth = 0;
+      let inString = false;
+      let escapeNext = false;
+
+      for (let i = startIdx; i < text.length; i++) {
+        const char = text[i];
+
+        if (escapeNext) {
+          escapeNext = false;
+          continue;
+        }
+
+        if (char === '\\' && inString) {
+          escapeNext = true;
+          continue;
+        }
+
+        if (char === '"' && !escapeNext) {
+          inString = !inString;
+          continue;
+        }
+
+        if (!inString) {
+          if (char === '{') depth++;
+          else if (char === '}') {
+            depth--;
+            if (depth === 0) {
+              return text.substring(startIdx, i + 1);
+            }
+          }
+        }
+      }
+      return null; // Unbalanced braces
+    }
+
+    const jsonString = extractFirstJsonObject(content);
+    if (!jsonString) {
+      console.log('[Antigravity] Failed to parse AI response - no valid JSON object found');
+      console.log('[Antigravity] Response preview:', content.substring(0, 500));
       return null;
     }
 
-    const result = JSON.parse(jsonMatch[0]);
+    let result;
+    try {
+      result = JSON.parse(jsonString);
+    } catch (parseError) {
+      console.log('[Antigravity] JSON parse error:', (parseError as Error).message);
+      console.log('[Antigravity] JSON string length:', jsonString.length);
+      console.log('[Antigravity] JSON string (last 200 chars):', jsonString.substring(jsonString.length - 200));
+      return null;
+    }
 
     // Log parsed result for debugging
     console.log('[Antigravity] Parsed top9Allergens:', JSON.stringify(result.top9Allergens));
@@ -1624,7 +2174,8 @@ async function antigravitySearchForBrandProduct(
   barcode: string,
   productName: string,
   brandName: string,
-  addLog?: (msg: string) => void
+  addLog?: (msg: string) => void,
+  sendSourceEvent?: (event: { verified?: number; total?: number; needed?: number; sources?: { [url: string]: { status: string; cycle?: number; reason?: string } } }) => void
 ): Promise<{
   source: IngredientSource | null;
   additionalSources: IngredientSource[];
@@ -1638,47 +2189,127 @@ async function antigravitySearchForBrandProduct(
   const allRejectedSources: AntigravityScrapedSource[] = []; // Accumulate rejected sources
   const sourceIngredientsMap = new Map<string, string[]>(); // Persist ingredients found during verification
   const TARGET_SOURCES = 5;
-  const MAX_CYCLES = 5;
+  const MAX_CYCLES = 20;
+
+  // Source tracker state - accumulates all sources for UI updates
+  const sourceTrackerState: { [url: string]: { status: string; cycle?: number; reason?: string } } = {};
+  let currentCycle = 0;
+
+  // Helper to emit source tracker updates
+  const emitSourceUpdate = () => {
+    if (!sendSourceEvent) return;
+    const verifiedCount = Object.values(sourceTrackerState).filter(s => s.status === 'accepted').length;
+    sendSourceEvent({
+      verified: verifiedCount,
+      total: TARGET_SOURCES,
+      sources: sourceTrackerState,
+      needed: Math.max(0, TARGET_SOURCES - verifiedCount)
+    });
+  };
 
   let knownTitle = productName ? `${brandName} ${productName}`.trim() : '';
 
   for (let cycle = 1; cycle <= MAX_CYCLES; cycle++) {
+    currentCycle = cycle;
     const needed = TARGET_SOURCES - verifiedSources.length;
     if (needed <= 0) break;
 
     log(`[Antigravity] Cycle ${cycle}/${MAX_CYCLES}: Looking for ${needed} more sources...`);
 
     // Build search queries based on cycle
+    // Strategy: If we have product info from trusted sources, use it.
+    // If we only have a barcode, use barcode-focused queries.
+    // NEVER extract product names from scraped content - that leads to garbage queries.
     const queries: string[] = [];
+    const hasProductInfo = Boolean(knownTitle || (brandName && productName));
 
-    if (cycle === 1) {
-      // Cycle 1: High precision
-      if (barcode) queries.push(`${barcode} ingredients`);
-      if (knownTitle) queries.push(`${knownTitle} ingredients`);
-      if (brandName && productName) queries.push(`${brandName} ${productName} ingredients`);
-    } else if (cycle === 2) {
-      // Cycle 2: Broader search
-      if (productName) queries.push(`${productName} ingredients label`);
-      if (knownTitle) queries.push(`${knownTitle} nutrition facts`);
-      if (brandName && productName) queries.push(`${brandName} ${productName} food label`);
-    } else {
-      // Cycle 3: Catch-all / alternative terms
-      if (productName) queries.push(`${productName} contents`);
-      if (knownTitle) queries.push(`${knownTitle} ingredients text`);
-      if (brandName) queries.push(`${brandName} products ingredients`);
+    // Barcode-focused query terms for each cycle (used when we don't have product info)
+    const barcodeQueryTerms = [
+      ['ingredients', 'nutrition label'],           // Cycle 1
+      ['nutrition facts', 'food label'],            // Cycle 2
+      ['contents', 'allergens'],                    // Cycle 3
+      ['amazon', 'walmart'],                        // Cycle 4
+      ['target', 'grocery'],                        // Cycle 5
+      ['openfoodfacts', 'nutritionix'],             // Cycle 6
+      ['fatsecret', 'product info'],                // Cycle 7
+      ['instacart', 'kroger'],                      // Cycle 8
+      ['ingredients list', 'label'],               // Cycle 9
+      ['allergen info', 'food facts'],             // Cycle 10
+      ['nutrition', 'product'],                    // Cycle 11+
+    ];
+
+    if (hasProductInfo) {
+      // We have product info - use product-focused queries
+      if (cycle === 1) {
+        if (barcode) queries.push(`${barcode} ingredients`);
+        if (knownTitle) queries.push(`${knownTitle} ingredients`);
+      } else if (cycle === 2) {
+        if (knownTitle) queries.push(`${knownTitle} nutrition facts`);
+        if (brandName && productName) queries.push(`${brandName} ${productName} food label`);
+      } else if (cycle === 3) {
+        if (knownTitle) queries.push(`${knownTitle} ingredients text`);
+        if (brandName) queries.push(`${brandName} products ingredients`);
+      } else if (cycle === 4) {
+        if (knownTitle) queries.push(`${knownTitle} amazon ingredients`);
+        if (knownTitle) queries.push(`${knownTitle} walmart ingredients`);
+      } else if (cycle === 5) {
+        if (knownTitle) queries.push(`${knownTitle} product review ingredients`);
+        if (brandName && productName) queries.push(`${brandName} ${productName} allergy info`);
+      } else if (cycle === 6) {
+        if (barcode) queries.push(`${barcode} openfoodfacts`);
+        if (knownTitle) queries.push(`${knownTitle} nutritionix`);
+      } else if (cycle === 7) {
+        if (knownTitle) queries.push(`${knownTitle} ingredients list`);
+        if (productName) queries.push(`"${productName}" ingredients`);
+      } else if (cycle === 8) {
+        if (knownTitle) queries.push(`${knownTitle} target ingredients`);
+        if (knownTitle) queries.push(`${knownTitle} instacart`);
+      } else if (cycle <= 12) {
+        if (knownTitle) queries.push(`"${knownTitle}" ingredients`);
+        if (brandName && productName) queries.push(`"${brandName}" "${productName}" label`);
+      } else {
+        if (knownTitle) queries.push(`${knownTitle} buy`);
+        if (brandName && productName) queries.push(`${brandName} ${productName}`);
+      }
+    } else if (barcode) {
+      // No product info - use barcode-only queries
+      const termIndex = Math.min(cycle - 1, barcodeQueryTerms.length - 1);
+      const terms = barcodeQueryTerms[termIndex];
+      for (const term of terms) {
+        queries.push(`${barcode} ${term}`);
+      }
+      // Also add UPC prefix variant
+      if (cycle <= 4) {
+        queries.push(`UPC ${barcode}`);
+      }
     }
 
-    // Search all engines in parallel
-    const searchPromises = queries.flatMap(query => [
-      antigravitySearchYahoo(query, addLog),
-      antigravitySearchBing(query, addLog),
-      antigravitySearchGoogle(query, addLog),
-      antigravitySearchDDGLite(query, addLog)
-    ]);
+    // Filter out empty or whitespace-only queries
+    const filteredQueries = queries.filter(q => q && q.trim().length > 0);
+    if (filteredQueries.length === 0) {
+      log(`[Antigravity] Cycle ${cycle}: No valid queries, skipping`);
+      continue;
+    }
 
-    const searchResults = await Promise.all(searchPromises);
+    // Search engines in batches to avoid memory limit (Supabase edge functions have ~150MB limit)
+    // Batch 1: Yahoo, Ecosia, Brave (most reliable)
+    const batch1Promises = filteredQueries.flatMap(query => [
+      antigravitySearchYahoo(query, addLog),
+      antigravitySearchEcosia(query, addLog),
+      antigravitySearchBrave(query, addLog)
+    ]);
+    const batch1Results = await Promise.all(batch1Promises);
+
+    // Batch 2: Startpage, DuckDuckGo, Mojeek (run after batch 1 to reduce peak memory)
+    const batch2Promises = filteredQueries.flatMap(query => [
+      antigravitySearchStartpage(query, addLog),
+      antigravitySearchDDGLite(query, addLog),
+      antigravitySearchMojeek(query, addLog)
+    ]);
+    const batch2Results = await Promise.all(batch2Promises);
+
     const allUrls = new Set<string>();
-    searchResults.flat().forEach(url => {
+    [...batch1Results, ...batch2Results].flat().forEach(url => {
       if (!allVisitedUrls.has(url)) {
         allUrls.add(url);
         allVisitedUrls.add(url);
@@ -1704,230 +2335,208 @@ async function antigravitySearchForBrandProduct(
       continue;
     }
 
-    // Scrape URLs
-    const urlsToScrape = Array.from(allUrls).slice(0, 15);
-    const scraped = await antigravityScrapeUrls(urlsToScrape, addLog);
+    // PIPELINED: Scrape batches of 5, filter+analyze in parallel with next scrape
+    const urlsToScrape = Array.from(allUrls).slice(0, 15); // Reduced from 30 to save memory
+    const BATCH_SIZE = 5;
+    const seenDomains = new Set<string>(verifiedSources.map(v => {
+      try { return new URL(v.url).hostname.replace('www.', ''); } catch { return ''; }
+    }));
 
-    if (scraped.length === 0) continue;
+    log(`[Antigravity] Scraping ${urlsToScrape.length} URLs (pipelined)...`);
 
-    // Extract title if we don't have one
-    if (!knownTitle) {
-      knownTitle = antigravityExtractBestTitle(scraped);
-    }
+    let stopEarly = false;
 
-    // Filter by relevance
-    const { valid, rejected } = antigravityFilterData(scraped, knownTitle);
+    // Helper to process a batch (filter + AI)
+    const processBatch = async (scraped: AntigravityScrapedSource[], batchNum: number): Promise<void> => {
+      if (scraped.length === 0 || stopEarly) return;
 
-    // Accumulate rejected sources for later fallback
-    allRejectedSources.push(...rejected);
+      const uniqueScraped = antigravityGetUniqueDomains(scraped);
+      const { passed, failed } = antigravityFilterByContent(
+        uniqueScraped, barcode, brandName, productName, seenDomains, addLog
+      );
 
-    // Get unique domains
-    let uniqueValid = antigravityGetUniqueDomains(valid);
+      if (failed.length > 0) {
+        log(`[Antigravity] Batch ${batchNum}: Filtered ${failed.length}`);
+      }
 
-    // Filter by barcode presence OR (Brand + Product Name)
-    if (uniqueValid.length > 0) {
-      const initialCount = uniqueValid.length;
-      uniqueValid = uniqueValid.filter(s => {
-        const content = s.content.toLowerCase();
-        const hasBarcode = content.includes(barcode);
+      if (passed.length === 0) {
+        log(`[Antigravity] Batch ${batchNum}: No candidates`);
+        return;
+      }
 
-        // Also allow if it has BOTH brand and product name (if we know them)
-        let hasBrandAndProduct = false;
-        if (brandName && productName) {
-          const b = brandName.toLowerCase();
-          const p = productName.toLowerCase();
+      for (const c of passed) {
+        if (!sourceTrackerState[c.url]) {
+          sourceTrackerState[c.url] = { status: 'analyzing', cycle: currentCycle };
+        }
+      }
+      emitSourceUpdate();
 
-          // Check for brand presence
-          if (content.includes(b)) {
-            // Token-based product name matching
-            // Remove commas and extra spaces, split into words
-            const tokens = p.replace(/,/g, '').split(/\s+/).filter(t => t.length > 2); // Ignore very short words
-            if (tokens.length > 0) {
-              const matchedTokens = tokens.filter(t => content.includes(t));
-              const matchRatio = matchedTokens.length / tokens.length;
-              // Require 60% of significant words to be present
-              if (matchRatio >= 0.6) {
-                hasBrandAndProduct = true;
+      log(`[Antigravity] Batch ${batchNum}: Analyzing ${passed.length} candidates...`);
+
+      try {
+        const analysis = await antigravityAnalyzeWithAI(passed, addLog, brandName, productName, barcode);
+        if (analysis) {
+          // Filter for sources that have ingredients AND are for the correct product
+          const goodSources = analysis.sources.filter(s => s.hasIngredients && s.isCorrectProduct !== false);
+          const wrongProduct = analysis.sources.filter(s => s.isCorrectProduct === false);
+          const noIngredients = analysis.sources.filter(s => !s.hasIngredients && s.isCorrectProduct !== false);
+
+          log(`[Antigravity] Batch ${batchNum}: ${goodSources.length}/${passed.length} verified`);
+          if (wrongProduct.length > 0) {
+            log(`[Antigravity] Batch ${batchNum}: ${wrongProduct.length} rejected (wrong product variant)`);
+          }
+
+          for (const s of goodSources) {
+            const original = passed.find(u => u.url === s.url);
+            if (original) {
+              const domain = new URL(s.url).hostname.replace('www.', '');
+              const alreadyHas = verifiedSources.some(v => {
+                try { return new URL(v.url).hostname.replace('www.', '') === domain; }
+                catch { return false; }
+              });
+              if (!alreadyHas) {
+                verifiedSources.push(original);
+                sourceIngredientsMap.set(original.url, s.ingredients);
+                sourceTrackerState[s.url] = { status: 'accepted', cycle: currentCycle, reason: `${s.ingredients.length} ingredients` };
+              } else {
+                sourceTrackerState[s.url] = { status: 'rejected', cycle: currentCycle, reason: 'Duplicate domain' };
               }
-            } else {
-              // Fallback for very short product names (1-2 chars?) - strict match
-              hasBrandAndProduct = content.includes(p);
             }
           }
-        }
 
-        return hasBarcode || hasBrandAndProduct;
-      });
-      const filteredCount = initialCount - uniqueValid.length;
-      if (filteredCount > 0) {
-        log(`[Antigravity] Filtered ${filteredCount} sources missing barcode "${barcode}" AND (Brand+Product)`);
-      }
-    }
+          // Mark wrong product variants
+          for (const rej of wrongProduct) {
+            sourceTrackerState[rej.url] = { status: 'rejected', cycle: currentCycle, reason: 'Wrong product variant' };
+          }
 
-    // 4. Verify candidates with AI
-    if (uniqueValid.length > 0) {
-      log(`[Antigravity] Verifying ${uniqueValid.length} candidates with AI...`);
-      log(`[Antigravity] Candidates: ${uniqueValid.map(s => s.url).join(', ')}`);
-      const analysis = await antigravityAnalyzeWithAI(uniqueValid, addLog, brandName, productName, barcode);
+          // Mark sources with no ingredients
+          for (const rej of noIngredients) {
+            sourceTrackerState[rej.url] = { status: 'rejected', cycle: currentCycle, reason: 'No ingredients' };
+          }
+          emitSourceUpdate();
 
-      if (analysis) {
-        const goodSources = analysis.sources.filter(s => s.hasIngredients);
-        console.log(`[Antigravity] AI verified ${goodSources.length} sources with ingredients`);
-        console.log(`[Antigravity] Accepted: ${goodSources.map(s => s.url).join(', ')}`);
-
-        for (const s of goodSources) {
-          const original = uniqueValid.find(u => u.url === s.url);
-          if (original) {
-            const domain = new URL(s.url).hostname.replace('www.', '');
-            const alreadyHas = verifiedSources.some(v => {
-              try {
-                return new URL(v.url).hostname.replace('www.', '') === domain;
-              } catch { return false; }
-            });
-            if (!alreadyHas) {
-              verifiedSources.push(original);
-              // Cache the ingredients we found
-              sourceIngredientsMap.set(original.url, s.ingredients);
-            }
+          if (verifiedSources.length >= TARGET_SOURCES) {
+            log(`[Antigravity] ✓ Reached ${verifiedSources.length} verified sources!`);
+            stopEarly = true;
           }
         }
+      } catch (err) {
+        log(`[Antigravity] Batch ${batchNum} error: ${(err as any).message}`);
       }
-    }
+    };
 
-    // Fallback logic moved to AFTER loop
+    // Pipeline loop: scrape batch N+1 while processing batch N
+    let pendingProcess: Promise<void> | null = null;
 
+    for (let i = 0, batchNum = 0; i < urlsToScrape.length && !stopEarly; i += BATCH_SIZE) {
+      batchNum++;
+      const batchUrls = urlsToScrape.slice(i, i + BATCH_SIZE);
 
-    console.log(`[Antigravity] Total verified sources: ${verifiedSources.length}`);
+      log(`[Antigravity] Batch ${batchNum}: Scraping ${batchUrls.length} URLs...`);
+      const scraped = await antigravityScrapeBatch(batchUrls);
+      log(`[Antigravity] Batch ${batchNum}: ${scraped.length} scraped`);
 
-    // Check if we have enough sources
-    if (verifiedSources.length >= 5) {
-      log(`[Antigravity] Found ${verifiedSources.length} potential sources. Running re-verification...`);
-
-      // RE-VERIFICATION: Check if these sources actually hold up together
-      const reVerification = await antigravityAnalyzeWithAI(verifiedSources, addLog, brandName, productName, barcode);
-
-      if (reVerification) {
-        const validReVerified = reVerification.sources.filter(s => s.hasIngredients);
-
-        if (validReVerified.length >= 5) {
-          log(`[Antigravity] Re-verification passed with ${validReVerified.length} sources.`);
-          // Filter original sources to keep full objects (content, title)
-          const validUrls = new Set(validReVerified.map(s => s.url));
-          verifiedSources = verifiedSources.filter(s => validUrls.has(s.url));
-          break; // Success!
-        } else {
-          const droppedCount = verifiedSources.length - validReVerified.length;
-          log(`[Antigravity] Re-verification dropped ${droppedCount} sources. Now have ${validReVerified.length}. Resuming search...`);
-          // Filter original sources to keep full objects
-          const validUrls = new Set(validReVerified.map(s => s.url));
-          verifiedSources = verifiedSources.filter(s => validUrls.has(s.url));
+      // Wait for previous batch's processing to complete
+      if (pendingProcess) {
+        await pendingProcess;
+        pendingProcess = null;
+        if (stopEarly) {
+          log(`[Antigravity] Stopping early`);
+          break;
         }
+      }
+
+      // Start processing this batch
+      const hasMoreBatches = i + BATCH_SIZE < urlsToScrape.length;
+      if (hasMoreBatches && !stopEarly) {
+        // Pipeline: process while scraping next batch
+        pendingProcess = processBatch(scraped, batchNum);
       } else {
-        log(`[Antigravity] Re-verification failed (AI error). Resuming search...`);
+        // Last batch: wait for processing
+        await processBatch(scraped, batchNum);
       }
+    }
+
+    // Wait for final processing
+    if (pendingProcess) {
+      await pendingProcess;
+    }
+
+    // Exit early if we hit target
+    if (verifiedSources.length >= TARGET_SOURCES) {
+      log(`[Antigravity] ✓ Reached ${verifiedSources.length} verified sources - stopping search`);
+      break;
     }
   }
 
-  // Use rejected sources if needed (AFTER trying all cycles)
-  if (verifiedSources.length < TARGET_SOURCES && allRejectedSources.length > 0) {
-    console.log(`[Antigravity] Filling quota with rejected sources (Found ${verifiedSources.length}, Need ${TARGET_SOURCES})...`);
-
-    allRejectedSources.sort((a, b) => {
-      if (a.hasBrand && !b.hasBrand) return -1;
-      if (!a.hasBrand && b.hasBrand) return 1;
-      return (b.matchCount || 0) - (a.matchCount || 0);
-    });
-
-    const rejectedUnique = antigravityGetUniqueDomains(allRejectedSources);
-    for (const d of rejectedUnique) { // Try all unique rejected sources until quota filled
-      if (verifiedSources.length >= TARGET_SOURCES) break;
-
-      const domain = new URL(d.url).hostname.replace('www.', '');
-      const exists = verifiedSources.some(v => {
-        try { return new URL(v.url).hostname.replace('www.', '') === domain; }
-        catch { return false; }
-      });
-
-      if (!exists) {
-        verifiedSources.push(d);
-      }
-    }
-  }
-
-  // Check if we have enough sources
-  if (verifiedSources.length >= 5) {
-    log(`[Antigravity] Found ${verifiedSources.length} potential sources. Running re-verification...`);
-
-    // RE-VERIFICATION: Check if these sources actually hold up together
-    const reVerification = await antigravityAnalyzeWithAI(verifiedSources, addLog, brandName, productName, barcode);
-
-    if (reVerification) {
-      const validReVerified = reVerification.sources.filter(s => s.hasIngredients);
-
-      if (validReVerified.length >= 5) {
-        log(`[Antigravity] Re-verification passed with ${validReVerified.length} sources.`);
-        // Filter original sources to keep full objects (content, title)
-        const validUrls = new Set(validReVerified.map(s => s.url));
-        verifiedSources = verifiedSources.filter(s => validUrls.has(s.url));
-        // break; // Success!
-      } else {
-        const droppedCount = verifiedSources.length - validReVerified.length;
-        log(`[Antigravity] Re-verification dropped ${droppedCount} sources. Now have ${validReVerified.length}. Resuming search...`);
-        // Filter original sources to keep full objects
-        const validUrls = new Set(validReVerified.map(s => s.url));
-        verifiedSources = verifiedSources.filter(s => validUrls.has(s.url));
-      }
-    } else {
-      log(`[Antigravity] Re-verification failed (AI error). Resuming search...`);
-    }
-  }
+  console.log(`[Antigravity] Total verified sources: ${verifiedSources.length}`);
 
   if (verifiedSources.length === 0) {
     console.log('[Antigravity] No verified sources found');
     return { source: null, additionalSources: [], analysis: null };
   }
 
-  // Final analysis of all verified sources
-  log(`[Antigravity] Final analysis of ${verifiedSources.length} sources...`);
-  const finalAnalysis = await antigravityAnalyzeWithAI(verifiedSources, addLog, brandName, productName, barcode);
+  // Build unified ingredient list from the ingredients we already found during verification
+  // Use the most complete list (most ingredients)
+  let bestIngredients: string[] = [];
+  let bestUrl = '';
+  for (const [url, ingredients] of sourceIngredientsMap.entries()) {
+    if (ingredients.length > bestIngredients.length) {
+      bestIngredients = ingredients;
+      bestUrl = url;
+    }
+  }
 
-  if (!finalAnalysis || finalAnalysis.unifiedIngredientList.length === 0) {
-    console.log('[Antigravity] Failed to extract unified ingredients');
+  if (bestIngredients.length === 0) {
+    console.log('[Antigravity] No ingredients found in verified sources');
     return { source: null, additionalSources: [], analysis: null };
   }
 
-  console.log(`[Antigravity] ✓ Found ${finalAnalysis.unifiedIngredientList.length} ingredients from ${verifiedSources.length} sources`);
+  log(`[Antigravity] ✓ Using ${bestIngredients.length} ingredients from ${verifiedSources.length} verified sources`);
 
-  // Build the primary source
-  const ingredientsText = finalAnalysis.unifiedIngredientList.join(', ');
+  // Build the primary source using ingredients from verification
+  const ingredientsText = bestIngredients.join(', ');
   const primarySource: IngredientSource = {
     sourceName: 'Antigravity Web Search',
     url: verifiedSources[0]?.url || '',
     ingredientsText: ingredientsText,
-    productName: finalAnalysis.productName || productName || 'Unknown Product',
-    productImage: finalAnalysis.productImage || '',
-    allergenStatement: finalAnalysis.top9Allergens.length > 0
-      ? `Contains: ${finalAnalysis.top9Allergens.join(', ')}`
-      : undefined
+    productName: productName || 'Unknown Product',
+    productImage: '',
+    allergenStatement: undefined
   };
 
-  // Build additional sources
+  // Build additional sources from what we found during verification
   const additionalSources: IngredientSource[] = verifiedSources.slice(1).map((s, i) => {
-    const analysisSource = finalAnalysis.sources.find(as => as.url === s.url);
-    // Use ingredients from final analysis, or fallback to what we found during verification
-    const ingredients = (analysisSource?.ingredients && analysisSource.ingredients.length > 0)
-      ? analysisSource.ingredients
-      : sourceIngredientsMap.get(s.url) || [];
-
+    const ingredients = sourceIngredientsMap.get(s.url) || [];
     return {
       sourceName: `Web Source ${i + 2}`,
       url: s.url,
       ingredientsText: ingredients.join(', '),
-      productName: finalAnalysis.productName
+      productName: productName
     };
   }).filter(s => s.ingredientsText.length > 0);
 
-  return { source: primarySource, additionalSources, analysis: finalAnalysis };
+  // Build a minimal analysis object from the ingredients we already have
+  const analysis: AntigravityAnalysisResult = {
+    productName: productName || 'Unknown Product',
+    unifiedIngredientList: bestIngredients,
+    top9Allergens: [], // Will be detected downstream
+    dietaryCompliance: {
+      vegan: { isCompliant: false, reason: '' },
+      vegetarian: { isCompliant: false, reason: '' },
+      pescatarian: { isCompliant: false, reason: '' },
+      glutenFree: { isCompliant: false, reason: '' }
+    },
+    discrepancies: [],
+    sources: verifiedSources.map(s => ({
+      url: s.url,
+      hasIngredients: true,
+      ingredients: sourceIngredientsMap.get(s.url) || []
+    })),
+    productImage: null
+  };
+
+  return { source: primarySource, additionalSources, analysis };
 }
 
 // =============================================================================
@@ -2013,11 +2622,33 @@ async function searchProductImage(productName: string, brandName: string, addLog
 
   // Try to find an image URL in the results by scraping the top result
   if (results.length > 0) {
-    // Prefer results that look like product pages
-    const bestResult = results.find(url => !url.includes('youtube') && !url.includes('facebook')) || results[0];
-    const scraped = await antigravityScrapeUrl(bestResult);
-    if (scraped && scraped.productImage) {
-      return scraped.productImage;
+    // Prefer results that look like product pages (retailers often have good images)
+    const preferredDomains = ['walmart.com', 'target.com', 'amazon.com', 'instacart.com', 'kroger.com'];
+    const bestResult = results.find(url => preferredDomains.some(d => url.includes(d)))
+      || results.find(url => !url.includes('youtube') && !url.includes('facebook'))
+      || results[0];
+
+    try {
+      const response = await fetch(bestResult, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml'
+        }
+      });
+      if (response.ok) {
+        const html = await response.text();
+        // Look for og:image which is typically the main product image
+        const ogImageMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i);
+        if (ogImageMatch && ogImageMatch[1]) {
+          // Validate it looks like a product image URL (not an ad)
+          const imageUrl = ogImageMatch[1];
+          if (!imageUrl.includes('ad') && !imageUrl.includes('banner') && !imageUrl.includes('logo')) {
+            return imageUrl;
+          }
+        }
+      }
+    } catch (e) {
+      // Silently fail
     }
   }
   return undefined;
@@ -2025,7 +2656,11 @@ async function searchProductImage(productName: string, brandName: string, addLog
 
 // Main barcode lookup function
 // Uses Antigravity Web Search - Multi-engine web scraping to find 5 verified sources
-async function lookupBarcode(barcode: string, addLog?: (msg: string) => void): Promise<BarcodeLookupResult> {
+async function lookupBarcode(
+  barcode: string,
+  addLog?: (msg: string) => void,
+  sendSourceEvent?: (event: { verified?: number; total?: number; needed?: number; sources?: { [url: string]: { status: string; cycle?: number; reason?: string } } }) => void
+): Promise<BarcodeLookupResult> {
   const log = addLog || console.log;
   log(`\n=== Barcode Lookup: ${barcode} ===`);
   log(`🚀 Using Antigravity Web Search...`);
@@ -2039,24 +2674,56 @@ async function lookupBarcode(barcode: string, addLog?: (msg: string) => void): P
     let productName = '';
 
     // Try Open Food Facts first
+    log(`[API] Trying Open Food Facts...`);
     const offResult = await fetchFromOpenFoodFacts(barcode);
     if (offResult.source) {
       brandName = offResult.brand || '';
       productName = offResult.source.productName || '';
-      log(`Found in Open Food Facts: ${brandName} ${productName}`);
+      log(`[API] ✓ Found in Open Food Facts: ${brandName} ${productName}`);
+    } else {
+      log(`[API] ✗ Not found in Open Food Facts`);
     }
 
     // If no brand from OFF, try FoodData Central
     if (!brandName) {
+      log(`[API] Trying USDA FoodData Central...`);
       const fdcResult = await fetchFromFoodDataCentral(barcode);
       if (fdcResult.source) {
         brandName = fdcResult.brand || '';
         productName = fdcResult.productName || '';
-        log(`Found in FoodData Central: ${brandName} ${productName}`);
+        log(`[API] ✓ Found in FoodData Central: ${brandName} ${productName}`);
+      } else {
+        log(`[API] ✗ Not found in FoodData Central`);
       }
     }
 
-    const antigravityResult = await antigravitySearchForBrandProduct(barcode, productName, brandName, addLog);
+    // If still no brand, try FatSecret
+    if (!brandName) {
+      log(`[API] Trying FatSecret...`);
+      const fsResult = await fetchFromFatSecret(barcode);
+      if (fsResult.brand || fsResult.productName) {
+        brandName = fsResult.brand || '';
+        productName = fsResult.productName || productName;
+        log(`[API] ✓ Found in FatSecret: ${brandName} ${productName}`);
+      } else {
+        log(`[API] ✗ Not found in FatSecret${fsResult.error ? ` (${fsResult.error})` : ''}`);
+      }
+    }
+
+    // If still no brand, try Barcode Lookup (commercial API with good US coverage)
+    if (!brandName) {
+      log(`[API] Trying Barcode Lookup...`);
+      const blResult = await fetchFromBarcodeLookup(barcode);
+      if (blResult.brand || blResult.productName) {
+        brandName = blResult.brand || '';
+        productName = blResult.productName || productName;
+        log(`[API] ✓ Found in Barcode Lookup: ${brandName} ${productName}`);
+      } else {
+        log(`[API] ✗ Not found in Barcode Lookup${blResult.error ? ` (${blResult.error})` : ''}`);
+      }
+    }
+
+    const antigravityResult = await antigravitySearchForBrandProduct(barcode, productName, brandName, addLog, sendSourceEvent);
     log(`Time after Antigravity search: ${Date.now() - startTime}ms`);
 
     if (!antigravityResult.source) {
@@ -2281,6 +2948,11 @@ serve(async (req) => {
         sendSSE('log', { message });
       };
 
+      // Source tracker event sender
+      const sendSourceEvent = (event: { verified?: number; total?: number; needed?: number; sources?: { [url: string]: { status: string; cycle?: number; reason?: string } } }) => {
+        sendSSE('source_update', event);
+      };
+
       try {
         let requestData;
         try {
@@ -2300,12 +2972,12 @@ serve(async (req) => {
           return;
         }
 
-        // Add timeout handling (2 minutes max)
+        // Add timeout handling (5 minutes max)
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Request timeout - lookup took too long')), 120000)
+          setTimeout(() => reject(new Error('Request timeout - lookup took too long')), 300000)
         );
 
-        const lookupPromise = lookupBarcode(barcode.trim(), addLog).catch(err => {
+        const lookupPromise = lookupBarcode(barcode.trim(), addLog, sendSourceEvent).catch(err => {
           console.error('Error in lookupBarcode function:', err);
           throw err;
         });

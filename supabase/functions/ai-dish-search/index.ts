@@ -85,9 +85,8 @@ serve(async (req: Request) => {
           const desc = (d?.description || "").toString();
           if (!name) continue;
           const prefilterScore = simpleScore(`${name} ${desc}`, normalizedQueryTerms);
-          // For single-word queries, include all dishes; for longer queries, require at least one term match
-          const shouldInclude = normalizedQueryTerms.length === 1 ? true : prefilterScore > 0;
-          if (shouldInclude) {
+          // Always require at least one term match to avoid sending irrelevant dishes to AI
+          if (prefilterScore > 0) {
             candidates.push({
               restaurant_id: rid,
               restaurant_name: r.name,
@@ -100,8 +99,8 @@ serve(async (req: Request) => {
       }
     }
     
-    // If no keyword matches but we have dishes, include all dishes for AI to evaluate
-    if (candidates.length === 0 && normalizedQueryTerms.length > 1) {
+    // If no keyword matches, include all dishes for AI semantic matching
+    if (candidates.length === 0) {
       for (const r of restaurants || []) {
         const rid = String(r.id);
         // Only use overlays
@@ -182,7 +181,7 @@ serve(async (req: Request) => {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-haiku-4-5-20251101",
         max_tokens: 2000,
         temperature: 0,
         messages: [
@@ -297,37 +296,38 @@ function buildPrompt(
 ) {
   const guidance = `You are helping a diner find dishes across many restaurants.
 User's natural-language request: "${userQuery}"
-User allergies (avoid completely): ${JSON.stringify(userAllergens || [])}
-User dietary preferences (must comply): ${JSON.stringify(userDiets || [])}
+User allergies (for reference): ${JSON.stringify(userAllergens || [])}
+User dietary preferences (for reference): ${JSON.stringify(userDiets || [])}
 
 Tasks:
-1) Evaluate each dish for RELEVANCE to the user's request.
-   - If the dish name or description contains keywords from the user's query (case-insensitive), it IS relevant.
-   - For example, if user asks for "lasagna", include dishes named "Lasagna" or containing "lasagna" in the description.
-   - Use semantic matching: "pasta" matches "spaghetti", "noodles", etc.
-   - Handle spelling variations: "mousaka" matches "moussaka", "moukaa", and similar phonetic variations.
-   - If the dish name sounds similar to the query (even with different spelling), include it.
-2) Determine COMPATIBILITY:
-   - "meets_all_requirements": dish appears to satisfy diets and avoids allergens.
-   - "can_accommodate": dish could work with a simple, common modification (e.g., "no cheese").
-   - Only exclude dishes that are clearly unsafe (contains user's allergens) or completely unrelated to the query.
+1) Evaluate each dish for RELEVANCE to the user's search query using SEMANTIC MATCHING:
+   - Think about what ingredients each dish TYPICALLY contains based on common culinary knowledge.
+   - "Gyros" typically contains lamb or beef. "Philly cheese" typically contains beef. "Moussaka" contains lamb or beef.
+   - If user searches "beef", include dishes that LIKELY contain beef based on their name/type.
+   - If user searches "meat", include dishes that likely contain any meat (beef, chicken, pork, lamb, etc.)
+   - Handle spelling variations: "mousaka" matches "moussaka", "falafel" matches "felafel".
+   - Assign a relevance_score from 1-10 (10 = definitely contains what user searched for, 5 = probably contains it, 1 = unlikely).
+   - IMPORTANT: The user's search overrides their dietary preferences. If a vegan user searches "beef", return beef dishes.
 
-Return JSON only in this exact shape:
+2) Determine COMPATIBILITY status (this is informational, do NOT exclude dishes based on this):
+   - "meets_all_requirements": dish satisfies user's diets and avoids their allergens.
+   - "can_accommodate": dish could work with a simple modification.
+   - "does_not_meet_diet": dish matches the search but conflicts with user's saved diet (still include it!).
+
+Return JSON only in this exact shape (ORDER dishes by relevance_score descending - most relevant first):
 {
   "restaurants": [
     {
       "restaurant_id": "",
       "restaurant_name": "",
       "restaurant_slug": "",
-      "exact_count": 0,
-      "accommodated_count": 0,
       "top_dishes": [
-        { "name": "", "description": "", "status": "meets_all_requirements|can_accommodate" }
+        { "name": "", "relevance_score": 10, "status": "meets_all_requirements|can_accommodate|does_not_meet_diet" }
       ]
     }
   ]
 }
-Only include restaurants that have at least one relevant dish. Limit top_dishes to 5 per restaurant.`;
+Include all restaurants with relevant dishes. Limit to 5 dishes per restaurant. Return dishes ordered by relevance_score (highest first). If no dishes match the query, return an empty restaurants array.`;
 
   const items = candidates.map(c => ({
     restaurant_id: c.restaurant_id,

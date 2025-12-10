@@ -92,7 +92,26 @@ Read every ingredient mentioned in the image, including optional items or garnis
 
 For each ingredient:
 
-- Decide whether a barcode scan is required. Set needsScan=true when you believe the ingredient is or could be made of multiple sub-ingredients (processed, packaged, blended, or branded products). Set it to false when the ingredient is clearly a single whole item.
+- Decide whether a barcode scan is required. The key question is: "Does this ingredient likely contain multiple sub-ingredients?"
+
+  needsScan=FALSE (single-ingredient items - no scan needed):
+  • Fresh produce: tomatoes, onions, garlic, lettuce, carrots
+  • Spices/seasonings: cayenne pepper, ground cumin, paprika, oregano, salt, black pepper
+  • Single oils: olive oil, vegetable oil, sesame oil, coconut oil
+  • Single grains/legumes: rice, quinoa, lentils, chickpeas, black beans
+  • Nuts/seeds: almonds, walnuts, sesame seeds, sunflower seeds
+  • Fresh herbs: basil, cilantro, parsley, thyme
+  • Single dairy: milk, cream, butter, eggs
+  • Single proteins: chicken breast, ground beef, salmon fillet
+
+  needsScan=TRUE (multi-ingredient products - scan required):
+  • Sauces: soy sauce, teriyaki sauce, BBQ sauce, salad dressings
+  • Condiments: mayonnaise, ketchup, mustard (except plain yellow)
+  • Breads/baked goods: bread, tortillas, bagels, crackers
+  • Processed foods: tofu, tempeh, seitan, veggie burgers
+  • Seasoning blends: taco seasoning, Italian seasoning blend, curry powder blends
+  • Prepared items: broth, stock, marinades
+  • Dairy products with additives: flavored yogurt, processed cheese
 
 - Answer the following questions one-by-one: does this contain dairy?, does this contain egg?, does this contain peanut?, does this contain tree nut?, does this contain shellfish?, does this contain fish?, does this contain soy?, does this contain sesame?, and does this contain wheat? Include the allergen in the list only when the ingredient clearly contains it, but you must consider all nine before responding.
 
@@ -123,7 +142,26 @@ Read every ingredient mentioned in the dish description, including optional item
 
 For each ingredient:
 
-- Decide whether a barcode scan is required. Set needsScan=true when you believe the ingredient is or could be made of multiple sub-ingredients (processed, packaged, blended, or branded products). Set it to false when the ingredient is clearly a single whole item.
+- Decide whether a barcode scan is required. The key question is: "Does this ingredient likely contain multiple sub-ingredients?"
+
+  needsScan=FALSE (single-ingredient items - no scan needed):
+  • Fresh produce: tomatoes, onions, garlic, lettuce, carrots
+  • Spices/seasonings: cayenne pepper, ground cumin, paprika, oregano, salt, black pepper
+  • Single oils: olive oil, vegetable oil, sesame oil, coconut oil
+  • Single grains/legumes: rice, quinoa, lentils, chickpeas, black beans
+  • Nuts/seeds: almonds, walnuts, sesame seeds, sunflower seeds
+  • Fresh herbs: basil, cilantro, parsley, thyme
+  • Single dairy: milk, cream, butter, eggs
+  • Single proteins: chicken breast, ground beef, salmon fillet
+
+  needsScan=TRUE (multi-ingredient products - scan required):
+  • Sauces: soy sauce, teriyaki sauce, BBQ sauce, salad dressings
+  • Condiments: mayonnaise, ketchup, mustard (except plain yellow)
+  • Breads/baked goods: bread, tortillas, bagels, crackers
+  • Processed foods: tofu, tempeh, seitan, veggie burgers
+  • Seasoning blends: taco seasoning, Italian seasoning blend, curry powder blends
+  • Prepared items: broth, stock, marinades
+  • Dairy products with additives: flavored yogurt, processed cheese
 
 - Answer the following questions one-by-one: does this contain dairy?, does this contain egg?, does this contain peanut?, does this contain tree nut?, does this contain shellfish?, does this contain fish?, does this contain soy?, does this contain sesame?, and does this contain wheat? Include the allergen in the list only when the ingredient clearly contains it, but you must consider all nine before responding.
 

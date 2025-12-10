@@ -19,42 +19,55 @@ export function setupNav(currentPage, user = null, options = {}) {
   const isManager = user?.user_metadata?.role === 'manager';
   const managerRestaurants = Array.isArray(options.managerRestaurants) ? options.managerRestaurants : [];
 
+  // Check mode for managers - default to 'editor' if not set
+  const isManagerOrOwner = isManager || isOwner;
+  let currentMode = localStorage.getItem('clarivoreManagerMode');
+  if (isManagerOrOwner && !currentMode) {
+    currentMode = 'editor';
+    localStorage.setItem('clarivoreManagerMode', 'editor');
+  }
+  const isEditorMode = currentMode === 'editor';
+
+  // Update brand link based on editor mode
+  const brandLink = document.querySelector('.simple-brand');
+  if (brandLink && isManagerOrOwner) {
+    brandLink.href = isEditorMode ? 'manager-dashboard.html' : 'home.html';
+  }
+
   let navStructure = [];
 
-  if (isManager && !isOwner) {
-    // Manager view
-    const restaurantItems = managerRestaurants.map((restaurant) => ({
-      id: `restaurant-${restaurant.slug}`,
-      label: restaurant.name,
-      href: `restaurant.html?slug=${encodeURIComponent(restaurant.slug)}`,
-      requiresAuth: true
-    }));
-
-    if (restaurantItems.length === 0) {
-      restaurantItems.push({
-        id: 'restaurants',
-        label: 'My restaurant',
-        href: 'restaurants.html',
-        requiresAuth: true
-      });
-    }
-
+  if (isOwner && isEditorMode) {
+    // Owner/Admin in editor mode - admin nav with all tools
     navStructure = [
+      { type: 'link', id: 'admin', label: 'Admin', href: 'admin-dashboard.html', requiresAuth: true },
+      { type: 'link', id: 'home', label: 'Dashboard', href: 'manager-dashboard.html', requiresAuth: true },
+      // Webpage editor buttons for each restaurant
+      ...(managerRestaurants.length === 1 ? [
+        { type: 'link', id: `restaurant-${managerRestaurants[0].slug}-editor`, label: 'Webpage editor', href: `restaurant.html?slug=${encodeURIComponent(managerRestaurants[0].slug)}&edit=1`, requiresAuth: true }
+      ] : managerRestaurants.length > 1 ? [{
+        type: 'group',
+        label: 'Webpage editor',
+        items: managerRestaurants.map(restaurant => ({
+          id: `restaurant-${restaurant.slug}-editor`,
+          label: restaurant.name,
+          href: `restaurant.html?slug=${encodeURIComponent(restaurant.slug)}&edit=1`,
+          requiresAuth: true
+        }))
+      }] : []),
       {
         type: 'group',
-        label: 'Management',
+        label: 'Tablet pages',
         items: [
-          ...restaurantItems,
-          { id: 'manager-dashboard', label: 'Manager dashboard', href: 'manager-dashboard.html', requiresAuth: true },
-          { id: 'server-tablet', label: 'Server monitor', href: 'server-tablet.html', requiresAuth: true },
-          { id: 'kitchen-tablet', label: 'Kitchen monitor', href: 'kitchen-tablet.html', requiresAuth: true }
+          { id: 'server-tablet', label: 'Server tablet', href: 'server-tablet.html', requiresAuth: true },
+          { id: 'kitchen-tablet', label: 'Kitchen tablet', href: 'kitchen-tablet.html', requiresAuth: true }
         ]
       },
-      { type: 'link', id: 'account', label: 'Account settings', href: 'account.html', requiresAuth: true }
+      { type: 'link', id: 'account', label: 'Account settings', href: 'account.html' }
     ];
-  } else {
-    // Regular user / Owner view
+  } else if (isOwner && !isEditorMode) {
+    // Owner in customer mode - sees customer navigation
     navStructure = [
+      { type: 'link', id: 'home', label: 'Home', href: 'home.html' },
       {
         type: 'group',
         label: 'By restaurant',
@@ -68,20 +81,89 @@ export function setupNav(currentPage, user = null, options = {}) {
         label: 'By dish',
         items: [
           { id: 'dish-search', label: 'Dish search', href: 'dish-search.html', requiresAuth: true },
-          { id: 'loved-dishes', label: 'My dishes', href: 'loved-dishes.html', requiresAuth: true }
+          { id: 'my-dishes', label: 'My dishes', href: 'my-dishes.html', requiresAuth: true }
         ]
       },
-      { type: 'link', id: 'our-mission', label: 'Our mission', href: 'our-mission.html' },
-      { type: 'link', id: 'how-it-works', label: 'How it works', href: 'how-it-works.html' },
+      { type: 'link', id: 'account', label: 'Account settings', href: 'account.html' }
+    ];
+  } else if (isManager && isEditorMode) {
+    // Manager in EDITOR mode - show manager navigation
+    navStructure = [];
+
+    // Dashboard (manager dashboard with statistics)
+    navStructure.push({ type: 'link', id: 'home', label: 'Dashboard', href: 'manager-dashboard.html', requiresAuth: true });
+
+    // Webpage editor buttons for each restaurant
+    if (managerRestaurants.length === 1) {
+      // Single restaurant - just one button
+      const restaurant = managerRestaurants[0];
+      navStructure.push({ type: 'link', id: `restaurant-${restaurant.slug}-editor`, label: 'Webpage editor', href: `restaurant.html?slug=${encodeURIComponent(restaurant.slug)}&edit=1`, requiresAuth: true });
+    } else if (managerRestaurants.length > 1) {
+      // Multiple restaurants - dropdown with restaurant names
+      navStructure.push({
+        type: 'group',
+        label: 'Webpage editor',
+        items: managerRestaurants.map(restaurant => ({
+          id: `restaurant-${restaurant.slug}-editor`,
+          label: restaurant.name,
+          href: `restaurant.html?slug=${encodeURIComponent(restaurant.slug)}&edit=1`,
+          requiresAuth: true
+        }))
+      });
+    }
+
+    // Tablet pages dropdown
+    navStructure.push({
+      type: 'group',
+      label: 'Tablet pages',
+      items: [
+        { id: 'server-tablet', label: 'Server tablet', href: 'server-tablet.html', requiresAuth: true },
+        { id: 'kitchen-tablet', label: 'Kitchen tablet', href: 'kitchen-tablet.html', requiresAuth: true }
+      ]
+    });
+
+    // Account settings
+    navStructure.push({ type: 'link', id: 'account', label: 'Account settings', href: 'account.html', requiresAuth: true });
+  } else if (isManager && !isEditorMode) {
+    // Manager in CUSTOMER mode - show customer navigation
+    navStructure = [
+      { type: 'link', id: 'home', label: 'Home', href: 'home.html' },
       {
         type: 'group',
-        label: 'Management',
-        ownerOnly: true,
+        label: 'By restaurant',
         items: [
-          { id: 'admin', label: 'Admin', href: 'admin-dashboard.html', requiresAuth: true },
-          { id: 'manager-dashboard', label: 'Manager dashboard', href: 'manager-dashboard.html', requiresAuth: true },
-          { id: 'server-tablet', label: 'Server monitor', href: 'server-tablet.html', requiresAuth: true },
-          { id: 'kitchen-tablet', label: 'Kitchen monitor', href: 'kitchen-tablet.html', requiresAuth: true }
+          { id: 'restaurants', label: 'All restaurants', href: 'restaurants.html', requiresAuth: true },
+          { id: 'favorites', label: 'Favorite restaurants', href: 'favorites.html', requiresAuth: true }
+        ]
+      },
+      {
+        type: 'group',
+        label: 'By dish',
+        items: [
+          { id: 'dish-search', label: 'Dish search', href: 'dish-search.html', requiresAuth: true },
+          { id: 'my-dishes', label: 'My dishes', href: 'my-dishes.html', requiresAuth: true }
+        ]
+      },
+      { type: 'link', id: 'account', label: 'Account settings', href: 'account.html' }
+    ];
+  } else {
+    // Regular user view (not logged in or regular customer)
+    navStructure = [
+      { type: 'link', id: 'home', label: 'Home', href: 'home.html' },
+      {
+        type: 'group',
+        label: 'By restaurant',
+        items: [
+          { id: 'restaurants', label: 'All restaurants', href: 'restaurants.html', requiresAuth: true },
+          { id: 'favorites', label: 'Favorite restaurants', href: 'favorites.html', requiresAuth: true }
+        ]
+      },
+      {
+        type: 'group',
+        label: 'By dish',
+        items: [
+          { id: 'dish-search', label: 'Dish search', href: 'dish-search.html', requiresAuth: true },
+          { id: 'my-dishes', label: 'My dishes', href: 'my-dishes.html', requiresAuth: true }
         ]
       },
       { type: 'link', id: 'account', label: 'Account settings', href: 'account.html' }
@@ -91,7 +173,6 @@ export function setupNav(currentPage, user = null, options = {}) {
   navStructure.forEach(item => {
     // Handle groups
     if (item.type === 'group') {
-      if (item.ownerOnly && !isOwner) return;
 
       // Filter items within group
       const visibleItems = item.items.filter(subItem => {
@@ -148,8 +229,6 @@ export function setupNav(currentPage, user = null, options = {}) {
       }
       return;
     }
-
-    if (item.ownerOnly && !isOwner) return;
 
     const btn = document.createElement('button');
     btn.textContent = item.label;

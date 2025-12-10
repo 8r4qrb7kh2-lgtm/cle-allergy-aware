@@ -26,6 +26,149 @@ interface MenuSnapshot {
   detected_at: string
 }
 
+// Process pending feedback emails from the queue
+async function processPendingFeedbackEmails(supabase: ReturnType<typeof createClient>): Promise<{ processed: number; sent: number; errors: number }> {
+  const sendgridApiKey = Deno.env.get('SENDGRID_API_KEY')
+  if (!sendgridApiKey) {
+    console.log('SendGrid API key not configured, skipping feedback emails')
+    return { processed: 0, sent: 0, errors: 0 }
+  }
+
+  const now = new Date().toISOString()
+  const BASE_URL = 'https://clarivore.org'
+
+  // Fetch pending emails that are scheduled and not yet sent
+  const { data: pendingEmails, error: fetchError } = await supabase
+    .from('feedback_email_queue')
+    .select(`
+      *,
+      restaurants:restaurant_id (name, slug)
+    `)
+    .lte('scheduled_for', now)
+    .is('sent_at', null)
+    .limit(50)
+
+  if (fetchError) {
+    console.error('Failed to fetch pending feedback emails:', fetchError.message)
+    return { processed: 0, sent: 0, errors: 1 }
+  }
+
+  console.log(`Found ${pendingEmails?.length || 0} pending feedback emails to send`)
+
+  let sent = 0
+  let errors = 0
+
+  for (const emailRecord of (pendingEmails || [])) {
+    try {
+      const restaurantName = emailRecord.restaurants?.name || 'the restaurant'
+      const feedbackUrl = `${BASE_URL}/order-feedback.html?token=${emailRecord.feedback_token}`
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 20px; background: #f5f5f5;">
+          <div style="background: white; border-radius: 12px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h2 style="color: #333; margin-top: 0;">How was your meal at ${restaurantName}?</h2>
+
+            <p style="color: #666;">We hope you enjoyed your dining experience! We'd love to hear your feedback.</p>
+
+            <div style="background: #f0f4ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3 style="color: #3651ff; margin-top: 0;">Share your thoughts:</h3>
+              <ul style="color: #666; margin-bottom: 0;">
+                <li>Tell the restaurant what they did well</li>
+                <li>Suggest improvements for allergy-friendly options</li>
+                <li>Request dishes to be made accommodatable for your dietary needs</li>
+              </ul>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${feedbackUrl}" style="background: #3651ff; color: white; padding: 14px 32px; text-decoration: none; border-radius: 999px; font-weight: bold; display: inline-block; box-shadow: 0 4px 12px rgba(54, 81, 255, 0.3);">
+                Give Feedback
+              </a>
+            </div>
+
+            <p style="color: #999; font-size: 0.85rem; margin-bottom: 0;">
+              This link is unique to your order and will expire in 7 days.
+            </p>
+          </div>
+
+          <div style="text-align: center; margin-top: 20px;">
+            <p style="color: #999; font-size: 0.8rem; margin: 0;">
+              Sent by <a href="https://clarivore.org" style="color: #3651ff;">Clarivore</a><br>
+              Helping people with food allergies dine safely
+            </p>
+          </div>
+        </body>
+        </html>
+      `
+
+      const textContent = `
+How was your meal at ${restaurantName}?
+
+We hope you enjoyed your dining experience! We'd love to hear your feedback.
+
+Share your thoughts:
+- Tell the restaurant what they did well
+- Suggest improvements for allergy-friendly options
+- Request dishes to be made accommodatable for your dietary needs
+
+Give feedback: ${feedbackUrl}
+
+This link is unique to your order and will expire in 7 days.
+
+---
+Sent by Clarivore
+https://clarivore.org
+      `.trim()
+
+      const sendgridResponse = await fetch('https://api.sendgrid.com/v3/mail/send', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${sendgridApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          personalizations: [{
+            to: [{ email: emailRecord.user_email }]
+          }],
+          from: { email: 'noreply@clarivore.org', name: 'Clarivore' },
+          subject: `How was your meal at ${restaurantName}?`,
+          content: [
+            { type: 'text/plain', value: textContent },
+            { type: 'text/html', value: htmlContent }
+          ]
+        }),
+      })
+
+      if (!sendgridResponse.ok) {
+        const error = await sendgridResponse.text()
+        console.error(`Failed to send feedback email to ${emailRecord.user_email}:`, error)
+        errors++
+        continue
+      }
+
+      // Mark as sent
+      await supabase
+        .from('feedback_email_queue')
+        .update({ sent_at: new Date().toISOString() })
+        .eq('id', emailRecord.id)
+
+      sent++
+      console.log(`Sent feedback email to ${emailRecord.user_email}`)
+
+    } catch (emailError) {
+      console.error(`Error processing feedback email ${emailRecord.id}:`, emailError)
+      errors++
+    }
+  }
+
+  return { processed: pendingEmails?.length || 0, sent, errors }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -36,6 +179,10 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
+
+    // Process pending feedback emails first
+    const feedbackEmailsResult = await processPendingFeedbackEmails(supabase)
+    console.log(`Feedback emails: ${feedbackEmailsResult.sent} sent, ${feedbackEmailsResult.errors} errors`)
 
     // Check if a specific restaurant ID was provided
     const url = new URL(req.url)
@@ -199,7 +346,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         checked: restaurants.length,
-        results
+        results,
+        feedbackEmails: feedbackEmailsResult
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )

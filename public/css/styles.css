@@ -252,6 +252,81 @@ nav a:hover {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
+/* Manager Mode Toggle */
+.mode-toggle-container {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 60;
+}
+
+.mode-toggle-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.mode-toggle {
+  position: relative;
+  width: 56px;
+  height: 30px;
+  background: #1a2351;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mode-toggle.active {
+  background: #3651ff;
+  border-color: #4e65ff;
+}
+
+.mode-toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+
+.mode-toggle.active::after {
+  transform: translateX(26px);
+}
+
+.mode-toggle:hover {
+  border-color: var(--hover);
+  box-shadow: 0 0 0 3px rgba(124, 156, 255, 0.2);
+}
+
+@media (max-width: 600px) {
+  .mode-toggle-container {
+    top: 8px;
+    right: 10px;
+  }
+  .mode-toggle-label {
+    font-size: 0.75rem;
+  }
+  .mode-toggle {
+    width: 48px;
+    height: 26px;
+  }
+  .mode-toggle::after {
+    width: 18px;
+    height: 18px;
+  }
+  .mode-toggle.active::after {
+    transform: translateX(22px);
+  }
+}
+
 .simple-topbar-inner {
   max-width: 1100px;
   margin: 0 auto;

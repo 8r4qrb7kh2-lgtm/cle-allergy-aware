@@ -8,6 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - Clarivore</title>
   <link rel="stylesheet" href="css/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <style>
     .admin-container {
       max-width: 1400px;
@@ -476,18 +477,315 @@
       padding: 40px 20px;
       color: #718096;
     }
+
+    /* Manager Invites styles */
+    .invite-form {
+      display: grid;
+      gap: 24px;
+    }
+
+    .restaurant-checkboxes {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      padding: 16px;
+      background: #f7fafc;
+      border-radius: 8px;
+      border: 2px solid #e2e8f0;
+    }
+
+    .restaurant-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: white;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+      border: 2px solid transparent;
+    }
+
+    .restaurant-checkbox:hover {
+      background: #edf2f7;
+    }
+
+    .restaurant-checkbox.selected {
+      background: #ebf4ff;
+      border-color: #4c5ad4;
+    }
+
+    .restaurant-checkbox input {
+      width: 18px;
+      height: 18px;
+      accent-color: #4c5ad4;
+    }
+
+    .restaurant-checkbox label {
+      cursor: pointer;
+      font-weight: 500;
+      color: #1e3a5f;
+    }
+
+    .entry-page-options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .entry-page-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: #f7fafc;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+    }
+
+    .entry-page-option:hover {
+      background: #edf2f7;
+    }
+
+    .entry-page-option.selected {
+      background: #ebf4ff;
+      border-color: #4c5ad4;
+    }
+
+    .entry-page-option input {
+      width: 18px;
+      height: 18px;
+      accent-color: #4c5ad4;
+    }
+
+    .entry-page-option .option-info {
+      flex: 1;
+    }
+
+    .entry-page-option .option-title {
+      font-weight: 600;
+      color: #1e3a5f;
+    }
+
+    .entry-page-option .option-desc {
+      font-size: 0.9rem;
+      color: #718096;
+      margin-top: 2px;
+    }
+
+    .restaurant-select-for-qr {
+      margin-left: 30px;
+      margin-top: 12px;
+    }
+
+    .restaurant-select-for-qr select {
+      padding: 10px 14px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 1rem;
+      min-width: 250px;
+      background: white;
+    }
+
+    .restaurant-select-for-qr select:focus {
+      outline: none;
+      border-color: #4c5ad4;
+    }
+
+    .generated-link-container {
+      display: none;
+      margin-top: 24px;
+      padding: 20px;
+      background: #d1fae5;
+      border-radius: 12px;
+      border: 2px solid #6ee7b7;
+    }
+
+    .generated-link-container.show {
+      display: block;
+    }
+
+    .generated-link-container h3 {
+      margin: 0 0 12px 0;
+      color: #065f46;
+    }
+
+    .generated-link {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .generated-link input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #6ee7b7;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      background: white;
+      font-family: monospace;
+    }
+
+    .btn-copy {
+      background: #065f46;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn-copy:hover {
+      background: #047857;
+    }
+
+    .invites-list {
+      margin-top: 32px;
+    }
+
+    .invite-item {
+      background: #f7fafc;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      border-left: 4px solid #4c5ad4;
+    }
+
+    .invite-item.used {
+      border-left-color: #9ca3af;
+      opacity: 0.7;
+    }
+
+    .invite-item.expired {
+      border-left-color: #ef4444;
+      opacity: 0.7;
+    }
+
+    .invite-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .invite-restaurants {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .invite-restaurant-tag {
+      background: #e2e8f0;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      color: #1e3a5f;
+    }
+
+    .invite-meta {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-size: 0.9rem;
+      color: #718096;
+      margin-top: 12px;
+    }
+
+    .invite-status-badge {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .invite-status-badge.active {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .invite-status-badge.used {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .invite-status-badge.expired {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .invite-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .btn-copy-small {
+      background: #4c5ad4;
+      color: white;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .btn-copy-small:hover {
+      background: #6366f1;
+    }
+
+    .btn-revoke {
+      background: #ef4444;
+      color: white;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .btn-revoke:hover {
+      background: #dc2626;
+    }
+
+    .expiration-options {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .expiration-options select {
+      padding: 10px 14px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 1rem;
+      background: white;
+    }
+
+    .expiration-options select:focus {
+      outline: none;
+      border-color: #4c5ad4;
+    }
   </style>
 </head>
 <body class="page-shell">
   <header class="simple-topbar">
     <div class="simple-topbar-inner">
-      <a class="simple-brand" href="restaurants.html">
+      <a class="simple-brand" href="home.html">
         <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt="Clarivore logo">
         <span>Clarivore</span>
       </a>
       <div class="simple-nav">
         <!-- Navigation populated by shared-nav.js -->
       </div>
+      <div class="mode-toggle-container" id="modeToggleContainer" style="display:none"></div>
     </div>
   </header>
 
@@ -506,8 +804,10 @@
 
       <div class="tab-buttons">
         <button class="tab-btn active" data-tab="restaurants">Restaurants</button>
+        <button class="tab-btn" data-tab="manager-invites">Manager Invites</button>
         <button class="tab-btn" data-tab="appeals">Appeals Review</button>
         <button class="tab-btn" data-tab="allergen-issues">⚠️ Allergen/Diet Issues</button>
+        <button class="tab-btn" data-tab="product-reports">📋 Product Reports</button>
       </div>
 
       <!-- Restaurants Tab -->
@@ -546,6 +846,83 @@
             <h2>Existing Restaurants</h2>
             <div id="restaurants-list" class="restaurants-list">
               <p style="color: #718096;">Loading restaurants...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manager Invites Tab -->
+      <div id="tab-manager-invites" class="tab-content">
+        <div class="admin-card admin-card-full">
+          <h2>🔗 Create Manager Invite Link</h2>
+          <p style="color: #718096; margin-bottom: 24px;">Generate a shareable link that allows someone to create an account with manager access to selected restaurants</p>
+
+          <div class="invite-form">
+            <div class="form-group">
+              <label>Select Restaurants for Manager Access *</label>
+              <p style="color: #718096; font-size: 0.9rem; margin-bottom: 12px;">Choose which restaurants this manager will have access to</p>
+              <div id="invite-restaurants-list" class="restaurant-checkboxes">
+                <p style="color: #718096;">Loading restaurants...</p>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Entry Page When Link is Opened *</label>
+              <p style="color: #718096; font-size: 0.9rem; margin-bottom: 12px;">Where should the user be directed after signing up?</p>
+              <div class="entry-page-options">
+                <div class="entry-page-option selected" onclick="selectEntryPage(this, 'home')">
+                  <input type="radio" name="entry-page" value="home" checked>
+                  <div class="option-info">
+                    <div class="option-title">Homepage</div>
+                    <div class="option-desc">User will be redirected to the Clarivore homepage</div>
+                  </div>
+                </div>
+                <div class="entry-page-option" onclick="selectEntryPage(this, 'restaurant')">
+                  <input type="radio" name="entry-page" value="restaurant">
+                  <div class="option-info">
+                    <div class="option-title">Restaurant QR Code Page</div>
+                    <div class="option-desc">User will be redirected to a specific restaurant's page</div>
+                  </div>
+                </div>
+              </div>
+              <div id="qr-restaurant-select" class="restaurant-select-for-qr" style="display: none;">
+                <label style="font-weight: 500; color: #1e3a5f; margin-bottom: 8px; display: block;">Select restaurant:</label>
+                <select id="entry-restaurant">
+                  <option value="">-- Select a restaurant --</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Link Expiration</label>
+              <div class="expiration-options">
+                <select id="invite-expiration">
+                  <option value="1">1 day</option>
+                  <option value="7" selected>7 days</option>
+                  <option value="30">30 days</option>
+                  <option value="90">90 days</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="button" class="btn-primary" id="generate-invite-btn" onclick="generateInviteLink()">
+              Generate Invite Link
+            </button>
+
+            <div id="generated-link-container" class="generated-link-container">
+              <h3>✓ Invite Link Generated!</h3>
+              <p style="color: #065f46; margin-bottom: 12px;">Share this link with the person you want to invite:</p>
+              <div class="generated-link">
+                <input type="text" id="generated-link-input" readonly>
+                <button class="btn-copy" onclick="copyInviteLink()">Copy Link</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="invites-list">
+            <h3 style="color: #1e3a5f; margin-bottom: 16px;">Existing Invites</h3>
+            <div id="invites-list-container">
+              <p style="color: #718096;">Loading invites...</p>
             </div>
           </div>
         </div>
@@ -602,6 +979,32 @@
           <div id="issues-list" class="appeals-list"></div>
         </div>
       </div>
+
+      <!-- Product Reports Tab -->
+      <div id="tab-product-reports" class="tab-content">
+        <div class="admin-card admin-card-full">
+          <h2>📋 Product Issue Reports</h2>
+          <p style="color: #718096; margin-bottom: 24px;">Review user reports when something doesn't look right with product analysis</p>
+
+          <div class="appeals-filters">
+            <button class="filter-btn-reports active" data-filter-reports="all">All Reports</button>
+            <button class="filter-btn-reports" data-filter-reports="pending">Pending</button>
+            <button class="filter-btn-reports" data-filter-reports="resolved">Resolved</button>
+            <button class="filter-btn-reports" data-filter-reports="dismissed">Dismissed</button>
+          </div>
+
+          <div id="loading-reports" class="loading">
+            <p>Loading reports...</p>
+          </div>
+
+          <div id="no-reports" class="no-appeals" style="display:none;">
+            <h3>No reports found</h3>
+            <p>There are no product issue reports matching your current filter.</p>
+          </div>
+
+          <div id="reports-list" class="appeals-list"></div>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -610,14 +1013,10 @@
     <img id="modal-photo" src="" alt="Appeal photo">
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+    import supabase from './js/supabase-client.js';
     import { setupNav, attachSignOutHandler } from './js/shared-nav.js';
-
-    const supabase = createClient(
-      'https://fgoiyycctnwnghrvsilt.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnb2l5eWNjdG53bmdocnZzaWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0MzY1MjYsImV4cCI6MjA3NjAxMjUyNn0.xlSSXr0Gl7j-vsckrj-2anpPmp4BG2SUIdN-_dquSA8'
-    );
 
     const ADMIN_EMAIL = 'matt.29.ds@gmail.com';
     let currentUser = null;
@@ -625,6 +1024,10 @@
     let allAppeals = [];
     let currentIssuesFilter = 'all';
     let allIssues = [];
+    let currentReportsFilter = 'all';
+    let allReports = [];
+    let allRestaurants = [];
+    let allInvites = [];
 
     // Check authentication
     async function checkAuth() {
@@ -642,9 +1045,42 @@
 
       currentUser = user;
       document.getElementById('admin-content').style.display = 'block';
+
+      // Setup mode toggle for owner (admin pages are owner-only)
+      const modeToggleContainer = document.getElementById('modeToggleContainer');
+      if (modeToggleContainer) {
+        let currentMode = localStorage.getItem('clarivoreManagerMode');
+        if (!currentMode) {
+          currentMode = 'editor';
+          localStorage.setItem('clarivoreManagerMode', 'editor');
+        }
+        const isEditorMode = currentMode === 'editor';
+
+        modeToggleContainer.style.display = 'flex';
+        modeToggleContainer.innerHTML = `
+          <span class="mode-toggle-label">${isEditorMode ? 'Editor mode' : 'Customer mode'}</span>
+          <div class="mode-toggle ${isEditorMode ? 'active' : ''}" id="modeToggle" title="Toggle between Editor and Customer mode"></div>
+        `;
+
+        const toggle = document.getElementById('modeToggle');
+        if (toggle) {
+          toggle.onclick = () => {
+            if (isEditorMode) {
+              localStorage.setItem('clarivoreManagerMode', 'customer');
+              window.location.href = 'home.html';
+            } else {
+              localStorage.setItem('clarivoreManagerMode', 'editor');
+              window.location.href = 'manager-dashboard.html';
+            }
+          };
+        }
+      }
+
       loadRestaurants();
       loadAppeals();
       loadAllergenIssues();
+      loadProductReports();
+      loadInvites();
       return true;
     }
 
@@ -666,6 +1102,10 @@
           loadAppeals();
         } else if (tabName === 'allergen-issues') {
           loadAllergenIssues();
+        } else if (tabName === 'product-reports') {
+          loadProductReports();
+        } else if (tabName === 'manager-invites') {
+          loadInvites();
         }
       });
     });
@@ -722,6 +1162,9 @@
         return;
       }
 
+      // Store for invite form
+      allRestaurants = restaurants;
+
       list.innerHTML = restaurants.map(r => `
         <div class="restaurant-item">
           <div>
@@ -731,6 +1174,284 @@
           <button class="btn-secondary" onclick="window.location.href='admin-restaurant-view.html?id=${r.id}'">Admin View</button>
         </div>
       `).join('');
+
+      // Populate invite form checkboxes
+      populateInviteRestaurants(restaurants);
+    }
+
+    function populateInviteRestaurants(restaurants) {
+      const container = document.getElementById('invite-restaurants-list');
+      const entrySelect = document.getElementById('entry-restaurant');
+
+      if (!container) return;
+
+      container.innerHTML = restaurants.map(r => `
+        <div class="restaurant-checkbox" onclick="toggleRestaurantCheckbox(this)">
+          <input type="checkbox" id="invite-r-${r.id}" value="${r.id}" data-name="${escapeHtml(r.name)}" data-slug="${r.slug || ''}">
+          <label for="invite-r-${r.id}">${escapeHtml(r.name)}</label>
+        </div>
+      `).join('');
+
+      // Populate entry page dropdown
+      if (entrySelect) {
+        entrySelect.innerHTML = '<option value="">-- Select a restaurant --</option>' +
+          restaurants.map(r => `<option value="${r.slug}">${escapeHtml(r.name)}</option>`).join('');
+      }
+    }
+
+    function toggleRestaurantCheckbox(div) {
+      const checkbox = div.querySelector('input[type="checkbox"]');
+      checkbox.checked = !checkbox.checked;
+      div.classList.toggle('selected', checkbox.checked);
+    }
+
+    function selectEntryPage(element, type) {
+      document.querySelectorAll('.entry-page-option').forEach(opt => opt.classList.remove('selected'));
+      element.classList.add('selected');
+      element.querySelector('input').checked = true;
+
+      const qrSelect = document.getElementById('qr-restaurant-select');
+      if (type === 'restaurant') {
+        qrSelect.style.display = 'block';
+      } else {
+        qrSelect.style.display = 'none';
+      }
+    }
+
+    function generateToken(length = 32) {
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      let token = '';
+      const randomValues = new Uint32Array(length);
+      crypto.getRandomValues(randomValues);
+      for (let i = 0; i < length; i++) {
+        token += chars[randomValues[i] % chars.length];
+      }
+      return token;
+    }
+
+    // Generate the correct invite URL based on entry page
+    function getInviteUrl(token, entryPage) {
+      if (entryPage && entryPage.startsWith('restaurant:')) {
+        const slug = entryPage.replace('restaurant:', '');
+        return `${window.location.origin}/restaurant.html?slug=${encodeURIComponent(slug)}&qr=1&invite=${token}`;
+      }
+      // Homepage or default - go to account page
+      return `${window.location.origin}/account.html?invite=${token}`;
+    }
+
+    async function generateInviteLink() {
+      const btn = document.getElementById('generate-invite-btn');
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+
+      try {
+        // Get selected restaurants
+        const selectedCheckboxes = document.querySelectorAll('#invite-restaurants-list input:checked');
+        const restaurantIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+
+        if (restaurantIds.length === 0) {
+          throw new Error('Please select at least one restaurant');
+        }
+
+        // Get entry page
+        const entryType = document.querySelector('input[name="entry-page"]:checked').value;
+        let entryPage = 'home';
+
+        if (entryType === 'restaurant') {
+          const selectedSlug = document.getElementById('entry-restaurant').value;
+          if (!selectedSlug) {
+            throw new Error('Please select a restaurant for the entry page');
+          }
+          entryPage = `restaurant:${selectedSlug}`;
+        }
+
+        // Get expiration
+        const expirationDays = parseInt(document.getElementById('invite-expiration').value);
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + expirationDays);
+
+        // Generate token
+        const token = generateToken();
+
+        // Insert into database
+        const { data: invite, error } = await supabase
+          .from('manager_invites')
+          .insert({
+            token,
+            restaurant_ids: restaurantIds,
+            entry_page: entryPage,
+            expires_at: expiresAt.toISOString(),
+            created_by: currentUser.id
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Generate and display the link (goes directly to restaurant page if QR entry)
+        const inviteUrl = getInviteUrl(token, entryPage);
+        const linkInput = document.getElementById('generated-link-input');
+        linkInput.value = inviteUrl;
+
+        document.getElementById('generated-link-container').classList.add('show');
+
+        // Reload invites list
+        await loadInvites();
+
+      } catch (error) {
+        console.error('Error generating invite:', error);
+        alert('Error: ' + error.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generate Invite Link';
+      }
+    }
+
+    function copyInviteLink() {
+      const linkInput = document.getElementById('generated-link-input');
+      linkInput.select();
+      document.execCommand('copy');
+
+      const btn = event.target;
+      const originalText = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = originalText, 2000);
+    }
+
+    async function loadInvites() {
+      try {
+        const { data: invites, error } = await supabase
+          .from('manager_invites')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        allInvites = invites || [];
+        renderInvites();
+
+      } catch (error) {
+        console.error('Error loading invites:', error);
+        document.getElementById('invites-list-container').innerHTML =
+          `<p style="color: #ef4444;">Error loading invites: ${error.message}</p>`;
+      }
+    }
+
+    function renderInvites() {
+      const container = document.getElementById('invites-list-container');
+
+      if (allInvites.length === 0) {
+        container.innerHTML = '<p style="color: #718096;">No invites created yet.</p>';
+        return;
+      }
+
+      const restaurantMap = {};
+      allRestaurants.forEach(r => {
+        restaurantMap[r.id] = r.name;
+      });
+
+      const invitesHTML = allInvites.map(invite => {
+        const now = new Date();
+        const expiresAt = new Date(invite.expires_at);
+        const isExpired = expiresAt < now;
+        const isUsed = !!invite.used_at;
+
+        let status = 'active';
+        let statusClass = 'active';
+        if (isUsed) {
+          status = 'used';
+          statusClass = 'used';
+        } else if (isExpired) {
+          status = 'expired';
+          statusClass = 'expired';
+        } else if (!invite.is_active) {
+          status = 'revoked';
+          statusClass = 'expired';
+        }
+
+        const restaurantNames = (invite.restaurant_ids || [])
+          .map(id => restaurantMap[id] || 'Unknown')
+          .slice(0, 5);
+        const moreCount = (invite.restaurant_ids || []).length - 5;
+
+        let entryPageDisplay = 'Homepage';
+        if (invite.entry_page && invite.entry_page.startsWith('restaurant:')) {
+          const slug = invite.entry_page.replace('restaurant:', '');
+          const restaurant = allRestaurants.find(r => r.slug === slug);
+          entryPageDisplay = restaurant ? `Restaurant: ${restaurant.name}` : `Restaurant: ${slug}`;
+        }
+
+        const inviteUrl = getInviteUrl(invite.token, invite.entry_page);
+
+        return `
+          <div class="invite-item ${statusClass}">
+            <div class="invite-header">
+              <div>
+                <strong style="color: #1e3a5f;">Entry: ${entryPageDisplay}</strong>
+                <div class="invite-restaurants">
+                  ${restaurantNames.map(name => `<span class="invite-restaurant-tag">${escapeHtml(name)}</span>`).join('')}
+                  ${moreCount > 0 ? `<span class="invite-restaurant-tag">+${moreCount} more</span>` : ''}
+                </div>
+              </div>
+              <span class="invite-status-badge ${statusClass}">${status}</span>
+            </div>
+            <div class="invite-meta">
+              <span><strong>Created:</strong> ${new Date(invite.created_at).toLocaleString()}</span>
+              <span><strong>Expires:</strong> ${expiresAt.toLocaleString()}</span>
+              ${invite.used_at ? `<span><strong>Used:</strong> ${new Date(invite.used_at).toLocaleString()}</span>` : ''}
+            </div>
+            ${status === 'active' ? `
+              <div class="invite-actions">
+                <button class="btn-copy-small" onclick="copyInviteLinkById('${invite.token}')">Copy Link</button>
+                <button class="btn-revoke" onclick="revokeInvite('${invite.id}')">Revoke</button>
+              </div>
+              <input type="text" value="${inviteUrl}" readonly style="margin-top: 8px; width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 0.85rem; font-family: monospace; color: #718096;">
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+
+      container.innerHTML = invitesHTML;
+    }
+
+    function copyInviteLinkById(token) {
+      // Look up the invite to get the correct entry page URL
+      const invite = allInvites.find(i => i.token === token);
+      const inviteUrl = invite ? getInviteUrl(token, invite.entry_page) : `${window.location.origin}/account.html?invite=${token}`;
+      navigator.clipboard.writeText(inviteUrl).then(() => {
+        const message = document.createElement('div');
+        message.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4c5ad4; color: white; padding: 16px 24px; border-radius: 8px; z-index: 10001; box-shadow: 0 4px 12px rgba(0,0,0,0.2);';
+        message.textContent = 'Link copied to clipboard!';
+        document.body.appendChild(message);
+        setTimeout(() => message.remove(), 2000);
+      });
+    }
+
+    async function revokeInvite(inviteId) {
+      if (!confirm('Are you sure you want to revoke this invite? It will no longer be usable.')) {
+        return;
+      }
+
+      try {
+        const { error } = await supabase
+          .from('manager_invites')
+          .update({ is_active: false })
+          .eq('id', inviteId);
+
+        if (error) throw error;
+
+        await loadInvites();
+
+        const message = document.createElement('div');
+        message.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ef4444; color: white; padding: 16px 24px; border-radius: 8px; z-index: 10001; box-shadow: 0 4px 12px rgba(0,0,0,0.2);';
+        message.textContent = 'Invite revoked successfully!';
+        document.body.appendChild(message);
+        setTimeout(() => message.remove(), 3000);
+
+      } catch (error) {
+        console.error('Error revoking invite:', error);
+        alert('Error revoking invite: ' + error.message);
+      }
     }
 
     function showStatus(message, isError = false) {
@@ -741,6 +1462,42 @@
       setTimeout(() => {
         statusEl.classList.remove('show');
       }, 5000);
+    }
+
+    // Generate and download QR code for a restaurant
+    async function generateAndDownloadQRCode(slug, restaurantName) {
+      const url = `https://clarivore.org/restaurant.html?slug=${encodeURIComponent(slug)}`;
+
+      try {
+        // Create a canvas element for the QR code
+        const canvas = document.createElement('canvas');
+
+        // Generate QR code on canvas
+        await QRCode.toCanvas(canvas, url, {
+          width: 512,
+          margin: 2,
+          color: {
+            dark: '#1e3a5f',  // Dark blue color matching the site theme
+            light: '#ffffff'
+          }
+        });
+
+        // Convert canvas to blob and download
+        canvas.toBlob((blob) => {
+          const downloadUrl = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = downloadUrl;
+          a.download = `${slug}-qr-code.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(downloadUrl);
+        }, 'image/png');
+
+      } catch (err) {
+        console.error('Error generating QR code:', err);
+        // Don't fail the whole operation if QR generation fails
+      }
     }
 
     document.getElementById('add-restaurant-form').addEventListener('submit', async (e) => {
@@ -776,7 +1533,10 @@
 
         if (error) throw error;
 
-        showStatus(`✓ Successfully added ${name}!`);
+        showStatus(`✓ Successfully added ${name}! Downloading QR code...`);
+
+        // Generate and download QR code for the restaurant
+        await generateAndDownloadQRCode(restaurant.slug, name);
 
         document.getElementById('add-restaurant-form').reset();
         preview.classList.remove('show');
@@ -850,6 +1610,7 @@
                 <h3>${escapeHtml(appeal.ingredient_name)}</h3>
                 <div class="appeal-meta">
                   <span><strong>Restaurant:</strong> ${escapeHtml(restaurant.name || 'Unknown')}</span>
+                  ${appeal.dish_name ? `<span><strong>Dish:</strong> ${escapeHtml(appeal.dish_name)}</span>` : ''}
                   <span><strong>Submitted:</strong> ${submittedDate}</span>
                   ${appeal.reviewed_at ? `<span><strong>Reviewed:</strong> ${new Date(appeal.reviewed_at).toLocaleString()}</span>` : ''}
                 </div>
@@ -950,6 +1711,13 @@
         e.target.classList.add('active');
         currentIssuesFilter = e.target.dataset.filterIssues;
         renderAllergenIssues();
+      }
+
+      if (e.target.classList.contains('filter-btn-reports')) {
+        document.querySelectorAll('.filter-btn-reports').forEach(btn => btn.classList.remove('active'));
+        e.target.classList.add('active');
+        currentReportsFilter = e.target.dataset.filterReports;
+        renderProductReports();
       }
     });
 
@@ -1093,6 +1861,159 @@
       }
     }
 
+    // Load product issue reports
+    async function loadProductReports() {
+      try {
+        document.getElementById('loading-reports').style.display = 'block';
+        document.getElementById('reports-list').innerHTML = '';
+        document.getElementById('no-reports').style.display = 'none';
+
+        const { data: reports, error } = await supabase
+          .from('product_issue_reports')
+          .select('*')
+          .order('submitted_at', { ascending: false });
+
+        if (error) throw error;
+
+        allReports = reports || [];
+        renderProductReports();
+
+      } catch (error) {
+        console.error('Error loading product reports:', error);
+        document.getElementById('loading-reports').innerHTML = `<p style="color: #ef4444;">Error loading reports: ${error.message}</p>`;
+      } finally {
+        document.getElementById('loading-reports').style.display = 'none';
+      }
+    }
+
+    // Render product reports based on current filter
+    function renderProductReports() {
+      const filtered = currentReportsFilter === 'all'
+        ? allReports
+        : allReports.filter(r => r.status === currentReportsFilter);
+
+      if (filtered.length === 0) {
+        document.getElementById('no-reports').style.display = 'block';
+        document.getElementById('reports-list').innerHTML = '';
+        return;
+      }
+
+      document.getElementById('no-reports').style.display = 'none';
+
+      const reportsHTML = filtered.map(report => {
+        const status = report.status || 'pending';
+        const submittedDate = new Date(report.submitted_at).toLocaleString();
+        const resolvedDate = report.resolved_at ? new Date(report.resolved_at).toLocaleString() : null;
+        const analysisDetails = report.analysis_details || {};
+
+        return `
+          <div class="appeal-card ${status}" style="border-left-color: #f59e0b;">
+            <div class="appeal-header">
+              <div class="appeal-info">
+                <h3>${escapeHtml(report.product_name || 'Unknown Product')}</h3>
+                <div class="appeal-meta">
+                  ${report.barcode ? `<span><strong>Barcode:</strong> ${escapeHtml(report.barcode)}</span>` : ''}
+                  <span><strong>Submitted:</strong> ${submittedDate}</span>
+                  ${resolvedDate ? `<span><strong>Resolved:</strong> ${resolvedDate}</span>` : ''}
+                </div>
+              </div>
+              <span class="appeal-status ${status}">${status}</span>
+            </div>
+
+            <div style="margin: 16px 0;">
+              <strong style="color: #1e3a5f; display: block; margin-bottom: 8px;">User Message:</strong>
+              <p style="background: #fff3cd; padding: 12px; border-radius: 8px; margin-top: 8px; color: #856404; white-space: pre-wrap; line-height: 1.5;">${escapeHtml(report.message)}</p>
+            </div>
+
+            ${analysisDetails.ingredientList ? `
+              <div style="margin: 16px 0;">
+                <strong style="color: #1e3a5f; display: block; margin-bottom: 8px;">Ingredient List:</strong>
+                <div style="background: #f5f5f5; padding: 12px; border-radius: 8px; margin-top: 8px; font-family: monospace; font-size: 0.9rem; white-space: pre-wrap; color: #1e3a5f; line-height: 1.5;">${escapeHtml(analysisDetails.ingredientList)}</div>
+              </div>
+            ` : ''}
+
+            ${analysisDetails.allergens && analysisDetails.allergens.length > 0 ? `
+              <div style="margin: 16px 0;">
+                <strong style="color: #1e3a5f; display: block; margin-bottom: 4px;">Detected Allergens:</strong>
+                <span style="color: #1e3a5f;">${analysisDetails.allergens.map(a => typeof a === 'object' ? a.name : a).join(', ')}</span>
+              </div>
+            ` : ''}
+
+            ${analysisDetails.diets && analysisDetails.diets.length > 0 ? `
+              <div style="margin: 16px 0;">
+                <strong style="color: #1e3a5f; display: block; margin-bottom: 4px;">Detected Diets:</strong>
+                <span style="color: #1e3a5f;">${analysisDetails.diets.join(', ')}</span>
+              </div>
+            ` : ''}
+
+            ${analysisDetails.sources && analysisDetails.sources.length > 0 ? `
+              <div style="margin: 16px 0;">
+                <strong style="color: #1e3a5f; display: block; margin-bottom: 8px;">Sources Used:</strong>
+                <div style="font-size: 0.9rem; color: #718096;">
+                  ${analysisDetails.sources.map(s => `<div style="margin-bottom: 4px;">• <a href="${escapeHtml(s.url || s)}" target="_blank" style="color: #4c5ad4;">${escapeHtml(s.title || s.url || s)}</a></div>`).join('')}
+                </div>
+              </div>
+            ` : ''}
+
+            ${status === 'pending' ? `
+              <div class="review-notes">
+                <label style="color: #1e3a5f; display: block; margin-bottom: 8px; font-weight: 600;"><strong>Resolution Notes (optional):</strong></label>
+                <textarea id="report-notes-${report.id}" placeholder="Add notes about how you resolved this report..."></textarea>
+              </div>
+              <div class="appeal-actions">
+                <button class="btn-approve" onclick="resolveReport('${report.id}', 'resolved')">✓ Mark Resolved</button>
+                <button class="btn-deny" onclick="resolveReport('${report.id}', 'dismissed')">✗ Dismiss</button>
+              </div>
+            ` : `
+              <div class="appeal-actions">
+                ${report.resolution_notes ? `<p style="color: #1e3a5f;"><strong style="color: #1e3a5f;">Resolution Notes:</strong> ${escapeHtml(report.resolution_notes)}</p>` : ''}
+              </div>
+            `}
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('reports-list').innerHTML = reportsHTML;
+    }
+
+    // Resolve a product issue report
+    async function resolveReport(reportId, status) {
+      const notesTextarea = document.getElementById(`report-notes-${reportId}`);
+      const resolutionNotes = notesTextarea ? notesTextarea.value.trim() : '';
+
+      if (!confirm(`Are you sure you want to mark this report as ${status}?`)) {
+        return;
+      }
+
+      try {
+        const { error } = await supabase
+          .from('product_issue_reports')
+          .update({
+            status: status,
+            resolved_at: new Date().toISOString(),
+            resolution_notes: resolutionNotes || null,
+            resolved_by: currentUser.id
+          })
+          .eq('id', reportId);
+
+        if (error) throw error;
+
+        // Reload reports to show updated status
+        await loadProductReports();
+
+        // Show success message
+        const message = document.createElement('div');
+        message.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #4caf50; color: white; padding: 16px 24px; border-radius: 8px; z-index: 10001; box-shadow: 0 4px 12px rgba(0,0,0,0.2);';
+        message.textContent = `Report marked as ${status} successfully!`;
+        document.body.appendChild(message);
+        setTimeout(() => message.remove(), 3000);
+
+      } catch (error) {
+        console.error('Error resolving report:', error);
+        alert(`Error resolving report: ${error.message}`);
+      }
+    }
+
     function escapeHtml(text) {
       const div = document.createElement('div');
       div.textContent = text;
@@ -1103,6 +2024,13 @@
     window.openPhotoModal = openPhotoModal;
     window.closePhotoModal = closePhotoModal;
     window.resolveIssue = resolveIssue;
+    window.resolveReport = resolveReport;
+    window.selectEntryPage = selectEntryPage;
+    window.generateInviteLink = generateInviteLink;
+    window.copyInviteLink = copyInviteLink;
+    window.copyInviteLinkById = copyInviteLinkById;
+    window.revokeInvite = revokeInvite;
+    window.toggleRestaurantCheckbox = toggleRestaurantCheckbox;
 
     checkAuth();
   </script>

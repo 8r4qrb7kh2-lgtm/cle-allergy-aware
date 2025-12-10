@@ -12,7 +12,7 @@
 <body class="page-shell">
   <header class="simple-topbar">
     <div class="simple-topbar-inner">
-      <a class="simple-brand" href="restaurants.html">
+      <a class="simple-brand" href="home.html">
         <img src="https://static.wixstatic.com/media/945e9d_2b97098295d341d493e4a07d80d6b57c~mv2.png" alt="Clarivore logo">
         <span>Clarivore</span>
       </a>
@@ -20,12 +20,19 @@
         <!-- Navigation populated by shared-nav.js -->
         <button id="navReturnMenu" type="button" style="display:none;">Back to menu</button>
       </div>
+      <div class="mode-toggle-container" id="modeToggleContainer" style="display:none"></div>
     </div>
   </header>
 
   <main class="page-main">
     <div class="page-content">
       <div class="account-layout">
+        <!-- Manager invite banner (shown when invite token present) -->
+        <div id="invite-banner" class="auth-card" style="display:none;background:linear-gradient(135deg,#4c5ad4,#6366f1);border:none;margin-bottom:16px;">
+          <h3 style="margin:0 0 8px;color:white;">You've been invited as a Manager</h3>
+          <p style="margin:0;color:rgba(255,255,255,0.9);font-size:0.95rem;">Create an account or sign in to get manager access to your restaurant(s).</p>
+        </div>
+
         <!-- Sign-in card -->
         <section id="auth-section" class="auth-card">
           <h2>Manage your allergy profile</h2>
@@ -291,6 +298,39 @@
       if (!isRecoveryMode) {
         setupNav('account', user, { managerRestaurants });
         attachSignOutHandler(supabaseClient);
+
+        // Setup mode toggle for managers/owners
+        const OWNER_EMAIL = 'matt.29.ds@gmail.com';
+        const isOwner = user?.email === OWNER_EMAIL;
+        const isManager = user?.user_metadata?.role === 'manager';
+        const modeToggleContainer = document.getElementById('modeToggleContainer');
+        if (user && (isManager || isOwner) && modeToggleContainer) {
+          let currentMode = localStorage.getItem('clarivoreManagerMode');
+          if (!currentMode) {
+            currentMode = 'editor';
+            localStorage.setItem('clarivoreManagerMode', 'editor');
+          }
+          const isEditorMode = currentMode === 'editor';
+
+          modeToggleContainer.style.display = 'flex';
+          modeToggleContainer.innerHTML = `
+            <span class="mode-toggle-label">${isEditorMode ? 'Editor mode' : 'Customer mode'}</span>
+            <div class="mode-toggle ${isEditorMode ? 'active' : ''}" id="modeToggle" title="Toggle between Editor and Customer mode"></div>
+          `;
+
+          const toggle = document.getElementById('modeToggle');
+          if (toggle) {
+            toggle.onclick = () => {
+              if (isEditorMode) {
+                localStorage.setItem('clarivoreManagerMode', 'customer');
+                window.location.href = 'home.html';
+              } else {
+                localStorage.setItem('clarivoreManagerMode', 'editor');
+                window.location.href = 'manager-dashboard.html';
+              }
+            };
+          }
+        }
       }
     }
 
@@ -342,14 +382,22 @@
           authSection.style.display = 'none';
           signupView.style.display = 'none';
           detailsSection.style.display = 'flex';
-          allergenSection.style.display = 'flex';
-          dietSection.style.display = 'flex';
           signOutSection.style.display = 'flex';
           passwordResetSection.style.display = 'none';
           document.getElementById('onboarding-section').style.display = 'none';
           populateDetails(user);
-          await loadAllergies();
-          await loadDiets();
+
+          // Hide allergens/diets for managers in editor mode
+          const isEditorMode = localStorage.getItem('clarivoreManagerMode') === 'editor';
+          if ((isManager || isOwner) && isEditorMode) {
+            allergenSection.style.display = 'none';
+            dietSection.style.display = 'none';
+          } else {
+            allergenSection.style.display = 'flex';
+            dietSection.style.display = 'flex';
+            await loadAllergies();
+            await loadDiets();
+          }
           
           // Handle redirects
           if (redirectParam) {
@@ -376,6 +424,13 @@
         detailsSection.style.display = 'none';
         passwordResetSection.style.display = 'none';
         document.getElementById('onboarding-section').style.display = 'none';
+
+        // Show invite banner if token present
+        const inviteBanner = document.getElementById('invite-banner');
+        if (inviteToken && inviteBanner) {
+          inviteBanner.style.display = 'flex';
+        }
+
         // Check mode parameter to show signup or signin
         const modeParam = params.get('mode');
         if(modeParam === 'signup') {
@@ -788,6 +843,15 @@
 
     document.getElementById('start-signup-btn').onclick = () => {
       authMessage.textContent = '';
+      // Carry over email/password from sign-in form if entered
+      const signinEmail = document.getElementById('email').value.trim();
+      const signinPassword = document.getElementById('password').value;
+      if (signinEmail) {
+        document.getElementById('signup-email').value = signinEmail;
+      }
+      if (signinPassword) {
+        document.getElementById('signup-password').value = signinPassword;
+      }
       authSection.style.display = 'none';
       signupView.style.display = 'flex';
       signupAllergies = [];
@@ -911,16 +975,17 @@
 
       try {
         let userRole = 'customer';
-        let restaurantId = null;
+        let restaurantIds = [];
+        let entryPage = 'home';
 
         // Check if user has a manager invitation token
         if (inviteToken) {
           console.log('[DEBUG] Processing invitation token:', inviteToken);
 
-          // Validate invitation token and get restaurant info
+          // Validate invitation token from new manager_invites table
           const { data: invitation, error: inviteError } = await supabaseClient
-            .from('manager_invitations')
-            .select('restaurant_id, used')
+            .from('manager_invites')
+            .select('*')
             .eq('token', inviteToken)
             .maybeSingle();
 
@@ -932,15 +997,24 @@
             console.log('[DEBUG] No invitation found for token');
             onboardingStatus.textContent = 'Invalid invitation link. Continuing as regular user.';
             onboardingStatus.classList.add('error');
-          } else if (invitation.used) {
+          } else if (invitation.used_at) {
             console.log('[DEBUG] Invitation already used');
             onboardingStatus.textContent = 'This invitation has already been used. Continuing as regular user.';
+            onboardingStatus.classList.add('error');
+          } else if (!invitation.is_active) {
+            console.log('[DEBUG] Invitation has been revoked');
+            onboardingStatus.textContent = 'This invitation has been revoked. Continuing as regular user.';
+            onboardingStatus.classList.add('error');
+          } else if (new Date(invitation.expires_at) < new Date()) {
+            console.log('[DEBUG] Invitation has expired');
+            onboardingStatus.textContent = 'This invitation has expired. Continuing as regular user.';
             onboardingStatus.classList.add('error');
           } else {
             // Valid invitation - mark as manager
             userRole = 'manager';
-            restaurantId = invitation.restaurant_id;
-            console.log('[DEBUG] Valid invitation! Setting userRole=manager, restaurantId=', restaurantId);
+            restaurantIds = invitation.restaurant_ids || [];
+            entryPage = invitation.entry_page || 'home';
+            console.log('[DEBUG] Valid invitation! Setting userRole=manager, restaurantIds=', restaurantIds, 'entryPage=', entryPage);
           }
         }
 
@@ -965,42 +1039,73 @@
             updated_at: new Date().toISOString()
           }, { onConflict: 'user_id' });
 
-        // If manager, link to restaurant and mark invitation as used
-        if (userRole === 'manager' && restaurantId) {
-          console.log('[DEBUG] Linking manager to restaurant. user_id:', currentUser.id, 'restaurant_id:', restaurantId);
+        // If manager, grant restaurant access and mark invitation as used
+        if (userRole === 'manager' && restaurantIds.length > 0) {
+          console.log('[DEBUG] Linking manager to restaurants. user_id:', currentUser.id, 'restaurant_ids:', restaurantIds);
 
-          // Link user to restaurant
-          const { data: linkData, error: linkError } = await supabaseClient
-            .from('restaurant_managers')
-            .insert({
-              user_id: currentUser.id,
-              restaurant_id: restaurantId,
-              created_at: new Date().toISOString()
-            });
+          // Insert into restaurant_managers for each restaurant (existing table)
+          for (const restaurantId of restaurantIds) {
+            const { error: linkError } = await supabaseClient
+              .from('restaurant_managers')
+              .insert({
+                user_id: currentUser.id,
+                restaurant_id: restaurantId,
+                created_at: new Date().toISOString()
+              });
 
-          console.log('[DEBUG] Restaurant manager link result:', linkData, 'error:', linkError);
+            if (linkError) {
+              console.log('[DEBUG] Restaurant manager link error (may be duplicate):', linkError);
+            }
+          }
+
+          // Also insert into manager_restaurant_access table (new table for more granular access)
+          for (const restaurantId of restaurantIds) {
+            const { error: accessError } = await supabaseClient
+              .from('manager_restaurant_access')
+              .insert({
+                user_id: currentUser.id,
+                restaurant_id: restaurantId,
+                granted_by: null // Will be set via admin lookup if needed
+              });
+
+            if (accessError) {
+              console.log('[DEBUG] Manager restaurant access error (may be duplicate):', accessError);
+            }
+          }
 
           // Mark invitation as used
           const { error: updateError } = await supabaseClient
-            .from('manager_invitations')
-            .update({ used: true, used_by: currentUser.id, used_at: new Date().toISOString() })
+            .from('manager_invites')
+            .update({
+              used_at: new Date().toISOString(),
+              used_by: currentUser.id
+            })
             .eq('token', inviteToken);
 
           console.log('[DEBUG] Invitation marked as used. error:', updateError);
         }
 
-        // Redirect based on redirect parameter or default to restaurants
-        if (redirectParam) {
-          if (redirectParam.startsWith('http://') || redirectParam.startsWith('https://')) {
-            window.location.href = redirectParam;
-          } else if (redirectParam === 'favorites') {
-            window.location.href = 'favorites.html';
-          } else {
-            window.location.href = 'restaurants.html';
+        // Determine redirect URL based on entry page from invitation
+        let redirectUrl = 'restaurants.html';
+
+        if (userRole === 'manager' && entryPage) {
+          if (entryPage === 'home') {
+            redirectUrl = 'home.html';
+          } else if (entryPage.startsWith('restaurant:')) {
+            const slug = entryPage.replace('restaurant:', '');
+            redirectUrl = `restaurant.html?slug=${encodeURIComponent(slug)}`;
           }
-        } else {
-          window.location.href = 'restaurants.html';
+        } else if (redirectParam) {
+          if (redirectParam.startsWith('http://') || redirectParam.startsWith('https://')) {
+            redirectUrl = redirectParam;
+          } else if (redirectParam === 'favorites') {
+            redirectUrl = 'favorites.html';
+          } else if (redirectParam === 'restaurants') {
+            redirectUrl = 'restaurants.html';
+          }
         }
+
+        window.location.href = redirectUrl;
       } catch (error) {
         console.error('Onboarding error:', error);
         onboardingStatus.textContent = error.message || 'Failed to complete setup. Please try again.';
@@ -1123,7 +1228,13 @@
     // OAuth handlers
     async function handleOAuthSignIn(provider) {
       try {
-        const redirectTo = `${window.location.origin}/account.html${redirectParam ? '?redirect=' + redirectParam : ''}`;
+        // Build redirect URL with any existing parameters
+        const redirectParams = new URLSearchParams();
+        if (redirectParam) redirectParams.set('redirect', redirectParam);
+        if (inviteToken) redirectParams.set('invite', inviteToken);
+        const queryString = redirectParams.toString();
+        const redirectTo = `${window.location.origin}/account.html${queryString ? '?' + queryString : ''}`;
+
         const { error } = await supabaseClient.auth.signInWithOAuth({
           provider: provider,
           options: {
