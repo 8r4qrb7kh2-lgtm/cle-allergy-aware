@@ -630,12 +630,13 @@
       0%,
       100% {
         box-shadow: 0 0 0 0 var(--pulse-color-start, rgba(255, 255, 255, 0.5));
-        border-width: 0.75px;
+        border-width: 2px;
       }
 
       50% {
-        box-shadow: 0 0 4px 2px var(--pulse-color-end, rgba(255, 255, 255, 0.9));
-        border-width: 1.5px;
+        box-shadow: 0 0 12px 6px var(--pulse-color-end, rgba(255, 255, 255, 0.9));
+        border-width: 6px;
+        /* Dramatic change to ensure visibility */
       }
     }
 
@@ -7361,13 +7362,11 @@
       // Re-enable body scroll
       document.body.style.overflow = '';
 
-      // Force layout update with microscopic scroll to fix misalignment
-      // This forces the browser to re-evaluate viewport-relative positioning
-      window.scrollBy(0, 1);
-      window.scrollBy(0, -1);
-
-      // Force reflow to ensure layout snaps back correctly
-      void menuWrap.offsetWidth;
+      // "Nuclear" Scroll Fix:
+      // Completely reset scroll to 0,0 and then restore it.
+      // This forces the mobile browser to invalidate the entire viewport buffer and re-render the layout.
+      window.scrollTo(0, 0);
+      void menuWrap.offsetHeight; // Force reflow at top
 
       // Clear selection
       document.querySelectorAll('.overlay.selected').forEach(ov => ov.classList.remove('selected'));
@@ -7379,14 +7378,15 @@
       // Restore scroll position
       window.scrollTo(preZoomScrollPos.x, preZoomScrollPos.y);
 
-      // Force another reflow after scroll restoration to ensure sticky elements/overlays are correct
-      void menuWrap.offsetWidth;
+      // Force another reflow after scroll restoration
+      void menuWrap.offsetHeight;
 
-      // One more scroll jiggle after restoration to be safe
-      setTimeout(() => {
-        window.scrollBy(0, 1);
-        window.scrollBy(0, -1);
-      }, 50);
+      // Secondary restoration in case of async scrolling behavior
+      requestAnimationFrame(() => {
+        if (Math.abs(window.scrollY - preZoomScrollPos.y) > 5) {
+          window.scrollTo(preZoomScrollPos.x, preZoomScrollPos.y);
+        }
+      });
     }
 
     function showZoomedDishInfo(item) {
@@ -20461,8 +20461,10 @@
         overlayElement.style.setProperty('--pulse-color-start', `rgba(${rgb}, 0.5)`);
         overlayElement.style.setProperty('--pulse-color-end', `rgba(${rgb}, 0.9)`);
 
-        // Ensure outline matches
+        // Ensure properties are set for visibility
         overlayElement.style.outlineColor = borderColor;
+        overlayElement.style.borderStyle = 'solid'; // Force solid border
+        overlayElement.style.zIndex = '1010'; // Ensure it's above other elements
       }
 
       function renderLayer() {
