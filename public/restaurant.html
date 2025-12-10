@@ -7419,79 +7419,10 @@
 
       nameEl.textContent = item.name || item.id || 'Dish';
 
-      // Build allergen chips based on user's allergens
+      // Use compact mobile design for zoomed view
       const userAllergens = state.allergies || [];
       const userDiets = state.diets || [];
-      const dishAllergens = item.allergens || [];
-      const dishDiets = item.diets || [];
-      const crossContamination = item.crossContamination || [];
-
-      let chipsHTML = '';
-
-      // Check which of user's allergens are in the dish
-      userAllergens.forEach(allergen => {
-        const allergenLower = allergen.toLowerCase();
-        const isDanger = dishAllergens.some(a => a.toLowerCase() === allergenLower);
-        const isCaution = crossContamination.some(a => a.toLowerCase() === allergenLower);
-        const emoji = ALLERGEN_EMOJI[allergenLower] || '⚠️';
-
-        if (isDanger) {
-          // Get specific ingredients containing this allergen
-          const details = item.details || {};
-          const ingredientInfo = details[allergenLower] || details[allergen];
-          let chipText = `${emoji} Contains ${allergen}`;
-          if (ingredientInfo) {
-            // Extract just the ingredients part (remove "Contains " prefix if present)
-            const ingredients = ingredientInfo.replace(/^Contains\s+/i, '');
-            chipText += `<br><span style="font-size:0.85em;opacity:0.9">in: ${ingredients}</span>`;
-          }
-          chipsHTML += `<span class="allergenChip danger">${chipText}</span>`;
-        } else if (isCaution) {
-          chipsHTML += `<span class="allergenChip caution">${emoji} Cross-contact risk</span>`;
-        } else {
-          chipsHTML += `<span class="allergenChip safe">${emoji} ${allergen}-free</span>`;
-        }
-      });
-
-      // Check diets
-      userDiets.forEach(diet => {
-        const dietLower = diet.toLowerCase();
-        const isCompatible = dishDiets.some(d => d.toLowerCase() === dietLower);
-        const emoji = DIET_EMOJI[dietLower] || '🍽️';
-
-        if (isCompatible) {
-          chipsHTML += `<span class="allergenChip safe">${emoji} ${diet}</span>`;
-        } else {
-          // Get specific ingredients blocking this diet
-          const blockingIngredients = item.ingredientsBlockingDiets?.[diet] ||
-                                      item.ingredientsBlockingDiets?.[dietLower] || [];
-          let chipText = `${emoji} Not ${diet}`;
-          if (blockingIngredients.length > 0) {
-            const ingredientNames = blockingIngredients
-              .map(ing => ing.name || ing)
-              .filter(name => name)
-              .join(', ');
-            if (ingredientNames) {
-              chipText += `<br><span style="font-size:0.85em;opacity:0.9">due to: ${ingredientNames}</span>`;
-            }
-          }
-          chipsHTML += `<span class="allergenChip danger">${chipText}</span>`;
-        }
-      });
-
-      // If user has no allergens/diets set, show the dish's allergens
-      if (userAllergens.length === 0 && userDiets.length === 0) {
-        if (dishAllergens.length > 0) {
-          chipsHTML = dishAllergens.map(a => {
-            const emoji = ALLERGEN_EMOJI[a.toLowerCase()] || '⚠️';
-            return `<span class="allergenChip caution">${emoji} Contains ${a}</span>`;
-          }).join('');
-        } else {
-          chipsHTML = '<span class="allergenChip safe">✓ No common allergens</span>';
-        }
-      }
-
-      chipsEl.innerHTML = chipsHTML;
+      chipsEl.innerHTML = mobileCompactBodyHTML(item, userAllergens, userDiets);
       dishInfo.classList.add('show');
     }
 
@@ -19243,7 +19174,7 @@
                 const detailStyle = isMobile
                   ? 'font-size:0.8em;opacity:0.8;margin-top:1px;margin-left:18px;line-height:1.2'
                   : 'font-size:0.85em;opacity:0.85;margin-top:2px;margin-left:20px';
-                text += `<div style="${detailStyle}">in: ${esc(ingredients)}</div>`;
+                text += `<div style="${detailStyle}">${esc(ingredients)}</div>`;
               }
             }
             return `<div style="margin-bottom:4px">${text}</div>`;
@@ -19266,7 +19197,7 @@
                 const detailStyle = isMobile
                   ? 'font-size:0.8em;opacity:0.8;margin-top:1px;margin-left:18px;line-height:1.2'
                   : 'font-size:0.85em;opacity:0.85;margin-top:2px;margin-left:20px';
-                text += `<div style="${detailStyle}">in: ${esc(ingredients)}</div>`;
+                text += `<div style="${detailStyle}">${esc(ingredients)}</div>`;
               }
             }
             return `<div style="margin-bottom:4px">${text}</div>`;
@@ -19391,7 +19322,7 @@
                   const detailStyle = isMobile
                     ? 'font-size:0.8em;opacity:0.8;margin-top:1px;margin-left:18px;line-height:1.2'
                     : 'font-size:0.85em;opacity:0.85;margin-top:2px;margin-left:20px';
-                  dietText += `<div style="${detailStyle}">due to: ${esc(ingredientNames)}</div>`;
+                  dietText += `<div style="${detailStyle}">${esc(ingredientNames)}</div>`;
                 }
               }
               html += `<div style="margin-bottom:6px;color:#e85d5d;font-size:0.9rem">${dietText}</div>`;
