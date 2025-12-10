@@ -19729,6 +19729,89 @@
         return window.innerWidth <= 640;
       }
     }
+
+    // Compact mobile-specific display for allergen/diet information
+    function mobileCompactBodyHTML(item, sel, userDiets) {
+      const details = item.details || {};
+
+      if (!sel.length && (!userDiets || !userDiets.length)) {
+        return `<div style="padding:12px;text-align:center;color:rgba(255,255,255,0.6);font-size:0.85rem">No dietary preferences saved</div>`;
+      }
+
+      let html = '<div style="padding:8px 0">';
+
+      // Allergens section
+      if (sel.length) {
+        const hits = (item.allergens || []).filter(a => sel.includes(a));
+        const freeFrom = sel.filter(a => !hits.includes(a));
+
+        // Danger allergens
+        if (hits.length > 0) {
+          html += '<div style="margin-bottom:8px">';
+          hits.forEach(a => {
+            const emoji = ALLERGEN_EMOJI[a.toLowerCase()] || '⚠️';
+            const allergenLower = a.toLowerCase();
+            const ingredientInfo = details[allergenLower] || details[a];
+            const ingredients = ingredientInfo ? ingredientInfo.replace(/^Contains\s+/i, '') : '';
+
+            html += `<div style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:6px 10px;margin-bottom:6px">`;
+            html += `<div style="color:#fca5a5;font-size:0.85rem;font-weight:500">${emoji} ${esc(allergenLower)}</div>`;
+            if (ingredients) {
+              html += `<div style="color:rgba(252,165,165,0.7);font-size:0.75rem;margin-top:2px;line-height:1.3">${esc(ingredients)}</div>`;
+            }
+            html += `</div>`;
+          });
+          html += '</div>';
+        }
+
+        // Safe allergens - show as compact chips in a grid
+        if (freeFrom.length > 0) {
+          html += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">';
+          freeFrom.forEach(a => {
+            const emoji = ALLERGEN_EMOJI[a.toLowerCase()] || '✅';
+            html += `<div style="background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.25);border-radius:6px;padding:4px 8px;font-size:0.75rem;color:#86efac">${emoji} ${esc(a.toLowerCase())}-free</div>`;
+          });
+          html += '</div>';
+        }
+      }
+
+      // Diets section
+      if (userDiets && userDiets.length > 0) {
+        const itemDietSet = new Set(item.diets || []);
+
+        userDiets.forEach(userDiet => {
+          const isDietMet = itemDietSet.has(userDiet);
+          const emoji = DIET_EMOJI[userDiet.toLowerCase()] || '🍽️';
+          const dietLower = userDiet.toLowerCase();
+          const blockingIngredients = item.ingredientsBlockingDiets?.[userDiet] ||
+                                      item.ingredientsBlockingDiets?.[dietLower] || [];
+
+          if (isDietMet) {
+            // Diet is met - show as compact chip
+            html += `<div style="background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.25);border-radius:8px;padding:6px 10px;margin-bottom:6px">`;
+            html += `<div style="color:#86efac;font-size:0.85rem;font-weight:500">${emoji} ${esc(userDiet)}</div>`;
+            html += `</div>`;
+          } else {
+            // Diet not met - show with blocking ingredients
+            html += `<div style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:6px 10px;margin-bottom:6px">`;
+            html += `<div style="color:#fca5a5;font-size:0.85rem;font-weight:500">${emoji} Not ${esc(dietLower)}</div>`;
+            if (blockingIngredients.length > 0) {
+              const ingredientNames = blockingIngredients
+                .map(ing => ing.name || ing)
+                .filter(name => name)
+                .join(', ');
+              if (ingredientNames) {
+                html += `<div style="color:rgba(252,165,165,0.7);font-size:0.75rem;margin-top:2px;line-height:1.3">${esc(ingredientNames)}</div>`;
+              }
+            }
+            html += `</div>`;
+          }
+        });
+      }
+
+      html += '</div>';
+      return html;
+    }
     function renderMobileInfo(item) {
       // Make function available globally for MutationObserver
       window.renderMobileInfo = renderMobileInfo;
@@ -19768,7 +19851,7 @@
         return;
       }
       currentMobileInfoItem = item;
-      const bodyHTML = tooltipBodyHTML(item, state.allergies || [], state.diets || [], true);
+      const bodyHTML = mobileCompactBodyHTML(item, state.allergies || [], state.diets || []);
 
       mobileInfoPanel.innerHTML = `
     <div class="mobileInfoHeaderRow">
