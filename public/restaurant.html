@@ -546,11 +546,10 @@
       background: #0d132a;
       border-radius: 14px;
       position: relative;
-      overflow-x: auto;
-      overflow-y: visible;
+      overflow: hidden;
       min-height: 140px;
       transform-origin: top left;
-      -webkit-overflow-scrolling: touch
+      touch-action: pan-y;
     }
 
     .menuWrap.show {
@@ -20144,8 +20143,17 @@
 
       if (!displayImage) { inner.innerHTML = `<div class="note" style="padding:16px">No menu image configured for this restaurant.</div>`; return; }
 
-      const img = new Image(); img.src = displayImage; img.className = 'menuImg'; inner.appendChild(img);
+      const img = new Image(); img.src = displayImage; img.className = 'menuImg'; img.draggable = false; inner.appendChild(img);
       const layer = div('', 'overlayLayer'); inner.appendChild(layer);
+
+      // Prevent any scroll/drag on the menu container
+      container.scrollLeft = 0;
+      container.scrollTop = 0;
+      container.addEventListener('scroll', (e) => {
+        container.scrollLeft = 0;
+        container.scrollTop = 0;
+      }, { passive: true });
+      img.addEventListener('dragstart', (e) => e.preventDefault());
 
       // Add page navigation if multiple pages
       if (images.length > 1) {
@@ -21267,11 +21275,21 @@
       const img = new Image();
       img.src = menuImages[0] || '';
       img.className = 'menuImg';
+      img.draggable = false;
       inner.appendChild(img);
 
       // Create overlay layer
       const overlayLayer = div('', 'overlayLayer');
       inner.appendChild(overlayLayer);
+
+      // Prevent any scroll/drag on the menu container
+      menu.scrollLeft = 0;
+      menu.scrollTop = 0;
+      menu.addEventListener('scroll', (e) => {
+        menu.scrollLeft = 0;
+        menu.scrollTop = 0;
+      }, { passive: true });
+      img.addEventListener('dragstart', (e) => e.preventDefault());
 
       const overlays = JSON.parse(JSON.stringify(rs.overlays || []));
 
