@@ -680,13 +680,14 @@
 
     .zoomBackButton {
       position: fixed;
-      top: calc(16px + env(safe-area-inset-top, 0px));
-      left: 16px;
-      z-index: 1000;
+      bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 3600;
       background: rgba(255, 255, 255, 0.95);
       border: none;
       border-radius: 20px;
-      padding: 10px 20px;
+      padding: 12px 28px;
       color: #1a1a2e;
       font-size: 0.95rem;
       font-weight: 600;
@@ -696,7 +697,7 @@
       cursor: pointer;
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
       pointer-events: auto;
     }
 
@@ -706,7 +707,7 @@
 
     .zoomBackButton:active {
       background: rgba(230, 230, 230, 0.95);
-      transform: scale(0.94);
+      transform: translateX(-50%) scale(0.94);
     }
 
     .zoomBackButton svg {
