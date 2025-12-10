@@ -7204,25 +7204,26 @@
       // Force reflow to apply zoomed layout before measuring
       void menuWrap.offsetWidth;
 
-      // Now measure with the zoomed layout
+      // Update overlayLayer to match new image dimensions (image may have resized)
+      const overlayLayer = menuInner.querySelector('.overlayLayer');
+      if (overlayLayer) {
+        overlayLayer.style.width = menuImg.clientWidth + 'px';
+        overlayLayer.style.height = menuImg.clientHeight + 'px';
+        // Force reflow so overlay percentages resolve correctly
+        void overlayLayer.offsetWidth;
+      }
+
+      // Now get the actual overlay position from the DOM (after layer resize)
+      const overlayRect = overlayEl.getBoundingClientRect();
       const imgRect = menuImg.getBoundingClientRect();
 
-      // Use the item's percentage-based position for accuracy
-      // item.x, item.y, item.w, item.h are percentages (0-100)
-      const overlayX = (parseFloat(item.x) || 0) / 100;
-      const overlayY = (parseFloat(item.y) || 0) / 100;
-      const overlayW = (parseFloat(item.w) || 0) / 100;
-      const overlayH = (parseFloat(item.h) || 0) / 100;
+      // Calculate overlay center relative to the image origin
+      const relX = (overlayRect.left - imgRect.left) + overlayRect.width / 2;
+      const relY = (overlayRect.top - imgRect.top) + overlayRect.height / 2;
 
-      // Calculate overlay position in pixels relative to the image
-      const overlayLeftPx = overlayX * imgRect.width;
-      const overlayTopPx = overlayY * imgRect.height;
-      const overlayWidthPx = overlayW * imgRect.width;
-      const overlayHeightPx = overlayH * imgRect.height;
-
-      // Overlay center relative to menuInner (which contains the image)
-      const relX = overlayLeftPx + overlayWidthPx / 2;
-      const relY = overlayTopPx + overlayHeightPx / 2;
+      // Get overlay dimensions for zoom calculation
+      const overlayWidthPx = overlayRect.width;
+      const overlayHeightPx = overlayRect.height;
 
       // Calculate zoom to fit overlay with padding
       // Leave space for info panel at bottom
