@@ -730,7 +730,7 @@
           rgba(11, 16, 32, 0.15) 92%,
           transparent 100%);
       padding: 20px 16px 36px;
-      padding-top: 80px;
+      padding-top: 100px;
       z-index: 999;
       display: none;
     }
@@ -19662,6 +19662,7 @@
     }
 
     // Compact mobile-specific display for allergen/diet information
+    // Organized by severity: RED (danger) → YELLOW (caution) → GREEN (safe)
     function mobileCompactBodyHTML(item, sel, userDiets) {
       const details = item.details || {};
 
@@ -19669,47 +19670,41 @@
         return `<div style="padding:12px;text-align:center;color:rgba(255,255,255,0.6);font-size:0.85rem">No dietary preferences saved</div>`;
       }
 
-      let html = '<div style="padding:8px 0">';
+      // Collect all items and categorize by severity
+      const redItems = []; // Danger
+      const yellowItems = []; // Caution/Warning
+      const greenItems = []; // Safe
 
-      // Allergens section
+      // Process allergens
       if (sel.length) {
-        const hits = (item.allergens || []).filter(a => sel.includes(a));
-        const freeFrom = sel.filter(a => !hits.includes(a));
+        const dishAllergens = item.allergens || [];
+        sel.forEach(allergen => {
+          const allergenLower = allergen.toLowerCase();
+          const isDanger = dishAllergens.some(a => a.toLowerCase() === allergenLower);
+          const emoji = ALLERGEN_EMOJI[allergenLower] || '⚠️';
 
-        // Danger allergens
-        if (hits.length > 0) {
-          html += '<div style="margin-bottom:8px">';
-          hits.forEach(a => {
-            const emoji = ALLERGEN_EMOJI[a.toLowerCase()] || '⚠️';
-            const allergenLower = a.toLowerCase();
-            const ingredientInfo = details[allergenLower] || details[a];
+          if (isDanger) {
+            const ingredientInfo = details[allergenLower] || details[allergen];
             const ingredients = ingredientInfo ? ingredientInfo.replace(/^Contains\s+/i, '') : '';
-
-            html += `<div style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:6px 10px;margin-bottom:6px">`;
-            html += `<div style="color:#fca5a5;font-size:0.85rem;font-weight:500">${emoji} ${esc(allergenLower)}</div>`;
-            if (ingredients) {
-              html += `<div style="color:rgba(252,165,165,0.7);font-size:0.75rem;margin-top:2px;line-height:1.3">${esc(ingredients)}</div>`;
-            }
-            html += `</div>`;
-          });
-          html += '</div>';
-        }
-
-        // Safe allergens - show as compact chips in a grid
-        if (freeFrom.length > 0) {
-          html += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">';
-          freeFrom.forEach(a => {
-            const emoji = ALLERGEN_EMOJI[a.toLowerCase()] || '✅';
-            html += `<div style="background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.25);border-radius:6px;padding:4px 8px;font-size:0.75rem;color:#86efac">${emoji} ${esc(a.toLowerCase())}-free</div>`;
-          });
-          html += '</div>';
-        }
+            redItems.push({
+              type: 'allergen',
+              emoji,
+              text: allergenLower,
+              subtext: ingredients
+            });
+          } else {
+            greenItems.push({
+              type: 'allergen-safe',
+              emoji,
+              text: `${allergenLower}-free`
+            });
+          }
+        });
       }
 
-      // Diets section
+      // Process diets
       if (userDiets && userDiets.length > 0) {
         const itemDietSet = new Set(item.diets || []);
-
         userDiets.forEach(userDiet => {
           const isDietMet = itemDietSet.has(userDiet);
           const emoji = DIET_EMOJI[userDiet.toLowerCase()] || '🍽️';
@@ -19718,26 +19713,49 @@
                                       item.ingredientsBlockingDiets?.[dietLower] || [];
 
           if (isDietMet) {
-            // Diet is met - show as compact chip
-            html += `<div style="background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.25);border-radius:8px;padding:6px 10px;margin-bottom:6px">`;
-            html += `<div style="color:#86efac;font-size:0.85rem;font-weight:500">${emoji} ${esc(userDiet)}</div>`;
-            html += `</div>`;
+            greenItems.push({
+              type: 'diet-met',
+              emoji,
+              text: userDiet
+            });
           } else {
-            // Diet not met - show with blocking ingredients
-            html += `<div style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:6px 10px;margin-bottom:6px">`;
-            html += `<div style="color:#fca5a5;font-size:0.85rem;font-weight:500">${emoji} Not ${esc(dietLower)}</div>`;
-            if (blockingIngredients.length > 0) {
-              const ingredientNames = blockingIngredients
-                .map(ing => ing.name || ing)
-                .filter(name => name)
-                .join(', ');
-              if (ingredientNames) {
-                html += `<div style="color:rgba(252,165,165,0.7);font-size:0.75rem;margin-top:2px;line-height:1.3">${esc(ingredientNames)}</div>`;
-              }
-            }
-            html += `</div>`;
+            const ingredientNames = blockingIngredients.length > 0
+              ? blockingIngredients.map(ing => ing.name || ing).filter(name => name).join(', ')
+              : '';
+            redItems.push({
+              type: 'diet',
+              emoji,
+              text: `Not ${dietLower}`,
+              subtext: ingredientNames
+            });
           }
         });
+      }
+
+      // Build HTML in order: RED → YELLOW → GREEN
+      let html = '<div style="padding:8px 0">';
+
+      // RED items (danger)
+      if (redItems.length > 0) {
+        redItems.forEach(item => {
+          html += `<div style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:6px 10px;margin-bottom:6px">`;
+          html += `<div style="color:#fca5a5;font-size:0.85rem;font-weight:500">${item.emoji} ${esc(item.text)}</div>`;
+          if (item.subtext) {
+            html += `<div style="color:rgba(252,165,165,0.7);font-size:0.75rem;margin-top:2px;line-height:1.3">${esc(item.subtext)}</div>`;
+          }
+          html += `</div>`;
+        });
+      }
+
+      // YELLOW items (caution) - currently none, but structured for future use
+
+      // GREEN items (safe) - show as compact chips in a grid
+      if (greenItems.length > 0) {
+        html += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">';
+        greenItems.forEach(item => {
+          html += `<div style="background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.25);border-radius:6px;padding:4px 8px;font-size:0.75rem;color:#86efac">${item.emoji} ${esc(item.text)}</div>`;
+        });
+        html += '</div>';
       }
 
       html += '</div>';
