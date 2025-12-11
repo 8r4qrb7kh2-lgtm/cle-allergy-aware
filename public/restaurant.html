@@ -20947,6 +20947,11 @@
 
       const feedbackBtn = document.getElementById('restaurantFeedbackBtn');
       if (feedbackBtn) feedbackBtn.onclick = () => openFeedbackModal();
+
+      // Queue QR promo timer for non-logged-in QR users on page load
+      if ((state.qr || urlQR) && !state.user?.loggedIn && shouldShowQrPromo()) {
+        queueQrPromoTimer();
+      }
     }
 
     // Feedback modal for anonymous customer feedback
