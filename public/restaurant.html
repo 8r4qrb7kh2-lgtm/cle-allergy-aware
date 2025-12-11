@@ -4482,6 +4482,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/auth-redirect.js" defer></script>
   <script type="module">
     // Initialize Supabase
     const SUPABASE_URL = 'https://fgoiyycctnwnghrvsilt.supabase.co';
@@ -4491,7 +4492,6 @@
     window.supabaseClient = supabaseClient;
     window.SUPABASE_URL = SUPABASE_URL;
     window.SUPABASE_KEY = SUPABASE_KEY;
-
     // ========== Editor Lock Management ==========
     // Prevents multiple users OR same user in multiple tabs/devices from editing simultaneously
     const EditorLock = {
@@ -19420,9 +19420,23 @@
       el.appendChild(brand);
       const managerRestaurants = state.user?.managerRestaurants || [];
 
-      if (!isQrExperience) {
-        const navWrap = div('', 'topNav');
-        const tabs = div('', 'tabs');
+      // Show navigation for non-QR users, or show sign-in button for QR users
+      const navWrap = div('', 'topNav');
+      const tabs = div('', 'tabs');
+
+      if (isQrExperience) {
+        // QR mode - show simple sign-in button for non-logged-in users
+        if (!state.user?.loggedIn) {
+          const signInTab = div('Sign in', 'tab');
+          signInTab.onclick = () => {
+            window.location.href = 'account.html';
+          };
+          tabs.appendChild(signInTab);
+          navWrap.appendChild(tabs);
+          el.appendChild(navWrap);
+        }
+      } else {
+        // Non-QR mode - show full navigation
         const navStructure = [];
 
         if (isOwner && isEditorMode) {
