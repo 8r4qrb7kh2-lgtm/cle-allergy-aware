@@ -310,9 +310,13 @@ nav a:hover {
   .mode-toggle-container {
     top: 8px;
     left: 10px;
+    flex-direction: column;
+    gap: 4px;
   }
   .mode-toggle-label {
-    display: none;
+    font-size: 0.65rem;
+    text-align: center;
+    line-height: 1;
   }
   .mode-toggle {
     width: 48px;

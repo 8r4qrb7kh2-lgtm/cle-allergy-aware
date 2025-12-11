@@ -154,11 +154,15 @@
     @media (max-width: 600px) {
       .mode-toggle-container {
         top: 8px;
-        left: 10px
+        left: 10px;
+        flex-direction: column;
+        gap: 4px
       }
 
       .mode-toggle-label {
-        display: none
+        font-size: 0.65rem;
+        text-align: center;
+        line-height: 1
       }
 
       .mode-toggle {
@@ -19576,7 +19580,7 @@
       if (modeToggleContainer && state.user?.loggedIn && (isManager || isOwner)) {
         modeToggleContainer.style.display = 'flex';
         modeToggleContainer.innerHTML = `
-          <span class="mode-toggle-label">${isEditorMode ? 'Editor mode' : 'Customer mode'}</span>
+          <span class="mode-toggle-label">${isEditorMode ? 'Editor' : 'Customer'}</span>
           <div class="mode-toggle ${isEditorMode ? 'active' : ''}" id="modeToggle" title="Toggle between Editor and Customer mode"></div>
         `;
         const toggle = document.getElementById('modeToggle');
