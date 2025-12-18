@@ -255,22 +255,23 @@ Output ONLY a valid JSON object with this structure:
   "ingredientLines": [
     {
       "text": "INGREDIENTS: UNBLEACHED NON BROMATED WHEAT FLOUR, WATER, SALT, YEAST,",
-      "boundingBox": { "x": 100, "y": 450, "width": 650, "height": 18 }
+      "boundingBox": { "x": 10, "y": 45, "width": 65, "height": 2.5 }
     },
     {
       "text": "CANOLA OIL, BARBECUE SEASONING: (PAPRIKA, BLACK PEPPER, WHITE PEPPER,",
-      "boundingBox": { "x": 100, "y": 470, "width": 650, "height": 18 }
+      "boundingBox": { "x": 10, "y": 47.5, "width": 65, "height": 2.5 }
     }
   ]
 }
 
 Notes:
-- The image dimensions are normalized to a 1000x1000 grid
-- Return ALL coordinates (x, y, width, height) as integers on a **0-1000 scale**
+- Provide coordinates as percentages: x, y, width, and height should each be a number from 0-100
 - x=0, y=0 is the TOP-LEFT corner of the image
-- x=1000, y=1000 is the BOTTOM-RIGHT corner of the image
-- Each bounding box should TIGHTLY fit around the ENTIRE width and height of that physical line of text
-- Include small padding (2-3 units on 0-1000 scale) around the text to ensure it's fully captured
+- x=100, y=100 is the BOTTOM-RIGHT corner of the image
+- For each bounding box, include the FULL LINE HEIGHT including line spacing (not just the tight text bounds)
+- The bounding box should fully contain all text on that line with comfortable spacing
+- Width should span the full horizontal extent of the text on that line
+- Height should include the full vertical space the line occupies (including spacing above/below)
 - Extract the EXACT text as it appears on that line, preserving all punctuation and capitalization
 - Do not include markdown formatting. Just the JSON.`;
 
@@ -289,7 +290,7 @@ Notes:
           role: 'user',
           content: [
             { type: "image", source: { type: "base64", media_type: imageParts.mediaType, data: imageParts.data } },
-            { type: "text", text: "Identify each physical LINE of text in the ingredient list and provide the bounding box for each line. Remember: the image is on a 1000x1000 normalized grid where (0,0) is top-left and (1000,1000) is bottom-right." }
+            { type: "text", text: "Identify each physical LINE of text in the ingredient list and provide the bounding box for each line. Use percentage coordinates (0-100) where (0,0) is top-left and (100,100) is bottom-right. Include the full line height with spacing, not just tight text bounds." }
           ]
         }]
       })
