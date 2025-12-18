@@ -615,17 +615,22 @@
     .overlay.selected.safe {
       outline-color: rgb(22, 163, 74);
     }
+
     .overlay.selected.removable {
       outline-color: rgb(202, 138, 4);
     }
+
     .overlay.selected.unsafe {
       outline-color: rgb(220, 38, 38);
     }
 
     @keyframes overlayPulse {
-      0%, 100% {
+
+      0%,
+      100% {
         outline-width: 0px;
       }
+
       50% {
         outline-width: 3px;
       }
@@ -637,9 +642,12 @@
     }
 
     @keyframes overlayPulseZoomed {
-      0%, 100% {
+
+      0%,
+      100% {
         outline-width: 0px;
       }
+
       50% {
         outline-width: 3px;
       }
@@ -672,10 +680,10 @@
       right: 0;
       height: calc(env(safe-area-inset-top, 0px) + 80px);
       background: linear-gradient(to bottom,
-        rgba(11, 16, 32, 1) 0%,
-        rgba(11, 16, 32, 0.95) calc(env(safe-area-inset-top, 0px)),
-        rgba(11, 16, 32, 0.7) 80%,
-        transparent 100%);
+          rgba(11, 16, 32, 1) 0%,
+          rgba(11, 16, 32, 0.95) calc(env(safe-area-inset-top, 0px)),
+          rgba(11, 16, 32, 0.7) 80%,
+          transparent 100%);
       z-index: 999;
       pointer-events: none;
       opacity: 0;
@@ -12165,8 +12173,28 @@
         <!-- Visual verification section -->
         <div id="lineByLineSection" style="display:none;margin-bottom:16px">
           <div style="background:rgba(76,90,212,0.1);border:1px solid rgba(76,90,212,0.3);border-radius:12px;padding:16px">
-            <div style="font-weight:600;color:#fff;margin-bottom:12px;font-size:0.95rem">Visual Verification:</div>
-            <div id="ingredientLinesContainer" style="display:flex;flex-direction:column;gap:12px"></div>
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+              <div style="font-weight:600;color:#fff;font-size:0.95rem">Visual Verification</div>
+              <div style="color:#cbd5f5;font-size:0.85rem;max-width:360px;line-height:1.4">Each line is cropped from your photo. Confirm the AI text under each crop matches the image.</div>
+            </div>
+            <div id="ingredientLineLayout" style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start">
+              <div id="ingredientReferenceColumn" style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:10px">
+                <div style="color:#e2e8f0;font-weight:600;font-size:0.9rem">Original photo</div>
+                <div style="position:relative;border-radius:10px;overflow:hidden;background:#0b1020;border:1px solid rgba(148,163,184,0.35);box-shadow:0 15px 35px rgba(0,0,0,0.35);min-height:240px">
+                  <img id="ingredientReferenceImage" alt="Original ingredient list" style="width:100%;height:100%;max-height:360px;object-fit:contain;display:block;background:#000">
+                  <div id="ingredientReferenceFallback" style="position:absolute;inset:0;display:none;align-items:center;justify-content:center;color:#a8b2d6;font-size:0.9rem;text-align:center;padding:12px">Original photo unavailable</div>
+                  <div id="ingredientReferenceOverlay" style="position:absolute;border:2px dashed rgba(124,156,255,0.65);border-radius:6px;box-shadow:0 0 0 1px rgba(124,156,255,0.3);pointer-events:none;display:none"></div>
+                </div>
+                <div style="color:#94a3b8;font-size:0.82rem;line-height:1.4">Keep this visible while you check each cropped line.</div>
+              </div>
+              <div style="flex:1.4;min-width:280px;display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+                  <span style="color:#e2e8f0;font-weight:600;font-size:0.9rem">Cropped lines</span>
+                  <span style="color:#a8b2d6;font-size:0.82rem">Flag anything that does not match.</span>
+                </div>
+                <div id="ingredientLinesContainer" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px"></div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -12228,6 +12256,9 @@
       const extractedTextSection = photoModal.querySelector('#extractedTextSection');
       const extractedTextDisplay = photoModal.querySelector('#extractedTextDisplay');
       const lineByLineSection = photoModal.querySelector('#lineByLineSection');
+      const ingredientReferenceImage = photoModal.querySelector('#ingredientReferenceImage');
+      const ingredientReferenceFallback = photoModal.querySelector('#ingredientReferenceFallback');
+      const ingredientReferenceOverlay = photoModal.querySelector('#ingredientReferenceOverlay');
       const ingredientLinesContainer = photoModal.querySelector('#ingredientLinesContainer');
       const useNewPhotoBtn = photoModal.querySelector('.useNewPhotoBtn');
       const reportExtractionIssueBtn = photoModal.querySelector('.reportExtractionIssueBtn');
@@ -12269,173 +12300,354 @@
 
       // Function to render ingredient region verification
       const renderIngredientRegion = async (ingredientRegion, imageData, ingredientLines) => {
-        if (!ingredientRegion || !imageData) {
-          lineByLineSection.style.display = 'none';
+        // Debug logging
+        console.log('renderIngredientRegion called with:', {
+          hasRegion: !!ingredientRegion,
+          linesCount: ingredientLines?.length,
+          lines: ingredientLines
+        });
+
+        ingredientLinesContainer.innerHTML = '';
+        const unavailableMessage = '<div style="color:#a8b2d6;font-size:0.85rem;padding:12px;border:1px solid rgba(148,163,184,0.25);border-radius:8px;background:rgba(76,90,212,0.05)">We could not load the image for line-by-line verification. Please retake or re-upload the ingredient photo.</div>';
+
+        const sourceImage = imageData || capturedIngredientPhoto || '';
+
+        if (ingredientReferenceImage) {
+          if (sourceImage) {
+            ingredientReferenceImage.src = sourceImage;
+            ingredientReferenceImage.style.display = 'block';
+            if (ingredientReferenceFallback) ingredientReferenceFallback.style.display = 'none';
+          } else {
+            ingredientReferenceImage.removeAttribute('src');
+            ingredientReferenceImage.style.display = 'none';
+            if (ingredientReferenceFallback) ingredientReferenceFallback.style.display = 'flex';
+          }
+        }
+
+        if (!sourceImage) {
+          ingredientLinesContainer.innerHTML = unavailableMessage;
+          lineByLineSection.style.display = 'block';
           return;
         }
 
-        // Clear previous content
-        ingredientLinesContainer.innerHTML = '';
-
-        // Load the original image
         const img = new Image();
-        img.src = imageData;
+        img.crossOrigin = 'anonymous';
+        img.src = sourceImage;
 
-        await new Promise((resolve, reject) => {
-          img.onload = resolve;
-          img.onerror = reject;
-        });
-
-        // Get image dimensions
-        const imgWidth = img.naturalWidth;
-        const imgHeight = img.naturalHeight;
-
-        // If we have individual ingredient lines, display each one separately
-        if (ingredientLines && Array.isArray(ingredientLines) && ingredientLines.length > 0) {
-          // Create a grid container for all ingredient line images
-          const gridContainer = document.createElement('div');
-          gridContainer.style.cssText = `
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            width: 100%;
-            padding: 12px;
-          `;
-
-          // For each ingredient line, create a cropped image with label
-          for (const line of ingredientLines) {
-            if (!line.boundingBox || !line.text) continue;
-
-            // Convert from 0-100 percentage scale to actual pixel dimensions
-            const x = (line.boundingBox.x / 100) * imgWidth;
-            const y = (line.boundingBox.y / 100) * imgHeight;
-            const width = (line.boundingBox.width / 100) * imgWidth;
-            const height = (line.boundingBox.height / 100) * imgHeight;
-
-            // Debug logging
-            console.log(`Line: "${line.text.substring(0, 50)}..."`);
-            console.log(`  Image dimensions: ${imgWidth}x${imgHeight}`);
-            console.log(`  Percentage coords (0-100): x=${line.boundingBox.x}%, y=${line.boundingBox.y}%, w=${line.boundingBox.width}%, h=${line.boundingBox.height}%`);
-            console.log(`  Pixel coords: x=${x}, y=${y}, w=${width}, h=${height}`);
-
-            // Create canvas to crop this ingredient line
-            const lineCanvas = document.createElement('canvas');
-            const ctx = lineCanvas.getContext('2d');
-
-            // Set canvas size to the crop dimensions
-            lineCanvas.width = width;
-            lineCanvas.height = height;
-
-            // Draw the cropped portion
-            ctx.drawImage(
-              img,
-              x, y, width, height,  // Source rectangle
-              0, 0, width, height   // Destination rectangle
-            );
-
-            // Create container for this ingredient line
-            const lineElement = document.createElement('div');
-            lineElement.style.cssText = `
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              gap: 8px;
-              padding: 12px;
-              background: rgba(76, 90, 212, 0.1);
-              border-radius: 8px;
-              border: 1px solid rgba(148, 163, 184, 0.2);
-            `;
-
-            // Create the cropped image element
-            const croppedImg = document.createElement('img');
-            croppedImg.src = lineCanvas.toDataURL();
-            croppedImg.style.cssText = `
-              max-width: 100%;
-              height: auto;
-              border-radius: 4px;
-              border: 1px solid rgba(148, 163, 184, 0.4);
-              background: #000;
-              object-fit: contain;
-            `;
-
-            // Create label showing the AI-determined ingredient name
-            const label = document.createElement('div');
-            label.style.cssText = `
-              color: #e2e8f0;
-              font-size: 0.9rem;
-              font-weight: 600;
-              text-align: center;
-              word-wrap: break-word;
-              max-width: 100%;
-            `;
-            label.textContent = line.text;
-
-            lineElement.appendChild(croppedImg);
-            lineElement.appendChild(label);
-            gridContainer.appendChild(lineElement);
-          }
-
-          ingredientLinesContainer.appendChild(gridContainer);
-        } else {
-          // Fallback: Show the full ingredient region (original behavior)
-          // Convert from 0-1000 scale to actual pixel dimensions
-          const x = (ingredientRegion.x / 1000) * imgWidth;
-          const y = (ingredientRegion.y / 1000) * imgHeight;
-          const width = (ingredientRegion.width / 1000) * imgWidth;
-          const height = (ingredientRegion.height / 1000) * imgHeight;
-
-          // Create canvas to crop the ingredient region
-          const regionCanvas = document.createElement('canvas');
-          const ctx = regionCanvas.getContext('2d');
-
-          // Set canvas size to the crop dimensions
-          regionCanvas.width = width;
-          regionCanvas.height = height;
-
-          // Draw the cropped portion
-          ctx.drawImage(
-            img,
-            x, y, width, height,  // Source rectangle
-            0, 0, width, height   // Destination rectangle
-          );
-
-          // Create the container
-          const regionElement = document.createElement('div');
-          regionElement.style.cssText = `
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 12px;
-            padding: 12px;
-          `;
-
-          // Create the cropped image element
-          const croppedImg = document.createElement('img');
-          croppedImg.src = regionCanvas.toDataURL();
-          croppedImg.style.cssText = `
-            max-width: 100%;
-            height: auto;
-            border-radius: 8px;
-            border: 2px solid rgba(148, 163, 184, 0.4);
-            background: #000;
-            object-fit: contain;
-          `;
-
-          // Create caption
-          const caption = document.createElement('div');
-          caption.style.cssText = `
-            color: #a8b2d6;
-            font-size: 0.85rem;
-            text-align: center;
-          `;
-          caption.textContent = 'Cropped ingredient list from photo';
-
-          regionElement.appendChild(croppedImg);
-          regionElement.appendChild(caption);
-          ingredientLinesContainer.appendChild(regionElement);
+        try {
+          await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+          });
+        } catch (err) {
+          console.error('Failed to load ingredient image for cropping:', err);
+          ingredientLinesContainer.innerHTML = unavailableMessage;
+          lineByLineSection.style.display = 'block';
+          return;
         }
 
-        // Show the section
+        const imgWidth = img.naturalWidth || img.width;
+        const imgHeight = img.naturalHeight || img.height;
+        console.log('Image dimensions:', imgWidth, 'x', imgHeight);
+
+        if (!imgWidth || !imgHeight) {
+          ingredientLinesContainer.innerHTML = unavailableMessage;
+          lineByLineSection.style.display = 'block';
+          return;
+        }
+
+        // Helper to handle both 0-1 and 0-100 ranges
+        const normalizeRatio = (value) => {
+          if (typeof value !== 'number' || Number.isNaN(value)) return 0;
+          if (value > 1 && value <= 100) return value / 100;
+          if (value > 100) return value / 1000;
+          return value;
+        };
+
+        const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
+
+        // --- VISUAL DEBUGGING START ---
+        if (ingredientReferenceOverlay) {
+          // Clear any previous debug canvas
+          const oldDebug = ingredientReferenceOverlay.querySelector('canvas.debug-layer');
+          if (oldDebug) oldDebug.remove();
+
+          const containerWidth = ingredientReferenceImage.clientWidth || imgWidth;
+          const containerHeight = ingredientReferenceImage.clientHeight || imgHeight;
+          const scale = Math.min(containerWidth / imgWidth, containerHeight / imgHeight);
+
+          const debugCanvas = document.createElement('canvas');
+          debugCanvas.className = 'debug-layer';
+          debugCanvas.width = imgWidth;
+          debugCanvas.height = imgHeight;
+          debugCanvas.style.position = 'absolute';
+          debugCanvas.style.top = '0';
+          debugCanvas.style.left = '0';
+          debugCanvas.style.width = '100%';
+          debugCanvas.style.height = '100%';
+          debugCanvas.style.pointerEvents = 'none';
+          debugCanvas.style.opacity = '0.7';
+
+          const dCtx = debugCanvas.getContext('2d');
+          dCtx.lineWidth = 5; // Thick lines for visibility
+
+          if (ingredientLines) {
+            ingredientLines.forEach((line, i) => {
+              if (!line.boundingBox) return;
+              const box = line.boundingBox;
+              const nx = normalizeRatio(box.x);
+              const ny = normalizeRatio(box.y);
+              const nw = normalizeRatio(box.width);
+              const nh = normalizeRatio(box.height);
+
+              const dx = nx * imgWidth;
+              const dy = ny * imgHeight;
+              const dw = nw * imgWidth;
+              const dh = nh * imgHeight;
+
+              // Color code: Even lines Red, Odd lines Blue to distinguish overlaps
+              dCtx.strokeStyle = i % 2 === 0 ? 'rgba(255, 0, 0, 0.9)' : 'rgba(0, 0, 255, 0.9)';
+              dCtx.strokeRect(dx, dy, dw, dh);
+
+              // Label index
+              dCtx.fillStyle = dCtx.strokeStyle;
+              dCtx.font = 'bold 40px Arial';
+              dCtx.fillText(`#${i + 1}`, dx, dy - 10);
+            });
+          }
+
+          // Append simply to the overlay container, effectively creating a HUD over the image
+          ingredientReferenceOverlay.appendChild(debugCanvas);
+          ingredientReferenceOverlay.style.display = 'block';
+          // Reset positioning to cover the whole image container for the debug layer
+          // We override the specific "single box" positioning to be full-frame for debugging
+          ingredientReferenceOverlay.style.left = '0';
+          ingredientReferenceOverlay.style.top = '0';
+          ingredientReferenceOverlay.style.width = '100%';
+          ingredientReferenceOverlay.style.height = '100%';
+          // Remove background interaction pulse if present
+          ingredientReferenceOverlay.style.border = 'none';
+          ingredientReferenceOverlay.className = ''; // Remove 'selected' etc
+        }
+        // --- VISUAL DEBUGGING END ---
+
+        const lines = Array.isArray(ingredientLines)
+          ? ingredientLines.filter(line => line && line.boundingBox && line.text)
+          : [];
+
+        const fragment = document.createDocumentFragment();
+
+        let minX = imgWidth;
+        let minY = imgHeight;
+        let maxX = 0;
+        let maxY = 0;
+        let hasValidLines = false;
+
+        // Calculate full bounds first
+        lines.forEach((line) => {
+          const box = line.boundingBox;
+          const normX = normalizeRatio(box.x);
+          const normY = normalizeRatio(box.y);
+          const normW = normalizeRatio(box.width);
+          const normH = normalizeRatio(box.height);
+
+          const pixelX = Math.round(normX * imgWidth);
+          const pixelY = Math.round(normY * imgHeight);
+          const pixelW = Math.round(normW * imgWidth);
+          const pixelH = Math.round(normH * imgHeight);
+
+          const cx = clamp(pixelX, 0, imgWidth);
+          const cy = clamp(pixelY, 0, imgHeight);
+          const cw = clamp(pixelW, 1, imgWidth - cx);
+          const ch = clamp(pixelH, 1, imgHeight - cy);
+
+          if (cw < 2 || ch < 2) return;
+
+          hasValidLines = true;
+          minX = Math.min(minX, cx);
+          minY = Math.min(minY, cy);
+          maxX = Math.max(maxX, cx + cw);
+          maxY = Math.max(maxY, cy + ch);
+        });
+
+        // 1. Create Layout Changes (Vertical Stack)
+        const layoutContainer = document.getElementById('ingredientLineLayout');
+        if (layoutContainer) {
+          layoutContainer.style.flexDirection = 'column';
+          layoutContainer.style.alignItems = 'stretch';
+        }
+
+        ingredientLinesContainer.style.display = 'flex';
+        ingredientLinesContainer.style.flexDirection = 'column';
+        ingredientLinesContainer.style.gap = '24px';
+        ingredientLinesContainer.style.gridTemplateColumns = 'none'; // Overwrite grid
+
+        // 2. Add Full Ingredient List Crop at the top
+        if (hasValidLines) {
+          const fullW = maxX - minX;
+          const fullH = maxY - minY;
+
+          // Add some padding to the full crop
+          const padding = 20;
+          const paddedX = clamp(minX - padding, 0, imgWidth);
+          const paddedY = clamp(minY - padding, 0, imgHeight);
+          const paddedW = clamp(fullW + (padding * 2), 1, imgWidth - paddedX);
+          const paddedH = clamp(fullH + (padding * 2), 1, imgHeight - paddedY);
+
+          const fullCanvas = document.createElement('canvas');
+          fullCanvas.width = paddedW;
+          fullCanvas.height = paddedH;
+          const fCtx = fullCanvas.getContext('2d');
+          fCtx.drawImage(img, paddedX, paddedY, paddedW, paddedH, 0, 0, paddedW, paddedH);
+
+          const fullCropElement = document.createElement('div');
+          fullCropElement.style.cssText = `
+              display:flex;
+              flex-direction:column;
+              gap:12px;
+              padding:16px;
+              background:rgba(23, 102, 58, 0.2);
+              border-radius:12px;
+              border:1px solid rgba(74, 222, 128, 0.3);
+              margin-bottom: 24px;
+            `;
+
+          const fullHeader = document.createElement('div');
+          fullHeader.innerHTML = '<span style="font-size:1.1rem">🔍 Full Ingredient List</span>';
+          fullHeader.style.cssText = `
+              color:#86efac;
+              font-weight:600;
+              letter-spacing:0.02em;
+              border-bottom: 1px solid rgba(74, 222, 128, 0.2);
+              padding-bottom: 8px;
+            `;
+
+          const fullImg = document.createElement('img');
+          fullImg.src = fullCanvas.toDataURL();
+          fullImg.style.cssText = `
+              width:100%;
+              max-height:300px;
+              object-fit:contain;
+              border-radius:8px;
+              border:1px solid rgba(148,163,184,0.4);
+              background:#000;
+            `;
+
+          fullCropElement.appendChild(fullHeader);
+          fullCropElement.appendChild(fullImg);
+          ingredientLinesContainer.appendChild(fullCropElement);
+        }
+
+        // 3. Render Individual Lines
+        lines.forEach((line, idx) => {
+          const box = line.boundingBox;
+
+          // Convert normalized/percentage coordinates to GLOBAL pixel coordinates
+          const normX = normalizeRatio(box.x);
+          const normY = normalizeRatio(box.y);
+          const normW = normalizeRatio(box.width);
+          const normH = normalizeRatio(box.height);
+
+          const pixelX = Math.round(normX * imgWidth);
+          const pixelY = Math.round(normY * imgHeight);
+          const pixelW = Math.round(normW * imgWidth);
+          const pixelH = Math.round(normH * imgHeight);
+
+          console.log(`Line ${idx + 1} coords:`, { box, pixel: { x: pixelX, y: pixelY, w: pixelW, h: pixelH } });
+
+          // Add padding to prevent cutoff (User reported top cutoff now)
+          // Expand height by 40% total and width by 3% to be safer
+          // Center the expansion to catch ascenders (top) and descenders (bottom)
+          const paddingW = Math.max(4, Math.round(pixelW * 0.03));
+          const paddingH = Math.max(4, Math.round(pixelH * 0.4));
+
+          // Apply padding evenly
+          const paddedX = pixelX - Math.round(paddingW / 2);
+          const paddedY = pixelY - Math.round(paddingH / 2); // Move up significantly (~20% of height)
+          const paddedW = pixelW + paddingW;
+          const paddedH = pixelH + paddingH;
+
+          // Validate bounds
+          const cx = clamp(paddedX, 0, imgWidth);
+          const cy = clamp(paddedY, 0, imgHeight);
+          const cw = clamp(paddedW, 1, imgWidth - cx);
+          const ch = clamp(paddedH, 1, imgHeight - cy);
+
+          if (cw < 2 || ch < 2) return;
+
+          hasValidLines = true;
+          minX = Math.min(minX, cx);
+          minY = Math.min(minY, cy);
+          maxX = Math.max(maxX, cx + cw);
+          maxY = Math.max(maxY, cy + ch);
+
+          const lineCanvas = document.createElement('canvas');
+          lineCanvas.width = cw;
+          lineCanvas.height = ch;
+          const ctx = lineCanvas.getContext('2d');
+
+          // Draw the crop from the ORIGINAL global image
+          ctx.drawImage(img, cx, cy, cw, ch, 0, 0, cw, ch);
+
+          const lineElement = document.createElement('div');
+          lineElement.style.cssText = `
+              display:flex;
+              flex-direction:column;
+              gap:10px;
+              padding:16px;
+              background:rgba(30, 41, 59, 0.4);
+              border-radius:10px;
+              border:1px solid rgba(148,163,184,0.2);
+            `;
+
+          const header = document.createElement('div');
+          header.style.cssText = `
+              color:#94a3b8;
+              font-size:0.8rem;
+              letter-spacing:0.05em;
+              text-transform:uppercase;
+              font-weight: 600;
+            `;
+          header.textContent = `Line ${idx + 1}`;
+
+          const croppedImg = document.createElement('img');
+          croppedImg.src = lineCanvas.toDataURL();
+          croppedImg.style.cssText = `
+              width:100%;
+              max-height:180px;
+              object-fit:contain;
+              border-radius:6px;
+              border:1px solid rgba(148,163,184,0.4);
+              background:#000;
+            `;
+
+          const label = document.createElement('div');
+          label.style.cssText = `
+              color:#fff;
+              font-size:1.1rem;
+              font-weight:500;
+              line-height:1.4;
+              text-align:center;
+              word-wrap:break-word;
+              padding: 8px;
+              background: rgba(0,0,0,0.2);
+              border-radius: 6px;
+            `;
+          label.textContent = line.text;
+
+          lineElement.appendChild(header);
+          lineElement.appendChild(croppedImg);
+          lineElement.appendChild(label);
+          fragment.appendChild(lineElement);
+        });
+
+        if (fragment.childNodes.length === 0) {
+          ingredientLinesContainer.innerHTML = '<div style="color:#a8b2d6;font-size:0.85rem;padding:12px;border:1px solid rgba(148,163,184,0.25);border-radius:8px;background:rgba(76,90,212,0.05)">No line-level crops were returned. Please retake the photo if the text looks off.</div>';
+        } else {
+          ingredientLinesContainer.appendChild(fragment);
+        }
+
+        // We skip the old bounding box logic since we now use the full debug overlay
         lineByLineSection.style.display = 'block';
       };
 
@@ -12607,9 +12819,10 @@
           extractedTextSection.style.display = 'block';
 
           // Render ingredient region verification if available
-          if (data.ingredientRegion && data.imageData) {
+          const hasVerificationImage = data.imageData || capturedIngredientPhoto;
+          if ((data.ingredientRegion || (data.ingredientLines && data.ingredientLines.length > 0)) && hasVerificationImage) {
             try {
-              await renderIngredientRegion(data.ingredientRegion, data.imageData, data.ingredientLines);
+              await renderIngredientRegion(data.ingredientRegion, data.imageData || capturedIngredientPhoto, data.ingredientLines);
             } catch (regionRenderErr) {
               console.error('Failed to render ingredient region:', regionRenderErr);
               // Continue without region display
@@ -12724,6 +12937,13 @@
           extractedAllergenDietSection.style.display = 'none'; // Hide allergen/diet section
           lineByLineSection.style.display = 'none'; // Hide line-by-line section
           ingredientLinesContainer.innerHTML = ''; // Clear line-by-line content
+          if (ingredientReferenceImage) {
+            ingredientReferenceImage.removeAttribute('src');
+            ingredientReferenceImage.style.display = 'none';
+          }
+          if (ingredientReferenceFallback) {
+            ingredientReferenceFallback.style.display = 'none';
+          }
           // Reset confirm match button visibility
           confirmMatchBtn.style.display = 'inline-block';
           // Reset add brand photo button to disabled state
@@ -12834,6 +13054,9 @@
         extractedAllergenDietSection.style.display = 'none';
         lineByLineSection.style.display = 'none';
         ingredientLinesContainer.innerHTML = '';
+        if (ingredientReferenceOverlay) {
+          ingredientReferenceOverlay.style.display = 'none';
+        }
         extractionConfirmed = false;
         extractedIngredientData = null;
         capturedIngredientPhoto = null;
@@ -19926,7 +20149,7 @@
           const emoji = DIET_EMOJI[userDiet.toLowerCase()] || '🍽️';
           const dietLower = userDiet.toLowerCase();
           const blockingIngredients = item.ingredientsBlockingDiets?.[userDiet] ||
-                                      item.ingredientsBlockingDiets?.[dietLower] || [];
+            item.ingredientsBlockingDiets?.[dietLower] || [];
 
           if (isDietMet) {
             greenItems.push({
