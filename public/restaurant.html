@@ -12307,16 +12307,28 @@
             if (!line.boundingBox || !line.text) continue;
 
             // Convert from 0-1000 scale to actual pixel dimensions
-            const x = (line.boundingBox.x / 1000) * imgWidth;
-            const y = (line.boundingBox.y / 1000) * imgHeight;
-            const width = (line.boundingBox.width / 1000) * imgWidth;
-            const height = (line.boundingBox.height / 1000) * imgHeight;
+            let x = (line.boundingBox.x / 1000) * imgWidth;
+            let y = (line.boundingBox.y / 1000) * imgHeight;
+            let width = (line.boundingBox.width / 1000) * imgWidth;
+            let height = (line.boundingBox.height / 1000) * imgHeight;
 
-            // Debug logging
+            // Debug logging (before padding)
             console.log(`Line: "${line.text.substring(0, 50)}..."`);
             console.log(`  Image dimensions: ${imgWidth}x${imgHeight}`);
             console.log(`  Normalized coords (0-1000): x=${line.boundingBox.x}, y=${line.boundingBox.y}, w=${line.boundingBox.width}, h=${line.boundingBox.height}`);
-            console.log(`  Pixel coords: x=${x}, y=${y}, w=${width}, h=${height}`);
+            console.log(`  Pixel coords (before padding): x=${x}, y=${y}, w=${width}, h=${height}`);
+
+            // Add generous padding to ensure text is fully visible
+            // The AI's bounding boxes are too tight (height is only ~8px), so we need to expand them
+            const paddingX = width * 0.05; // 5% horizontal padding
+            const paddingY = Math.max(height * 2, 10); // At least 2x height or 10px, whichever is larger
+
+            x = Math.max(0, x - paddingX);
+            y = Math.max(0, y - paddingY);
+            width = Math.min(imgWidth - x, width + (paddingX * 2));
+            height = Math.min(imgHeight - y, height + (paddingY * 2));
+
+            console.log(`  Pixel coords (after padding): x=${x}, y=${y}, w=${width}, h=${height}`);
 
             // Create canvas to crop this ingredient line
             const lineCanvas = document.createElement('canvas');
