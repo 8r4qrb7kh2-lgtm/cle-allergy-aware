@@ -8793,7 +8793,6 @@
         <div class="aiAssistHead">
           <div style="display:flex;align-items:center;gap:12px">
             <h2 id="aiAssistTitle" style="margin:0">Dish editor</h2>
-            <span style="font-size:0.7rem;opacity:0.5;border:1px solid #444;padding:2px 6px;border-radius:4px;color:white">v1.0.1-logs</span>
           </div>
           <div style="display:flex;gap:8px">
             <button type="button" class="btn btnDanger" id="aiAssistDeleteBtn" aria-label="Delete overlay" style="display:none;padding:8px 12px;font-size:0.9rem">🗑 Delete</button>
@@ -12156,11 +12155,30 @@
       </div>
       <div id="ingredientStatus" style="text-align:center;color:#a8b2d6;font-size:0.9rem;min-height:24px"></div>
       <div id="extractedTextSection" style="display:none;margin-top:16px">
+        <div style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+            <span style="color:#4ade80;font-size:1.2rem">✓</span>
+            <div style="font-weight:600;color:#fff;font-size:0.95rem">Ingredients extracted! Please verify the text below matches the photo.</div>
+          </div>
+        </div>
+
+        <!-- Visual verification section -->
+        <div id="lineByLineSection" style="display:none;margin-bottom:16px">
+          <div style="background:rgba(76,90,212,0.1);border:1px solid rgba(76,90,212,0.3);border-radius:12px;padding:16px">
+            <div style="font-weight:600;color:#fff;margin-bottom:12px;font-size:0.95rem">Visual Verification:</div>
+            <div id="ingredientLinesContainer" style="display:flex;flex-direction:column;gap:12px"></div>
+          </div>
+        </div>
+
+        <!-- Full extracted text section -->
         <div style="background:rgba(76,90,212,0.1);border:1px solid rgba(76,90,212,0.3);border-radius:12px;padding:16px">
           <div style="font-weight:600;color:#fff;margin-bottom:8px;font-size:0.95rem">Extracted Ingredient List:</div>
           <p id="extractedTextDisplay" style="color:#e2e8f0;font-size:0.9rem;line-height:1.6;margin:0;white-space:pre-wrap"></p>
         </div>
+
+        <!-- Dietary Compliance Section -->
         <div id="extractedAllergenDietSection" style="display:none;margin-top:16px"></div>
+
         <p style="color:#a8b2d6;font-size:0.85rem;margin:12px 0 0 0;text-align:center">Please confirm this matches the ingredient list in the photo above.</p>
         <div style="display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:10px;margin-top:16px">
           <button type="button" class="btn useNewPhotoBtn" style="background:#6b7280;border-color:#6b7280;padding:10px 16px;font-size:0.9rem">Use New Photo</button>
@@ -12209,6 +12227,8 @@
       const statusDiv = photoModal.querySelector('#ingredientStatus');
       const extractedTextSection = photoModal.querySelector('#extractedTextSection');
       const extractedTextDisplay = photoModal.querySelector('#extractedTextDisplay');
+      const lineByLineSection = photoModal.querySelector('#lineByLineSection');
+      const ingredientLinesContainer = photoModal.querySelector('#ingredientLinesContainer');
       const useNewPhotoBtn = photoModal.querySelector('.useNewPhotoBtn');
       const reportExtractionIssueBtn = photoModal.querySelector('.reportExtractionIssueBtn');
       const confirmMatchBtn = photoModal.querySelector('.confirmMatchBtn');
@@ -12245,6 +12265,172 @@
         document.body.style.width = '';
         document.body.style.overflow = '';
         window.scrollTo(0, scrollLockPosition);
+      };
+
+      // Function to render ingredient region verification
+      const renderIngredientRegion = async (ingredientRegion, imageData, ingredientLines) => {
+        if (!ingredientRegion || !imageData) {
+          lineByLineSection.style.display = 'none';
+          return;
+        }
+
+        // Clear previous content
+        ingredientLinesContainer.innerHTML = '';
+
+        // Load the original image
+        const img = new Image();
+        img.src = imageData;
+
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+        });
+
+        // Get image dimensions
+        const imgWidth = img.naturalWidth;
+        const imgHeight = img.naturalHeight;
+
+        // If we have individual ingredient lines, display each one separately
+        if (ingredientLines && Array.isArray(ingredientLines) && ingredientLines.length > 0) {
+          // Create a grid container for all ingredient line images
+          const gridContainer = document.createElement('div');
+          gridContainer.style.cssText = `
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            width: 100%;
+            padding: 12px;
+          `;
+
+          // For each ingredient line, create a cropped image with label
+          for (const line of ingredientLines) {
+            if (!line.boundingBox || !line.text) continue;
+
+            // Convert from 0-1000 scale to actual pixel dimensions
+            const x = (line.boundingBox.x / 1000) * imgWidth;
+            const y = (line.boundingBox.y / 1000) * imgHeight;
+            const width = (line.boundingBox.width / 1000) * imgWidth;
+            const height = (line.boundingBox.height / 1000) * imgHeight;
+
+            // Create canvas to crop this ingredient line
+            const lineCanvas = document.createElement('canvas');
+            const ctx = lineCanvas.getContext('2d');
+
+            // Set canvas size to the crop dimensions
+            lineCanvas.width = width;
+            lineCanvas.height = height;
+
+            // Draw the cropped portion
+            ctx.drawImage(
+              img,
+              x, y, width, height,  // Source rectangle
+              0, 0, width, height   // Destination rectangle
+            );
+
+            // Create container for this ingredient line
+            const lineElement = document.createElement('div');
+            lineElement.style.cssText = `
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              gap: 8px;
+              padding: 12px;
+              background: rgba(76, 90, 212, 0.1);
+              border-radius: 8px;
+              border: 1px solid rgba(148, 163, 184, 0.2);
+            `;
+
+            // Create the cropped image element
+            const croppedImg = document.createElement('img');
+            croppedImg.src = lineCanvas.toDataURL();
+            croppedImg.style.cssText = `
+              max-width: 100%;
+              height: auto;
+              border-radius: 4px;
+              border: 1px solid rgba(148, 163, 184, 0.4);
+              background: #000;
+              object-fit: contain;
+            `;
+
+            // Create label showing the AI-determined ingredient name
+            const label = document.createElement('div');
+            label.style.cssText = `
+              color: #e2e8f0;
+              font-size: 0.9rem;
+              font-weight: 600;
+              text-align: center;
+              word-wrap: break-word;
+              max-width: 100%;
+            `;
+            label.textContent = line.text;
+
+            lineElement.appendChild(croppedImg);
+            lineElement.appendChild(label);
+            gridContainer.appendChild(lineElement);
+          }
+
+          ingredientLinesContainer.appendChild(gridContainer);
+        } else {
+          // Fallback: Show the full ingredient region (original behavior)
+          // Convert from 0-1000 scale to actual pixel dimensions
+          const x = (ingredientRegion.x / 1000) * imgWidth;
+          const y = (ingredientRegion.y / 1000) * imgHeight;
+          const width = (ingredientRegion.width / 1000) * imgWidth;
+          const height = (ingredientRegion.height / 1000) * imgHeight;
+
+          // Create canvas to crop the ingredient region
+          const regionCanvas = document.createElement('canvas');
+          const ctx = regionCanvas.getContext('2d');
+
+          // Set canvas size to the crop dimensions
+          regionCanvas.width = width;
+          regionCanvas.height = height;
+
+          // Draw the cropped portion
+          ctx.drawImage(
+            img,
+            x, y, width, height,  // Source rectangle
+            0, 0, width, height   // Destination rectangle
+          );
+
+          // Create the container
+          const regionElement = document.createElement('div');
+          regionElement.style.cssText = `
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+          `;
+
+          // Create the cropped image element
+          const croppedImg = document.createElement('img');
+          croppedImg.src = regionCanvas.toDataURL();
+          croppedImg.style.cssText = `
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            border: 2px solid rgba(148, 163, 184, 0.4);
+            background: #000;
+            object-fit: contain;
+          `;
+
+          // Create caption
+          const caption = document.createElement('div');
+          caption.style.cssText = `
+            color: #a8b2d6;
+            font-size: 0.85rem;
+            text-align: center;
+          `;
+          caption.textContent = 'Cropped ingredient list from photo';
+
+          regionElement.appendChild(croppedImg);
+          regionElement.appendChild(caption);
+          ingredientLinesContainer.appendChild(regionElement);
+        }
+
+        // Show the section
+        lineByLineSection.style.display = 'block';
       };
 
       // Function to clean up extracted text using Haiku
@@ -12414,6 +12600,16 @@
           extractedTextDisplay.textContent = cleanedText || '';
           extractedTextSection.style.display = 'block';
 
+          // Render ingredient region verification if available
+          if (data.ingredientRegion && data.imageData) {
+            try {
+              await renderIngredientRegion(data.ingredientRegion, data.imageData, data.ingredientLines);
+            } catch (regionRenderErr) {
+              console.error('Failed to render ingredient region:', regionRenderErr);
+              // Continue without region display
+            }
+          }
+
           // Analyze allergens and diets using same function as barcode scanner
           statusDiv.textContent = 'Analyzing allergens and dietary compliance...';
           try {
@@ -12520,6 +12716,8 @@
           extractionConfirmed = false; // Reset confirmation state
           extractedTextSection.style.display = 'none'; // Hide extracted text section
           extractedAllergenDietSection.style.display = 'none'; // Hide allergen/diet section
+          lineByLineSection.style.display = 'none'; // Hide line-by-line section
+          ingredientLinesContainer.innerHTML = ''; // Clear line-by-line content
           // Reset confirm match button visibility
           confirmMatchBtn.style.display = 'inline-block';
           // Reset add brand photo button to disabled state
@@ -12628,6 +12826,8 @@
       useNewPhotoBtn.addEventListener('click', () => {
         extractedTextSection.style.display = 'none';
         extractedAllergenDietSection.style.display = 'none';
+        lineByLineSection.style.display = 'none';
+        ingredientLinesContainer.innerHTML = '';
         extractionConfirmed = false;
         extractedIngredientData = null;
         capturedIngredientPhoto = null;
