@@ -12367,67 +12367,12 @@
         const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
 
         // --- VISUAL DEBUGGING START ---
+        // (Debug removed for production)
         if (ingredientReferenceOverlay) {
-          // Clear any previous debug canvas
           const oldDebug = ingredientReferenceOverlay.querySelector('canvas.debug-layer');
           if (oldDebug) oldDebug.remove();
-
-          const containerWidth = ingredientReferenceImage.clientWidth || imgWidth;
-          const containerHeight = ingredientReferenceImage.clientHeight || imgHeight;
-          const scale = Math.min(containerWidth / imgWidth, containerHeight / imgHeight);
-
-          const debugCanvas = document.createElement('canvas');
-          debugCanvas.className = 'debug-layer';
-          debugCanvas.width = imgWidth;
-          debugCanvas.height = imgHeight;
-          debugCanvas.style.position = 'absolute';
-          debugCanvas.style.top = '0';
-          debugCanvas.style.left = '0';
-          debugCanvas.style.width = '100%';
-          debugCanvas.style.height = '100%';
-          debugCanvas.style.pointerEvents = 'none';
-          debugCanvas.style.opacity = '0.7';
-
-          const dCtx = debugCanvas.getContext('2d');
-          dCtx.lineWidth = 5; // Thick lines for visibility
-
-          if (ingredientLines) {
-            ingredientLines.forEach((line, i) => {
-              if (!line.boundingBox) return;
-              const box = line.boundingBox;
-              const nx = normalizeRatio(box.x);
-              const ny = normalizeRatio(box.y);
-              const nw = normalizeRatio(box.width);
-              const nh = normalizeRatio(box.height);
-
-              const dx = nx * imgWidth;
-              const dy = ny * imgHeight;
-              const dw = nw * imgWidth;
-              const dh = nh * imgHeight;
-
-              // Color code: Even lines Red, Odd lines Blue to distinguish overlaps
-              dCtx.strokeStyle = i % 2 === 0 ? 'rgba(255, 0, 0, 0.9)' : 'rgba(0, 0, 255, 0.9)';
-              dCtx.strokeRect(dx, dy, dw, dh);
-
-              // Label index
-              dCtx.fillStyle = dCtx.strokeStyle;
-              dCtx.font = 'bold 40px Arial';
-              dCtx.fillText(`#${i + 1}`, dx, dy - 10);
-            });
-          }
-
-          // Append simply to the overlay container, effectively creating a HUD over the image
-          ingredientReferenceOverlay.appendChild(debugCanvas);
-          ingredientReferenceOverlay.style.display = 'block';
-          // Reset positioning to cover the whole image container for the debug layer
-          // We override the specific "single box" positioning to be full-frame for debugging
-          ingredientReferenceOverlay.style.left = '0';
-          ingredientReferenceOverlay.style.top = '0';
-          ingredientReferenceOverlay.style.width = '100%';
-          ingredientReferenceOverlay.style.height = '100%';
-          // Remove background interaction pulse if present
-          ingredientReferenceOverlay.style.border = 'none';
-          ingredientReferenceOverlay.className = ''; // Remove 'selected' etc
+          const oldInfo = ingredientReferenceOverlay.querySelector('div'); // Potential info box
+          if (oldInfo && oldInfo.textContent && oldInfo.textContent.includes('Img:')) oldInfo.remove();
         }
         // --- VISUAL DEBUGGING END ---
 
