@@ -5,6 +5,39 @@
  * Updated: 2025-01-22 - Added dish-search to navigation
  */
 
+/**
+ * Universal auth redirect - automatically redirects to landing page if not logged in
+ * Exceptions: index.html (landing page), account.html (login page), QR users
+ */
+export async function checkAuthRedirect(supabaseClient) {
+  // Get current page
+  const currentPath = window.location.pathname;
+  const currentPage = currentPath.split('/').pop() || 'index.html';
+  const urlParams = new URLSearchParams(window.location.search);
+  const isQRUser = urlParams.get('qr') === '1';
+
+  // Skip redirect for landing page, account page, and QR users
+  if (currentPage === 'index.html' || currentPage === '' || currentPage === '/' ||
+      currentPage === 'account.html' || isQRUser) {
+    return;
+  }
+
+  // Check if user is logged in
+  try {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+
+    // If not logged in, redirect to landing page
+    if (!user) {
+      window.location.replace('/index.html');
+      return;
+    }
+  } catch (error) {
+    console.error('Auth check error:', error);
+    // On error, redirect to landing page to be safe
+    window.location.replace('/index.html');
+  }
+}
+
 export function setupNav(currentPage, user = null, options = {}) {
   const navContainer = document.querySelector('.simple-nav');
   if (!navContainer) {

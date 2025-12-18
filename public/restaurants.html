@@ -113,6 +113,7 @@
   </main>
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/auth-redirect.js" defer></script>
   <script>
     // Initialize Supabase client for this page
     const SUPABASE_URL = 'https://fgoiyycctnwnghrvsilt.supabase.co';
@@ -319,10 +320,6 @@
 
     async function requireAuth() {
       const { data: { user } } = await supabaseClient.auth.getUser();
-      if (!user) {
-        window.location.href = 'account.html?redirect=restaurants';
-        return null;
-      }
       return user;
     }
 

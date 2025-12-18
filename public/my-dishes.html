@@ -286,14 +286,14 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/auth-redirect.js" defer></script>
   <script>
     // Initialize Supabase client for this page
     const SUPABASE_URL = 'https://fgoiyycctnwnghrvsilt.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnb2l5eWNjdG53bmdocnZzaWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0MzY1MjYsImV4cCI6MjA3NjAxMjUyNn0.xlSSXr0Gl7j-vsckrj-2anpPmp4BG2SUIdN-_dquSA8';
     const { createClient } = supabase;
     window.supabaseClient = window.supabaseClient || createClient(SUPABASE_URL, SUPABASE_KEY);
-    window.SUPABASE_ANON_KEY = SUPABASE_KEY;
-  </script>
+    window.SUPABASE_ANON_KEY = SUPABASE_KEY;  </script>
   <script type="module">
     import supabaseClient from './js/supabase-client.js';
     import { setupNav } from './js/shared-nav.js';

@@ -235,43 +235,43 @@ Notes:
 
     console.log(`Successfully identified ingredient region`);
 
-    // Third pass: Detect individual ingredient lines with bounding boxes
+    // Third pass: Detect individual text lines with bounding boxes
     const lineDetectionPrompt = `You are an expert at analyzing ingredient lists on product packaging.
 
 The ingredient list contains this text:
 "${fullIngredientList}"
 
-Your task is to:
-1. Parse this ingredient list into individual ingredients
-2. For EACH ingredient, provide:
-   - The ingredient name (just the primary ingredient name, not sub-ingredients or percentages)
-   - The bounding box coordinates for that ingredient's text in the photo
+Your task is to identify each PHYSICAL LINE of text in the ingredient list as it appears in the photo.
 
-**IMPORTANT:** The ingredient list is in VERY SMALL font - regulatory text, typically the smallest text on the package.
-
-Look for the TINY text section and identify each ingredient line.
+**IMPORTANT:**
+- The ingredient list is in VERY SMALL font - regulatory text, typically the smallest text on the package
+- Identify each LINE as it appears visually in the image (e.g., if "INGREDIENTS: WHEAT FLOUR, WATER, SALT" is all on one line, that's ONE line)
+- Do NOT parse ingredients semantically - just identify the physical text lines
+- Each line may contain multiple ingredients separated by commas
+- Include ALL text on each line (including "INGREDIENTS:" label if present)
 
 Output ONLY a valid JSON object with this structure:
 {
   "ingredientLines": [
     {
-      "text": "Wheat Flour",
-      "boundingBox": { "x": 100, "y": 450, "width": 120, "height": 15 }
+      "text": "INGREDIENTS: UNBLEACHED NON BROMATED WHEAT FLOUR, WATER, SALT, YEAST,",
+      "boundingBox": { "x": 100, "y": 450, "width": 650, "height": 18 }
     },
     {
-      "text": "Water",
-      "boundingBox": { "x": 225, "y": 450, "width": 60, "height": 15 }
+      "text": "CANOLA OIL, BARBECUE SEASONING: (PAPRIKA, BLACK PEPPER, WHITE PEPPER,",
+      "boundingBox": { "x": 100, "y": 470, "width": 650, "height": 18 }
     }
   ]
 }
 
 Notes:
-- The image is conceptualized as a 1000x1000 grid
+- The image dimensions are normalized to a 1000x1000 grid
 - Return ALL coordinates (x, y, width, height) as integers on a **0-1000 scale**
-- 0 is top/left, 1000 is bottom/right
-- Each bounding box should tightly fit around the individual ingredient text
-- Extract the main ingredient name only (e.g., "Wheat Flour" not "Wheat Flour (enriched with...)")
-- If ingredients are on the same line separated by commas, create separate entries for each
+- x=0, y=0 is the TOP-LEFT corner of the image
+- x=1000, y=1000 is the BOTTOM-RIGHT corner of the image
+- Each bounding box should TIGHTLY fit around the ENTIRE width and height of that physical line of text
+- Include small padding (2-3 units on 0-1000 scale) around the text to ensure it's fully captured
+- Extract the EXACT text as it appears on that line, preserving all punctuation and capitalization
 - Do not include markdown formatting. Just the JSON.`;
 
     const lineDetectionResponse = await fetch('https://api.anthropic.com/v1/messages', {
@@ -289,7 +289,7 @@ Notes:
           role: 'user',
           content: [
             { type: "image", source: { type: "base64", media_type: imageParts.mediaType, data: imageParts.data } },
-            { type: "text", text: "Identify each individual ingredient and its bounding box in the photo." }
+            { type: "text", text: "Identify each physical LINE of text in the ingredient list and provide the bounding box for each line. Remember: the image is on a 1000x1000 normalized grid where (0,0) is top-left and (1000,1000) is bottom-right." }
           ]
         }]
       })

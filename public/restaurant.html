@@ -12312,6 +12312,12 @@
             const width = (line.boundingBox.width / 1000) * imgWidth;
             const height = (line.boundingBox.height / 1000) * imgHeight;
 
+            // Debug logging
+            console.log(`Line: "${line.text.substring(0, 50)}..."`);
+            console.log(`  Image dimensions: ${imgWidth}x${imgHeight}`);
+            console.log(`  Normalized coords (0-1000): x=${line.boundingBox.x}, y=${line.boundingBox.y}, w=${line.boundingBox.width}, h=${line.boundingBox.height}`);
+            console.log(`  Pixel coords: x=${x}, y=${y}, w=${width}, h=${height}`);
+
             // Create canvas to crop this ingredient line
             const lineCanvas = document.createElement('canvas');
             const ctx = lineCanvas.getContext('2d');
