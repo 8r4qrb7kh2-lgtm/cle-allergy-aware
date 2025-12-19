@@ -12377,7 +12377,7 @@
         // --- VISUAL DEBUGGING END ---
 
         const lines = Array.isArray(ingredientLines)
-          ? ingredientLines.filter(line => line && line.boundingBox && line.text)
+          ? ingredientLines.filter(line => line && typeof line.x === 'number' && line.text)
           : [];
 
         const fragment = document.createDocumentFragment();
@@ -12390,11 +12390,11 @@
 
         // Calculate full bounds first
         lines.forEach((line) => {
-          const box = line.boundingBox;
-          const normX = normalizeRatio(box.x);
-          const normY = normalizeRatio(box.y);
-          const normW = normalizeRatio(box.width);
-          const normH = normalizeRatio(box.height);
+          // Handle flat structure
+          const normX = normalizeRatio(line.x);
+          const normY = normalizeRatio(line.y);
+          const normW = normalizeRatio(line.w || line.width);
+          const normH = normalizeRatio(line.h || line.height);
 
           const pixelX = Math.round(normX * imgWidth);
           const pixelY = Math.round(normY * imgHeight);
@@ -12416,10 +12416,12 @@
         });
 
         // 1. Create Layout Changes (Vertical Stack)
+        // 1. Reset Layout (ensure it's not overridden)
         const layoutContainer = document.getElementById('ingredientLineLayout');
         if (layoutContainer) {
-          layoutContainer.style.flexDirection = 'column';
-          layoutContainer.style.alignItems = 'stretch';
+          // Reset to defaults defined in HTML/CSS
+          layoutContainer.style.removeProperty('flex-direction');
+          layoutContainer.style.removeProperty('align-items');
         }
 
         ingredientLinesContainer.style.display = 'flex';
@@ -12485,32 +12487,26 @@
 
         // 3. Render Individual Lines
         lines.forEach((line, idx) => {
-          const box = line.boundingBox;
 
           // Convert normalized/percentage coordinates to GLOBAL pixel coordinates
-          const normX = normalizeRatio(box.x);
-          const normY = normalizeRatio(box.y);
-          const normW = normalizeRatio(box.width);
-          const normH = normalizeRatio(box.height);
+          const normX = normalizeRatio(line.x);
+          const normY = normalizeRatio(line.y);
+          const normW = normalizeRatio(line.w || line.width);
+          const normH = normalizeRatio(line.h || line.height);
 
           const pixelX = Math.round(normX * imgWidth);
           const pixelY = Math.round(normY * imgHeight);
           const pixelW = Math.round(normW * imgWidth);
           const pixelH = Math.round(normH * imgHeight);
 
-          console.log(`Line ${idx + 1} coords:`, { box, pixel: { x: pixelX, y: pixelY, w: pixelW, h: pixelH } });
+          console.log(`Line ${idx + 1} coords:`, { line, pixel: { x: pixelX, y: pixelY, w: pixelW, h: pixelH } });
 
-          // Add padding to prevent cutoff (User reported top cutoff now)
-          // Expand height by 40% total and width by 3% to be safer
-          // Center the expansion to catch ascenders (top) and descenders (bottom)
-          const paddingW = Math.max(4, Math.round(pixelW * 0.03));
-          const paddingH = Math.max(4, Math.round(pixelH * 0.4));
-
-          // Apply padding evenly
-          const paddedX = pixelX - Math.round(paddingW / 2);
-          const paddedY = pixelY - Math.round(paddingH / 2); // Move up significantly (~20% of height)
-          const paddedW = pixelW + paddingW;
-          const paddedH = pixelH + paddingH;
+          // Add moderate padding to ensure text isn't cut off
+          const padding = 10;
+          const paddedX = pixelX - padding;
+          const paddedY = pixelY - padding;
+          const paddedW = pixelW + (padding * 2);
+          const paddedH = pixelH + (padding * 2);
 
           // Validate bounds
           const cx = clamp(paddedX, 0, imgWidth);
