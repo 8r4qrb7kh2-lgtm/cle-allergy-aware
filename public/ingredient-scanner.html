@@ -356,7 +356,7 @@
   <script>
     const SUPABASE_URL = 'https://fgoiyycctnwnghrvsilt.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnb2l5eWNjdG53bmdocnZzaWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0MzY1MjYsImV4cCI6MjA3NjAxMjUyNn0.xlSSXr0Gl7j-vsckrj-2anpPmp4BG2SUIdN-_dquSA8';
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // DOM elements
     const uploadArea = document.getElementById('uploadArea');
@@ -456,7 +456,7 @@
       showStatus('Extracting ingredients from photo...', 'loading');
 
       try {
-        const result = await supabase.functions.invoke('extract-ingredients-from-photo', {
+        const result = await supabaseClient.functions.invoke('extract-ingredients-from-photo', {
           body: { imageData: currentImageData }
         });
 
