@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ingredient Label Scanner</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      color: #e2e8f0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 8px;
+      color: #fff;
+      font-size: 1.8rem;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #94a3b8;
+      margin-bottom: 24px;
+      font-size: 0.95rem;
+    }
+
+    .upload-section {
+      background: rgba(30, 41, 59, 0.6);
+      border-radius: 16px;
+      padding: 32px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      margin-bottom: 24px;
+    }
+
+    .upload-area {
+      border: 2px dashed rgba(99, 102, 241, 0.5);
+      border-radius: 12px;
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: rgba(99, 102, 241, 0.05);
+    }
+
+    .upload-area:hover {
+      border-color: #6366f1;
+      background: rgba(99, 102, 241, 0.1);
+    }
+
+    .upload-area.dragover {
+      border-color: #6366f1;
+      background: rgba(99, 102, 241, 0.15);
+    }
+
+    .upload-icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+    }
+
+    .upload-text {
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+      color: #e2e8f0;
+    }
+
+    .upload-hint {
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+
+    .preview-section {
+      display: none;
+      margin-bottom: 24px;
+    }
+
+    .preview-image {
+      width: 100%;
+      max-height: 400px;
+      object-fit: contain;
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: #000;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 12px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      flex: 1;
+      min-width: 140px;
+    }
+
+    .btn-primary {
+      background: #6366f1;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #4f46e5;
+    }
+
+    .btn-primary:disabled {
+      background: #4b5563;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: #374151;
+      color: #e2e8f0;
+    }
+
+    .btn-secondary:hover {
+      background: #4b5563;
+    }
+
+    .status {
+      text-align: center;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 16px;
+      font-size: 0.9rem;
+    }
+
+    .status.loading {
+      background: rgba(99, 102, 241, 0.1);
+      color: #a5b4fc;
+    }
+
+    .status.error {
+      background: rgba(239, 68, 68, 0.1);
+      color: #fca5a5;
+    }
+
+    .status.success {
+      background: rgba(34, 197, 94, 0.1);
+      color: #86efac;
+    }
+
+    .results-section {
+      display: none;
+    }
+
+    .results-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .results-header h2 {
+      font-size: 1.3rem;
+      color: #fff;
+    }
+
+    .results-header .check {
+      color: #22c55e;
+      font-size: 1.5rem;
+    }
+
+    .full-text-section {
+      background: rgba(30, 41, 59, 0.6);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      margin-bottom: 24px;
+    }
+
+    .full-text-section h3 {
+      font-size: 1rem;
+      color: #e2e8f0;
+      margin-bottom: 12px;
+    }
+
+    .full-text {
+      color: #cbd5e1;
+      line-height: 1.6;
+      font-size: 0.95rem;
+      white-space: pre-wrap;
+    }
+
+    .lines-section {
+      background: rgba(30, 41, 59, 0.6);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+
+    .lines-section h3 {
+      font-size: 1rem;
+      color: #e2e8f0;
+      margin-bottom: 16px;
+    }
+
+    .lines-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .line-item {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 10px;
+      padding: 16px;
+      border: 1px solid rgba(148, 163, 184, 0.15);
+    }
+
+    .line-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .line-number {
+      background: #6366f1;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .line-crop {
+      width: 100%;
+      max-height: 120px;
+      object-fit: contain;
+      border-radius: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: #000;
+      margin-bottom: 12px;
+    }
+
+    .line-text {
+      color: #fff;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      padding: 12px;
+      background: rgba(99, 102, 241, 0.1);
+      border-radius: 8px;
+      border-left: 3px solid #6366f1;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .reference-section {
+      margin-bottom: 24px;
+    }
+
+    .reference-section h3 {
+      font-size: 1rem;
+      color: #e2e8f0;
+      margin-bottom: 12px;
+    }
+
+    .reference-image {
+      width: 100%;
+      max-height: 300px;
+      object-fit: contain;
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Ingredient Label Scanner</h1>
+    <p class="subtitle">Upload a photo of ingredient label for AI-powered transcription</p>
+
+    <div class="upload-section">
+      <div class="upload-area" id="uploadArea">
+        <div class="upload-icon">📷</div>
+        <div class="upload-text">Click or drag to upload ingredient label photo</div>
+        <div class="upload-hint">Supports JPG, PNG, HEIC</div>
+      </div>
+      <input type="file" id="fileInput" accept="image/*">
+
+      <div class="preview-section" id="previewSection">
+        <img class="preview-image" id="previewImage" alt="Uploaded ingredient label">
+        <div class="btn-group">
+          <button class="btn btn-secondary" id="newPhotoBtn">Upload Different Photo</button>
+          <button class="btn btn-primary" id="extractBtn">Extract Ingredients</button>
+        </div>
+      </div>
+
+      <div class="status" id="status" style="display: none;"></div>
+    </div>
+
+    <div class="results-section" id="resultsSection">
+      <div class="results-header">
+        <span class="check">✓</span>
+        <h2>Ingredients Extracted</h2>
+      </div>
+
+      <div class="full-text-section">
+        <h3>Complete Ingredient List</h3>
+        <div class="full-text" id="fullText"></div>
+      </div>
+
+      <div class="reference-section">
+        <h3>Original Photo</h3>
+        <img class="reference-image" id="referenceImage" alt="Original ingredient label">
+      </div>
+
+      <div class="lines-section">
+        <h3>Line-by-Line Breakdown</h3>
+        <div class="lines-container" id="linesContainer"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://fgoiyycctnwnghrvsilt.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnb2l5eWNjdG53bmdocnZzaWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0MzY1MjYsImV4cCI6MjA3NjAxMjUyNn0.xlSSXr0Gl7j-vsckrj-2anpPmp4BG2SUIdN-_dquSA8';
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // DOM elements
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const previewSection = document.getElementById('previewSection');
+    const previewImage = document.getElementById('previewImage');
+    const newPhotoBtn = document.getElementById('newPhotoBtn');
+    const extractBtn = document.getElementById('extractBtn');
+    const status = document.getElementById('status');
+    const resultsSection = document.getElementById('resultsSection');
+    const fullText = document.getElementById('fullText');
+    const referenceImage = document.getElementById('referenceImage');
+    const linesContainer = document.getElementById('linesContainer');
+
+    let currentImageData = null;
+
+    // Upload area click handler
+    uploadArea.addEventListener('click', () => fileInput.click());
+
+    // Drag and drop
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) handleFile(files[0]);
+    });
+
+    // File input change
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) handleFile(e.target.files[0]);
+    });
+
+    // New photo button
+    newPhotoBtn.addEventListener('click', () => {
+      resetUI();
+      fileInput.click();
+    });
+
+    // Extract button
+    extractBtn.addEventListener('click', extractIngredients);
+
+    function handleFile(file) {
+      if (!file.type.startsWith('image/')) {
+        showStatus('Please upload an image file', 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        currentImageData = e.target.result;
+        previewImage.src = currentImageData;
+        uploadArea.style.display = 'none';
+        previewSection.style.display = 'block';
+        resultsSection.style.display = 'none';
+        hideStatus();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function resetUI() {
+      uploadArea.style.display = 'block';
+      previewSection.style.display = 'none';
+      resultsSection.style.display = 'none';
+      currentImageData = null;
+      fileInput.value = '';
+      hideStatus();
+    }
+
+    function showStatus(message, type = 'loading') {
+      status.className = `status ${type}`;
+      status.innerHTML = type === 'loading'
+        ? `<span class="spinner"></span>${message}`
+        : message;
+      status.style.display = 'block';
+    }
+
+    function hideStatus() {
+      status.style.display = 'none';
+    }
+
+    async function extractIngredients() {
+      if (!currentImageData) {
+        showStatus('Please upload an image first', 'error');
+        return;
+      }
+
+      extractBtn.disabled = true;
+      showStatus('Extracting ingredients from photo...', 'loading');
+
+      try {
+        const result = await supabase.functions.invoke('extract-ingredients-from-photo', {
+          body: { imageData: currentImageData }
+        });
+
+        if (result.error) {
+          throw new Error(result.error.message || 'Extraction failed');
+        }
+
+        const data = result.data;
+
+        if (!data.success) {
+          throw new Error(data.error || 'Could not extract ingredients from photo');
+        }
+
+        // Show results
+        displayResults(data);
+        showStatus('Ingredients extracted successfully!', 'success');
+
+      } catch (error) {
+        console.error('Extraction error:', error);
+        showStatus(`Error: ${error.message}`, 'error');
+      } finally {
+        extractBtn.disabled = false;
+      }
+    }
+
+    async function displayResults(data) {
+      // Show full text
+      fullText.textContent = data.ingredientList || 'No ingredients found';
+
+      // Show reference image
+      referenceImage.src = currentImageData;
+
+      // Clear lines container
+      linesContainer.innerHTML = '';
+
+      // Process ingredient lines
+      if (data.ingredientLines && data.ingredientLines.length > 0) {
+        await renderLines(data.ingredientLines);
+      } else {
+        linesContainer.innerHTML = '<div style="color: #94a3b8; text-align: center; padding: 20px;">No line-by-line data available</div>';
+      }
+
+      resultsSection.style.display = 'block';
+    }
+
+    async function renderLines(lines) {
+      // Load the image for cropping
+      const img = new Image();
+      img.src = currentImageData;
+
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      });
+
+      const imgWidth = img.naturalWidth;
+      const imgHeight = img.naturalHeight;
+
+      console.log('Image dimensions:', imgWidth, 'x', imgHeight);
+
+      // Helper to normalize coordinates (handles 0-1, 0-100, 0-1000 ranges)
+      const normalizeCoord = (value) => {
+        if (typeof value !== 'number' || isNaN(value)) return 0;
+        if (value > 100) return value / 1000; // 0-1000 scale
+        if (value > 1) return value / 100; // 0-100 scale
+        return value; // Already 0-1
+      };
+
+      lines.forEach((line, idx) => {
+        console.log(`Line ${idx + 1}:`, line);
+
+        // Normalize coordinates to 0-1 range
+        const normX = normalizeCoord(line.x);
+        const normY = normalizeCoord(line.y);
+        const normW = normalizeCoord(line.w || line.width);
+        const normH = normalizeCoord(line.h || line.height);
+
+        // Convert to pixels
+        const padding = 10;
+        let px = Math.round(normX * imgWidth) - padding;
+        let py = Math.round(normY * imgHeight) - padding;
+        let pw = Math.round(normW * imgWidth) + (padding * 2);
+        let ph = Math.round(normH * imgHeight) + (padding * 2);
+
+        // Clamp to valid bounds
+        px = Math.max(0, px);
+        py = Math.max(0, py);
+        pw = Math.min(pw, imgWidth - px);
+        ph = Math.min(ph, imgHeight - py);
+
+        console.log(`Line ${idx + 1} pixel coords:`, { px, py, pw, ph });
+
+        if (pw < 10 || ph < 5) {
+          console.warn(`Line ${idx + 1} too small, skipping`);
+          return;
+        }
+
+        // Create crop canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = pw;
+        canvas.height = ph;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, px, py, pw, ph, 0, 0, pw, ph);
+
+        // Create line element
+        const lineEl = document.createElement('div');
+        lineEl.className = 'line-item';
+        lineEl.innerHTML = `
+          <div class="line-header">
+            <span class="line-number">Line ${idx + 1}</span>
+          </div>
+          <img class="line-crop" src="${canvas.toDataURL()}" alt="Line ${idx + 1} crop">
+          <div class="line-text">${escapeHtml(line.text || 'No text')}</div>
+        `;
+
+        linesContainer.appendChild(lineEl);
+      });
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
