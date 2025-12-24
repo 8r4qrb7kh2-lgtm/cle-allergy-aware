@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ingredient Scanner Debug Tool</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #e2e8f0;
+      padding: 20px;
+    }
+    .container { max-width: 1400px; margin: 0 auto; }
+    h1 { text-align: center; margin-bottom: 20px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .panel {
+      background: rgba(30, 41, 59, 0.6);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+    }
+    h2 { font-size: 1.1rem; margin-bottom: 15px; color: #fff; }
+    .image-container {
+      position: relative;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    #mainImage { width: 100%; display: block; }
+    .overlay-box {
+      position: absolute;
+      border: 2px solid;
+      background: rgba(255, 255, 255, 0.1);
+      pointer-events: none;
+    }
+    .overlay-box.region { border-color: #22c55e; background: rgba(34, 197, 94, 0.15); }
+    .overlay-box.line { border-color: #f59e0b; }
+    .overlay-label {
+      position: absolute;
+      top: -20px;
+      left: 0;
+      font-size: 10px;
+      background: inherit;
+      padding: 2px 6px;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      margin: 5px;
+    }
+    .btn-primary { background: #6366f1; color: white; }
+    .btn-secondary { background: #374151; color: #e2e8f0; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    input[type="file"] { display: none; }
+    .upload-area {
+      border: 2px dashed rgba(99, 102, 241, 0.5);
+      border-radius: 8px;
+      padding: 30px;
+      text-align: center;
+      cursor: pointer;
+      margin-bottom: 15px;
+    }
+    .upload-area:hover { border-color: #6366f1; }
+    .log-container {
+      background: #0f172a;
+      border-radius: 8px;
+      padding: 15px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .log-entry { margin: 5px 0; padding: 5px; border-radius: 4px; }
+    .log-info { background: rgba(59, 130, 246, 0.2); }
+    .log-success { background: rgba(34, 197, 94, 0.2); }
+    .log-error { background: rgba(239, 68, 68, 0.2); }
+    .log-warn { background: rgba(245, 158, 11, 0.2); }
+    .crops-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+    .crop-item {
+      background: #0f172a;
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .crop-item img {
+      width: 100%;
+      border-radius: 4px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+    .crop-text {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #94a3b8;
+      word-break: break-word;
+    }
+    .crop-coords {
+      margin-top: 5px;
+      font-size: 10px;
+      color: #6366f1;
+      font-family: monospace;
+    }
+    .validation-result {
+      margin-top: 8px;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+    .validation-pass { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+    .validation-fail { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .manual-controls {
+      margin-top: 15px;
+      padding: 15px;
+      background: #0f172a;
+      border-radius: 8px;
+    }
+    .manual-controls label { display: block; margin: 10px 0 5px; font-size: 12px; }
+    .manual-controls input[type="number"] {
+      width: 80px;
+      padding: 5px;
+      border-radius: 4px;
+      border: 1px solid #374151;
+      background: #1e293b;
+      color: #e2e8f0;
+    }
+    .status { padding: 10px; border-radius: 8px; margin: 10px 0; text-align: center; }
+    .status.loading { background: rgba(99, 102, 241, 0.2); }
+    .status.error { background: rgba(239, 68, 68, 0.2); }
+    .status.success { background: rgba(34, 197, 94, 0.2); }
+    .raw-response {
+      background: #0f172a;
+      padding: 10px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 11px;
+      white-space: pre-wrap;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Ingredient Scanner Debug Tool</h1>
+
+    <div class="grid">
+      <div class="panel">
+        <h2>1. Upload Image</h2>
+        <div class="upload-area" id="uploadArea">Click or drag to upload image</div>
+        <input type="file" id="fileInput" accept="image/*">
+
+        <div class="image-container" id="imageContainer" style="display:none;">
+          <img id="mainImage" alt="Uploaded image">
+          <div id="overlays"></div>
+        </div>
+
+        <div style="margin-top:15px;">
+          <button class="btn btn-primary" id="extractBtn" disabled>Extract Ingredients</button>
+          <button class="btn btn-secondary" id="validateBtn" disabled>Validate Crops</button>
+          <button class="btn btn-secondary" id="clearBtn">Clear</button>
+        </div>
+
+        <div class="status" id="status" style="display:none;"></div>
+
+        <div class="manual-controls">
+          <h3 style="font-size:14px;margin-bottom:10px;">Manual Region Override</h3>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <div><label>X %</label><input type="number" id="manualX" value="20" min="0" max="100"></div>
+            <div><label>Y %</label><input type="number" id="manualY" value="40" min="0" max="100"></div>
+            <div><label>W %</label><input type="number" id="manualW" value="60" min="0" max="100"></div>
+            <div><label>H %</label><input type="number" id="manualH" value="20" min="0" max="100"></div>
+          </div>
+          <button class="btn btn-secondary" id="applyManualBtn" style="margin-top:10px;">Apply Manual Region</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>2. Debug Log</h2>
+        <div class="log-container" id="logContainer"></div>
+
+        <h2 style="margin-top:20px;">Raw AI Response</h2>
+        <div class="raw-response" id="rawResponse">No response yet</div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:20px;">
+      <h2>3. Extracted Lines & Crops</h2>
+      <div class="crops-grid" id="cropsGrid"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://fgoiyycctnwnghrvsilt.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZnb2l5eWNjdG53bmdocnZzaWx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA0MzY1MjYsImV4cCI6MjA3NjAxMjUyNn0.xlSSXr0Gl7j-vsckrj-2anpPmp4BG2SUIdN-_dquSA8';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentImageData = null;
+    let currentImageElement = null;
+    let extractedData = null;
+
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const imageContainer = document.getElementById('imageContainer');
+    const mainImage = document.getElementById('mainImage');
+    const overlays = document.getElementById('overlays');
+    const extractBtn = document.getElementById('extractBtn');
+    const validateBtn = document.getElementById('validateBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const status = document.getElementById('status');
+    const logContainer = document.getElementById('logContainer');
+    const rawResponse = document.getElementById('rawResponse');
+    const cropsGrid = document.getElementById('cropsGrid');
+
+    function log(message, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logContainer.appendChild(entry);
+      logContainer.scrollTop = logContainer.scrollHeight;
+      console.log(`[${type.toUpperCase()}]`, message);
+    }
+
+    function showStatus(message, type = 'loading') {
+      status.className = `status ${type}`;
+      status.textContent = message;
+      status.style.display = 'block';
+    }
+
+    function hideStatus() {
+      status.style.display = 'none';
+    }
+
+    uploadArea.addEventListener('click', () => fileInput.click());
+    uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); });
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) handleFile(e.target.files[0]);
+    });
+
+    function handleFile(file) {
+      log(`Loading file: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        currentImageData = e.target.result;
+        mainImage.src = currentImageData;
+        mainImage.onload = () => {
+          log(`Image loaded: ${mainImage.naturalWidth}x${mainImage.naturalHeight}`);
+          imageContainer.style.display = 'block';
+          uploadArea.style.display = 'none';
+          extractBtn.disabled = false;
+        };
+      };
+      reader.readAsDataURL(file);
+    }
+
+    clearBtn.addEventListener('click', () => {
+      currentImageData = null;
+      extractedData = null;
+      imageContainer.style.display = 'none';
+      uploadArea.style.display = 'block';
+      overlays.innerHTML = '';
+      cropsGrid.innerHTML = '';
+      rawResponse.textContent = 'No response yet';
+      extractBtn.disabled = true;
+      validateBtn.disabled = true;
+      hideStatus();
+      log('Cleared all data');
+    });
+
+    extractBtn.addEventListener('click', async () => {
+      if (!currentImageData) return;
+
+      extractBtn.disabled = true;
+      showStatus('Extracting ingredients...', 'loading');
+      log('Starting extraction...');
+
+      try {
+        const result = await supabaseClient.functions.invoke('extract-ingredients-from-photo', {
+          body: { imageData: currentImageData }
+        });
+
+        log(`Function returned: ${result.error ? 'ERROR' : 'SUCCESS'}`, result.error ? 'error' : 'success');
+
+        if (result.error) {
+          const responseObj = result.response || result.error.context;
+          if (responseObj && typeof responseObj.json === 'function') {
+            try {
+              const bodyJson = await responseObj.json();
+              rawResponse.textContent = JSON.stringify(bodyJson, null, 2);
+              throw new Error(bodyJson.error || 'Extraction failed');
+            } catch (e) {
+              throw new Error(result.error.message || 'Extraction failed');
+            }
+          }
+          throw new Error(result.error.message || 'Extraction failed');
+        }
+
+        extractedData = result.data;
+        rawResponse.textContent = JSON.stringify(extractedData, null, 2);
+
+        if (!extractedData.success) {
+          throw new Error(extractedData.error || 'Extraction failed');
+        }
+
+        log(`Extracted ${extractedData.ingredientLines?.length || 0} lines`, 'success');
+
+        // Render overlays and crops
+        renderOverlays(extractedData.ingredientLines || []);
+        renderCrops(extractedData.ingredientLines || []);
+
+        validateBtn.disabled = false;
+        showStatus('Extraction complete!', 'success');
+
+      } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+        showStatus(`Error: ${error.message}`, 'error');
+      } finally {
+        extractBtn.disabled = false;
+      }
+    });
+
+    function renderOverlays(lines) {
+      overlays.innerHTML = '';
+      const imgRect = mainImage.getBoundingClientRect();
+      const containerRect = imageContainer.getBoundingClientRect();
+
+      // Calculate scale factor (image might be displayed smaller than natural size)
+      const scaleX = imgRect.width / mainImage.naturalWidth;
+      const scaleY = imgRect.height / mainImage.naturalHeight;
+
+      log(`Display scale: ${scaleX.toFixed(3)}x${scaleY.toFixed(3)}`);
+
+      lines.forEach((line, idx) => {
+        const box = document.createElement('div');
+        box.className = 'overlay-box line';
+
+        // Convert percentage to display pixels
+        const left = (line.x / 100) * imgRect.width;
+        const top = (line.y / 100) * imgRect.height;
+        const width = (line.w / 100) * imgRect.width;
+        const height = (line.h / 100) * imgRect.height;
+
+        box.style.left = `${left}px`;
+        box.style.top = `${top}px`;
+        box.style.width = `${width}px`;
+        box.style.height = `${height}px`;
+        box.style.borderColor = `hsl(${(idx * 60) % 360}, 70%, 50%)`;
+
+        const label = document.createElement('div');
+        label.className = 'overlay-label';
+        label.style.background = box.style.borderColor;
+        label.style.color = '#fff';
+        label.textContent = `Line ${idx + 1}`;
+        box.appendChild(label);
+
+        overlays.appendChild(box);
+
+        log(`Line ${idx + 1} overlay: x=${line.x.toFixed(1)}%, y=${line.y.toFixed(1)}%, w=${line.w.toFixed(1)}%, h=${line.h.toFixed(1)}%`);
+      });
+    }
+
+    function renderCrops(lines) {
+      cropsGrid.innerHTML = '';
+
+      const img = new Image();
+      img.src = currentImageData;
+
+      img.onload = () => {
+        const imgW = img.naturalWidth;
+        const imgH = img.naturalHeight;
+
+        lines.forEach((line, idx) => {
+          // Convert percentage to pixels
+          const px = Math.round((line.x / 100) * imgW);
+          const py = Math.round((line.y / 100) * imgH);
+          const pw = Math.round((line.w / 100) * imgW);
+          const ph = Math.round((line.h / 100) * imgH);
+
+          // Add padding
+          const padding = 5;
+          const cropX = Math.max(0, px - padding);
+          const cropY = Math.max(0, py - padding);
+          const cropW = Math.min(pw + padding * 2, imgW - cropX);
+          const cropH = Math.min(ph + padding * 2, imgH - cropY);
+
+          // Create crop
+          const canvas = document.createElement('canvas');
+          canvas.width = cropW;
+          canvas.height = cropH;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+          // Create crop item
+          const item = document.createElement('div');
+          item.className = 'crop-item';
+          item.innerHTML = `
+            <strong style="color:#fff;">Line ${idx + 1}</strong>
+            <img src="${canvas.toDataURL()}" alt="Line ${idx + 1} crop">
+            <div class="crop-text"><strong>Expected text:</strong> ${line.text}</div>
+            <div class="crop-coords">Coords: x=${line.x.toFixed(1)}% y=${line.y.toFixed(1)}% w=${line.w.toFixed(1)}% h=${line.h.toFixed(1)}%</div>
+            <div class="crop-coords">Pixels: x=${cropX} y=${cropY} w=${cropW} h=${cropH}</div>
+            <div class="validation-result" id="validation-${idx}">Not validated</div>
+          `;
+
+          cropsGrid.appendChild(item);
+        });
+      };
+    }
+
+    validateBtn.addEventListener('click', async () => {
+      if (!extractedData || !extractedData.ingredientLines) return;
+
+      log('Starting validation...', 'info');
+      showStatus('Validating crops with AI...', 'loading');
+
+      const img = new Image();
+      img.src = currentImageData;
+
+      await new Promise(resolve => img.onload = resolve);
+
+      const imgW = img.naturalWidth;
+      const imgH = img.naturalHeight;
+
+      for (let idx = 0; idx < extractedData.ingredientLines.length; idx++) {
+        const line = extractedData.ingredientLines[idx];
+        const validationEl = document.getElementById(`validation-${idx}`);
+
+        // Create crop for validation
+        const px = Math.round((line.x / 100) * imgW);
+        const py = Math.round((line.y / 100) * imgH);
+        const pw = Math.round((line.w / 100) * imgW);
+        const ph = Math.round((line.h / 100) * imgH);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.min(pw + 10, imgW);
+        canvas.height = Math.min(ph + 10, imgH);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, Math.max(0, px - 5), Math.max(0, py - 5), canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+
+        const cropDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+
+        // Ask AI to read text from crop
+        try {
+          const result = await supabaseClient.functions.invoke('extract-ingredients-from-photo', {
+            body: {
+              imageData: cropDataUrl,
+              validateOnly: true
+            }
+          });
+
+          if (result.data && result.data.ingredientList) {
+            const extractedText = result.data.ingredientList.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const expectedText = line.text.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+            // Check similarity
+            const similarity = calculateSimilarity(extractedText, expectedText);
+
+            if (similarity > 0.5) {
+              validationEl.className = 'validation-result validation-pass';
+              validationEl.textContent = `✓ PASS (${(similarity * 100).toFixed(0)}% match)`;
+              log(`Line ${idx + 1}: PASS (${(similarity * 100).toFixed(0)}% match)`, 'success');
+            } else {
+              validationEl.className = 'validation-result validation-fail';
+              validationEl.textContent = `✗ FAIL - AI read: "${result.data.ingredientList.substring(0, 50)}..."`;
+              log(`Line ${idx + 1}: FAIL - Expected "${line.text.substring(0, 30)}..." but AI read "${result.data.ingredientList.substring(0, 30)}..."`, 'error');
+            }
+          }
+        } catch (e) {
+          validationEl.className = 'validation-result validation-fail';
+          validationEl.textContent = `✗ Validation error: ${e.message}`;
+          log(`Line ${idx + 1}: Validation error - ${e.message}`, 'error');
+        }
+      }
+
+      showStatus('Validation complete', 'success');
+    });
+
+    function calculateSimilarity(str1, str2) {
+      if (!str1 || !str2) return 0;
+      const longer = str1.length > str2.length ? str1 : str2;
+      const shorter = str1.length > str2.length ? str2 : str1;
+      if (longer.length === 0) return 1.0;
+
+      let matches = 0;
+      for (let i = 0; i < shorter.length; i++) {
+        if (longer.includes(shorter[i])) matches++;
+      }
+      return matches / longer.length;
+    }
+
+    // Manual region override
+    document.getElementById('applyManualBtn').addEventListener('click', () => {
+      if (!extractedData || !extractedData.ingredientLines) {
+        log('No extracted data to override', 'warn');
+        return;
+      }
+
+      const x = parseFloat(document.getElementById('manualX').value);
+      const y = parseFloat(document.getElementById('manualY').value);
+      const w = parseFloat(document.getElementById('manualW').value);
+      const h = parseFloat(document.getElementById('manualH').value);
+
+      log(`Applying manual region: x=${x}%, y=${y}%, w=${w}%, h=${h}%`);
+
+      const numLines = extractedData.ingredientLines.length;
+      const lineHeight = h / numLines;
+
+      extractedData.ingredientLines = extractedData.ingredientLines.map((line, idx) => ({
+        ...line,
+        x: x,
+        y: y + (idx * lineHeight),
+        w: w,
+        h: lineHeight
+      }));
+
+      renderOverlays(extractedData.ingredientLines);
+      renderCrops(extractedData.ingredientLines);
+      log('Manual region applied - check if crops are now correct', 'info');
+    });
+  </script>
+</body>
+</html>
