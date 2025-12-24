@@ -463,10 +463,28 @@
         console.log('Function result:', result);
 
         if (result.error) {
-          // Try to get more details from the error
-          const errorMsg = result.error.message || 'Extraction failed';
-          const errorContext = result.error.context ? JSON.stringify(result.error.context) : '';
-          throw new Error(errorMsg + (errorContext ? ` - ${errorContext}` : ''));
+          // Try to get the actual error from response body
+          let errorDetail = result.error.message || 'Extraction failed';
+
+          // Try different ways to get the response body
+          const responseObj = result.response || result.error.context;
+          if (responseObj && typeof responseObj.json === 'function') {
+            try {
+              const bodyJson = await responseObj.json();
+              console.log('Error response body:', bodyJson);
+              errorDetail = bodyJson.error || bodyJson.message || errorDetail;
+            } catch (e) {
+              console.log('Could not parse error body as JSON');
+              try {
+                const bodyText = await responseObj.text();
+                console.log('Error response text:', bodyText);
+                errorDetail = bodyText || errorDetail;
+              } catch (e2) {
+                console.log('Could not read error body');
+              }
+            }
+          }
+          throw new Error(errorDetail);
         }
 
         const data = result.data;
