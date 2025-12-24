@@ -54,101 +54,37 @@ serve(async (req) => {
 
     const imageParts = await processImageInput(imageData);
 
-    // --- Two-step approach: First find ingredient region, then extract lines within it ---
-    // This ensures we constrain the search to the correct area
-    console.log('Step 1: Finding ingredient list region...');
-    
-    // Step 1: Identify the ingredient list region
-    const regionPrompt = `Find the bounding box of the ENTIRE ingredient list section in this image.
+    console.log('Extracting ingredient lines with bounding boxes...');
 
-CRITICAL:
-- Look for text that starts with "INGREDIENTS:" or "Ingredients:"
-- Find the COMPLETE block from "INGREDIENTS:" to the end of the last ingredient
-- IGNORE product names, brand names, nutrition facts, marketing badges
-- The ingredient list is typically in smaller text, located in the middle/lower portion
+    // Single-step extraction with very explicit coordinate instructions
+    const extractionPrompt = `Analyze this food product image and extract the ingredient list with PRECISE bounding boxes.
 
-Return the bounding box (x, y, w, h) for the ENTIRE ingredient list section on a 0-1000 scale.
-Coordinates: 0 is top/left, 1000 is bottom/right.
+CRITICAL INSTRUCTION:
+For each line of text you extract, the bounding box coordinates MUST point to the EXACT LOCATION where that specific text appears in the image. The text and coordinates must match - if you read "INGREDIENTS: WHEAT FLOUR" the bounding box must surround those exact words in the image.
 
-Output JSON only:
-{ "x": number, "y": number, "w": number, "h": number }`;
+COORDINATE SYSTEM (0-100 percentage scale):
+- x = distance from LEFT edge (0=left, 100=right)
+- y = distance from TOP edge (0=top, 100=bottom)
+- w = width of the text box
+- h = height of the text box (typically 2-5% for a single line of text)
 
-    let ingredientRegion = null;
-    try {
-      const regionResponse = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-          'content-type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'claude-3-5-sonnet-20241022',
-          max_tokens: 1024,
-          system: "You are a coordinate extractor. Find the bounding box for the ingredient list section only. Return 0-1000 scale coordinates.",
-          messages: [{
-            role: 'user',
-            content: [
-              { type: "image", source: { type: "base64", media_type: imageParts.mediaType, data: imageParts.data } },
-              { type: "text", text: regionPrompt }
-            ]
-          }]
-        })
-      });
+TASK:
+1. Locate the ingredient list in the image (starts with "INGREDIENTS:" or "Ingredients:")
+2. For EACH LINE of text in the ingredient list:
+   - Read the exact text on that line
+   - Measure the bounding box coordinates for THAT SPECIFIC LINE
+   - The coordinates must point to where you see that text
 
-      if (regionResponse.ok) {
-        const regionData = await regionResponse.json();
-        const cleanRegion = regionData.content[0].text.replace(/```json\n?|```/g, '').trim();
-        ingredientRegion = JSON.parse(cleanRegion);
-        console.log('Ingredient region found:', ingredientRegion);
-      }
-    } catch (err) {
-      console.error('Failed to identify ingredient region:', err);
-    }
+VERIFICATION:
+Before outputting, verify that each bounding box actually contains the text you transcribed. The crop at those coordinates should show the exact words in the "text" field.
 
-    // Step 2: Extract lines WITHIN the ingredient region
-    console.log('Step 2: Extracting ingredient lines with coordinates...');
-    const extractionPrompt = `Extract each line of the ingredient list WITH its precise bounding box coordinates.
-
-${ingredientRegion ? `The ingredient list region is approximately: x=${ingredientRegion.x}, y=${ingredientRegion.y}, w=${ingredientRegion.w}, h=${ingredientRegion.h}. Find each line WITHIN this region.` : 'Find the ingredient list section (starts with "INGREDIENTS:" or "Ingredients:").'}
-
-CRITICAL RULES:
-1. ONLY extract lines from the ingredient list section (starts with "INGREDIENTS:")
-2. Each line should be a separate entry
-3. Extract the exact text as written on the package
-4. Determine the precise bounding box (x, y, w, h) on a 0-1000 scale for EACH line
-5. The bounding box should tightly encompass just that line of text
-6. Coordinates: 0 is top/left, 1000 is bottom/right
-7. The y-coordinate should increase for lines that appear lower on the package
-
-${ingredientRegion ? `IMPORTANT: All coordinates MUST be within or very close to the ingredient region (x=${ingredientRegion.x}-${ingredientRegion.x + ingredientRegion.w}, y=${ingredientRegion.y}-${ingredientRegion.y + ingredientRegion.h}). If you see the same text in multiple places, choose the one that is WITHIN this ingredient region.` : ''}
-
-Return ONLY a JSON object with this structure:
+Return ONLY this JSON format:
 {
   "ingredientLines": [
-    {
-      "text": "INGREDIENTS: WATER, ORGANIC CARROT JUICE CONCENTRATE, SEA SALT,",
-      "x": number (0-1000),
-      "y": number (0-1000),
-      "w": number (0-1000),
-      "h": number (0-1000)
-    },
-    {
-      "text": "ORGANIC CELERY JUICE CONCENTRATE, ORGANIC GARLIC,",
-      "x": number,
-      "y": number,
-      "w": number,
-      "h": number
-    }
+    {"text": "exact text from line 1", "x": number, "y": number, "w": number, "h": number},
+    {"text": "exact text from line 2", "x": number, "y": number, "w": number, "h": number}
   ]
-}
-
-DO NOT include:
-- Product names
-- Brand names  
-- Nutrition facts
-- Marketing badges or text
-- Any text outside the ingredient list section`;
+}`;
 
     const extractionResponse = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -158,9 +94,8 @@ DO NOT include:
         'content-type': 'application/json'
       },
       body: JSON.stringify({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 4096,
-        system: "You are a coordinate extractor for ingredient lists. Extract each line of the ingredient list with its exact text and precise bounding box coordinates. Ignore product names, brand names, and other text. Return 0-1000 scale coordinates.",
         messages: [{
           role: 'user',
           content: [
@@ -178,89 +113,64 @@ DO NOT include:
     }
 
     const extractionData = await extractionResponse.json();
-    
+
     // DEBUG: Log raw AI response
     const rawResponseText = extractionData.content[0].text;
-    console.log('=== RAW AI RESPONSE (first 500 chars) ===');
-    console.log(rawResponseText.substring(0, 500));
+    console.log('=== RAW AI RESPONSE ===');
+    console.log(rawResponseText);
     console.log('=== END RAW RESPONSE ===');
-    
+
     let result;
     try {
       const cleanJson = rawResponseText.replace(/```json\n?|```/g, '').trim();
       result = JSON.parse(cleanJson);
       console.log('=== PARSED RESULT ===');
       console.log(JSON.stringify(result, null, 2));
-      console.log('=== END PARSED RESULT ===');
     } catch (e) {
       console.error("Failed to parse extraction JSON", e);
       console.error("Raw response text:", rawResponseText);
       throw new Error("Invalid format from AI");
     }
 
-    let validLines = (result.ingredientLines || []).filter((line: any) => 
-      line && 
-      typeof line.text === 'string' && 
-      typeof line.x === 'number' && 
-      typeof line.y === 'number' && 
-      typeof line.w === 'number' && 
+    let validLines = (result.ingredientLines || []).filter((line: any) =>
+      line &&
+      typeof line.text === 'string' &&
+      typeof line.x === 'number' &&
+      typeof line.y === 'number' &&
+      typeof line.w === 'number' &&
       typeof line.h === 'number'
     );
 
-    // Validate coordinates are within ingredient region if we have it
-    if (ingredientRegion) {
-      const regionX = ingredientRegion.x;
-      const regionY = ingredientRegion.y;
-      const regionRight = regionX + ingredientRegion.w;
-      const regionBottom = regionY + ingredientRegion.h;
-      
-      validLines = validLines.filter((line: any) => {
-        const lineX = line.x;
-        const lineY = line.y;
-        const lineRight = lineX + line.w;
-        const lineBottom = lineY + line.h;
-        
-        // Check if line center is within region (more lenient check)
-        const lineCenterX = lineX + (line.w / 2);
-        const lineCenterY = lineY + (line.h / 2);
-        
-        const isWithinRegion = 
-          lineCenterX >= regionX && lineCenterX <= regionRight &&
-          lineCenterY >= regionY && lineCenterY <= regionBottom;
-        
-        if (!isWithinRegion) {
-          console.warn(`Filtered out line outside ingredient region: "${line.text.substring(0, 50)}..." | coords: (${lineX}, ${lineY}) | region: (${regionX}, ${regionY}, ${ingredientRegion.w}, ${ingredientRegion.h})`);
-        }
-        
-        return isWithinRegion;
-      });
-    }
+    // Validate and fix coordinates - ensure they're in reasonable ranges
+    validLines = validLines.map((line: any) => {
+      // Clamp values to 0-100 range
+      const x = Math.max(0, Math.min(100, line.x));
+      const y = Math.max(0, Math.min(100, line.y));
+      const w = Math.max(1, Math.min(100 - x, line.w));
+      const h = Math.max(1, Math.min(100 - y, line.h));
+
+      return {
+        text: line.text,
+        x,
+        y,
+        w,
+        h
+      };
+    });
 
     console.log(`Extracted ${validLines.length} ingredient lines with coordinates`);
-    
+
     // DEBUG: Log each line with its coordinates
     validLines.forEach((line: any, idx: number) => {
-      console.log(`Line ${idx + 1}: "${line.text.substring(0, 50)}..." | coords: x=${line.x}, y=${line.y}, w=${line.w}, h=${line.h}`);
+      console.log(`Line ${idx + 1}: "${line.text.substring(0, 50)}..." | x=${line.x}%, y=${line.y}%, w=${line.w}%, h=${line.h}%`);
     });
 
     // Construct ingredient list string
     const ingredientList = validLines.map((l: any) => l.text).join(' ');
 
-    // Return lines in the expected format
-    const formattedLines = validLines.map((line: any) => ({
-      text: line.text,
-      x: line.x,
-      y: line.y,
-      w: line.w,
-      h: line.h
-    }));
-    
-    // DEBUG: Log the full response being returned
-    console.log('Returning formatted lines:', JSON.stringify(formattedLines, null, 2));
-
     return new Response(JSON.stringify({
       success: true,
-      ingredientLines: formattedLines,
+      ingredientLines: validLines,
       ingredientList: ingredientList
     }), {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
@@ -268,9 +178,11 @@ DO NOT include:
 
   } catch (e) {
     console.error("Edge Function Error:", e);
+    console.error("Error stack:", e.stack);
     return new Response(JSON.stringify({
       success: false,
-      error: e.message || "Unknown Error"
+      error: e.message || "Unknown Error",
+      stack: e.stack || "No stack trace"
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }

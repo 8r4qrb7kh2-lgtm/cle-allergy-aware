@@ -460,14 +460,20 @@
           body: { imageData: currentImageData }
         });
 
+        console.log('Function result:', result);
+
         if (result.error) {
-          throw new Error(result.error.message || 'Extraction failed');
+          // Try to get more details from the error
+          const errorMsg = result.error.message || 'Extraction failed';
+          const errorContext = result.error.context ? JSON.stringify(result.error.context) : '';
+          throw new Error(errorMsg + (errorContext ? ` - ${errorContext}` : ''));
         }
 
         const data = result.data;
 
-        if (!data.success) {
-          throw new Error(data.error || 'Could not extract ingredients from photo');
+        if (!data || !data.success) {
+          const errorDetail = data?.error || 'Could not extract ingredients from photo';
+          throw new Error(errorDetail);
         }
 
         // Show results

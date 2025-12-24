@@ -12301,11 +12301,11 @@
       // Function to render ingredient region verification
       const renderIngredientRegion = async (ingredientRegion, imageData, ingredientLines) => {
         // Debug logging
-        console.log('renderIngredientRegion called with:', {
-          hasRegion: !!ingredientRegion,
-          linesCount: ingredientLines?.length,
-          lines: ingredientLines
-        });
+        console.log('=== renderIngredientRegion called ===');
+        console.log('hasRegion:', !!ingredientRegion);
+        console.log('linesCount:', ingredientLines?.length);
+        console.log('ingredientLines data:', JSON.stringify(ingredientLines, null, 2));
+        console.log('=== END renderIngredientRegion params ===');
 
         ingredientLinesContainer.innerHTML = '';
         const unavailableMessage = '<div style="color:#a8b2d6;font-size:0.85rem;padding:12px;border:1px solid rgba(148,163,184,0.25);border-radius:8px;background:rgba(76,90,212,0.05)">We could not load the image for line-by-line verification. Please retake or re-upload the ingredient photo.</div>';
@@ -12382,57 +12382,27 @@
 
         const fragment = document.createDocumentFragment();
 
-        let minX = imgWidth;
-        let minY = imgHeight;
-        let maxX = 0;
-        let maxY = 0;
-        let hasValidLines = false;
-
-        // Calculate full bounds first
-        lines.forEach((line) => {
-          // Handle flat structure
-          const normX = normalizeRatio(line.x);
-          const normY = normalizeRatio(line.y);
-          const normW = normalizeRatio(line.w || line.width);
-          const normH = normalizeRatio(line.h || line.height);
-
-          const pixelX = Math.round(normX * imgWidth);
-          const pixelY = Math.round(normY * imgHeight);
-          const pixelW = Math.round(normW * imgWidth);
-          const pixelH = Math.round(normH * imgHeight);
-
-          const cx = clamp(pixelX, 0, imgWidth);
-          const cy = clamp(pixelY, 0, imgHeight);
-          const cw = clamp(pixelW, 1, imgWidth - cx);
-          const ch = clamp(pixelH, 1, imgHeight - cy);
-
-          if (cw < 2 || ch < 2) return;
-
-          hasValidLines = true;
-          minX = Math.min(minX, cx);
-          minY = Math.min(minY, cy);
-          maxX = Math.max(maxX, cx + cw);
-          maxY = Math.max(maxY, cy + ch);
-        });
-
-        // 1. Create Layout Changes (Vertical Stack)
-        // 1. Reset Layout (ensure it's not overridden)
+        // Reset layout
         const layoutContainer = document.getElementById('ingredientLineLayout');
         if (layoutContainer) {
-          // Reset to defaults defined in HTML/CSS
           layoutContainer.style.removeProperty('flex-direction');
           layoutContainer.style.removeProperty('align-items');
         }
 
+        // Use column layout for lines
         ingredientLinesContainer.style.display = 'flex';
         ingredientLinesContainer.style.flexDirection = 'column';
         ingredientLinesContainer.style.gap = '24px';
-        ingredientLinesContainer.style.gridTemplateColumns = 'none'; // Overwrite grid
+        ingredientLinesContainer.style.gridTemplateColumns = 'none';
 
-        // 2. (Removed "Full Ingredient List" crop as requested)
-
-        // 3. Render Individual Lines
+        // Render each line
         lines.forEach((line, idx) => {
+          // DEBUG: Log raw coordinates from API
+          console.log(`Line ${idx + 1} RAW from API:`, {
+            text: line.text?.substring(0, 50) + '...',
+            rawCoords: { x: line.x, y: line.y, w: line.w, h: line.h },
+            imgDimensions: { width: imgWidth, height: imgHeight }
+          });
 
           // Convert normalized/percentage coordinates to GLOBAL pixel coordinates
           const normX = normalizeRatio(line.x);
@@ -12440,12 +12410,12 @@
           const normW = normalizeRatio(line.w || line.width);
           const normH = normalizeRatio(line.h || line.height);
 
+          console.log(`Line ${idx + 1} NORMALIZED:`, { normX, normY, normW, normH });
+
           const pixelX = Math.round(normX * imgWidth);
           const pixelY = Math.round(normY * imgHeight);
           const pixelW = Math.round(normW * imgWidth);
           const pixelH = Math.round(normH * imgHeight);
-
-          console.log(`Line ${idx + 1} coords:`, { line, pixel: { x: pixelX, y: pixelY, w: pixelW, h: pixelH } });
 
           // Add moderate padding to ensure text isn't cut off
           const padding = 10;
@@ -12460,13 +12430,20 @@
           const cw = clamp(paddedW, 1, imgWidth - cx);
           const ch = clamp(paddedH, 1, imgHeight - cy);
 
-          if (cw < 2 || ch < 2) return;
+          console.log(`Line ${idx + 1} FINAL PIXEL coords:`, { 
+            text: line.text?.substring(0, 50) + '...',
+            pixel: { x: pixelX, y: pixelY, w: pixelW, h: pixelH },
+            percentageOfImage: {
+              xPercent: ((pixelX / imgWidth) * 100).toFixed(1) + '%',
+              yPercent: ((pixelY / imgHeight) * 100).toFixed(1) + '%',
+              wPercent: ((pixelW / imgWidth) * 100).toFixed(1) + '%',
+              hPercent: ((pixelH / imgHeight) * 100).toFixed(1) + '%'
+            },
+            afterPadding: { x: paddedX, y: paddedY, w: paddedW, h: paddedH },
+            clamped: { x: cx, y: cy, w: cw, h: ch }
+          });
 
-          hasValidLines = true;
-          minX = Math.min(minX, cx);
-          minY = Math.min(minY, cy);
-          maxX = Math.max(maxX, cx + cw);
-          maxY = Math.max(maxY, cy + ch);
+          if (cw < 2 || ch < 2) return;
 
           const lineCanvas = document.createElement('canvas');
           lineCanvas.width = cw;
@@ -12474,6 +12451,14 @@
           const ctx = lineCanvas.getContext('2d');
 
           // Draw the crop from the ORIGINAL global image
+          // DEBUG: Log the actual drawImage call
+          console.log(`Line ${idx + 1} DRAWING CROP:`, {
+            sourceImage: img.src?.substring(0, 50) + '...',
+            sourceSize: { width: imgWidth, height: imgHeight },
+            cropFrom: { x: cx, y: cy, w: cw, h: ch },
+            drawTo: { x: 0, y: 0, w: cw, h: ch },
+            canvasSize: { width: cw, height: ch }
+          });
           ctx.drawImage(img, cx, cy, cw, ch, 0, 0, cw, ch);
 
           const lineElement = document.createElement('div');
@@ -12496,6 +12481,7 @@
               font-weight: 600;
             `;
           header.textContent = `Line ${idx + 1}`;
+          lineElement.appendChild(header);
 
           const croppedImg = document.createElement('img');
           croppedImg.src = lineCanvas.toDataURL();
@@ -12520,9 +12506,13 @@
               background: rgba(0,0,0,0.2);
               border-radius: 6px;
             `;
-          label.textContent = line.text;
+          // Clean up line text (remove "INGREDIENTS:" prefix if present)
+          let displayText = line.text;
+          if (displayText.startsWith('INGREDIENTS:')) {
+            displayText = displayText.replace(/^INGREDIENTS:\s*/i, '');
+          }
+          label.textContent = displayText;
 
-          lineElement.appendChild(header);
           lineElement.appendChild(croppedImg);
           lineElement.appendChild(label);
           fragment.appendChild(lineElement);
@@ -12534,7 +12524,6 @@
           ingredientLinesContainer.appendChild(fragment);
         }
 
-        // We skip the old bounding box logic since we now use the full debug overlay
         lineByLineSection.style.display = 'block';
       };
 
