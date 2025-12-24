@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ingredient Scanner Debug Tool</title>
+  <title>Ingredient Scanner Debug Tool - Step by Step</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -12,186 +12,430 @@
       color: #e2e8f0;
       padding: 20px;
     }
-    .container { max-width: 1400px; margin: 0 auto; }
-    h1 { text-align: center; margin-bottom: 20px; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    .panel {
+    .container { max-width: 1600px; margin: 0 auto; }
+    h1 { text-align: center; margin-bottom: 10px; }
+    .subtitle { text-align: center; color: #94a3b8; margin-bottom: 20px; font-size: 14px; }
+
+    .step-section {
       background: rgba(30, 41, 59, 0.6);
       border-radius: 12px;
       padding: 20px;
+      margin-bottom: 20px;
       border: 1px solid rgba(148, 163, 184, 0.2);
     }
-    h2 { font-size: 1.1rem; margin-bottom: 15px; color: #fff; }
-    .image-container {
-      position: relative;
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .step-number {
+      background: #6366f1;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+    .step-title { font-size: 1.1rem; color: #fff; }
+    .step-desc { color: #94a3b8; font-size: 13px; margin-left: 42px; margin-bottom: 15px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+
+    .image-box {
       background: #000;
       border-radius: 8px;
       overflow: hidden;
+      position: relative;
     }
-    #mainImage { width: 100%; display: block; }
-    .overlay-box {
-      position: absolute;
-      border: 2px solid;
-      background: rgba(255, 255, 255, 0.1);
-      pointer-events: none;
+    .image-box img { width: 100%; display: block; }
+    .image-box canvas { width: 100%; display: block; }
+
+    .info-box {
+      background: #0f172a;
+      border-radius: 8px;
+      padding: 15px;
+      font-family: monospace;
+      font-size: 12px;
     }
-    .overlay-box.region { border-color: #22c55e; background: rgba(34, 197, 94, 0.15); }
-    .overlay-box.line { border-color: #f59e0b; }
-    .overlay-label {
-      position: absolute;
-      top: -20px;
-      left: 0;
-      font-size: 10px;
-      background: inherit;
-      padding: 2px 6px;
-      border-radius: 3px;
-      white-space: nowrap;
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.1);
     }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: #94a3b8; }
+    .info-value { color: #22c55e; font-weight: bold; }
+    .info-value.error { color: #f87171; }
+
     .btn {
-      padding: 10px 20px;
+      padding: 12px 24px;
       border-radius: 8px;
       border: none;
       cursor: pointer;
-      font-size: 0.9rem;
+      font-size: 0.95rem;
       margin: 5px;
+      transition: all 0.2s;
     }
     .btn-primary { background: #6366f1; color: white; }
+    .btn-primary:hover { background: #4f46e5; }
     .btn-secondary { background: #374151; color: #e2e8f0; }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
     input[type="file"] { display: none; }
     .upload-area {
       border: 2px dashed rgba(99, 102, 241, 0.5);
       border-radius: 8px;
-      padding: 30px;
+      padding: 40px;
       text-align: center;
       cursor: pointer;
-      margin-bottom: 15px;
     }
-    .upload-area:hover { border-color: #6366f1; }
-    .log-container {
+    .upload-area:hover { border-color: #6366f1; background: rgba(99, 102, 241, 0.1); }
+
+    .overlay-box {
+      position: absolute;
+      border: 3px solid;
+      pointer-events: none;
+    }
+    .overlay-label {
+      position: absolute;
+      top: -22px;
+      left: 0;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 3px;
+      white-space: nowrap;
+      font-weight: bold;
+    }
+
+    .crop-card {
       background: #0f172a;
       border-radius: 8px;
-      padding: 15px;
-      max-height: 400px;
-      overflow-y: auto;
-      font-family: monospace;
+      overflow: hidden;
+    }
+    .crop-card-header {
+      padding: 10px;
+      background: rgba(99, 102, 241, 0.2);
+      font-weight: bold;
       font-size: 12px;
     }
-    .log-entry { margin: 5px 0; padding: 5px; border-radius: 4px; }
-    .log-info { background: rgba(59, 130, 246, 0.2); }
-    .log-success { background: rgba(34, 197, 94, 0.2); }
-    .log-error { background: rgba(239, 68, 68, 0.2); }
-    .log-warn { background: rgba(245, 158, 11, 0.2); }
-    .crops-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
-    .crop-item {
-      background: #0f172a;
-      border-radius: 8px;
-      padding: 10px;
-    }
-    .crop-item img {
-      width: 100%;
-      border-radius: 4px;
-      border: 1px solid rgba(148, 163, 184, 0.3);
+    .crop-card-body { padding: 10px; }
+    .crop-card img, .crop-card canvas { width: 100%; border-radius: 4px; }
+    .crop-meta {
+      margin-top: 8px;
+      font-size: 10px;
+      color: #94a3b8;
+      font-family: monospace;
     }
     .crop-text {
       margin-top: 8px;
       font-size: 11px;
-      color: #94a3b8;
+      color: #e2e8f0;
+      background: rgba(34, 197, 94, 0.1);
+      padding: 8px;
+      border-radius: 4px;
       word-break: break-word;
     }
-    .crop-coords {
-      margin-top: 5px;
-      font-size: 10px;
-      color: #6366f1;
-      font-family: monospace;
+
+    .calculation-box {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      border-radius: 8px;
+      padding: 15px;
+      margin: 10px 0;
     }
-    .validation-result {
-      margin-top: 8px;
+    .calc-row {
+      font-family: monospace;
+      font-size: 12px;
+      padding: 4px 0;
+    }
+    .calc-formula { color: #f59e0b; }
+    .calc-result { color: #22c55e; }
+
+    .pipeline-visual {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 15px 0;
+      flex-wrap: wrap;
+    }
+    .pipeline-step {
+      background: #0f172a;
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-size: 12px;
+      position: relative;
+    }
+    .pipeline-arrow {
+      color: #6366f1;
+      font-size: 20px;
+    }
+
+    .status-bar {
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+      text-align: center;
+    }
+    .status-bar.loading { background: rgba(99, 102, 241, 0.2); }
+    .status-bar.error { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .status-bar.success { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+
+    .hidden { display: none !important; }
+
+    .visual-marker {
+      position: absolute;
+      background: #f59e0b;
+      color: #000;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: bold;
+    }
+
+    .coord-display {
+      position: absolute;
+      bottom: 5px;
+      left: 5px;
+      background: rgba(0,0,0,0.8);
+      color: #22c55e;
       padding: 5px 10px;
       border-radius: 4px;
-      font-size: 11px;
-    }
-    .validation-pass { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
-    .validation-fail { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-    .manual-controls {
-      margin-top: 15px;
-      padding: 15px;
-      background: #0f172a;
-      border-radius: 8px;
-    }
-    .manual-controls label { display: block; margin: 10px 0 5px; font-size: 12px; }
-    .manual-controls input[type="number"] {
-      width: 80px;
-      padding: 5px;
-      border-radius: 4px;
-      border: 1px solid #374151;
-      background: #1e293b;
-      color: #e2e8f0;
-    }
-    .status { padding: 10px; border-radius: 8px; margin: 10px 0; text-align: center; }
-    .status.loading { background: rgba(99, 102, 241, 0.2); }
-    .status.error { background: rgba(239, 68, 68, 0.2); }
-    .status.success { background: rgba(34, 197, 94, 0.2); }
-    .raw-response {
-      background: #0f172a;
-      padding: 10px;
-      border-radius: 8px;
       font-family: monospace;
       font-size: 11px;
-      white-space: pre-wrap;
-      max-height: 200px;
-      overflow-y: auto;
-      margin-top: 10px;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Ingredient Scanner Debug Tool</h1>
+    <p class="subtitle">Visual step-by-step debugging of the cropping pipeline</p>
 
-    <div class="grid">
-      <div class="panel">
-        <h2>1. Upload Image</h2>
-        <div class="upload-area" id="uploadArea">Click or drag to upload image</div>
-        <input type="file" id="fileInput" accept="image/*">
+    <!-- STEP 1: Upload -->
+    <div class="step-section">
+      <div class="step-header">
+        <div class="step-number">1</div>
+        <div class="step-title">Upload Source Image</div>
+      </div>
+      <div class="step-desc">Load an image containing a food product's ingredient label</div>
 
-        <div class="image-container" id="imageContainer" style="display:none;">
-          <img id="mainImage" alt="Uploaded image">
-          <div id="overlays"></div>
-        </div>
-
-        <div style="margin-top:15px;">
-          <button class="btn btn-primary" id="extractBtn" disabled>Extract Ingredients</button>
-          <button class="btn btn-secondary" id="validateBtn" disabled>Validate Crops</button>
-          <button class="btn btn-secondary" id="clearBtn">Clear</button>
-        </div>
-
-        <div class="status" id="status" style="display:none;"></div>
-
-        <div class="manual-controls">
-          <h3 style="font-size:14px;margin-bottom:10px;">Manual Region Override</h3>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <div><label>X %</label><input type="number" id="manualX" value="20" min="0" max="100"></div>
-            <div><label>Y %</label><input type="number" id="manualY" value="40" min="0" max="100"></div>
-            <div><label>W %</label><input type="number" id="manualW" value="60" min="0" max="100"></div>
-            <div><label>H %</label><input type="number" id="manualH" value="20" min="0" max="100"></div>
+      <div class="grid-2">
+        <div>
+          <div class="upload-area" id="uploadArea">
+            <div style="font-size: 24px; margin-bottom: 10px;">📷</div>
+            <div>Click or drag to upload image</div>
           </div>
-          <button class="btn btn-secondary" id="applyManualBtn" style="margin-top:10px;">Apply Manual Region</button>
+          <input type="file" id="fileInput" accept="image/*">
+
+          <div id="sourceImageBox" class="image-box hidden" style="margin-top:15px;">
+            <img id="sourceImage" alt="Source image">
+            <div class="coord-display" id="sourceCoords"></div>
+          </div>
+        </div>
+
+        <div class="info-box" id="step1Info">
+          <div class="info-row">
+            <span class="info-label">File name:</span>
+            <span class="info-value" id="fileName">-</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">File size:</span>
+            <span class="info-value" id="fileSize">-</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Image dimensions:</span>
+            <span class="info-value" id="imageDims">-</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Data URL length:</span>
+            <span class="info-value" id="dataUrlLen">-</span>
+          </div>
         </div>
       </div>
 
-      <div class="panel">
-        <h2>2. Debug Log</h2>
-        <div class="log-container" id="logContainer"></div>
-
-        <h2 style="margin-top:20px;">Raw AI Response</h2>
-        <div class="raw-response" id="rawResponse">No response yet</div>
+      <div style="margin-top: 15px;">
+        <button class="btn btn-primary" id="extractBtn" disabled>Run Extraction Pipeline</button>
+        <button class="btn btn-secondary" id="clearBtn">Clear</button>
       </div>
     </div>
 
-    <div class="panel" style="margin-top:20px;">
-      <h2>3. Extracted Lines & Crops</h2>
-      <div class="crops-grid" id="cropsGrid"></div>
+    <!-- STEP 2: AI Region Detection -->
+    <div class="step-section hidden" id="step2Section">
+      <div class="step-header">
+        <div class="step-number">2</div>
+        <div class="step-title">AI Region Detection (Step 1 of API)</div>
+      </div>
+      <div class="step-desc">The AI analyzes the image and returns bounding box coordinates for the ingredient text region</div>
+
+      <div class="grid-2">
+        <div class="image-box">
+          <img id="regionImage" alt="Region detection">
+          <div id="regionOverlay"></div>
+          <div class="coord-display" id="regionCoords"></div>
+        </div>
+
+        <div>
+          <div class="info-box">
+            <h4 style="margin-bottom: 10px; color: #fff;">AI Response (Region)</h4>
+            <div class="info-row">
+              <span class="info-label">X (left edge):</span>
+              <span class="info-value" id="regionX">-</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Y (top edge):</span>
+              <span class="info-value" id="regionY">-</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Width:</span>
+              <span class="info-value" id="regionW">-</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Height:</span>
+              <span class="info-value" id="regionH">-</span>
+            </div>
+          </div>
+
+          <div class="calculation-box">
+            <h4 style="margin-bottom: 10px; color: #fff;">Pixel Conversion</h4>
+            <div class="calc-row">
+              <span class="calc-formula">pixelX = (X% / 100) × imageWidth</span>
+            </div>
+            <div class="calc-row" id="calcPixelX">
+              <span class="calc-result">= calculating...</span>
+            </div>
+            <div class="calc-row">
+              <span class="calc-formula">pixelY = (Y% / 100) × imageHeight</span>
+            </div>
+            <div class="calc-row" id="calcPixelY">
+              <span class="calc-result">= calculating...</span>
+            </div>
+            <div class="calc-row">
+              <span class="calc-formula">pixelW = (W% / 100) × imageWidth</span>
+            </div>
+            <div class="calc-row" id="calcPixelW">
+              <span class="calc-result">= calculating...</span>
+            </div>
+            <div class="calc-row">
+              <span class="calc-formula">pixelH = (H% / 100) × imageHeight</span>
+            </div>
+            <div class="calc-row" id="calcPixelH">
+              <span class="calc-result">= calculating...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: Region Crop -->
+    <div class="step-section hidden" id="step3Section">
+      <div class="step-header">
+        <div class="step-number">3</div>
+        <div class="step-title">Region Crop Preview</div>
+      </div>
+      <div class="step-desc">This is what the detected region looks like when cropped from the original image</div>
+
+      <div class="grid-2">
+        <div>
+          <div class="image-box">
+            <canvas id="regionCropCanvas"></canvas>
+          </div>
+          <div class="calculation-box" style="margin-top: 10px;">
+            <div class="calc-row">Canvas dimensions: <span id="canvasDims" class="calc-result">-</span></div>
+            <div class="calc-row">drawImage(img, <span id="drawParams" class="calc-result">-</span>)</div>
+          </div>
+        </div>
+
+        <div class="info-box">
+          <h4 style="margin-bottom: 10px; color: #fff;">Does this crop show the ingredients?</h4>
+          <p style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">
+            If this crop shows something OTHER than ingredients (like Nutrition Facts),
+            then the AI returned wrong coordinates. If it shows ingredients, the region detection is correct.
+          </p>
+          <div id="regionCropAnalysis" style="padding: 10px; background: rgba(245, 158, 11, 0.2); border-radius: 8px;">
+            Waiting for extraction...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4: Line Splitting -->
+    <div class="step-section hidden" id="step4Section">
+      <div class="step-header">
+        <div class="step-number">4</div>
+        <div class="step-title">Line Splitting Calculation</div>
+      </div>
+      <div class="step-desc">The region is divided into equal-height strips, one per extracted text line</div>
+
+      <div class="calculation-box">
+        <div class="calc-row">
+          <span class="calc-formula">Number of lines extracted:</span>
+          <span class="calc-result" id="numLines">-</span>
+        </div>
+        <div class="calc-row">
+          <span class="calc-formula">lineHeight = regionHeight / numLines</span>
+        </div>
+        <div class="calc-row" id="lineHeightCalc">
+          <span class="calc-result">= calculating...</span>
+        </div>
+        <div class="calc-row">
+          <span class="calc-formula">Each line Y position = regionY + (lineIndex × lineHeight)</span>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top: 15px;">
+        <div class="image-box">
+          <img id="lineSplitImage" alt="Line splitting visualization">
+          <div id="lineSplitOverlays"></div>
+        </div>
+        <div class="info-box" id="linePositions">
+          <!-- Filled dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 5: Individual Line Crops -->
+    <div class="step-section hidden" id="step5Section">
+      <div class="step-header">
+        <div class="step-number">5</div>
+        <div class="step-title">Individual Line Crops</div>
+      </div>
+      <div class="step-desc">Each line is cropped from the original image using calculated coordinates</div>
+
+      <div class="grid-3" id="lineCropsGrid">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+
+    <!-- STEP 6: Comparison -->
+    <div class="step-section hidden" id="step6Section">
+      <div class="step-header">
+        <div class="step-number">6</div>
+        <div class="step-title">Validation: Compare Expected vs Actual</div>
+      </div>
+      <div class="step-desc">Click "Validate" to have AI read each crop and compare with expected text</div>
+
+      <button class="btn btn-primary" id="validateBtn">Validate All Crops with AI</button>
+
+      <div id="validationResults" style="margin-top: 15px;">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="status-bar hidden" id="statusBar"></div>
+
+    <!-- Raw Response -->
+    <div class="step-section hidden" id="rawSection">
+      <div class="step-header">
+        <div class="step-number">📄</div>
+        <div class="step-title">Raw API Response</div>
+      </div>
+      <pre class="info-box" id="rawResponse" style="white-space: pre-wrap; max-height: 300px; overflow-y: auto;"></pre>
     </div>
   </div>
 
@@ -202,43 +446,19 @@
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let currentImageData = null;
-    let currentImageElement = null;
+    let sourceImage = null;
     let extractedData = null;
 
+    // DOM Elements
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('fileInput');
-    const imageContainer = document.getElementById('imageContainer');
-    const mainImage = document.getElementById('mainImage');
-    const overlays = document.getElementById('overlays');
     const extractBtn = document.getElementById('extractBtn');
-    const validateBtn = document.getElementById('validateBtn');
     const clearBtn = document.getElementById('clearBtn');
-    const status = document.getElementById('status');
-    const logContainer = document.getElementById('logContainer');
-    const rawResponse = document.getElementById('rawResponse');
-    const cropsGrid = document.getElementById('cropsGrid');
+    const statusBar = document.getElementById('statusBar');
 
-    function log(message, type = 'info') {
-      const entry = document.createElement('div');
-      entry.className = `log-entry log-${type}`;
-      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-      logContainer.appendChild(entry);
-      logContainer.scrollTop = logContainer.scrollHeight;
-      console.log(`[${type.toUpperCase()}]`, message);
-    }
-
-    function showStatus(message, type = 'loading') {
-      status.className = `status ${type}`;
-      status.textContent = message;
-      status.style.display = 'block';
-    }
-
-    function hideStatus() {
-      status.style.display = 'none';
-    }
-
+    // File upload handlers
     uploadArea.addEventListener('click', () => fileInput.click());
-    uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); });
+    uploadArea.addEventListener('dragover', (e) => e.preventDefault());
     uploadArea.addEventListener('drop', (e) => {
       e.preventDefault();
       if (e.dataTransfer.files.length > 0) handleFile(e.dataTransfer.files[0]);
@@ -248,284 +468,396 @@
     });
 
     function handleFile(file) {
-      log(`Loading file: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`);
+      document.getElementById('fileName').textContent = file.name;
+      document.getElementById('fileSize').textContent = `${(file.size / 1024).toFixed(1)} KB`;
+
       const reader = new FileReader();
       reader.onload = (e) => {
         currentImageData = e.target.result;
-        mainImage.src = currentImageData;
-        mainImage.onload = () => {
-          log(`Image loaded: ${mainImage.naturalWidth}x${mainImage.naturalHeight}`);
-          imageContainer.style.display = 'block';
-          uploadArea.style.display = 'none';
+        document.getElementById('dataUrlLen').textContent = `${currentImageData.length.toLocaleString()} chars`;
+
+        const img = new Image();
+        img.onload = () => {
+          sourceImage = img;
+          document.getElementById('imageDims').textContent = `${img.naturalWidth} × ${img.naturalHeight} px`;
+
+          // Show source image
+          document.getElementById('sourceImage').src = currentImageData;
+          document.getElementById('sourceImageBox').classList.remove('hidden');
+          document.getElementById('sourceCoords').textContent = `${img.naturalWidth}×${img.naturalHeight}`;
+
+          uploadArea.classList.add('hidden');
           extractBtn.disabled = false;
         };
+        img.src = currentImageData;
       };
       reader.readAsDataURL(file);
     }
 
     clearBtn.addEventListener('click', () => {
       currentImageData = null;
+      sourceImage = null;
       extractedData = null;
-      imageContainer.style.display = 'none';
-      uploadArea.style.display = 'block';
-      overlays.innerHTML = '';
-      cropsGrid.innerHTML = '';
-      rawResponse.textContent = 'No response yet';
+
+      // Reset UI
+      uploadArea.classList.remove('hidden');
+      document.getElementById('sourceImageBox').classList.add('hidden');
+      ['step2Section', 'step3Section', 'step4Section', 'step5Section', 'step6Section', 'rawSection'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+      statusBar.classList.add('hidden');
       extractBtn.disabled = true;
-      validateBtn.disabled = true;
-      hideStatus();
-      log('Cleared all data');
+
+      // Reset info
+      document.getElementById('fileName').textContent = '-';
+      document.getElementById('fileSize').textContent = '-';
+      document.getElementById('imageDims').textContent = '-';
+      document.getElementById('dataUrlLen').textContent = '-';
     });
 
+    function showStatus(message, type = 'loading') {
+      statusBar.className = `status-bar ${type}`;
+      statusBar.textContent = message;
+      statusBar.classList.remove('hidden');
+    }
+
+    // Main extraction pipeline
     extractBtn.addEventListener('click', async () => {
-      if (!currentImageData) return;
+      if (!currentImageData || !sourceImage) return;
 
       extractBtn.disabled = true;
-      showStatus('Extracting ingredients...', 'loading');
-      log('Starting extraction...');
+      showStatus('Calling AI to detect ingredient region...', 'loading');
 
       try {
         const result = await supabaseClient.functions.invoke('extract-ingredients-from-photo', {
           body: { imageData: currentImageData }
         });
 
-        log(`Function returned: ${result.error ? 'ERROR' : 'SUCCESS'}`, result.error ? 'error' : 'success');
-
         if (result.error) {
-          const responseObj = result.response || result.error.context;
-          if (responseObj && typeof responseObj.json === 'function') {
-            try {
-              const bodyJson = await responseObj.json();
-              rawResponse.textContent = JSON.stringify(bodyJson, null, 2);
-              throw new Error(bodyJson.error || 'Extraction failed');
-            } catch (e) {
-              throw new Error(result.error.message || 'Extraction failed');
-            }
-          }
-          throw new Error(result.error.message || 'Extraction failed');
+          throw new Error(result.error.message || 'API call failed');
         }
 
         extractedData = result.data;
-        rawResponse.textContent = JSON.stringify(extractedData, null, 2);
 
         if (!extractedData.success) {
           throw new Error(extractedData.error || 'Extraction failed');
         }
 
-        log(`Extracted ${extractedData.ingredientLines?.length || 0} lines`, 'success');
+        // Show raw response
+        document.getElementById('rawResponse').textContent = JSON.stringify(extractedData, null, 2);
+        document.getElementById('rawSection').classList.remove('hidden');
 
-        // Render overlays and crops
-        renderOverlays(extractedData.ingredientLines || []);
-        renderCrops(extractedData.ingredientLines || []);
+        // Process and display each step
+        await displayStep2_RegionDetection();
+        await displayStep3_RegionCrop();
+        await displayStep4_LineSplitting();
+        await displayStep5_LineCrops();
+        displayStep6_Validation();
 
-        validateBtn.disabled = false;
-        showStatus('Extraction complete!', 'success');
+        showStatus('Pipeline complete! Review each step above.', 'success');
 
       } catch (error) {
-        log(`Error: ${error.message}`, 'error');
         showStatus(`Error: ${error.message}`, 'error');
+        console.error(error);
       } finally {
         extractBtn.disabled = false;
       }
     });
 
-    function renderOverlays(lines) {
-      overlays.innerHTML = '';
-      const imgRect = mainImage.getBoundingClientRect();
-      const containerRect = imageContainer.getBoundingClientRect();
+    function displayStep2_RegionDetection() {
+      const region = extractedData.region || { x: 15, y: 45, w: 70, h: 8 };
+      const imgW = sourceImage.naturalWidth;
+      const imgH = sourceImage.naturalHeight;
 
-      // Calculate scale factor (image might be displayed smaller than natural size)
-      const scaleX = imgRect.width / mainImage.naturalWidth;
-      const scaleY = imgRect.height / mainImage.naturalHeight;
+      // Show the image with region overlay
+      const regionImg = document.getElementById('regionImage');
+      regionImg.src = currentImageData;
 
-      log(`Display scale: ${scaleX.toFixed(3)}x${scaleY.toFixed(3)}`);
+      // Calculate pixel values
+      const pixelX = Math.round((region.x / 100) * imgW);
+      const pixelY = Math.round((region.y / 100) * imgH);
+      const pixelW = Math.round((region.w / 100) * imgW);
+      const pixelH = Math.round((region.h / 100) * imgH);
 
-      lines.forEach((line, idx) => {
+      // Update info
+      document.getElementById('regionX').textContent = `${region.x.toFixed(1)}%`;
+      document.getElementById('regionY').textContent = `${region.y.toFixed(1)}%`;
+      document.getElementById('regionW').textContent = `${region.w.toFixed(1)}%`;
+      document.getElementById('regionH').textContent = `${region.h.toFixed(1)}%`;
+
+      document.getElementById('calcPixelX').innerHTML = `<span class="calc-result">= (${region.x.toFixed(1)} / 100) × ${imgW} = ${pixelX} px</span>`;
+      document.getElementById('calcPixelY').innerHTML = `<span class="calc-result">= (${region.y.toFixed(1)} / 100) × ${imgH} = ${pixelY} px</span>`;
+      document.getElementById('calcPixelW').innerHTML = `<span class="calc-result">= (${region.w.toFixed(1)} / 100) × ${imgW} = ${pixelW} px</span>`;
+      document.getElementById('calcPixelH').innerHTML = `<span class="calc-result">= (${region.h.toFixed(1)} / 100) × ${imgH} = ${pixelH} px</span>`;
+
+      document.getElementById('regionCoords').textContent = `Region: ${pixelX},${pixelY} ${pixelW}×${pixelH}`;
+
+      // Draw overlay after image loads
+      regionImg.onload = () => {
+        const overlay = document.getElementById('regionOverlay');
+        overlay.innerHTML = '';
+
+        const imgRect = regionImg.getBoundingClientRect();
+        const scaleX = imgRect.width / imgW;
+        const scaleY = imgRect.height / imgH;
+
         const box = document.createElement('div');
-        box.className = 'overlay-box line';
-
-        // Convert percentage to display pixels
-        const left = (line.x / 100) * imgRect.width;
-        const top = (line.y / 100) * imgRect.height;
-        const width = (line.w / 100) * imgRect.width;
-        const height = (line.h / 100) * imgRect.height;
-
-        box.style.left = `${left}px`;
-        box.style.top = `${top}px`;
-        box.style.width = `${width}px`;
-        box.style.height = `${height}px`;
-        box.style.borderColor = `hsl(${(idx * 60) % 360}, 70%, 50%)`;
+        box.className = 'overlay-box';
+        box.style.cssText = `
+          left: ${pixelX * scaleX}px;
+          top: ${pixelY * scaleY}px;
+          width: ${pixelW * scaleX}px;
+          height: ${pixelH * scaleY}px;
+          border-color: #22c55e;
+          background: rgba(34, 197, 94, 0.2);
+        `;
 
         const label = document.createElement('div');
         label.className = 'overlay-label';
-        label.style.background = box.style.borderColor;
-        label.style.color = '#fff';
-        label.textContent = `Line ${idx + 1}`;
+        label.style.cssText = 'background: #22c55e; color: #000;';
+        label.textContent = 'AI Detected Region';
         box.appendChild(label);
 
-        overlays.appendChild(box);
+        overlay.appendChild(box);
+      };
 
-        log(`Line ${idx + 1} overlay: x=${line.x.toFixed(1)}%, y=${line.y.toFixed(1)}%, w=${line.w.toFixed(1)}%, h=${line.h.toFixed(1)}%`);
-      });
+      document.getElementById('step2Section').classList.remove('hidden');
     }
 
-    function renderCrops(lines) {
-      cropsGrid.innerHTML = '';
+    function displayStep3_RegionCrop() {
+      const region = extractedData.region || { x: 15, y: 45, w: 70, h: 8 };
+      const imgW = sourceImage.naturalWidth;
+      const imgH = sourceImage.naturalHeight;
 
-      const img = new Image();
+      const pixelX = Math.round((region.x / 100) * imgW);
+      const pixelY = Math.round((region.y / 100) * imgH);
+      const pixelW = Math.round((region.w / 100) * imgW);
+      const pixelH = Math.round((region.h / 100) * imgH);
+
+      // Create the region crop
+      const canvas = document.getElementById('regionCropCanvas');
+      canvas.width = pixelW;
+      canvas.height = pixelH;
+      const ctx = canvas.getContext('2d');
+
+      // Draw the crop
+      ctx.drawImage(sourceImage, pixelX, pixelY, pixelW, pixelH, 0, 0, pixelW, pixelH);
+
+      document.getElementById('canvasDims').textContent = `${pixelW} × ${pixelH} px`;
+      document.getElementById('drawParams').textContent = `${pixelX}, ${pixelY}, ${pixelW}, ${pixelH}, 0, 0, ${pixelW}, ${pixelH}`;
+
+      // Analysis hint
+      const analysis = document.getElementById('regionCropAnalysis');
+      analysis.innerHTML = `
+        <strong>Check this crop:</strong><br>
+        • If you see "INGREDIENTS:" followed by a list → Region detection is CORRECT<br>
+        • If you see "Nutrition Facts" or other text → Region detection is WRONG (AI gave wrong coordinates)
+      `;
+
+      document.getElementById('step3Section').classList.remove('hidden');
+    }
+
+    function displayStep4_LineSplitting() {
+      const region = extractedData.region || { x: 15, y: 45, w: 70, h: 8 };
+      const lines = extractedData.ingredientLines || [];
+      const numLines = lines.length;
+      const imgW = sourceImage.naturalWidth;
+      const imgH = sourceImage.naturalHeight;
+
+      const pixelRegionY = Math.round((region.y / 100) * imgH);
+      const pixelRegionH = Math.round((region.h / 100) * imgH);
+      const lineHeightPercent = region.h / numLines;
+      const lineHeightPixels = Math.round(pixelRegionH / numLines);
+
+      document.getElementById('numLines').textContent = numLines;
+      document.getElementById('lineHeightCalc').innerHTML = `<span class="calc-result">= ${region.h.toFixed(1)}% / ${numLines} = ${lineHeightPercent.toFixed(2)}% (${lineHeightPixels} px)</span>`;
+
+      // Show image with line overlays
+      const img = document.getElementById('lineSplitImage');
       img.src = currentImageData;
 
       img.onload = () => {
-        const imgW = img.naturalWidth;
-        const imgH = img.naturalHeight;
+        const overlay = document.getElementById('lineSplitOverlays');
+        overlay.innerHTML = '';
+
+        const imgRect = img.getBoundingClientRect();
+        const scaleX = imgRect.width / imgW;
+        const scaleY = imgRect.height / imgH;
 
         lines.forEach((line, idx) => {
-          // Convert percentage to pixels
-          const px = Math.round((line.x / 100) * imgW);
-          const py = Math.round((line.y / 100) * imgH);
-          const pw = Math.round((line.w / 100) * imgW);
-          const ph = Math.round((line.h / 100) * imgH);
+          const pixelX = Math.round((line.x / 100) * imgW);
+          const pixelY = Math.round((line.y / 100) * imgH);
+          const pixelW = Math.round((line.w / 100) * imgW);
+          const pixelH = Math.round((line.h / 100) * imgH);
 
-          // Add padding
-          const padding = 5;
-          const cropX = Math.max(0, px - padding);
-          const cropY = Math.max(0, py - padding);
-          const cropW = Math.min(pw + padding * 2, imgW - cropX);
-          const cropH = Math.min(ph + padding * 2, imgH - cropY);
-
-          // Create crop
-          const canvas = document.createElement('canvas');
-          canvas.width = cropW;
-          canvas.height = cropH;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
-
-          // Create crop item
-          const item = document.createElement('div');
-          item.className = 'crop-item';
-          item.innerHTML = `
-            <strong style="color:#fff;">Line ${idx + 1}</strong>
-            <img src="${canvas.toDataURL()}" alt="Line ${idx + 1} crop">
-            <div class="crop-text"><strong>Expected text:</strong> ${line.text}</div>
-            <div class="crop-coords">Coords: x=${line.x.toFixed(1)}% y=${line.y.toFixed(1)}% w=${line.w.toFixed(1)}% h=${line.h.toFixed(1)}%</div>
-            <div class="crop-coords">Pixels: x=${cropX} y=${cropY} w=${cropW} h=${cropH}</div>
-            <div class="validation-result" id="validation-${idx}">Not validated</div>
+          const box = document.createElement('div');
+          box.className = 'overlay-box';
+          const hue = (idx * 60) % 360;
+          box.style.cssText = `
+            left: ${pixelX * scaleX}px;
+            top: ${pixelY * scaleY}px;
+            width: ${pixelW * scaleX}px;
+            height: ${pixelH * scaleY}px;
+            border-color: hsl(${hue}, 70%, 50%);
+            background: hsla(${hue}, 70%, 50%, 0.15);
           `;
 
-          cropsGrid.appendChild(item);
+          const label = document.createElement('div');
+          label.className = 'overlay-label';
+          label.style.cssText = `background: hsl(${hue}, 70%, 50%); color: #fff;`;
+          label.textContent = `Line ${idx + 1}`;
+          box.appendChild(label);
+
+          overlay.appendChild(box);
         });
       };
+
+      // Line positions info
+      const positionsDiv = document.getElementById('linePositions');
+      positionsDiv.innerHTML = '<h4 style="margin-bottom: 10px; color: #fff;">Line Coordinates</h4>';
+
+      lines.forEach((line, idx) => {
+        const pixelX = Math.round((line.x / 100) * imgW);
+        const pixelY = Math.round((line.y / 100) * imgH);
+        const pixelW = Math.round((line.w / 100) * imgW);
+        const pixelH = Math.round((line.h / 100) * imgH);
+
+        positionsDiv.innerHTML += `
+          <div style="margin: 10px 0; padding: 10px; background: rgba(99, 102, 241, 0.1); border-radius: 4px;">
+            <strong style="color: hsl(${(idx * 60) % 360}, 70%, 50%);">Line ${idx + 1}</strong><br>
+            <span style="font-size: 11px; color: #94a3b8;">
+              Percent: x=${line.x.toFixed(1)}%, y=${line.y.toFixed(1)}%, w=${line.w.toFixed(1)}%, h=${line.h.toFixed(1)}%<br>
+              Pixels: x=${pixelX}, y=${pixelY}, w=${pixelW}, h=${pixelH}
+            </span>
+          </div>
+        `;
+      });
+
+      document.getElementById('step4Section').classList.remove('hidden');
     }
 
-    validateBtn.addEventListener('click', async () => {
+    function displayStep5_LineCrops() {
+      const lines = extractedData.ingredientLines || [];
+      const imgW = sourceImage.naturalWidth;
+      const imgH = sourceImage.naturalHeight;
+
+      const grid = document.getElementById('lineCropsGrid');
+      grid.innerHTML = '';
+
+      lines.forEach((line, idx) => {
+        const pixelX = Math.round((line.x / 100) * imgW);
+        const pixelY = Math.round((line.y / 100) * imgH);
+        const pixelW = Math.round((line.w / 100) * imgW);
+        const pixelH = Math.round((line.h / 100) * imgH);
+
+        // Create crop canvas
+        const canvas = document.createElement('canvas');
+        canvas.width = pixelW;
+        canvas.height = pixelH;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(sourceImage, pixelX, pixelY, pixelW, pixelH, 0, 0, pixelW, pixelH);
+
+        const card = document.createElement('div');
+        card.className = 'crop-card';
+        card.innerHTML = `
+          <div class="crop-card-header" style="background: hsla(${(idx * 60) % 360}, 70%, 50%, 0.3);">
+            Line ${idx + 1} Crop
+          </div>
+          <div class="crop-card-body">
+            <div style="background: #000; padding: 5px; border-radius: 4px;"></div>
+            <div class="crop-meta">
+              Crop area: (${pixelX}, ${pixelY}) → ${pixelW}×${pixelH} px<br>
+              drawImage(img, ${pixelX}, ${pixelY}, ${pixelW}, ${pixelH}, 0, 0, ${pixelW}, ${pixelH})
+            </div>
+            <div class="crop-text">
+              <strong>Expected text:</strong><br>${line.text}
+            </div>
+          </div>
+        `;
+
+        // Insert canvas into card
+        card.querySelector('.crop-card-body > div').appendChild(canvas);
+
+        grid.appendChild(card);
+      });
+
+      document.getElementById('step5Section').classList.remove('hidden');
+    }
+
+    function displayStep6_Validation() {
+      document.getElementById('step6Section').classList.remove('hidden');
+      document.getElementById('validationResults').innerHTML = '<p style="color: #94a3b8;">Click the button above to validate each crop by having AI read the text.</p>';
+    }
+
+    // Validation
+    document.getElementById('validateBtn').addEventListener('click', async () => {
       if (!extractedData || !extractedData.ingredientLines) return;
 
-      log('Starting validation...', 'info');
-      showStatus('Validating crops with AI...', 'loading');
+      const lines = extractedData.ingredientLines;
+      const imgW = sourceImage.naturalWidth;
+      const imgH = sourceImage.naturalHeight;
 
-      const img = new Image();
-      img.src = currentImageData;
+      const resultsDiv = document.getElementById('validationResults');
+      resultsDiv.innerHTML = '<p style="color: #f59e0b;">Validating crops...</p>';
 
-      await new Promise(resolve => img.onload = resolve);
+      let results = [];
 
-      const imgW = img.naturalWidth;
-      const imgH = img.naturalHeight;
+      for (let idx = 0; idx < lines.length; idx++) {
+        const line = lines[idx];
 
-      for (let idx = 0; idx < extractedData.ingredientLines.length; idx++) {
-        const line = extractedData.ingredientLines[idx];
-        const validationEl = document.getElementById(`validation-${idx}`);
+        const pixelX = Math.round((line.x / 100) * imgW);
+        const pixelY = Math.round((line.y / 100) * imgH);
+        const pixelW = Math.round((line.w / 100) * imgW);
+        const pixelH = Math.round((line.h / 100) * imgH);
 
         // Create crop for validation
-        const px = Math.round((line.x / 100) * imgW);
-        const py = Math.round((line.y / 100) * imgH);
-        const pw = Math.round((line.w / 100) * imgW);
-        const ph = Math.round((line.h / 100) * imgH);
-
         const canvas = document.createElement('canvas');
-        canvas.width = Math.min(pw + 10, imgW);
-        canvas.height = Math.min(ph + 10, imgH);
+        canvas.width = pixelW;
+        canvas.height = pixelH;
         const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, Math.max(0, px - 5), Math.max(0, py - 5), canvas.width, canvas.height, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(sourceImage, pixelX, pixelY, pixelW, pixelH, 0, 0, pixelW, pixelH);
 
-        const cropDataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        const cropDataUrl = canvas.toDataURL('image/jpeg', 0.9);
 
-        // Ask AI to read text from crop
         try {
           const result = await supabaseClient.functions.invoke('extract-ingredients-from-photo', {
-            body: {
-              imageData: cropDataUrl,
-              validateOnly: true
-            }
+            body: { imageData: cropDataUrl }
           });
 
-          if (result.data && result.data.ingredientList) {
-            const extractedText = result.data.ingredientList.toLowerCase().replace(/[^a-z0-9]/g, '');
-            const expectedText = line.text.toLowerCase().replace(/[^a-z0-9]/g, '');
+          const aiText = result.data?.ingredientList || '(no text extracted)';
+          const expected = line.text.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 50);
+          const actual = aiText.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 50);
 
-            // Check similarity
-            const similarity = calculateSimilarity(extractedText, expectedText);
+          const match = expected.includes(actual.substring(0, 20)) || actual.includes(expected.substring(0, 20));
 
-            if (similarity > 0.5) {
-              validationEl.className = 'validation-result validation-pass';
-              validationEl.textContent = `✓ PASS (${(similarity * 100).toFixed(0)}% match)`;
-              log(`Line ${idx + 1}: PASS (${(similarity * 100).toFixed(0)}% match)`, 'success');
-            } else {
-              validationEl.className = 'validation-result validation-fail';
-              validationEl.textContent = `✗ FAIL - AI read: "${result.data.ingredientList.substring(0, 50)}..."`;
-              log(`Line ${idx + 1}: FAIL - Expected "${line.text.substring(0, 30)}..." but AI read "${result.data.ingredientList.substring(0, 30)}..."`, 'error');
-            }
-          }
+          results.push({
+            line: idx + 1,
+            expected: line.text.substring(0, 60),
+            actual: aiText.substring(0, 60),
+            match
+          });
         } catch (e) {
-          validationEl.className = 'validation-result validation-fail';
-          validationEl.textContent = `✗ Validation error: ${e.message}`;
-          log(`Line ${idx + 1}: Validation error - ${e.message}`, 'error');
+          results.push({
+            line: idx + 1,
+            expected: line.text.substring(0, 60),
+            actual: `Error: ${e.message}`,
+            match: false
+          });
         }
       }
 
-      showStatus('Validation complete', 'success');
-    });
-
-    function calculateSimilarity(str1, str2) {
-      if (!str1 || !str2) return 0;
-      const longer = str1.length > str2.length ? str1 : str2;
-      const shorter = str1.length > str2.length ? str2 : str1;
-      if (longer.length === 0) return 1.0;
-
-      let matches = 0;
-      for (let i = 0; i < shorter.length; i++) {
-        if (longer.includes(shorter[i])) matches++;
-      }
-      return matches / longer.length;
-    }
-
-    // Manual region override
-    document.getElementById('applyManualBtn').addEventListener('click', () => {
-      if (!extractedData || !extractedData.ingredientLines) {
-        log('No extracted data to override', 'warn');
-        return;
-      }
-
-      const x = parseFloat(document.getElementById('manualX').value);
-      const y = parseFloat(document.getElementById('manualY').value);
-      const w = parseFloat(document.getElementById('manualW').value);
-      const h = parseFloat(document.getElementById('manualH').value);
-
-      log(`Applying manual region: x=${x}%, y=${y}%, w=${w}%, h=${h}%`);
-
-      const numLines = extractedData.ingredientLines.length;
-      const lineHeight = h / numLines;
-
-      extractedData.ingredientLines = extractedData.ingredientLines.map((line, idx) => ({
-        ...line,
-        x: x,
-        y: y + (idx * lineHeight),
-        w: w,
-        h: lineHeight
-      }));
-
-      renderOverlays(extractedData.ingredientLines);
-      renderCrops(extractedData.ingredientLines);
-      log('Manual region applied - check if crops are now correct', 'info');
+      // Display results
+      resultsDiv.innerHTML = results.map(r => `
+        <div style="margin: 10px 0; padding: 15px; border-radius: 8px; background: ${r.match ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)'};">
+          <strong style="color: ${r.match ? '#4ade80' : '#f87171'};">
+            Line ${r.line}: ${r.match ? '✓ MATCH' : '✗ MISMATCH'}
+          </strong><br><br>
+          <div style="font-size: 12px;">
+            <strong>Expected:</strong> ${r.expected}...<br>
+            <strong>AI Read:</strong> ${r.actual}...
+          </div>
+        </div>
+      `).join('');
     });
   </script>
 </body>
