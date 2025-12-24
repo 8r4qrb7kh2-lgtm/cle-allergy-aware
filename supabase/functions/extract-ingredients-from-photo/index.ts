@@ -3,33 +3,20 @@ import { encode } from "https://deno.land/std@0.168.0/encoding/base64.ts"
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 
-// Helper to extract base64 data and media type from Data URL or fetch from remote URL
 async function processImageInput(input: string) {
-  // Check if it's already a Data URL
   const matches = input.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
   if (matches && matches.length === 3) {
-    return {
-      mediaType: matches[1],
-      data: matches[2]
-    };
+    return { mediaType: matches[1], data: matches[2] };
   }
-
-  // Assume it's a URL and try to fetch it
   try {
     const response = await fetch(input);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
-    }
+    if (!response.ok) throw new Error(`Failed to fetch image: ${response.status}`);
     const blob = await response.blob();
     const buffer = await blob.arrayBuffer();
     const base64 = encode(new Uint8Array(buffer));
-    return {
-      mediaType: blob.type || 'image/jpeg',
-      data: base64
-    };
+    return { mediaType: blob.type || 'image/jpeg', data: base64 };
   } catch (e) {
-    console.error("Error processing image input:", e);
-    throw new Error('Invalid image input: Must be valid Data URL or accessible HTTP URL');
+    throw new Error('Invalid image input');
   }
 }
 
@@ -45,48 +32,59 @@ serve(async (req) => {
   }
 
   try {
-    const bodyText = await req.text();
-    const { imageData } = JSON.parse(bodyText);
-
-    if (!ANTHROPIC_API_KEY || !imageData) {
-      throw new Error('Missing API Key or Image Data');
-    }
+    const { imageData } = JSON.parse(await req.text());
+    if (!ANTHROPIC_API_KEY || !imageData) throw new Error('Missing API Key or Image Data');
 
     const imageParts = await processImageInput(imageData);
 
-    console.log('Extracting ingredient lines with bounding boxes...');
+    console.log('=== Finding ingredients with landmark-based location ===');
 
-    // Single-step extraction with very explicit coordinate instructions
-    const extractionPrompt = `Analyze this food product image and extract the ingredient list with PRECISE bounding boxes.
+    // Single prompt that asks for BOTH description and coordinates with verification
+    const prompt = `Analyze this food product packaging image to find the INGREDIENTS list.
 
-CRITICAL INSTRUCTION:
-For each line of text you extract, the bounding box coordinates MUST point to the EXACT LOCATION where that specific text appears in the image. The text and coordinates must match - if you read "INGREDIENTS: WHEAT FLOUR" the bounding box must surround those exact words in the image.
+CRITICAL DISTINCTION:
+- INGREDIENTS = Plain text paragraph starting with "INGREDIENTS:" containing comma-separated food items
+- NUTRITION FACTS = A bordered table/box with "Nutrition Facts" header, showing calories, fat, protein, etc.
 
-COORDINATE SYSTEM (0-100 percentage scale):
-- x = distance from LEFT edge (0=left, 100=right)
-- y = distance from TOP edge (0=top, 100=bottom)
-- w = width of the text box
-- h = height of the text box (typically 2-5% for a single line of text)
+These are TWO DIFFERENT things. I need the INGREDIENTS, NOT the Nutrition Facts table.
 
 TASK:
-1. Locate the ingredient list in the image (starts with "INGREDIENTS:" or "Ingredients:")
-2. For EACH LINE of text in the ingredient list:
-   - Read the exact text on that line
-   - Measure the bounding box coordinates for THAT SPECIFIC LINE
-   - The coordinates must point to where you see that text
+1. First, visually locate the text that starts with "INGREDIENTS:"
+2. Look at where this text physically appears in the image
+3. Describe its position relative to other elements
+4. Provide bounding box coordinates
 
-VERIFICATION:
-Before outputting, verify that each bounding box actually contains the text you transcribed. The crop at those coordinates should show the exact words in the "text" field.
+Think step by step:
+- Where is the word "INGREDIENTS:" in the image? (top/middle/bottom, left/center/right)
+- What is directly ABOVE the ingredients text?
+- What is directly BELOW the ingredients text?
+- Is the Nutrition Facts table ABOVE or BELOW the ingredients?
 
-Return ONLY this JSON format:
+Based on your analysis, provide:
 {
-  "ingredientLines": [
-    {"text": "exact text from line 1", "x": number, "y": number, "w": number, "h": number},
-    {"text": "exact text from line 2", "x": number, "y": number, "w": number, "h": number}
-  ]
-}`;
+  "found": true/false,
+  "position_description": "description of where ingredients are located",
+  "above_ingredients": "what appears directly above",
+  "below_ingredients": "what appears directly below",
+  "nutrition_facts_position": "where is the nutrition table relative to ingredients",
+  "region": {
+    "x": number (0-100, left edge percentage),
+    "y": number (0-100, top edge percentage - THIS IS CRITICAL),
+    "w": number (0-100, width percentage),
+    "h": number (0-100, height percentage)
+  },
+  "ingredient_text": "the full text of all ingredients"
+}
 
-    const extractionResponse = await fetch('https://api.anthropic.com/v1/messages', {
+COORDINATE VERIFICATION:
+- If ingredients are in the UPPER half of image → y should be 10-50
+- If ingredients are in the MIDDLE of image → y should be 30-60
+- If ingredients are in the LOWER half of image → y should be 50-90
+- The y value is the TOP edge of the ingredient text
+
+Return ONLY the JSON object.`;
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'x-api-key': ANTHROPIC_API_KEY,
@@ -95,94 +93,148 @@ Return ONLY this JSON format:
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 4096,
+        max_tokens: 2048,
         messages: [{
           role: 'user',
           content: [
             { type: "image", source: { type: "base64", media_type: imageParts.mediaType, data: imageParts.data } },
-            { type: "text", text: extractionPrompt }
+            { type: "text", text: prompt }
           ]
         }]
       })
     });
 
-    if (!extractionResponse.ok) {
-      const errorBody = await extractionResponse.text();
-      console.error('Extraction API Error Body:', errorBody);
-      throw new Error(`Extraction API Error: ${extractionResponse.status} - ${errorBody}`);
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error('API Error:', errorBody);
+      throw new Error(`API Error: ${response.status}`);
     }
 
-    const extractionData = await extractionResponse.json();
+    const data = await response.json();
+    const responseText = data.content[0].text;
+    console.log('Raw response:', responseText);
 
-    // DEBUG: Log raw AI response
-    const rawResponseText = extractionData.content[0].text;
-    console.log('=== RAW AI RESPONSE ===');
-    console.log(rawResponseText);
-    console.log('=== END RAW RESPONSE ===');
-
+    // Parse the response
     let result;
     try {
-      const cleanJson = rawResponseText.replace(/```json\n?|```/g, '').trim();
-      result = JSON.parse(cleanJson);
-      console.log('=== PARSED RESULT ===');
-      console.log(JSON.stringify(result, null, 2));
+      const cleanJson = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      const jsonMatch = cleanJson.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        result = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('No JSON found');
+      }
     } catch (e) {
-      console.error("Failed to parse extraction JSON", e);
-      console.error("Raw response text:", rawResponseText);
-      throw new Error("Invalid format from AI");
+      console.error('Parse error:', e);
+      throw new Error('Could not parse AI response');
     }
 
-    let validLines = (result.ingredientLines || []).filter((line: any) =>
-      line &&
-      typeof line.text === 'string' &&
-      typeof line.x === 'number' &&
-      typeof line.y === 'number' &&
-      typeof line.w === 'number' &&
-      typeof line.h === 'number'
-    );
+    console.log('Parsed result:', JSON.stringify(result, null, 2));
 
-    // Validate and fix coordinates - ensure they're in reasonable ranges
-    validLines = validLines.map((line: any) => {
-      // Clamp values to 0-100 range
-      const x = Math.max(0, Math.min(100, line.x));
-      const y = Math.max(0, Math.min(100, line.y));
-      const w = Math.max(1, Math.min(100 - x, line.w));
-      const h = Math.max(1, Math.min(100 - y, line.h));
+    // Log the position analysis for debugging
+    console.log('Position description:', result.position_description);
+    console.log('Above ingredients:', result.above_ingredients);
+    console.log('Below ingredients:', result.below_ingredients);
+    console.log('Nutrition Facts position:', result.nutrition_facts_position);
 
-      return {
-        text: line.text,
-        x,
-        y,
-        w,
-        h
-      };
-    });
+    if (!result.found || !result.region) {
+      throw new Error('Could not find ingredients in image');
+    }
 
-    console.log(`Extracted ${validLines.length} ingredient lines with coordinates`);
+    // Validate coordinates based on position description
+    let region = result.region;
 
-    // DEBUG: Log each line with its coordinates
-    validLines.forEach((line: any, idx: number) => {
-      console.log(`Line ${idx + 1}: "${line.text.substring(0, 50)}..." | x=${line.x}%, y=${line.y}%, w=${line.w}%, h=${line.h}%`);
-    });
+    // Sanity check: if description says "above nutrition facts" but y > 60, something is wrong
+    const desc = (result.position_description || '').toLowerCase();
+    const nutritionPos = (result.nutrition_facts_position || '').toLowerCase();
 
-    // Construct ingredient list string
-    const ingredientList = validLines.map((l: any) => l.text).join(' ');
+    if (nutritionPos.includes('below') && region.y > 55) {
+      console.log('WARNING: Position says nutrition is below, but y is high. Adjusting.');
+      // If nutrition facts is BELOW ingredients, ingredients should be in upper half
+      region.y = Math.min(region.y, 50);
+    }
+
+    if (desc.includes('middle') && (region.y < 25 || region.y > 65)) {
+      console.log('WARNING: Position says middle, but y is extreme. Adjusting.');
+      region.y = 40;
+    }
+
+    // Clamp values
+    region = {
+      x: Math.max(0, Math.min(95, region.x || 10)),
+      y: Math.max(0, Math.min(90, region.y || 40)),
+      w: Math.max(10, Math.min(95, region.w || 80)),
+      h: Math.max(5, Math.min(40, region.h || 15))
+    };
+
+    console.log('Final region:', region);
+
+    // Parse ingredient text into lines
+    const ingredientText = result.ingredient_text || '';
+    let lines: string[] = [];
+
+    if (ingredientText) {
+      // Split on common line break patterns
+      lines = ingredientText
+        .split(/(?:INGREDIENTS:\s*)|(?:\.\s+(?=[A-Z]))|(?:,\s*(?=CONTAINS|ALLERGEN|MAY CONTAIN))/i)
+        .map((s: string) => s.trim())
+        .filter((s: string) => s.length > 0);
+
+      // If still one big chunk, try to split by visual lines (roughly 60-80 chars)
+      if (lines.length === 1 && lines[0].length > 80) {
+        const text = lines[0];
+        lines = [];
+        let start = 0;
+        while (start < text.length) {
+          let end = Math.min(start + 70, text.length);
+          // Find a comma near the end to break at
+          if (end < text.length) {
+            const commaIdx = text.lastIndexOf(',', end);
+            if (commaIdx > start + 30) end = commaIdx + 1;
+          }
+          lines.push(text.substring(start, end).trim());
+          start = end;
+        }
+      }
+    }
+
+    // Fallback if no lines extracted
+    if (lines.length === 0) {
+      lines = ['(No ingredient text extracted)'];
+    }
+
+    // Calculate line positions
+    const lineHeight = region.h / lines.length;
+    const ingredientLines = lines.map((text: string, idx: number) => ({
+      text,
+      x: region.x,
+      y: region.y + (idx * lineHeight),
+      w: region.w,
+      h: lineHeight
+    }));
+
+    console.log(`Created ${ingredientLines.length} lines`);
 
     return new Response(JSON.stringify({
       success: true,
-      ingredientLines: validLines,
-      ingredientList: ingredientList
+      ingredientLines,
+      ingredientList: ingredientText,
+      region,
+      debug: {
+        position_description: result.position_description,
+        above_ingredients: result.above_ingredients,
+        below_ingredients: result.below_ingredients,
+        nutrition_facts_position: result.nutrition_facts_position
+      }
     }), {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
 
   } catch (e) {
-    console.error("Edge Function Error:", e);
-    console.error("Error stack:", e.stack);
+    console.error("Error:", e);
     return new Response(JSON.stringify({
       success: false,
-      error: e.message || "Unknown Error",
-      stack: e.stack || "No stack trace"
+      error: e.message || "Unknown Error"
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }

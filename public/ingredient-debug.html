@@ -585,6 +585,23 @@
       document.getElementById('regionW').textContent = `${region.w.toFixed(1)}%`;
       document.getElementById('regionH').textContent = `${region.h.toFixed(1)}%`;
 
+      // Show debug position analysis if available
+      const debug = extractedData.debug;
+      if (debug) {
+        const debugHtml = `
+          <div style="margin-top: 15px; padding: 15px; background: rgba(245, 158, 11, 0.1); border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.3);">
+            <h4 style="margin-bottom: 10px; color: #f59e0b;">AI Position Analysis</h4>
+            <div style="font-size: 12px; color: #e2e8f0;">
+              <div style="margin: 5px 0;"><strong>Position:</strong> ${debug.position_description || 'N/A'}</div>
+              <div style="margin: 5px 0;"><strong>Above ingredients:</strong> ${debug.above_ingredients || 'N/A'}</div>
+              <div style="margin: 5px 0;"><strong>Below ingredients:</strong> ${debug.below_ingredients || 'N/A'}</div>
+              <div style="margin: 5px 0;"><strong>Nutrition Facts location:</strong> ${debug.nutrition_facts_position || 'N/A'}</div>
+            </div>
+          </div>
+        `;
+        document.querySelector('#step2Section .grid-2 > div:last-child').insertAdjacentHTML('beforeend', debugHtml);
+      }
+
       document.getElementById('calcPixelX').innerHTML = `<span class="calc-result">= (${region.x.toFixed(1)} / 100) × ${imgW} = ${pixelX} px</span>`;
       document.getElementById('calcPixelY').innerHTML = `<span class="calc-result">= (${region.y.toFixed(1)} / 100) × ${imgH} = ${pixelY} px</span>`;
       document.getElementById('calcPixelW').innerHTML = `<span class="calc-result">= (${region.w.toFixed(1)} / 100) × ${imgW} = ${pixelW} px</span>`;
