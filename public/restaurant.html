@@ -12440,6 +12440,83 @@
     }
     window.rotateImage = rotateImage;
 
+    // Detect slant angle using OpenCV Hough Line Transform
+    async function detectSlantAngle(imageDataUrl) {
+      return new Promise((resolve) => {
+        if (typeof cv === 'undefined' || !cv.Mat) {
+          console.warn('OpenCV not loaded, skipping slant detection');
+          resolve(0);
+          return;
+        }
+
+        const img = new Image();
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0);
+
+            const src = cv.imread(canvas);
+            const gray = new cv.Mat();
+            const edges = new cv.Mat();
+            const lines = new cv.Mat();
+
+            // Convert to grayscale
+            cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+
+            // Apply Gaussian blur
+            cv.GaussianBlur(gray, gray, new cv.Size(5, 5), 0);
+
+            // Detect edges
+            cv.Canny(gray, edges, 50, 150);
+
+            // Detect lines using Hough Transform
+            cv.HoughLinesP(edges, lines, 1, Math.PI / 180, 50, 50, 10);
+
+            // Calculate average angle of detected lines
+            const angles = [];
+            for (let i = 0; i < lines.rows; i++) {
+              const x1 = lines.data32S[i * 4];
+              const y1 = lines.data32S[i * 4 + 1];
+              const x2 = lines.data32S[i * 4 + 2];
+              const y2 = lines.data32S[i * 4 + 3];
+
+              const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
+
+              // Only consider near-horizontal lines (likely text lines)
+              if (Math.abs(angle) < 45) {
+                angles.push(angle);
+              }
+            }
+
+            // Clean up
+            src.delete();
+            gray.delete();
+            edges.delete();
+            lines.delete();
+
+            if (angles.length === 0) {
+              resolve(0);
+              return;
+            }
+
+            // Return median angle (more robust than mean)
+            angles.sort((a, b) => a - b);
+            const medianAngle = angles[Math.floor(angles.length / 2)];
+            console.log(`Detected slant angle: ${medianAngle.toFixed(2)}° from ${angles.length} lines`);
+            resolve(-medianAngle); // Negative to correct the slant
+          } catch (err) {
+            console.error('Slant detection error:', err);
+            resolve(0);
+          }
+        };
+        img.onerror = () => resolve(0);
+        img.src = imageDataUrl;
+      });
+    }
+
     // Label Cropper API integration (hosted on Railway)
     const LABEL_CROPPER_URL = 'https://label-cropper-production.up.railway.app';
 
@@ -12496,17 +12573,13 @@
     async function analyzeIngredientPhoto(imageDataUrl, onStatus) {
       onStatus?.('Detecting text orientation...');
 
-      // Step 1: Detect slant angle (simplified - we'll rotate if needed)
-      // For now, we skip slant detection and just use the image as-is
-      // The label-cropper will handle any minor rotation issues
+      // Step 1: Detect and correct slant angle
       let correctedImage = imageDataUrl;
-
-      // If you want slant correction, uncomment this:
-      // const slantAngle = await detectSlantAngle(imageDataUrl);
-      // if (Math.abs(slantAngle) > 0.5) {
-      //   onStatus?.(`Correcting ${Math.abs(slantAngle).toFixed(1)}° slant...`);
-      //   correctedImage = await rotateImage(imageDataUrl, slantAngle);
-      // }
+      const slantAngle = await detectSlantAngle(imageDataUrl);
+      if (Math.abs(slantAngle) > 1) {
+        onStatus?.(`Correcting ${Math.abs(slantAngle).toFixed(1)}° slant...`);
+        correctedImage = await rotateImage(imageDataUrl, slantAngle);
+      }
 
       onStatus?.('Analyzing ingredient label...');
 
