@@ -12538,6 +12538,104 @@
     }
     window.analyzeIngredientPhoto = analyzeIngredientPhoto;
 
+    // Open brand identification choice modal
+    function openBrandIdentificationChoice(rowIdx) {
+      ensureAiAssistElements();
+      const rows = collectAiTableData();
+      if (!rows[rowIdx]) {
+        aiAssistSetStatus('Select an ingredient first.', 'warn');
+        return;
+      }
+
+      const ingredientName = rows[rowIdx].name;
+      if (!ingredientName) {
+        aiAssistSetStatus('Add an ingredient name before identifying a brand.', 'warn');
+        return;
+      }
+
+      const brands = rows[rowIdx].brands || [];
+      if (brands.length > 0) {
+        aiAssistSetStatus('An item has already been added for this ingredient. Remove it first if you want to add a different one.', 'warn');
+        return;
+      }
+
+      const choiceModal = document.createElement('div');
+      choiceModal.id = 'brandIdentificationChoiceModal';
+      choiceModal.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;`;
+
+      choiceModal.innerHTML = `
+        <div style="width:100%;max-width:400px;background:#1a1f35;border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:20px">
+          <div style="text-align:center">
+            <h3 style="margin:0 0 8px 0;font-size:1.3rem;color:#fff">Add Brand Item</h3>
+            <p style="margin:0;color:#a8b2d6;font-size:0.95rem">Ingredient: <strong style="color:#fff">${esc(ingredientName)}</strong></p>
+            <p style="margin:12px 0 0 0;color:#a8b2d6;font-size:0.9rem">How would you like to identify this brand?</p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <button type="button" class="btn brandChoiceScanBarcode" style="background:#4c5ad4;border:none;padding:16px 24px;border-radius:12px;color:#fff;font-size:1.1rem;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px">
+              <span style="font-size:1.4rem">📷</span> Scan Barcode
+            </button>
+            <button type="button" class="btn brandChoicePhotoIngredients" style="background:#17663a;border:none;padding:16px 24px;border-radius:12px;color:#fff;font-size:1.1rem;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px">
+              <span style="font-size:1.4rem">📋</span> Photo of Ingredient List
+            </button>
+            <button type="button" class="btn brandChoiceFindOnline" style="background:#ff9800;border:none;padding:16px 24px;border-radius:12px;color:#fff;font-size:1.1rem;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px">
+              <span style="font-size:1.4rem">🔍</span> Find Brand Online
+            </button>
+          </div>
+          <button type="button" class="btn brandChoiceCancel" style="background:transparent;border:1px solid rgba(255,255,255,0.2);padding:12px 24px;border-radius:8px;color:#a8b2d6;font-size:0.95rem;cursor:pointer">Cancel</button>
+        </div>
+      `;
+
+      const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollPos}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+
+      document.body.appendChild(choiceModal);
+
+      function closeChoiceModal() {
+        if (choiceModal.parentNode) choiceModal.parentNode.removeChild(choiceModal);
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollPos);
+      }
+
+      choiceModal.querySelector('.brandChoiceScanBarcode').addEventListener('click', () => {
+        closeChoiceModal();
+        openAiBarcodeScanner(rowIdx);
+      });
+
+      choiceModal.querySelector('.brandChoicePhotoIngredients').addEventListener('click', () => {
+        closeChoiceModal();
+        showIngredientPhotoUploadModal(rowIdx, ingredientName, null);
+      });
+
+      choiceModal.querySelector('.brandChoiceFindOnline').addEventListener('click', () => {
+        closeChoiceModal();
+        showBarcodeLoadingInRow(rowIdx, ingredientName, '');
+        (async () => {
+          try {
+            const barcode = await searchProductBarcodeByName(ingredientName);
+            if (barcode) {
+              openAiBarcodeScannerWithBarcode(rowIdx, barcode);
+            } else {
+              hideBarcodeLoadingInRow(rowIdx);
+              if (typeof showBarcodeErrorInRow === 'function') showBarcodeErrorInRow(rowIdx, 'No product found');
+              else aiAssistSetStatus('No product found in database', 'warn');
+            }
+          } catch (err) {
+            hideBarcodeLoadingInRow(rowIdx);
+            aiAssistSetStatus('Search failed - try again', 'warn');
+          }
+        })();
+      });
+
+      choiceModal.querySelector('.brandChoiceCancel').addEventListener('click', closeChoiceModal);
+      choiceModal.addEventListener('click', (e) => { if (e.target === choiceModal) closeChoiceModal(); });
+    }
+
     // Show ingredient photo upload modal with label-cropper integration
     function showIngredientPhotoUploadModal(rowIdx, ingredientName, barcode, preloadedData = null) {
       ensureAiAssistElements();
