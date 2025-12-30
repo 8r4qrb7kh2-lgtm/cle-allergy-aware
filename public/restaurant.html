@@ -12893,28 +12893,52 @@
             // Add word text with spans for highlighting - positioned to align with image
             if (line.words && line.words.length > 0) {
               const textDiv = document.createElement('div');
-              textDiv.style.cssText = 'margin-top:8px;position:relative;height:auto;min-height:24px;';
+              textDiv.style.cssText = 'margin-top:8px;position:relative;';
 
-              // Create positioned word spans
-              line.words.forEach((word, wordIdx) => {
+              // Create spans with word data
+              const spans = line.words.map((word, wordIdx) => {
                 const span = document.createElement('span');
                 span.textContent = word.text;
-                span.dataset.globalIndex = globalWordIndex;
-                // Position each word based on its x_start percentage from the API
-                const xCenter = (word.x_start + word.x_end) / 2;
-                span.style.cssText = `position:absolute;left:${word.x_start}%;font-size:0.75rem;color:#e2e8f0;white-space:nowrap;transform:translateX(0);`;
-                wordSpanMap[globalWordIndex] = span;
-                globalWordIndex++;
-                textDiv.appendChild(span);
+                span.dataset.globalIndex = globalWordIndex + wordIdx;
+                span.style.cssText = `position:absolute;font-size:0.7rem;color:#e2e8f0;white-space:nowrap;`;
+                wordSpanMap[globalWordIndex + wordIdx] = span;
+                return { span, word, row: 0 };
               });
+              globalWordIndex += line.words.length;
 
+              // Add spans to DOM
+              spans.forEach(s => textDiv.appendChild(s.span));
               lineDiv.appendChild(textDiv);
 
-              // Also add full text below for readability
-              const fullTextDiv = document.createElement('div');
-              fullTextDiv.style.cssText = 'margin-top:28px;font-size:0.85rem;color:#a8b2d6;line-height:1.4;';
-              fullTextDiv.textContent = line.text;
-              lineDiv.appendChild(fullTextDiv);
+              // Calculate overlap and assign rows after DOM render
+              requestAnimationFrame(() => {
+                const containerWidth = textDiv.offsetWidth || 400;
+                const rowHeight = 18;
+                let maxRow = 0;
+
+                spans.forEach((current, idx) => {
+                  const leftPx = (current.word.x_start / 100) * containerWidth;
+                  const currentWidth = current.span.offsetWidth || 50;
+
+                  // Check overlap with previous words on same row
+                  for (let i = 0; i < idx; i++) {
+                    const prev = spans[i];
+                    if (prev.row !== current.row) continue;
+                    const prevLeftPx = (prev.word.x_start / 100) * containerWidth;
+                    const prevRight = prevLeftPx + (prev.span.offsetWidth || 50) + 6;
+
+                    if (leftPx < prevRight) {
+                      current.row = prev.row + 1;
+                      maxRow = Math.max(maxRow, current.row);
+                    }
+                  }
+
+                  current.span.style.left = `${current.word.x_start}%`;
+                  current.span.style.top = `${current.row * rowHeight}px`;
+                });
+
+                textDiv.style.height = `${(maxRow + 1) * rowHeight + 4}px`;
+              });
             }
 
             croppedLinesContainer.appendChild(lineDiv);
