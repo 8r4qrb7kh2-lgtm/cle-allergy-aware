@@ -12,7 +12,6 @@
   <title>Clarivore</title>
   <script src="https://unpkg.com/@zxing/library@latest"></script>
   <script src="https://docs.opencv.org/4.5.2/opencv.js" type="text/javascript"></script>
-  <script src="js/unified-flagging.js"></script>
   <style>
     :root {
       --bg: #0b1020;
@@ -12927,6 +12926,50 @@
       });
     }
     window.showIngredientPhotoUploadModal = showIngredientPhotoUploadModal;
+
+    // Loading indicator functions for barcode lookups
+    function showBarcodeLoadingInRow(rowIdx, ingredientName, barcode = '') {
+      activeBarcodeLookups.set(rowIdx, { barcode, ingredientName, startTime: Date.now() });
+      const aiAssistTable = document.getElementById('aiAssistTable');
+      if (!aiAssistTable) return;
+      const trElement = aiAssistTable.querySelector(`tr[data-index="${rowIdx}"]`);
+      if (!trElement) return;
+      const rowElement = trElement.querySelector('.aiIngredientRow');
+      if (!rowElement) return;
+
+      let loadingArea = rowElement.querySelector('.barcodeLoadingArea');
+      if (!loadingArea) {
+        loadingArea = document.createElement('div');
+        loadingArea.className = 'barcodeLoadingArea';
+        loadingArea.style.cssText = 'margin-top:12px;padding:12px 16px;background:rgba(76,90,212,0.1);border-radius:8px;border:1px solid rgba(76,90,212,0.3);';
+        rowElement.appendChild(loadingArea);
+      }
+      loadingArea.innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="flex:1;background:rgba(76,90,212,0.2);border-radius:4px;height:6px;overflow:hidden">
+            <div class="barcodeLoadingBarFill" style="background:#4c5ad4;height:100%;width:20%;animation:pulse 1.5s infinite"></div>
+          </div>
+          <span style="font-size:0.9rem;color:#6b7ce6">Looking up ${esc(ingredientName)}...</span>
+        </div>
+        <div class="barcodeLoadingStatus" style="font-size:0.8rem;color:#a8b2d6;margin-top:8px">Searching...</div>
+      `;
+    }
+
+    function hideBarcodeLoadingInRow(rowIdx) {
+      activeBarcodeLookups.delete(rowIdx);
+      const aiAssistTable = document.getElementById('aiAssistTable');
+      if (!aiAssistTable) return;
+      const trElement = aiAssistTable.querySelector(`tr[data-index="${rowIdx}"]`);
+      if (!trElement) return;
+      const rowElement = trElement.querySelector('.aiIngredientRow');
+      if (!rowElement) return;
+      const loadingArea = rowElement.querySelector('.barcodeLoadingArea');
+      if (loadingArea) loadingArea.remove();
+    }
+
+    function showBarcodeLoadingInRowWithTime(rowIdx, ingredientName, existingStartTime) {
+      showBarcodeLoadingInRow(rowIdx, ingredientName);
+    }
 
     // Expose loading functions globally for auto-fill
     window.showBarcodeLoadingInRow = showBarcodeLoadingInRow;
