@@ -12395,8 +12395,17 @@
             // Return median angle (more robust than mean)
             angles.sort((a, b) => a - b);
             const medianAngle = angles[Math.floor(angles.length / 2)];
-            console.log(`Detected slant angle: ${medianAngle.toFixed(2)}° from ${angles.length} lines`);
-            resolve(-medianAngle); // Negative to correct the slant
+
+            // Debug: show angle distribution
+            const positiveCount = angles.filter(a => a > 0).length;
+            const negativeCount = angles.filter(a => a < 0).length;
+            console.log(`Angle distribution: ${positiveCount} positive, ${negativeCount} negative`);
+            console.log(`Detected slant: ${medianAngle.toFixed(2)}° (median of ${angles.length} lines)`);
+
+            // Correction: rotate opposite to detected slant
+            // If text tilts +10° (right down), rotate -10° to level
+            // If text tilts -10° (right up), rotate +10° to level
+            resolve(-medianAngle);
           } catch (err) {
             console.error('Slant detection error:', err);
             resolve(0);
