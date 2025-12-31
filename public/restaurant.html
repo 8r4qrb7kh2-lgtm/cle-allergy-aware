@@ -13299,24 +13299,97 @@ Output ONLY the JSON object, nothing else.`;
             lineDiv.appendChild(cropImg);
 
             // Add word text with spans for highlighting
-            // Use Claude's transcript words (matches backend word indices for allergen highlighting)
+            // Use Claude's transcript words (matches backend word indices) but Vision positions
             const transcriptWords = line.text.split(/\s+/).filter(w => w.length > 0);
+            const visionWords = line.words || [];
+
             if (transcriptWords.length > 0) {
               const textDiv = document.createElement('div');
-              textDiv.style.cssText = 'margin-top:8px;display:flex;flex-wrap:wrap;gap:4px 10px;justify-content:center;';
+              textDiv.style.cssText = 'margin-top:8px;position:relative;';
 
-              // Create spans for each transcript word
-              transcriptWords.forEach((wordText, wordIdx) => {
+              // Crop bounds for position calculations
+              const cropXStart = coords.x_start;
+              const cropXEnd = coords.x_end;
+              const cropWidth = cropXEnd - cropXStart;
+
+              // Match transcript words to Vision words for positioning
+              const usedVisionIndices = new Set();
+              const wordData = transcriptWords.map((wordText, wordIdx) => {
+                // Find best matching Vision word (by text similarity)
+                const cleanTranscript = wordText.toLowerCase().replace(/[^a-z0-9]/g, '');
+                let bestMatch = null;
+                let bestScore = 0;
+
+                visionWords.forEach((vw, vi) => {
+                  if (usedVisionIndices.has(vi)) return;
+                  const cleanVision = vw.text.toLowerCase().replace(/[^a-z0-9]/g, '');
+                  // Check if one contains the other or they're similar
+                  let score = 0;
+                  if (cleanVision === cleanTranscript) score = 100;
+                  else if (cleanVision.includes(cleanTranscript) || cleanTranscript.includes(cleanVision)) {
+                    score = 50 + Math.min(cleanVision.length, cleanTranscript.length);
+                  }
+                  if (score > bestScore) {
+                    bestScore = score;
+                    bestMatch = { vw, vi };
+                  }
+                });
+
+                if (bestMatch && bestScore > 0) {
+                  usedVisionIndices.add(bestMatch.vi);
+                  // Convert Vision position to crop-relative
+                  const wordCenterPct = (bestMatch.vw.x_start + bestMatch.vw.x_end) / 2;
+                  const centerPctInCrop = ((wordCenterPct - cropXStart) / cropWidth) * 100;
+                  return { text: wordText, centerPct: centerPctInCrop, hasPosition: true };
+                }
+                return { text: wordText, centerPct: 50, hasPosition: false };
+              });
+
+              // Create spans with positions
+              const spans = wordData.map((wd, wordIdx) => {
                 const span = document.createElement('span');
-                span.textContent = wordText;
+                span.textContent = wd.text;
                 span.dataset.globalIndex = globalWordIndex + wordIdx;
-                span.style.cssText = 'font-size:0.75rem;color:#e2e8f0;';
+                span.style.cssText = 'position:absolute;font-size:0.7rem;color:#e2e8f0;white-space:nowrap;';
                 wordSpanMap[globalWordIndex + wordIdx] = span;
                 textDiv.appendChild(span);
+                return { span, centerPct: wd.centerPct, row: 0 };
               });
               globalWordIndex += transcriptWords.length;
 
               lineDiv.appendChild(textDiv);
+
+              // Position words after DOM render
+              requestAnimationFrame(() => {
+                const containerWidth = textDiv.offsetWidth || 400;
+                const rowHeight = 18;
+                let maxRow = 0;
+
+                spans.forEach((current, idx) => {
+                  const centerPx = (current.centerPct / 100) * containerWidth;
+                  const halfWidth = (current.span.offsetWidth || 40) / 2;
+                  const currentLeft = centerPx - halfWidth;
+
+                  // Check overlap with previous words
+                  for (let i = 0; i < idx; i++) {
+                    const prev = spans[i];
+                    if (prev.row !== current.row) continue;
+                    const prevCenterPx = (prev.centerPct / 100) * containerWidth;
+                    const prevHalfWidth = (prev.span.offsetWidth || 40) / 2;
+                    const prevRight = prevCenterPx + prevHalfWidth + 4;
+                    if (currentLeft < prevRight) {
+                      current.row = prev.row + 1;
+                      maxRow = Math.max(maxRow, current.row);
+                    }
+                  }
+
+                  current.span.style.left = `${current.centerPct}%`;
+                  current.span.style.transform = 'translateX(-50%)';
+                  current.span.style.top = `${current.row * rowHeight}px`;
+                });
+
+                textDiv.style.height = `${(maxRow + 1) * rowHeight + 4}px`;
+              });
             }
 
             croppedLinesContainer.appendChild(lineDiv);
