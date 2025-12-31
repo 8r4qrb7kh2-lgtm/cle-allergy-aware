@@ -13303,14 +13303,24 @@ Output ONLY the JSON object, nothing else.`;
               const textDiv = document.createElement('div');
               textDiv.style.cssText = 'margin-top:8px;position:relative;';
 
-              // Create spans with word data
+              // Store crop bounds for position calculations
+              const cropXStart = coords.x_start;
+              const cropXEnd = coords.x_end;
+              const cropWidth = cropXEnd - cropXStart;
+
+              // Create spans with word data - convert positions to crop-relative
               const spans = line.words.map((word, wordIdx) => {
                 const span = document.createElement('span');
                 span.textContent = word.text;
                 span.dataset.globalIndex = globalWordIndex + wordIdx;
                 span.style.cssText = `position:absolute;font-size:0.7rem;color:#e2e8f0;white-space:nowrap;`;
                 wordSpanMap[globalWordIndex + wordIdx] = span;
-                return { span, word, row: 0 };
+
+                // Convert word position from full-image % to crop-relative %
+                const wordCenterPct = (word.x_start + word.x_end) / 2;
+                const centerPctInCrop = ((wordCenterPct - cropXStart) / cropWidth) * 100;
+
+                return { span, word, row: 0, centerPctInCrop };
               });
               globalWordIndex += line.words.length;
 
@@ -13325,19 +13335,16 @@ Output ONLY the JSON object, nothing else.`;
                 let maxRow = 0;
 
                 spans.forEach((current, idx) => {
-                  // Calculate center position of word
-                  const centerPct = (current.word.x_start + current.word.x_end) / 2;
-                  const centerPx = (centerPct / 100) * containerWidth;
+                  // Use the pre-calculated crop-relative center position
+                  const centerPx = (current.centerPctInCrop / 100) * containerWidth;
                   const halfWidth = (current.span.offsetWidth || 50) / 2;
                   const currentLeft = centerPx - halfWidth;
-                  const currentRight = centerPx + halfWidth;
 
                   // Check overlap with previous words on same row
                   for (let i = 0; i < idx; i++) {
                     const prev = spans[i];
                     if (prev.row !== current.row) continue;
-                    const prevCenterPct = (prev.word.x_start + prev.word.x_end) / 2;
-                    const prevCenterPx = (prevCenterPct / 100) * containerWidth;
+                    const prevCenterPx = (prev.centerPctInCrop / 100) * containerWidth;
                     const prevHalfWidth = (prev.span.offsetWidth || 50) / 2;
                     const prevRight = prevCenterPx + prevHalfWidth + 6;
 
@@ -13347,7 +13354,7 @@ Output ONLY the JSON object, nothing else.`;
                     }
                   }
 
-                  current.span.style.left = `${centerPct}%`;
+                  current.span.style.left = `${current.centerPctInCrop}%`;
                   current.span.style.transform = 'translateX(-50%)';
                   current.span.style.top = `${current.row * rowHeight}px`;
                 });
