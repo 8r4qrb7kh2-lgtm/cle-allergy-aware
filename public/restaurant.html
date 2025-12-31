@@ -13293,10 +13293,14 @@ Output ONLY the JSON object, nothing else.`;
             lineLabel.textContent = `Line ${line.line_number}`;
             lineDiv.appendChild(lineLabel);
 
+            // Wrapper keeps image and text aligned to same width
+            const lineContentWrapper = document.createElement('div');
+            lineContentWrapper.style.cssText = 'display:inline-block;max-width:100%;';
+
             const cropImg = document.createElement('img');
             cropImg.src = cropCanvas.toDataURL('image/png');
-            cropImg.style.cssText = 'max-width:100%;border-radius:4px;background:#000;';
-            lineDiv.appendChild(cropImg);
+            cropImg.style.cssText = 'width:100%;border-radius:4px;background:#000;display:block;';
+            lineContentWrapper.appendChild(cropImg);
 
             // Add word text with spans for highlighting
             // Use Claude's transcript words (matches backend word indices) but Vision positions
@@ -13305,7 +13309,7 @@ Output ONLY the JSON object, nothing else.`;
 
             if (transcriptWords.length > 0) {
               const textDiv = document.createElement('div');
-              textDiv.style.cssText = 'margin-top:8px;position:relative;';
+              textDiv.style.cssText = 'margin-top:8px;position:relative;width:100%;';
 
               // Crop bounds for position calculations
               const cropXStart = coords.x_start;
@@ -13357,7 +13361,7 @@ Output ONLY the JSON object, nothing else.`;
               });
               globalWordIndex += transcriptWords.length;
 
-              lineDiv.appendChild(textDiv);
+              lineContentWrapper.appendChild(textDiv);
 
               // Position words after DOM render
               requestAnimationFrame(() => {
@@ -13392,6 +13396,7 @@ Output ONLY the JSON object, nothing else.`;
               });
             }
 
+            lineDiv.appendChild(lineContentWrapper);
             croppedLinesContainer.appendChild(lineDiv);
           });
 
