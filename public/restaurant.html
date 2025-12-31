@@ -12358,8 +12358,12 @@
             // Detect lines using Hough Transform
             cv.HoughLinesP(edges, lines, 1, Math.PI / 180, 50, 50, 10);
 
-            // Calculate average angle of detected lines
+            // Calculate length-weighted average angle of detected lines
+            // Longer lines are more likely to be text baselines
+            let totalWeight = 0;
+            let weightedSum = 0;
             const angles = [];
+
             for (let i = 0; i < lines.rows; i++) {
               let x1 = lines.data32S[i * 4];
               let y1 = lines.data32S[i * 4 + 1];
@@ -12367,17 +12371,21 @@
               let y2 = lines.data32S[i * 4 + 3];
 
               // Normalize line direction to always go left-to-right
-              // This ensures consistent angle sign regardless of Hough endpoint order
               if (x1 > x2) {
                 [x1, x2] = [x2, x1];
                 [y1, y2] = [y2, y1];
               }
 
+              const length = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
               const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
 
-              // Only consider near-horizontal lines (likely text lines)
-              if (Math.abs(angle) < 45) {
+              // Only consider near-horizontal lines (tighter range for text)
+              if (Math.abs(angle) < 25) {
                 angles.push(angle);
+                // Weight by length squared to heavily favor long lines
+                const weight = length * length;
+                weightedSum += angle * weight;
+                totalWeight += weight;
               }
             }
 
@@ -12387,25 +12395,22 @@
             edges.delete();
             lines.delete();
 
-            if (angles.length === 0) {
+            if (angles.length === 0 || totalWeight === 0) {
               resolve(0);
               return;
             }
 
-            // Return median angle (more robust than mean)
-            angles.sort((a, b) => a - b);
-            const medianAngle = angles[Math.floor(angles.length / 2)];
+            // Use length-weighted average instead of median
+            const weightedAngle = weightedSum / totalWeight;
 
             // Debug: show angle distribution
             const positiveCount = angles.filter(a => a > 0).length;
             const negativeCount = angles.filter(a => a < 0).length;
-            console.log(`Angle distribution: ${positiveCount} positive, ${negativeCount} negative`);
-            console.log(`Detected slant: ${medianAngle.toFixed(2)}° (median of ${angles.length} lines)`);
+            console.log(`Angle distribution: ${positiveCount} positive, ${negativeCount} negative (of ${angles.length} lines)`);
+            console.log(`Weighted average slant: ${weightedAngle.toFixed(2)}°`);
 
             // Correction: rotate opposite to detected slant
-            // If text tilts +10° (right down), rotate -10° to level
-            // If text tilts -10° (right up), rotate +10° to level
-            resolve(-medianAngle);
+            resolve(-weightedAngle);
           } catch (err) {
             console.error('Slant detection error:', err);
             resolve(0);
