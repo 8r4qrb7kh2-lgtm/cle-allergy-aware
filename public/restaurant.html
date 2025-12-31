@@ -12361,10 +12361,17 @@
             // Calculate average angle of detected lines
             const angles = [];
             for (let i = 0; i < lines.rows; i++) {
-              const x1 = lines.data32S[i * 4];
-              const y1 = lines.data32S[i * 4 + 1];
-              const x2 = lines.data32S[i * 4 + 2];
-              const y2 = lines.data32S[i * 4 + 3];
+              let x1 = lines.data32S[i * 4];
+              let y1 = lines.data32S[i * 4 + 1];
+              let x2 = lines.data32S[i * 4 + 2];
+              let y2 = lines.data32S[i * 4 + 3];
+
+              // Normalize line direction to always go left-to-right
+              // This ensures consistent angle sign regardless of Hough endpoint order
+              if (x1 > x2) {
+                [x1, x2] = [x2, x1];
+                [y1, y2] = [y2, y1];
+              }
 
               const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
 
