@@ -20594,33 +20594,41 @@ Use the EXACT indices from the numbered list above. Do not calculate your own in
           const zoomState = menuState.pinchZoomState || { scale: 1, translateX: 0, translateY: 0 };
           const scale = zoomState.scale || 1;
 
-          // Calculate what portion of the image is visible within the menu container
-          // Account for zoom scale - the actual image content is scaled
-          const scaledImgWidth = imgRect.width;
-          const scaledImgHeight = imgRect.height;
-          const originalImgWidth = scaledImgWidth / scale;
-          const originalImgHeight = scaledImgHeight / scale;
+          const imgHeight = imgRect.height;
+          const imgWidth = imgRect.width;
 
-          // Vertical visibility
-          const visibleTop = Math.max(0, containerRect.top - imgRect.top);
-          const visibleBottom = Math.min(scaledImgHeight, containerRect.bottom - imgRect.top);
-          const visibleHeight = Math.max(0, visibleBottom - visibleTop);
-
-          // Horizontal visibility
-          const visibleLeft = Math.max(0, containerRect.left - imgRect.left);
-          const visibleRight = Math.min(scaledImgWidth, containerRect.right - imgRect.left);
-          const visibleWidth = Math.max(0, visibleRight - visibleLeft);
-
-          if (scaledImgHeight <= 0 || visibleHeight <= 0 || scaledImgWidth <= 0 || visibleWidth <= 0) {
+          if (imgHeight <= 0 || imgWidth <= 0) {
             viewportBox.style.display = 'none';
             return;
           }
 
-          // Convert to percentages of the original (unscaled) image
-          const topPercent = (visibleTop / scaledImgHeight) * 100;
-          const heightPercent = (visibleHeight / scaledImgHeight) * 100;
-          const leftPercent = (visibleLeft / scaledImgWidth) * 100;
-          const widthPercent = (visibleWidth / scaledImgWidth) * 100;
+          // Vertical visibility - what portion of the image height is visible
+          const visibleTop = Math.max(0, containerRect.top - imgRect.top);
+          const visibleBottom = Math.min(imgHeight, containerRect.bottom - imgRect.top);
+          const visibleHeight = Math.max(0, visibleBottom - visibleTop);
+
+          // Horizontal: when not zoomed (scale ~1), show full width
+          // When zoomed, calculate actual visible portion
+          let leftPercent = 0;
+          let widthPercent = 100;
+
+          if (scale > 1.05) {
+            // Zoomed in - calculate visible horizontal portion
+            const visibleLeft = Math.max(0, containerRect.left - imgRect.left);
+            const visibleRight = Math.min(imgWidth, containerRect.right - imgRect.left);
+            const visibleWidth = Math.max(0, visibleRight - visibleLeft);
+            leftPercent = (visibleLeft / imgWidth) * 100;
+            widthPercent = (visibleWidth / imgWidth) * 100;
+          }
+
+          // Vertical percentages
+          const topPercent = (visibleTop / imgHeight) * 100;
+          const heightPercent = (visibleHeight / imgHeight) * 100;
+
+          if (heightPercent <= 0) {
+            viewportBox.style.display = 'none';
+            return;
+          }
 
           viewportBox.style.display = 'block';
           viewportBox.style.top = `${topPercent}%`;
@@ -21376,16 +21384,13 @@ Use the EXACT indices from the numbered list above. Do not calculate your own in
       </div>
 
       <!-- Legend row - icon key -->
-      <div id="legendRow" style="display:none;font-size:0.55rem;color:#a8b2d6;padding:4px 0;">
-        <div style="display:flex;flex-direction:column;gap:2px;">
-          <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;">
-            <span style="font-size:0.9rem;">👆</span>
-            <span style="font-size:0.65rem;">Tap any dish for details</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:3px;"><span class="key ok" style="width:7px;height:7px;flex-shrink:0;"></span><span>Complies with selections</span></div>
-          <div style="display:flex;align-items:center;gap:3px;"><span class="key warn" style="width:7px;height:7px;flex-shrink:0;"></span><span>Can be modified to accommodate selections</span></div>
-          <div style="display:flex;align-items:center;gap:3px;"><span class="key bad" style="width:7px;height:7px;flex-shrink:0;"></span><span>Cannot be modified to accommodate selections</span></div>
-          <div style="display:flex;align-items:center;gap:3px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:7px;height:7px;background:#facc15;border-radius:50%;font-size:5px;color:#000;font-weight:bold;flex-shrink:0;">⚠</span><span>Has a cross-contamination risk with selection(s)</span></div>
+      <div id="legendRow" style="display:none;font-size:0.5rem;color:#a8b2d6;padding:2px 0;line-height:1.4;">
+        <div style="display:flex;align-items:center;gap:3px;margin-bottom:1px;"><span style="font-size:0.8rem;">👆</span><span>Tap any dish for details</span></div>
+        <div style="display:flex;flex-wrap:wrap;gap:2px 8px;">
+          <span style="display:inline-flex;align-items:center;gap:2px;"><span class="key ok" style="width:6px;height:6px;flex-shrink:0;"></span>Complies with selections</span>
+          <span style="display:inline-flex;align-items:center;gap:2px;"><span class="key warn" style="width:6px;height:6px;flex-shrink:0;"></span>Can be modified to accommodate selections</span>
+          <span style="display:inline-flex;align-items:center;gap:2px;"><span class="key bad" style="width:6px;height:6px;flex-shrink:0;"></span>Cannot be modified to accommodate selections</span>
+          <span style="display:inline-flex;align-items:center;gap:2px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:6px;height:6px;background:#facc15;border-radius:50%;font-size:4px;color:#000;font-weight:bold;flex-shrink:0;">⚠</span>Has a cross-contamination risk with selection(s)</span>
         </div>
       </div>
     </div>
