@@ -20612,24 +20612,47 @@ Use the EXACT indices from the numbered list above. Do not calculate your own in
           const imgRect = sectionImg.getBoundingClientRect();
           const containerRect = menuContainer.getBoundingClientRect();
 
+          // Get pinch zoom state if available
+          const zoomState = menuState.pinchZoomState || { scale: 1, translateX: 0, translateY: 0 };
+          const scale = zoomState.scale || 1;
+
           // Calculate what portion of the image is visible within the menu container
+          // Account for zoom scale - the actual image content is scaled
+          const scaledImgWidth = imgRect.width;
+          const scaledImgHeight = imgRect.height;
+          const originalImgWidth = scaledImgWidth / scale;
+          const originalImgHeight = scaledImgHeight / scale;
+
+          // Vertical visibility
           const visibleTop = Math.max(0, containerRect.top - imgRect.top);
-          const visibleBottom = Math.min(imgRect.height, containerRect.bottom - imgRect.top);
+          const visibleBottom = Math.min(scaledImgHeight, containerRect.bottom - imgRect.top);
           const visibleHeight = Math.max(0, visibleBottom - visibleTop);
 
-          if (imgRect.height <= 0 || visibleHeight <= 0) {
+          // Horizontal visibility
+          const visibleLeft = Math.max(0, containerRect.left - imgRect.left);
+          const visibleRight = Math.min(scaledImgWidth, containerRect.right - imgRect.left);
+          const visibleWidth = Math.max(0, visibleRight - visibleLeft);
+
+          if (scaledImgHeight <= 0 || visibleHeight <= 0 || scaledImgWidth <= 0 || visibleWidth <= 0) {
             viewportBox.style.display = 'none';
             return;
           }
 
-          // Convert to percentages
-          const topPercent = (visibleTop / imgRect.height) * 100;
-          const heightPercent = (visibleHeight / imgRect.height) * 100;
+          // Convert to percentages of the original (unscaled) image
+          const topPercent = (visibleTop / scaledImgHeight) * 100;
+          const heightPercent = (visibleHeight / scaledImgHeight) * 100;
+          const leftPercent = (visibleLeft / scaledImgWidth) * 100;
+          const widthPercent = (visibleWidth / scaledImgWidth) * 100;
 
           viewportBox.style.display = 'block';
           viewportBox.style.top = `${topPercent}%`;
           viewportBox.style.height = `${heightPercent}%`;
+          viewportBox.style.left = `${leftPercent}%`;
+          viewportBox.style.width = `${widthPercent}%`;
         };
+
+        // Store on menuState for pinch zoom to access
+        menuState.updateMiniMapViewport = updateMiniMapViewport;
 
         // Detect which section is currently visible on scroll
         const updateCurrentSection = () => {
@@ -20732,16 +20755,18 @@ Use the EXACT indices from the numbered list above. Do not calculate your own in
         let translateX = 0, translateY = 0;
         let startTranslateX = 0, startTranslateY = 0;
 
-        // Get the menu container and all menuInner elements
-        const getTargets = () => {
-          const inners = [];
-          if (menuState.sections) {
-            menuState.sections.forEach(s => s.inner && inners.push(s.inner));
-          } else if (menuState.inner) {
-            inners.push(menuState.inner);
+        // Create or get a single zoom wrapper for all content
+        let zoomWrapper = container.querySelector('.pinchZoomWrapper');
+        if (!zoomWrapper) {
+          zoomWrapper = document.createElement('div');
+          zoomWrapper.className = 'pinchZoomWrapper';
+          zoomWrapper.style.cssText = 'transform-origin:0 0;width:100%;';
+          // Move all children into the wrapper
+          while (container.firstChild) {
+            zoomWrapper.appendChild(container.firstChild);
           }
-          return inners;
-        };
+          container.appendChild(zoomWrapper);
+        }
 
         const getDistance = (t1, t2) => {
           const dx = t1.clientX - t2.clientX;
@@ -20750,22 +20775,24 @@ Use the EXACT indices from the numbered list above. Do not calculate your own in
         };
 
         const applyTransform = () => {
-          const inners = getTargets();
-          inners.forEach(inner => {
-            inner.style.transformOrigin = '0 0';
-            inner.style.transform = `translate(${translateX}px, ${translateY}px) scale(${pinchScale})`;
-          });
+          zoomWrapper.style.transform = `translate(${translateX}px, ${translateY}px) scale(${pinchScale})`;
+          // Update state for minimap
+          menuState.pinchZoomState = { scale: pinchScale, translateX, translateY };
+          // Trigger minimap update
+          if (typeof menuState.updateMiniMapViewport === 'function') {
+            menuState.updateMiniMapViewport();
+          }
         };
 
         const resetZoom = () => {
           pinchScale = 1;
           translateX = 0;
           translateY = 0;
-          const inners = getTargets();
-          inners.forEach(inner => {
-            inner.style.transform = '';
-            inner.style.transformOrigin = '';
-          });
+          zoomWrapper.style.transform = '';
+          menuState.pinchZoomState = { scale: 1, translateX: 0, translateY: 0 };
+          if (typeof menuState.updateMiniMapViewport === 'function') {
+            menuState.updateMiniMapViewport();
+          }
         };
 
         container.addEventListener('touchstart', (e) => {
@@ -20853,6 +20880,7 @@ Use the EXACT indices from the numbered list above. Do not calculate your own in
 
         // Store reset function for external use
         menuState.resetPinchZoom = resetZoom;
+        menuState.pinchZoomState = { scale: 1, translateX: 0, translateY: 0 };
       })();
 
       // Track dish interaction for analytics
@@ -21355,7 +21383,7 @@ Use the EXACT indices from the numbered list above. Do not calculate your own in
           </div>
 
           <!-- Last confirmed row (hidden until acknowledge) -->
-          <div id="confirmedRow" style="display:none;font-size:0.6rem;color:#9ca3af;text-align:center;">
+          <div id="confirmedRow" style="display:none;font-size:0.6rem;color:#9ca3af;text-align:left;">
             Last confirmed by restaurant staff: ${rs.lastConfirmed ? esc(fmtDate(rs.lastConfirmed)) : '—'}
           </div>
         </div>
