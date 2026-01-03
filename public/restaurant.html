@@ -215,15 +215,20 @@
     .topNav {
       display: flex;
       align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-      justify-content: center
+      gap: 8px;
+      flex-wrap: nowrap;
+      justify-content: center;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      max-width: 100%;
     }
+    .topNav::-webkit-scrollbar { display: none; }
 
     .tabs {
       display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
+      gap: 6px;
+      flex-wrap: nowrap;
       justify-content: center
     }
 
@@ -668,7 +673,7 @@
       right: 0;
       bottom: 0;
       background: #0b1020;
-      z-index: 998;
+      z-index: 9999;
       touch-action: none;
       -webkit-overflow-scrolling: auto;
     }
@@ -684,13 +689,13 @@
       top: 0;
       left: 0;
       right: 0;
-      height: calc(env(safe-area-inset-top, 0px) + 80px);
+      height: calc(env(safe-area-inset-top, 0px) + 60px);
       background: linear-gradient(to bottom,
           rgba(11, 16, 32, 1) 0%,
           rgba(11, 16, 32, 0.95) calc(env(safe-area-inset-top, 0px)),
-          rgba(11, 16, 32, 0.7) 80%,
+          rgba(11, 16, 32, 0.6) 70%,
           transparent 100%);
-      z-index: 999;
+      z-index: 10000;
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.3s ease;
@@ -733,15 +738,15 @@
       left: 0;
       right: 0;
       background: linear-gradient(to top,
-          rgba(11, 16, 32, 0.98) 0%,
-          rgba(11, 16, 32, 0.95) 40%,
-          rgba(11, 16, 32, 0.85) 55%,
-          rgba(11, 16, 32, 0.65) 70%,
-          rgba(11, 16, 32, 0.4) 82%,
-          rgba(11, 16, 32, 0.15) 92%,
+          rgba(11, 16, 32, 1) 0%,
+          rgba(11, 16, 32, 0.98) 50%,
+          rgba(11, 16, 32, 0.95) 65%,
+          rgba(11, 16, 32, 0.85) 78%,
+          rgba(11, 16, 32, 0.6) 88%,
+          rgba(11, 16, 32, 0.3) 95%,
           transparent 100%);
-      padding: 60px 16px calc(8px + env(safe-area-inset-bottom, 0px)) 16px;
-      z-index: 999;
+      padding: 50px 16px calc(8px + env(safe-area-inset-bottom, 0px)) 16px;
+      z-index: 10000;
       display: none;
     }
 
