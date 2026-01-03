@@ -215,39 +215,42 @@
     .topNav {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 4px;
       flex-wrap: nowrap;
       justify-content: center;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
       max-width: 100%;
+      padding: 0 4px;
     }
-    .topNav::-webkit-scrollbar { display: none; }
 
     .tabs {
       display: flex;
-      gap: 6px;
+      gap: 4px;
       flex-wrap: nowrap;
       justify-content: center
     }
 
     .tab {
-      padding: 8px 12px;
+      padding: 6px 8px;
       border: 1px solid var(--border);
       background: #12183a;
       border-radius: 999px;
       cursor: pointer;
-      white-space: nowrap
+      white-space: nowrap;
+      font-size: clamp(0.65rem, 2.5vw, 0.9rem);
+      flex-shrink: 1;
+      min-width: 0;
     }
 
     .acctBtn {
-      padding: 8px 12px;
+      padding: 6px 8px;
       border: 1px solid var(--border);
       background: #12183a;
       border-radius: 999px;
       cursor: pointer;
-      white-space: nowrap
+      white-space: nowrap;
+      font-size: clamp(0.65rem, 2.5vw, 0.9rem);
+      flex-shrink: 1;
+      min-width: 0;
     }
 
     .tab:hover,
@@ -676,6 +679,16 @@
       z-index: 9999;
       touch-action: none;
       -webkit-overflow-scrolling: auto;
+    }
+
+    /* Hide topbar and other elements when menu is zoomed */
+    body.menuZoomed .topbar,
+    body.menuZoomed .wrap > *:not(.content),
+    body.menuZoomed #root > *:not(.menuWrap) {
+      display: none !important;
+    }
+    body.menuZoomed {
+      overflow: hidden;
     }
 
     .menuWrap.zoomed .menuInner {
@@ -7359,8 +7372,9 @@
       // Show zoomed dish info
       showZoomedDishInfo(item);
 
-      // Prevent body scroll while zoomed
+      // Prevent body scroll while zoomed and hide topbar
       document.body.style.overflow = 'hidden';
+      document.body.classList.add('menuZoomed');
     }
 
     function zoomOutOverlay() {
@@ -7393,8 +7407,9 @@
       const dishInfo = document.getElementById('zoomedDishInfo');
       if (dishInfo) dishInfo.classList.remove('show');
 
-      // Re-enable body scroll
+      // Re-enable body scroll and show topbar
       document.body.style.overflow = '';
+      document.body.classList.remove('menuZoomed');
 
       // Clear selection
       document.querySelectorAll('.overlay.selected').forEach(ov => ov.classList.remove('selected'));
