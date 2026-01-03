@@ -7221,9 +7221,21 @@
 
     function zoomToOverlay(item, overlayEl, isTransition = false) {
       const menuWrap = document.querySelector('.menuWrap');
-      const menuInner = menuWrap?.querySelector('.menuInner');
+      // Check for pinch zoom wrapper first
+      const pinchWrapper = menuWrap?.querySelector('.pinchZoomWrapper');
+      const menuInner = pinchWrapper?.querySelector('.menuInner') || menuWrap?.querySelector('.menuInner');
       const menuImg = menuInner?.querySelector('.menuImg');
       if (!menuWrap || !menuInner || !menuImg || !overlayEl) return;
+
+      // Reset pinch zoom if active
+      const menuState = getMenuState();
+      if (menuState.resetPinchZoom) {
+        menuState.resetPinchZoom();
+      }
+      // Also reset the pinch wrapper transform directly
+      if (pinchWrapper) {
+        pinchWrapper.style.transform = '';
+      }
 
       // Save scroll position only on first zoom (not transitions)
       if (!isTransition) {
@@ -19772,13 +19784,16 @@ Use the EXACT indices from the numbered list above. Do not calculate your own in
       const details = item.details || {};
 
       if (!sel.length && (!userDiets || !userDiets.length)) {
-        return `<div style="padding:12px;text-align:center;color:rgba(255,255,255,0.6);font-size:0.85rem">No dietary preferences saved</div>`;
+        return `<div style="padding:8px;text-align:center;color:rgba(255,255,255,0.6);font-size:0.8rem">No dietary preferences saved</div>`;
       }
 
-      // Collect all items and categorize by severity
-      const redItems = []; // Danger
-      const yellowItems = []; // Caution/Warning
-      const greenItems = []; // Safe
+      // Separate allergen and diet items
+      const allergenRed = [];
+      const allergenGreen = [];
+      const allergenYellow = [];
+      const dietRed = [];
+      const dietGreen = [];
+      const dietYellow = [];
 
       // Process allergens
       if (sel.length) {
@@ -19793,21 +19808,11 @@ Use the EXACT indices from the numbered list above. Do not calculate your own in
           if (isDanger) {
             const ingredientInfo = details[allergenLower] || details[allergen];
             const ingredients = ingredientInfo ? ingredientInfo.replace(/^Contains\s+/i, '') : '';
-            redItems.push({
-              type: 'allergen',
-              emoji,
-              text: allergenLower,
-              subtext: ingredients
-            });
+            allergenRed.push({ emoji, text: allergenLower, subtext: ingredients });
           } else if (isCrossContamination) {
-            // Cross-contamination risk - will be combined into single row later
-            // Don't push to yellowItems here, collect separately
+            allergenYellow.push({ emoji, text: allergenLower });
           } else {
-            greenItems.push({
-              type: 'allergen-safe',
-              emoji,
-              text: `${allergenLower}-free`
-            });
+            allergenGreen.push({ emoji, text: `${allergenLower}-free` });
           }
         });
       }
@@ -19825,112 +19830,65 @@ Use the EXACT indices from the numbered list above. Do not calculate your own in
             item.ingredientsBlockingDiets?.[dietLower] || [];
 
           if (isDietMet) {
-            // Diet is met - check if there's cross-contamination risk
             if (hasCrossContamination) {
-              // Cross-contamination risk - will be combined into single row later
-              // Don't push to yellowItems here, collect separately
+              dietYellow.push({ emoji, text: dietLower });
             } else {
-              greenItems.push({
-                type: 'diet-met',
-                emoji,
-                text: userDiet
-              });
+              dietGreen.push({ emoji, text: userDiet });
             }
           } else {
             const ingredientNames = blockingIngredients.length > 0
               ? blockingIngredients.map(ing => ing.name || ing).filter(name => name).join(', ')
               : '';
-            redItems.push({
-              type: 'diet',
-              emoji,
-              text: `Not ${dietLower}`,
-              subtext: ingredientNames
-            });
+            dietRed.push({ emoji, text: `Not ${dietLower}`, subtext: ingredientNames });
           }
         });
       }
 
-      // Collect all cross-contamination items into a single combined row
-      const crossContaminationItems = [];
+      // Helper to render a column's items
+      const renderColumn = (redItems, yellowItems, greenItems, title) => {
+        let col = `<div style="flex:1;min-width:0;">`;
+        col += `<div style="font-size:0.65rem;color:#9ca3af;margin-bottom:4px;font-weight:600">${title}</div>`;
 
-      // Add allergen cross-contamination
-      if (sel.length) {
-        const dishCrossContamination = item.crossContamination || [];
-        sel.forEach(allergen => {
-          const allergenLower = allergen.toLowerCase();
-          const isCrossContamination = dishCrossContamination.some(a => a.toLowerCase() === allergenLower);
-          if (isCrossContamination) {
-            const emoji = ALLERGEN_EMOJI[allergenLower] || '⚠️';
-            crossContaminationItems.push({ emoji, text: allergenLower });
+        // Red items
+        redItems.forEach(i => {
+          col += `<div style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:6px;padding:4px 6px;margin-bottom:3px">`;
+          col += `<div style="color:#fca5a5;font-size:0.75rem;font-weight:500">${i.emoji} ${esc(i.text)}</div>`;
+          if (i.subtext) {
+            col += `<div style="color:rgba(252,165,165,0.6);font-size:0.65rem;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(i.subtext)}</div>`;
           }
+          col += `</div>`;
         });
-      }
 
-      // Add diet cross-contamination
-      if (userDiets && userDiets.length > 0) {
-        const crossContaminationDietSet = new Set((item.crossContaminationDiets || []).map(d => d.toLowerCase()));
-        const itemDietSet = new Set(item.diets || []);
-        userDiets.forEach(userDiet => {
-          const dietLower = userDiet.toLowerCase();
-          const isDietMet = itemDietSet.has(userDiet);
-          const hasCrossContamination = crossContaminationDietSet.has(dietLower);
-          if (isDietMet && hasCrossContamination) {
-            const emoji = DIET_EMOJI[dietLower] || '🍽️';
-            crossContaminationItems.push({ emoji, text: dietLower });
-          }
+        // Yellow items (cross-contamination)
+        yellowItems.forEach(i => {
+          col += `<div style="background:rgba(250,204,21,0.12);border:1px solid rgba(250,204,21,0.25);border-radius:6px;padding:3px 6px;margin-bottom:3px">`;
+          col += `<div style="color:#fde047;font-size:0.7rem">⚠️ ${i.emoji} ${esc(i.text)}</div>`;
+          col += `</div>`;
         });
-      }
 
-      // Create combined cross-contamination yellow row
-      if (crossContaminationItems.length > 0) {
-        const combinedText = crossContaminationItems.map(i => `${i.emoji} ${i.text}`).join(', ');
-        yellowItems.push({
-          type: 'cross-contamination-combined',
-          emoji: '⚠️',
-          text: combinedText,
-          isCombined: true
-        });
-      }
+        // Green items as compact chips
+        if (greenItems.length > 0) {
+          col += `<div style="display:flex;flex-wrap:wrap;gap:3px">`;
+          greenItems.forEach(i => {
+            col += `<div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.2);border-radius:4px;padding:2px 5px;font-size:0.65rem;color:#86efac">${i.emoji} ${esc(i.text)}</div>`;
+          });
+          col += `</div>`;
+        }
 
-      // Build HTML in order: RED → YELLOW → GREEN
-      let html = '<div style="padding:8px 0">';
+        if (redItems.length === 0 && yellowItems.length === 0 && greenItems.length === 0) {
+          col += `<div style="color:rgba(255,255,255,0.4);font-size:0.7rem;font-style:italic">None selected</div>`;
+        }
 
-      // RED items (danger)
-      if (redItems.length > 0) {
-        redItems.forEach(item => {
-          html += `<div style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:6px 10px;margin-bottom:6px">`;
-          html += `<div style="color:#fca5a5;font-size:0.85rem;font-weight:500">${item.emoji} ${esc(item.text)}</div>`;
-          if (item.subtext) {
-            html += `<div style="color:rgba(252,165,165,0.7);font-size:0.75rem;margin-top:2px;line-height:1.3">${esc(item.subtext)}</div>`;
-          }
-          html += `</div>`;
-        });
-      }
+        col += `</div>`;
+        return col;
+      };
 
-      // YELLOW items (caution) - cross-contamination risks
-      if (yellowItems.length > 0) {
-        yellowItems.forEach(item => {
-          html += `<div style="background:rgba(250,204,21,0.15);border:1px solid rgba(250,204,21,0.3);border-radius:8px;padding:6px 10px;margin-bottom:6px">`;
-          if (item.isCombined) {
-            // Combined cross-contamination row - text already includes emojis
-            html += `<div style="color:#fde047;font-size:0.85rem;font-weight:500">⚠️ Cross-contamination risk: ${item.text}</div>`;
-          } else {
-            html += `<div style="color:#fde047;font-size:0.85rem;font-weight:500">${item.emoji} ${esc(item.text)}</div>`;
-          }
-          html += `</div>`;
-        });
-      }
+      // Build two-column layout
+      let html = `<div style="display:flex;gap:8px;padding:6px 0">`;
+      html += renderColumn(allergenRed, allergenYellow, allergenGreen, 'ALLERGENS');
+      html += renderColumn(dietRed, dietYellow, dietGreen, 'DIETS');
+      html += `</div>`;
 
-      // GREEN items (safe) - show as compact chips in a grid
-      if (greenItems.length > 0) {
-        html += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">';
-        greenItems.forEach(item => {
-          html += `<div style="background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.25);border-radius:6px;padding:4px 8px;font-size:0.75rem;color:#86efac">${item.emoji} ${esc(item.text)}</div>`;
-        });
-        html += '</div>';
-      }
-
-      html += '</div>';
       return html;
     }
     function renderMobileInfo(item) {
