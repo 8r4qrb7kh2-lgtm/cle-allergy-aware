@@ -21360,13 +21360,17 @@ Use the EXACT indices from the numbered list above. Do not calculate your own in
         <button class="ackBtn ${state.ack ? 'on' : 'off'}" id="ackBtn" style="font-size:0.8rem;padding:4px 10px">${state.ack ? 'Acknowledged' : 'I understand'}</button>
       </div>
 
-      <!-- Legend row - icon key only -->
-      <div id="legendRow" style="display:none;font-size:0.7rem;color:#a8b2d6;padding:2px 0;">
-        <div style="display:flex;align-items:center;gap:6px;justify-content:space-between;width:100%;">
-          <span style="white-space:nowrap;"><span class="key ok" style="width:8px;height:8px"></span>Safe to eat</span>
-          <span style="white-space:nowrap;"><span class="key warn" style="width:8px;height:8px"></span>Can modify</span>
-          <span style="white-space:nowrap;"><span class="key bad" style="width:8px;height:8px"></span>Avoid</span>
-          <span style="white-space:nowrap;"><span style="display:inline-flex;align-items:center;justify-content:center;width:8px;height:8px;background:#facc15;border-radius:50%;font-size:6px;color:#000;font-weight:bold;margin-right:2px;">⚠</span>Cross-contam</span>
+      <!-- Legend row - icon key -->
+      <div id="legendRow" style="display:none;font-size:0.55rem;color:#a8b2d6;padding:4px 0;">
+        <div style="display:flex;flex-direction:column;gap:2px;">
+          <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px;">
+            <span style="font-size:0.9rem;">👆</span>
+            <span style="font-size:0.65rem;">Tap any dish for details</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:3px;"><span class="key ok" style="width:7px;height:7px;flex-shrink:0;"></span><span>Complies with selections</span></div>
+          <div style="display:flex;align-items:center;gap:3px;"><span class="key warn" style="width:7px;height:7px;flex-shrink:0;"></span><span>Can be modified to accommodate selections</span></div>
+          <div style="display:flex;align-items:center;gap:3px;"><span class="key bad" style="width:7px;height:7px;flex-shrink:0;"></span><span>Cannot be modified to accommodate selections</span></div>
+          <div style="display:flex;align-items:center;gap:3px;"><span style="display:inline-flex;align-items:center;justify-content:center;width:7px;height:7px;background:#facc15;border-radius:50%;font-size:5px;color:#000;font-weight:bold;flex-shrink:0;">⚠</span><span>Has a cross-contamination risk with selection(s)</span></div>
         </div>
       </div>
     </div>
